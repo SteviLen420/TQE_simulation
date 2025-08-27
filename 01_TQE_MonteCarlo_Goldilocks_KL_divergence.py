@@ -287,6 +287,83 @@ print(f"Goldilocks zone: {E_c_low:.1f} – {E_c_high:.1f}" if E_c_low else "No s
 print(f"📂 Directory: {SAVE_DIR}")
 
 # ======================================================
+# EXTRA: Seed search — find Top-5 seeds with highest stability
+# (adds results into summary.json)
+# ======================================================
+
+NUM_SEEDS = 100               # how many different seeds to test
+UNIVERSES_PER_SEED = 500      # how many universes per seed (200–500 is fine for quick test)
+
+seed_scores = []
+
+# -- save the original RNG, then reseed one by one
+_old_rng = rng
+
+for s in range(NUM_SEEDS):
+    # use a local RNG for the E component of the simulation
+    rng = np.random.default_rng(seed=s)
+
+    # optional: also reseed numpy’s global RNG,
+    # so that I (quantum states) becomes more deterministic as well
+    try:
+        np.random.seed(s)
+    except Exception:
+        pass
+
+    rows_s = []
+    for i in range(UNIVERSES_PER_SEED):
+        E   = sample_energy_lognormal()
+        I   = sample_information_param(dim=8)
+        X   = E * I
+        stable, lock_at = simulate_lock_in(
+            X,
+            params["N_epoch"],
+            params["rel_eps"],
+            params["sigma0"],
+            params["alpha"]
+        )
+        rows_s.append({"E":E, "I":I, "X":X, "stable":stable, "lock_at":lock_at})
+
+    df_s = pd.DataFrame(rows_s)
+    ratio = float(df_s["stable"].mean())
+    locked_mask = df_s["lock_at"] >= 0
+    locked_frac = float(locked_mask.mean()) if len(df_s) else 0.0
+    mean_lock = float(df_s.loc[locked_mask, "lock_at"].mean()) if locked_mask.any() else None
+
+    seed_scores.append({
+        "seed": s,
+        "stable_ratio": ratio,
+        "locked_fraction": locked_frac,
+        "mean_lock_at": mean_lock
+    })
+
+# restore the original RNG
+rng = _old_rng
+
+# --- sort by stability and save ---
+seed_scores_sorted = sorted(seed_scores, key=lambda r: r["stable_ratio"], reverse=True)
+
+# Top-5 to console
+print("\n🏆 Top-5 seeds by stability ratio")
+for r in seed_scores_sorted[:5]:
+    print(f"Seed {r['seed']:3d} → stability={r['stable_ratio']:.3f}  "
+          f"locked_frac={r['locked_fraction']:.3f}  mean_lock_at={r['mean_lock_at']}")
+
+# CSV export
+top_csv_path = os.path.join(SAVE_DIR, "seed_search_top.csv")
+pd.DataFrame(seed_scores_sorted).to_csv(top_csv_path, index=False)
+print("Seed search table saved to:", top_csv_path)
+
+# --- add to summary and re-save ---
+summary["seed_search"] = {
+    "num_seeds": NUM_SEEDS,
+    "universes_per_seed": UNIVERSES_PER_SEED,
+    "top5": seed_scores_sorted[:5],
+    "csv_path": top_csv_path
+}
+save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
+
+# ======================================================
 # 11) XAI (SHAP + LIME) + DARWIN prompt preparation
 # ======================================================
 
