@@ -503,189 +503,40 @@ for root, dirs, files in os.walk(SAVE_DIR):
 print(f"☁️ All results saved to Google Drive: {GOOGLE_DIR}")
 
 # ======================================================
-# DeepSeek analysis via Ollama (very detailed English report)
-# Paste this block at the END of the notebook.
-# Requires an accessible Ollama server with model "deepseek-r1:7b".
+# 13) DeepSeek analysis via Ollama (through Cloudflare Tunnel)
 # ======================================================
-import os, json, time, textwrap, requests
-import numpy as np
-import pandas as pd
+import requests
 
-# ---- 1) Configure Ollama endpoint + model
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:7b")
+deepseek_url = "https://fig-trying-plays-strange.trycloudflare.com/api/chat"
 
-def _ollama_is_up():
-    try:
-        r = requests.get(OLLAMA_URL, timeout=2)
-        return r.status_code < 500
-    except Exception:
-        return False
+# Prompt: we send the summary.json to DeepSeek for interpretation
+with open(os.path.join(SAVE_DIR, "summary.json"), "r") as f:
+    summary_data = f.read()
 
-def deepseek_generate(prompt,
-                      model=OLLAMA_MODEL,
-                      temperature=0.2,
-                      max_tokens=None,
-                      stop=None,
-                      system=None):
-    """
-    Call Ollama /api/generate with a single prompt (non-streaming).
-    Returns the 'response' text or raises on HTTP error.
-    """
-    url = f"{OLLAMA_URL}/api/generate"
-    payload = {
-        "model": model,
-        "prompt": prompt,
-        "stream": False,
-        "options": {
-            "temperature": float(temperature),
-        }
-    }
-    if max_tokens is not None:
-        payload["options"]["num_predict"] = int(max_tokens)
-    if stop:
-        payload["stop"] = stop
-    if system:
-        payload["system"] = system
+prompt = f"""
+You are DeepSeek. Please provide a detailed scientific analysis of the following
+universe simulation results. Explain what they mean, highlight important patterns,
+and suggest possible implications.
 
-    r = requests.post(url, json=payload, timeout=600)
-    r.raise_for_status()
-    data = r.json()
-    # Some builds return 'response', others may use 'done' + 'response'
-    return data.get("response") or data.get("message") or json.dumps(data)
-
-# ---- 2) Build a compact-but-rich context from the simulation (robust to missing vars)
-def _safe(v, default=None):
-    try:
-        return v
-    except Exception:
-        return default
-
-_ctx = {
-    "total_universes": _safe(N, None),
-    "stable_count": int(_safe(stable_count, 0)),
-    "unstable_count": int(_safe(unstable_count, 0)),
-    "stable_ratio": float(_safe(np.mean(stables), np.nan)) if len(_safe(stables, [])) else None,
-    "median_lock_epoch": float(_safe(np.median([e for e in _safe(law_epochs, []) if e >= 0]), np.nan)),
-    "seed_top5": None,
-    "features_head": None,
-    "summary_json": None,
-}
-
-# Try to include Top-5 seeds if computed earlier
-try:
-    _ctx["seed_top5"] = seed_scores_sorted[:5]
-except Exception:
-    _ctx["seed_top5"] = None
-
-# Feature snapshot
-try:
-    _ctx["features_head"] = df[["E","I","X"]].head(10).to_dict(orient="records")
-except Exception:
-    _ctx["features_head"] = None
-
-# Summary.json content (if exists)
-try:
-    with open(os.path.join(SAVE_DIR,"summary.json"), "r") as f:
-        _ctx["summary_json"] = json.load(f)
-except Exception:
-    _ctx["summary_json"] = None
-
-# ---- 3) Compose the analysis prompt (asks for a deeply-structured report in English)
-analysis_prompt = textwrap.dedent(f"""
-You are an expert research assistant for a physics/complex-systems simulation.
-
-We ran a Monte Carlo simulation of universe stability in the (E, I) space,
-with a Goldilocks modulation and a law lock-in mechanism. The composite variable X = E·I (and variants)
-was analyzed; we also estimated the stabilization probability and the timing of law lock-in.
-
-Below is the data context from the most recent run (JSON-like):
-
-TOTAL_UNIVERSES: {_ctx['total_universes']}
-STABLE_COUNT: {_ctx['stable_count']}
-UNSTABLE_COUNT: {_ctx['unstable_count']}
-STABLE_RATIO: {_ctx['stable_ratio']}
-MEDIAN_LOCK_EPOCH: {_ctx['median_lock_epoch']}
-SEED_TOP5 (if any): {_ctx['seed_top5']}
-FEATURE_SAMPLE (first rows of [E, I, X]): {_ctx['features_head']}
-SUMMARY_JSON (if present): {_ctx['summary_json']}
-
-Deliver a rigorous, publication-style analysis in English, with the following sections:
-
-1) Executive summary (5–8 bullet points).
-2) Data sanity check (note any signs of leakage, imbalance, or artifacts).
-3) Stability mechanics
-   - Interpret how E, I, and X likely drive stability.
-   - Discuss what the observed stable ratio implies.
-   - Explain the role of the Goldilocks modulation qualitatively.
-4) Law lock-in dynamics
-   - Interpret the reported median lock epoch and its spread.
-   - Hypothesize mechanisms behind early vs late lock-in.
-5) Seed sensitivity (if SEED_TOP5 provided)
-   - What does the ranking suggest about variance across seeds?
-   - Practical advice for reproducibility and robust reporting.
-6) Model explainability (SHAP/LIME, if available from this run)
-   - What feature importance patterns would you expect?
-   - How would you validate explanations against simulation rules?
-7) Limitations & failure modes
-   - Identify modeling assumptions, simplifications, or numerical fragilities.
-8) Actionable next steps
-   - Concrete experiments, ablations, hyperparameter sweeps,
-     diagnostics/plots, and statistical tests to run next.
-9) Appendix
-   - Propose a compact checklist for future runs (inputs, metrics, and artifacts to save).
-
-Be very concrete and technical. Use short equations or pseudo-code where useful.
-Do NOT include any hidden chain-of-thought or meta commentary; write only the final analysis.
-""").strip()
-
-# ---- 4) Call DeepSeek and save the markdown
-analysis_text = None
-if _ollama_is_up():
-    try:
-        analysis_text = deepseek_generate(
-            analysis_prompt,
-            model=OLLAMA_MODEL,
-            temperature=0.25,
-            max_tokens=1800,
-            stop=None,
-            system="You are a precise, technical research writer. Respond in clear English."
-        )
-        # Save to markdown
-        out_md = os.path.join(SAVE_DIR, "deepseek_analysis.md")
-        with open(out_md, "w", encoding="utf-8") as f:
-            f.write(analysis_text)
-        print(f"📝 DeepSeek analysis saved to: {out_md}")
-    except Exception as e:
-        print("[DeepSeek] Request failed:", repr(e))
-else:
-    print("⚠️ Ollama endpoint is not reachable at", OLLAMA_URL)
-    print("   - If you run Colab in 'hosted' mode, localhost is your machine, not Colab.")
-    print("   - Use a Local Runtime, or expose your Ollama server securely,")
-    print("     or run this analysis locally (outside Colab).")
-
-# Optionally print the first lines for a quick preview
-if analysis_text:
-    print("\n--- DeepSeek analysis (preview) ---\n")
-    print("\n".join(analysis_text.splitlines()[:40]))
-    print("\n[... truncated ...]\n")
-
-# --- Query DeepSeek for detailed analysis ---
-prompt = """
-Give me a full, step-by-step scientific interpretation of the Monte Carlo results,
-covering global stability curve behavior, Goldilocks zone, E and I roles,
-connections to physics (criticality, decoherence, cosmology), hypotheses, and
-limitations with ablation tests.
+Data:
+{summary_data}
 """
 
-response = client.responses.create(
-    model="deepseek-chat",
-    input=[{"role": "user", "content": prompt}]
-)
+payload = {
+    "model": "deepseek-r1:7b",
+    "messages": [
+        {"role": "user", "content": prompt}
+    ]
+}
 
-# --- Show in Colab ---
-print(response.output[0].content[0].text)
+resp = requests.post(deepseek_url, json=payload)
+result = resp.json()
 
-# --- Save also to Drive ---
+# Extract the AI's answer
+answer = result.get("message", {}).get("content", "No response from DeepSeek.")
+
+# Save to file
 with open(os.path.join(SAVE_DIR, "deepseek_analysis.txt"), "w") as f:
-    f.write(response.output[0].content[0].text)
+    f.write(answer)
+
+print("✅ DeepSeek analysis saved to:", os.path.join(SAVE_DIR, "deepseek_analysis.txt"))
