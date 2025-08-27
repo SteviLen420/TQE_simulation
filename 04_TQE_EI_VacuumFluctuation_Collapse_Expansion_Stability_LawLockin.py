@@ -34,6 +34,7 @@ GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_law_lockin"
 run_id = time.strftime("TQE_(E,I)law_lockin_%Y%m%d_%H%M%S")
 SAVE_DIR = os.path.join(GOOGLE_BASE, run_id); os.makedirs(SAVE_DIR, exist_ok=True)
 FIG_DIR  = os.path.join(SAVE_DIR, "figs"); os.makedirs(FIG_DIR, exist_ok=True)
+summary = {}
 
 def savefig(p): 
     plt.savefig(p,dpi=150,bbox_inches="tight")
@@ -529,9 +530,9 @@ with open(os.path.join(SAVE_DIR, "summary.json"), "w") as f:
 # ---------- Features and targets ----------
 X_feat = df[["E", "I", "X"]].copy()
 y_cls = df["stable"].astype(int).values
-reg_mask = df["lock_at"] >= 0
+reg_mask = df["lock_epoch"] >= 0
 X_reg = X_feat[reg_mask]
-y_reg = df.loc[reg_mask, "lock_at"].values
+y_reg = df.loc[reg_mask, "lock_epoch"].values
 
 # --- Sanity checks (optional) ---
 assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
@@ -646,7 +647,6 @@ pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
 # ======================================================
 # 14) Save all outputs to Google Drive
 # ======================================================
-GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
 GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
 os.makedirs(GOOGLE_DIR, exist_ok=True)
 
