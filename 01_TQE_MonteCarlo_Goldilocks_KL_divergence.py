@@ -394,9 +394,21 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import r2_score, accuracy_score
 
 # ---------- Train/Test split ----------
+vals, cnts = np.unique(y_cls, return_counts=True)
+can_stratify = (len(vals) == 2) and (cnts.min() >= 2)
+
+stratify_arg = y_cls if can_stratify else None
+if not can_stratify:
+    print(f"[WARN] Skipping stratify: class counts = {dict(zip(vals, cnts))}")
+
 Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
-    X_feat, y_cls, test_size=0.25, random_state=42, stratify=y_cls
+    X_feat, y_cls,
+    test_size=0.25,
+    random_state=42,
+    stratify=stratify_arg
 )
+
+# regression split handled separately
 have_reg = len(X_reg) >= 30
 if have_reg:
     Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
