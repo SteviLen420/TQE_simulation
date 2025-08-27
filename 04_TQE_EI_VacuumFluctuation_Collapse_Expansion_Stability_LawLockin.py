@@ -659,4 +659,4 @@ for root, dirs, files in os.walk(SAVE_DIR):
             os.makedirs(dst_dir, exist_ok=True)
             shutil.copy2(src, dst_dir)
 
-print(f"☁️ All results saved to Google Drive: {GOOGLE_DIR}")
+print(f"☁️ All results are already in Google Drive: {SAVE_DIR}")
