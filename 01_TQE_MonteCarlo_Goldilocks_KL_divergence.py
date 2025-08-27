@@ -211,7 +211,7 @@ cbar = plt.colorbar(label="Stable=1 / Unstable=0")
 savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
 
 # ======================================================
-# Stability summary (counts + percentages)
+# 8) Stability summary (counts + percentages)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -236,7 +236,7 @@ plt.xticks([0, 1], labels)
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
-# 8) Save summary
+# 9) Save summary
 # ======================================================
 summary = {
     "params": params,
@@ -265,7 +265,7 @@ print(f"Goldilocks zone: {E_c_low:.1f} – {E_c_high:.1f}" if E_c_low else "No s
 print(f"📂 Directory: {SAVE_DIR}")
 
 # ======================================================
-# 9) Save all outputs to Google Drive
+# 10) Save all outputs to Google Drive
 # ======================================================
 GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
 GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)  # separate folder for each run
