@@ -2,7 +2,7 @@
 # Theory of the Question of Existence (TQE)
 # (E, I) Vacuum fluctuation → Collapse → Expansion → Stability → Law lock-in
 # ===========================================================================
-# Author: Stefan Lengyel
+# Author: Stefan Len
 # Description: Full model simulation of energy-information (E,I) dynamics
 # Focus: How vacuum fluctuation leads to stable law-locked universes
 # Mechanisms: Goldilocks zone emergence, KL divergence, lock-in detection
