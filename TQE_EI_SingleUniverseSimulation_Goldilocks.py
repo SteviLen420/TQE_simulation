@@ -2,7 +2,7 @@
 # Theory of the Question of Existence (TQE)
 # (E, I) Single-universe simulation with Goldilocks principle
 # =====================================================================
-# Author: Stefan Lengyel
+# Author: Stefan Len
 # Description: Stochastic simulation of a single universe model
 # Focus: Emergence of law-consistent dynamics in the Goldilocks zone
 # Variables: Energy fluctuation (E), Information orientation (I)
