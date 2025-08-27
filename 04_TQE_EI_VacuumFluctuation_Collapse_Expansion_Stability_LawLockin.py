@@ -12,12 +12,22 @@
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-import shap, lime, eli5
-from captum.attr import IntegratedGradients
-from interpret import show
-import os, time, json, numpy as np, matplotlib.pyplot as plt, shutil
+import os, time, json, numpy as np, pandas as pd, matplotlib.pyplot as plt, shutil
+import sys, subprocess, warnings
+warnings.filterwarnings("ignore")
+
+# ensure core deps (only if needed)
+def _ensure(pkg):
+    try:
+        __import__(pkg)
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
+for pkg in ["qutip", "pandas", "scikit-learn", "shap", "lime"]:
+    _ensure(pkg)
+
 import qutip as qt
-import pandas as pd
+import shap
+from lime.lime_tabular import LimeTabularExplainer
 
 # --- Directories ---
 GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_law_lockin"
