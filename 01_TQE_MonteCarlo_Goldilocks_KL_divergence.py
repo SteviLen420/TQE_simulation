@@ -497,108 +497,6 @@ pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
 )
 
 # ======================================================
-# 12) DeepSeek analysis via Ollama (through Cloudflare Tunnel) — robust
-# ======================================================
-import requests, json
-
-# 1) Set your quick-tunnel URL here (replace with the link from your log):
-DEEPSEEK_URL = "https://6b5b3ad72edc.ngrok-free.app/api/chat"  # <-- REPLACE THIS!
-
-# 2) Read the summary (this will be sent for analysis)
-summary_path = os.path.join(SAVE_DIR, "summary.json")
-with open(summary_path, "r") as f:
-    summary_data = f.read()
-
-prompt = f"""
-You are an expert scientific analyst. Provide a thorough, plain-English analysis of these
-universe-simulation results: identify key patterns, parameter sensitivities, stability drivers,
-and any caveats. Suggest concrete next experiments (with parameter ranges) and how to validate them.
-
-Data (JSON):
-{summary_data}
-"""
-
-payload = {
-    "model": "deepseek-r1:7b",            # <- must match exactly the model name listed by Ollama
-    "messages": [{"role": "user", "content": prompt}],
-    "stream": False                        # <- request a single JSON response
-}
-
-headers = {
-    "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true"
-}
-
-# 3) Call + error handling
-raw_resp_path = os.path.join(SAVE_DIR, "deepseek_raw_response.txt")
-analysis_path = os.path.join(SAVE_DIR, "deepseek_analysis.txt")
-
-try:
-    resp = requests.post(DEEPSEEK_URL, headers=headers, json=payload, timeout=180)
-    # Always save the RAW response for debugging
-    with open(raw_resp_path, "w", encoding="utf-8") as f:
-        f.write(resp.text)
-
-    # If HTTP error, raise immediately
-    resp.raise_for_status()
-
-    # 4) Try parsing as JSON
-    try:
-        data = resp.json()
-        # Ollama /api/chat typically: {"message":{"role":"assistant","content":"..."}}
-        answer = (
-            data.get("message", {}).get("content")
-            or data.get("response")  # support for /api/generate format
-        )
-    except Exception:
-        # If not clean JSON, maybe NDJSON/stream (line-by-line JSON objects)
-        lines = []
-        for line in resp.text.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                obj = json.loads(line)
-                lines.append(obj)
-            except Exception:
-                # Skip if not JSON (e.g. HTML error page)
-                pass
-
-        # Combine meaningful chunks
-        if lines:
-            # /api/chat stream often sends pieces like "message":{"content": "..."}
-            chunks = []
-            for obj in lines:
-                chunk = (
-                    (obj.get("message") or {}).get("content")
-                    or obj.get("response")
-                    or ""
-                )
-                if chunk:
-                    chunks.append(chunk)
-            answer = "".join(chunks) if chunks else resp.text
-        else:
-            # If nothing parsed, keep the raw text
-            answer = resp.text
-
-    if not answer:
-        answer = "(No content in response. Check tunnel URL, model name, and logs.)"
-
-except requests.exceptions.RequestException as e:
-    # Network/HTTP error — log + short explanation
-    answer = f"[HTTP error] {e}\n" \
-             f"Tips: 1) Check your tunnel URL. 2) Is 'ollama serve' running? " \
-             f"3) Does 'ollama list' show the model 'deepseek-r1:7b'? 4) Any proxy/HTTPS issues?"
-
-# 5) Save the analysis
-with open(analysis_path, "w", encoding="utf-8") as f:
-    f.write(answer)
-
-print("✅ DeepSeek analysis saved to:", analysis_path)
-print("🪵 Raw response saved to:", raw_resp_path)
-
-
-# ======================================================
 # Save all outputs to Google Drive (robust copy)
 # ======================================================
 GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
@@ -614,7 +512,7 @@ for root, dirs, files in os.walk(SAVE_DIR):
     os.makedirs(dst_dir, exist_ok=True)
 
     for file in files:
-        # allowed extensions extended: .png, .fits, .csv, .json, .txt
+        # allowed extensions: .png, .fits, .csv, .json, .txt
         if not file.endswith((".png", ".fits", ".csv", ".json", ".txt")):
             continue
 
