@@ -290,10 +290,11 @@ print(f"📂 Directory: {SAVE_DIR}")
 # 11) XAI (SHAP + LIME) + DARWIN prompt preparation
 # ======================================================
 
-# Sanity checks (optional)
-assert not np.isnan(X_plot.values).any(), "NaN in X_plot!"
-if rf_reg is not None:
-    assert not np.isnan(X_plot_r.values).any(), "NaN in X_plot_r!"
+# --- Sanity checks (optional) ---
+# Make sure there are no NaNs in the feature sets before SHAP
+assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
+if 'X_reg' in locals() and len(X_reg) > 0:
+    assert not np.isnan(X_reg.values).any(), "NaN in X_reg!"
 
 # Install on demand (only if missing)
 try:
