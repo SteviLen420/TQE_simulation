@@ -562,8 +562,11 @@ What to cover:
 Optional (if helpful): Relate to literature on lock-in/critical phenomena and CMB-like anomalies.
 """
 
+# --- Save DARWIN prompt to .txt file ---
 with open(os.path.join(SAVE_DIR, "DARWIN_prompt.txt"), "w") as f:
     f.write(darwin_prompt)
+
+print("DARWIN prompt saved to:", os.path.join(SAVE_DIR, "DARWIN_prompt.txt"))
 
 # (Already generated) Context JSON with numerical data:
 darwin_ctx = {
