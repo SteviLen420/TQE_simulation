@@ -644,19 +644,4 @@ pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
     os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
 )
 
-# ======================================================
-# 14) Save all outputs to Google Drive
-# ======================================================
-GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
-os.makedirs(GOOGLE_DIR, exist_ok=True)
-
-for root, dirs, files in os.walk(SAVE_DIR):
-    for file in files:
-        # NINCS .txt a listában
-        if file.endswith((".png", ".fits", ".csv", ".json")):
-            src = os.path.join(root, file)
-            dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
-            os.makedirs(dst_dir, exist_ok=True)
-            shutil.copy2(src, dst_dir)
-
 print(f"☁️ All results saved to Google Drive: {GOOGLE_DIR}")
