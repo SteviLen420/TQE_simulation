@@ -30,7 +30,7 @@ def savefig(p):
     plt.close()
 
 # ======================================================
-# t < 0 : Quantum superposition (vacuum fluctuation)
+# 1) t < 0 : Quantum superposition (vacuum fluctuation)
 # ======================================================
 Nlev = 12
 a = qt.destroy(Nlev)
@@ -75,7 +75,7 @@ superposition_df = pd.DataFrame({
 superposition_df.to_csv(os.path.join(SAVE_DIR, "superposition.csv"), index=False)
 
 # ======================================================
-# t = 0 : Collapse (E·I coupling + Goldilocks factor)
+# 2) t = 0 : Collapse (E·I coupling + Goldilocks factor)
 # ======================================================
 
 # Kullback–Leibler divergence
@@ -129,7 +129,7 @@ collapse_df.to_csv(os.path.join(SAVE_DIR, "collapse.csv"), index=False)
 
 
 # ======================================================
-# Additional lock-in: Physical laws (speed of light c)
+# 3) Additional lock-in: Physical laws (speed of light c)
 # ======================================================
 def law_lock_in(E, I, n_epoch=200):
     """
@@ -161,7 +161,7 @@ def law_lock_in(E, I, n_epoch=200):
     return locked_at if locked_at is not None else -1, history
     
 # ======================================================
-# Monte Carlo Simulation: Stability + Law lock-in for many universes
+# 4) Monte Carlo Simulation: Stability + Law lock-in for many universes
 # ======================================================
 
 # Number of universes to simulate
@@ -227,7 +227,7 @@ for _ in range(N):
 median_epoch = np.median([e for e in law_epochs if e >= 0])
 
 # ======================================================
-# Build master DataFrame and save
+# 5) Build master DataFrame and save
 # ======================================================
 df = pd.DataFrame({
     "E": E_vals,
@@ -241,7 +241,7 @@ df = pd.DataFrame({
 df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
         
 # ======================================================
-# Stability summary (counts + percentages)
+# 6) Stability summary (counts + percentages)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -275,7 +275,7 @@ plt.text(1, unstable_count/2, f"{unstable_count}\n({unstable_count/N*100:.1f}%)"
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
-# Average law lock-in dynamics across all universes
+# 7) Average law lock-in dynamics across all universes
 # ======================================================
 if all_histories:
     # Truncate to the shortest history length
@@ -308,7 +308,7 @@ if all_histories:
     avg_df.to_csv(os.path.join(SAVE_DIR, "law_lockin_avg.csv"), index=False)
 
 # ======================================================
-# t > 0 : Expansion dynamics (reference universe E,I)
+# 8) t > 0 : Expansion dynamics (reference universe E,I)
 # ======================================================
 def evolve(E, I, n_epoch=200):   
     A_series = []
@@ -350,7 +350,7 @@ plt.legend()
 savefig(os.path.join(FIG_DIR, "expansion.png"))
 
 # ======================================================
-# Histogram of lock-in epochs
+# 9) Histogram of lock-in epochs
 # ======================================================
 # Histogram of lock-in epochs
 valid_epochs = [e for e in law_epochs if e >= 0]
@@ -368,7 +368,7 @@ if len(valid_epochs) > 0:
     savefig(os.path.join(FIG_DIR, "law_lockin_mc.png"))
     
 # ======================================================
-# Stability summary (counts + percentages)
+# 10) Stability summary (counts + percentages)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -395,7 +395,7 @@ plt.xticks([0, 1], labels)
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
-# Save results (JSON + CSV + Figures)
+# 11) Save results (JSON + CSV + Figures)
 # ======================================================
 
 # Save expansion dynamics to CSV
@@ -450,7 +450,7 @@ if all_histories:
     law_df.to_csv(os.path.join(SAVE_DIR, "law_lockin_avg.csv"), index=False)
     
 # ======================================================
-# 🔍 XAI (SHAP + LIME) analysis
+# 12) XAI (SHAP + LIME) analysis
 # ======================================================
 
 from sklearn.model_selection import train_test_split
