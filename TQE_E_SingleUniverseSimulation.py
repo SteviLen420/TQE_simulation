@@ -2,7 +2,7 @@
 # Theory of the Question of Existence (TQE)
 # (E) Single-universe simulation
 # ================================================================
-# Author: Stefan Lengyel
+# Author: Stefan Len
 # Description: Monte Carlo simulation using energy fluctuation only
 # Focus: Behavior of a single universe without informational bias (I)
 # Goal: Observe emergence of stability in the absence of I
