@@ -2,7 +2,7 @@
 # Theory of the Question of Existence (TQE)
 # Energy–Information Coupling Simulation — KL × Shannon (multiplicative)
 # =============================================================================
-# Author: Stefan Len (adapted)
+# Author: Stefan Len 
 # Purpose: Monte Carlo simulation with Goldilocks + XAI (SHAP + LIME)
 # =============================================================================
 # SUMMARY
@@ -58,7 +58,7 @@ params = {
 rng = np.random.default_rng(seed=params["seed"])
 
 # Output dirs
-run_id  = time.strftime("TQE_(E,I)_KL_SHAP_LIME_%Y%m%d_%H%M%S")
+run_id  = time.strftime("TQE_(E,I)_SUPERPOSITION_%Y%m%d_%H%M%S")
 SAVE_DIR = os.path.join(os.getcwd(), run_id)
 FIG_DIR  = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
@@ -347,7 +347,7 @@ summary = {
 }
 save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 
-GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_SHAP_LIME"
+GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_SUPERPOSITION"
 GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
 os.makedirs(GOOGLE_DIR, exist_ok=True)
 
