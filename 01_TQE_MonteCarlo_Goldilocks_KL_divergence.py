@@ -24,7 +24,7 @@ import os, time, json, math, warnings, sys, subprocess, shutil
 import numpy as np
 import matplotlib.pyplot as plt
 
-# -- Ensure dependencies
+# -- Ensure dependencies (core only)
 def _ensure(pkg):
     try:
         __import__(pkg)
@@ -36,19 +36,26 @@ for pkg in ["qutip", "pandas", "scikit-learn", "scipy"]:
 
 import qutip as qt
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_curve, auc
-from sklearn.utils import resample
 from scipy.interpolate import make_interp_spline
-
 warnings.filterwarnings("ignore")
+
+# --- XAI stack: install only what we need (SHAP + LIME) ---
+try:
+    import shap
+    from lime.lime_tabular import LimeTabularExplainer
+except Exception:
+    # keep it minimal to avoid NumPy / opencv conflicts
+    subprocess.check_call([sys.executable, "-m", "pip", "install",
+                           "shap==0.45.0", "lime==0.2.0.1", "scikit-learn==1.5.2", "-q"])
+    import shap
+    from lime.lime_tabular import LimeTabularExplainer
 
 # ======================================================
 # 1) Parameters
 # ======================================================
 # --- Parameters controlling the simulation ---
 params = {
-    "N_samples": 10000,   # number of universes (Monte Carlo runs)
+    "N_samples": 1000,   # number of universes (Monte Carlo runs)
     "N_epoch": 30,        # number of time steps (30 gives the most precise Goldilocks zone)
     "rel_eps": 0.05,      # lock-in threshold: max allowed relative change for stability
     "sigma0": 0.5,        # baseline noise amplitude
