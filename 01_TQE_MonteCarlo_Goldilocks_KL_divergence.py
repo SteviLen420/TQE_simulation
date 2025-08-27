@@ -17,21 +17,18 @@
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-import shap, lime, eli5
-from captum.attr import IntegratedGradients
-from interpret import show
 import os, time, json, math, warnings, sys, subprocess, shutil
 import numpy as np
 import matplotlib.pyplot as plt
 
-# -- Ensure dependencies (core only)
+# --- Core deps: ensure (no heavy extras) ---
 def _ensure(pkg):
     try:
         __import__(pkg)
     except ImportError:
         subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
 
-for pkg in ["qutip", "pandas", "scikit-learn", "scipy"]:
+for pkg in ["qutip", "pandas", "scipy", "scikit-learn"]:
     _ensure(pkg)
 
 import qutip as qt
@@ -39,12 +36,11 @@ import pandas as pd
 from scipy.interpolate import make_interp_spline
 warnings.filterwarnings("ignore")
 
-# --- XAI stack: install only what we need (SHAP + LIME) ---
+# --- XAI stack: SHAP + LIME only (no eli5/captum/interpret) ---
 try:
     import shap
     from lime.lime_tabular import LimeTabularExplainer
 except Exception:
-    # keep it minimal to avoid NumPy / opencv conflicts
     subprocess.check_call([sys.executable, "-m", "pip", "install",
                            "shap==0.45.0", "lime==0.2.0.1", "scikit-learn==1.5.2", "-q"])
     import shap
