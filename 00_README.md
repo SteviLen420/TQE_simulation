@@ -4,7 +4,7 @@ Simulation code for the **Theory of the Question of Existence (TQE)** model, dev
 
 ---
 
-## 📂 File Overview (custom order)
+## 📂 File Overview
 
 | #  | Filename                                                             | Description                                                          |
 |----|----------------------------------------------------------------------|----------------------------------------------------------------------|
