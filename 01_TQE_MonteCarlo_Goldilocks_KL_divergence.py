@@ -290,10 +290,16 @@ print(f"📂 Directory: {SAVE_DIR}")
 # 11) XAI (SHAP + LIME) + DARWIN prompt preparation
 # ======================================================
 
+# ---------- Features and targets ----------
+X_feat = df[["E", "I", "X"]].copy()
+y_cls = df["stable"].astype(int).values
+reg_mask = df["lock_at"] >= 0
+X_reg = X_feat[reg_mask]
+y_reg = df.loc[reg_mask, "lock_at"].values
+
 # --- Sanity checks (optional) ---
-# Make sure there are no NaNs in the feature sets before SHAP
 assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
-if 'X_reg' in locals() and len(X_reg) > 0:
+if len(X_reg) > 0:
     assert not np.isnan(X_reg.values).any(), "NaN in X_reg!"
 
 # Install on demand (only if missing)
@@ -352,21 +358,28 @@ else:
     rf_reg, reg_r2 = None, None
     print("[XAI] Not enough locked samples for regression (need ~30+).")
 
-# ---------- SHAP: global explanations ----------
-# Classification SHAP (positive class = stable=1)
-expl_cls = shap.TreeExplainer(rf_cls)
-
-# Use the SAME matrix for SHAP and plotting → avoid shape mismatch
+# ---------- SHAP: global explanations (robust) ----------
+# Always use the same matrix for SHAP computation and plotting
 X_plot = Xte_c.copy()  # or: X_feat.sample(min(3000, len(X_feat)), random_state=42)
 
-# Compute SHAP values on exactly what we will plot
-shap_vals_cls = expl_cls.shap_values(X_plot)[1]  # class 1
+# Try TreeExplainer first; if not compatible, fall back to generic Explainer
+try:
+    expl_cls = shap.TreeExplainer(rf_cls, feature_perturbation="interventional")
+    sv_cls = expl_cls.shap_values(X_plot)
+    if isinstance(sv_cls, list):
+        sv_cls = sv_cls[1]  # pick positive class = 1
+except Exception:
+    expl_cls = shap.Explainer(rf_cls, Xtr_c)
+    sv_cls = expl_cls(X_plot).values  # (n_samples, n_features)
+
+sv_cls = np.asarray(sv_cls)
+assert sv_cls.shape == X_plot.shape, f"SHAP shape {sv_cls.shape} != data shape {X_plot.shape}"
 
 plt.figure()
 shap.summary_plot(
-    shap_vals_cls,
-    X_plot.values,                          # pass numpy array
-    feature_names=X_plot.columns.tolist(),  # explicit feature names
+    sv_cls,
+    X_plot.values,
+    feature_names=X_plot.columns.tolist(),
     show=False
 )
 plt.title("SHAP summary – classification (stable)")
@@ -375,33 +388,42 @@ plt.close()
 
 # Regression SHAP (if trained)
 if rf_reg is not None:
-    expl_reg = shap.TreeExplainer(rf_reg)
-
-    # Use the test split for both SHAP and plotting
     X_plot_r = Xte_r.copy()
-    shap_vals_reg = expl_reg.shap_values(X_plot_r)
+
+    try:
+        expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional")
+        sv_reg = expl_reg.shap_values(X_plot_r)
+    except Exception:
+        expl_reg = shap.Explainer(rf_reg, Xtr_r)
+        sv_reg = expl_reg(X_plot_r).values
+
+    sv_reg = np.asarray(sv_reg)
+    assert sv_reg.shape == X_plot_r.shape, f"SHAP shape {sv_reg.shape} != data shape {X_plot_r.shape}"
 
     plt.figure()
     shap.summary_plot(
-        shap_vals_reg,
-        X_plot_r.values,                        # numpy matrix
-        feature_names=X_plot_r.columns.tolist(),# feature names
+        sv_reg,
+        X_plot_r.values,
+        feature_names=X_plot_r.columns.tolist(),
         show=False
     )
     plt.title("SHAP summary – regression (lock_at)")
     plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
     plt.close()
 
-    # Local SHAP example for a single sample (use the same matrix)
+    # Local example (use the same matrix)
     i = 0
-    shap.force_plot(
-        expl_reg.expected_value,
-        shap_vals_reg[i, :],
-        X_plot_r.iloc[i, :],
-        matplotlib=True, show=False
-    )
-    plt.savefig(os.path.join(FIG_DIR, "shap_force_reg_example.png"), dpi=220, bbox_inches="tight")
-    plt.close()
+    try:
+        shap.force_plot(
+            getattr(expl_reg, "expected_value", 0.0),
+            sv_reg[i, :],
+            X_plot_r.iloc[i, :],
+            matplotlib=True, show=False
+        )
+        plt.savefig(os.path.join(FIG_DIR, "shap_force_reg_example.png"), dpi=220, bbox_inches="tight")
+        plt.close()
+    except Exception:
+        pass
 
 # ---------- LIME: local explanation (classification) ----------
 lime_explainer = LimeTabularExplainer(
