@@ -51,7 +51,7 @@ except Exception:
 # ======================================================
 # --- Parameters controlling the simulation ---
 params = {
-    "N_samples": 1000,   # number of universes (Monte Carlo runs)
+    "N_samples": 1000,    # number of universes (Monte Carlo runs)
     "N_epoch": 30,        # number of time steps (30 gives the most precise Goldilocks zone)
     "rel_eps": 0.05,      # lock-in threshold: max allowed relative change for stability
     "sigma0": 0.5,        # baseline noise amplitude
