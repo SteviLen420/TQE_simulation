@@ -485,25 +485,7 @@ pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
 )
 
 # ======================================================
-# 12) Save all outputs to Google Drive
-# ======================================================
-GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
-GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
-os.makedirs(GOOGLE_DIR, exist_ok=True)
-
-for root, dirs, files in os.walk(SAVE_DIR):
-    for file in files:
-        # NINCS .txt a listában
-        if file.endswith((".png", ".fits", ".csv", ".json")):
-            src = os.path.join(root, file)
-            dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
-            os.makedirs(dst_dir, exist_ok=True)
-            shutil.copy2(src, dst_dir)
-
-print(f"☁️ All results saved to Google Drive: {GOOGLE_DIR}")
-
-# ======================================================
-# 15) DeepSeek analysis via Ollama (through Cloudflare Tunnel) — robust
+# 12) DeepSeek analysis via Ollama (through Cloudflare Tunnel) — robust
 # ======================================================
 import requests, json
 
@@ -599,4 +581,84 @@ with open(analysis_path, "w", encoding="utf-8") as f:
 
 print("✅ DeepSeek analysis saved to:", analysis_path)
 print("🪵 Raw response saved to:", raw_resp_path)
+
+# ======================================================
+# Save all outputs to Google Drive (robust copy)
+# ======================================================
+GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
+GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
+os.makedirs(GOOGLE_DIR, exist_ok=True)
+
+copied = []
+skipped = []
+
+for root, dirs, files in os.walk(SAVE_DIR):
+    # hova másolunk a Drive-on
+    dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
+    os.makedirs(dst_dir, exist_ok=True)
+
+    for file in files:
+        # engedélyezett kiterjesztések bővítve: .png, .fits, .csv, .json, .txt
+        if not file.endswith((".png", ".fits", ".csv", ".json", ".txt")):
+            continue
+
+        src = os.path.join(root, file)
+        dst = os.path.join(dst_dir, file)
+
+        # ha ugyanaz a fájl, hagyjuk ki
+        try:
+            if os.path.samefile(src, dst):
+                skipped.append(dst)
+                continue
+        except FileNotFoundError:
+            # ha a dst még nem létezik, samefile dobhat hibát – ilyenkor másolunk
+            pass
+
+        shutil.copy2(src, dst)
+        copied.append(dst)
+
+print("☁️ Copy finished.")
+print(f"Copied: {len(copied)} files")
+print(f"Skipped (same path): {len(skipped)} files")
+print("Google Drive folder:", GOOGLE_DIR)
+
+# ======================================================
+# Save all outputs to Google Drive (robust copy)
+# ======================================================
+GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
+GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
+os.makedirs(GOOGLE_DIR, exist_ok=True)
+
+copied = []
+skipped = []
+
+for root, dirs, files in os.walk(SAVE_DIR):
+    # hova másolunk a Drive-on
+    dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
+    os.makedirs(dst_dir, exist_ok=True)
+
+    for file in files:
+        # engedélyezett kiterjesztések bővítve: .png, .fits, .csv, .json, .txt
+        if not file.endswith((".png", ".fits", ".csv", ".json", ".txt")):
+            continue
+
+        src = os.path.join(root, file)
+        dst = os.path.join(dst_dir, file)
+
+        # ha ugyanaz a fájl, hagyjuk ki
+        try:
+            if os.path.samefile(src, dst):
+                skipped.append(dst)
+                continue
+        except FileNotFoundError:
+            # ha a dst még nem létezik, samefile dobhat hibát – ilyenkor másolunk
+            pass
+
+        shutil.copy2(src, dst)
+        copied.append(dst)
+
+print("☁️ Copy finished.")
+print(f"Copied: {len(copied)} files")
+print(f"Skipped (same path): {len(skipped)} files")
+print("Google Drive folder:", GOOGLE_DIR)
 
