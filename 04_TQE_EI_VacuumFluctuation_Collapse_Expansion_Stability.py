@@ -1,14 +1,19 @@
 # =============================================================================
 # Theory of the Question of Existence (TQE)
-# Energy–Information Coupling Simulation — KL × Shannon (multiplicative)
+# (E, I) Vacuum fluctuation → Collapse → Expansion → Stability
 # =============================================================================
-# Author: Stefan Len 
+# Author: Stefan Len
 # Purpose: Monte Carlo simulation with Goldilocks + XAI (SHAP + LIME)
 # =============================================================================
 # SUMMARY
-# This script simulates universes with random (E,I), checks stability,
-# extracts Goldilocks zones, runs seed search, and generates explainability
-# (XAI) with SHAP + LIME. Outputs are saved (CSV, PNG, JSON).
+# - Information parameter I: multiplicative fusion of KL divergence + Shannon entropy
+# - Energy E: log-normal sampling
+# - Stability analyzed on X = E·I with Goldilocks noise modulation
+# - Timeline: t<0 (superposition), t=0 (collapse), t>0 (expansion)
+# - Monte Carlo universes → stability curve + Goldilocks window
+# - Seed search → Top-5 most stable seeds
+# - XAI: RandomForest + SHAP (global) + LIME (local)
+# - Outputs: CSV, PNG, JSON (saved locally + mirrored to Google Drive)
 # =============================================================================
 
 from google.colab import drive
@@ -48,7 +53,7 @@ except Exception:
 # ======================================================
 params = {
     "N_samples": 1000,    # Monte Carlo universes
-    "N_epoch": 200,        # time steps
+    "N_epoch": 60,        # time steps
     "rel_eps": 0.05,      # lock-in threshold
     "sigma0": 0.5,        # baseline noise
     "alpha": 1.5,         # noise growth toward edges
