@@ -364,7 +364,7 @@ summary["seed_search"] = {
 save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 
 # ======================================================
-# 11) XAI (SHAP + LIME) + DARWIN prompt preparation
+# 11) XAI (SHAP + LIME) 
 # ======================================================
 
 # ---------- Features and targets ----------
@@ -379,7 +379,7 @@ assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
 if len(X_reg) > 0:
     assert not np.isnan(X_reg.values).any(), "NaN in X_reg!"
 
-# Install on demand (only if missing)
+# On-demand install (only if missing)
 try:
     import shap
     from lime.lime_tabular import LimeTabularExplainer
@@ -393,25 +393,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import r2_score, accuracy_score
 
-# ---------- Features and targets ----------
-# Global feature matrix
-X_feat = df[["E", "I", "X"]].copy()
-
-# Classification target: stability (0/1)
-y_cls = df["stable"].astype(int).values
-
-# Regression target: lock-in time (only where it happened: lock_at >= 0)
-reg_mask = df["lock_at"] >= 0
-X_reg = X_feat[reg_mask]
-y_reg = df.loc[reg_mask, "lock_at"].values
-
 # ---------- Train/Test split ----------
-# Classification
 Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
     X_feat, y_cls, test_size=0.25, random_state=42, stratify=y_cls
 )
-
-# Regression (only if we have enough lock-in samples)
 have_reg = len(X_reg) >= 30
 if have_reg:
     Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
@@ -419,13 +404,11 @@ if have_reg:
     )
 
 # ---------- Train models ----------
-# Classifier: what drives stability?
 rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
 rf_cls.fit(Xtr_c, ytr_c)
 cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
 print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
 
-# Regressor: if enough data, what affects lock-in time?
 if have_reg:
     rf_reg = RandomForestRegressor(n_estimators=400, random_state=42, n_jobs=-1)
     rf_reg.fit(Xtr_r, ytr_r)
@@ -436,43 +419,29 @@ else:
     print("[XAI] Not enough locked samples for regression (need ~30+).")
 
 # ---------- SHAP: global explanations (robust, fixed shape) ----------
-X_plot = Xte_c.copy()  # or: X_feat.sample(min(3000, len(X_feat)), random_state=42)
+X_plot = Xte_c.copy()  # vagy: X_feat.sample(min(3000, len(X_feat)), random_state=42)
 
 # TreeExplainer with "raw" output, then format normalization
 try:
     expl_cls = shap.TreeExplainer(
-        rf_cls,
-        feature_perturbation="interventional",
-        model_output="raw"
+        rf_cls, feature_perturbation="interventional", model_output="raw"
     )
     sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
 except Exception:
-    # Fallback, if TreeExplainer is not compatible with the environment
     expl_cls = shap.Explainer(rf_cls, Xtr_c)
     sv_cls = expl_cls(X_plot).values  # (n_samples, n_features) expected
 
-# --- Normalization: always enforce (n_samples, n_features) ---
 if isinstance(sv_cls, list):
-    # multiclass: take SHAP values for the positive class (1)
-    sv_cls = sv_cls[1]
+    sv_cls = sv_cls[1]  # positive class
 sv_cls = np.asarray(sv_cls)
-
-# If 3D (e.g., (samples, features, classes)), extract the class=1 slice
 if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
     sv_cls = sv_cls[:, :, 1]
 elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
-    # rarer case: (classes, samples, features)
     sv_cls = sv_cls[1, :, :]
-
 assert sv_cls.shape == X_plot.shape, f"SHAP shape {sv_cls.shape} != data shape {X_plot.shape}"
 
 plt.figure()
-shap.summary_plot(
-    sv_cls,
-    X_plot.values,
-    feature_names=X_plot.columns.tolist(),
-    show=False
-)
+shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
 plt.title("SHAP summary – classification (stable)")
 plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
 plt.close()
@@ -480,51 +449,27 @@ plt.close()
 # Regression SHAP (if trained)
 if rf_reg is not None:
     X_plot_r = Xte_r.copy()
-
     try:
         expl_reg = shap.TreeExplainer(
-            rf_reg,
-            feature_perturbation="interventional",
-            model_output="raw"
+            rf_reg, feature_perturbation="interventional", model_output="raw"
         )
         sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
     except Exception:
         expl_reg = shap.Explainer(rf_reg, Xtr_r)
         sv_reg = expl_reg(X_plot_r).values
 
-    # --- Normalization (can occasionally be 3D here as well) ---
     sv_reg = np.asarray(sv_reg)
     if sv_reg.ndim == 3 and sv_reg.shape[0] == X_plot_r.shape[0]:
         sv_reg = sv_reg[:, :, 0]
     elif sv_reg.ndim == 3 and sv_reg.shape[-1] == X_plot_r.shape[1]:
         sv_reg = sv_reg[0, :, :]
-
     assert sv_reg.shape == X_plot_r.shape, f"SHAP shape {sv_reg.shape} != data shape {X_plot_r.shape}"
 
     plt.figure()
-    shap.summary_plot(
-        sv_reg,
-        X_plot_r.values,
-        feature_names=X_plot_r.columns.tolist(),
-        show=False
-    )
+    shap.summary_plot(sv_reg, X_plot_r.values, feature_names=X_plot_r.columns.tolist(), show=False)
     plt.title("SHAP summary – regression (lock_at)")
     plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
     plt.close()
-
-    # Local example (on the same matrix)
-    i = 0
-    try:
-        shap.force_plot(
-            getattr(expl_reg, "expected_value", 0.0),
-            sv_reg[i, :],
-            X_plot_r.iloc[i, :],
-            matplotlib=True, show=False
-        )
-        plt.savefig(os.path.join(FIG_DIR, "shap_force_reg_example.png"), dpi=220, bbox_inches="tight")
-        plt.close()
-    except Exception:
-        pass
 
 # ---------- LIME: local explanation (classification) ----------
 lime_explainer = LimeTabularExplainer(
@@ -533,78 +478,23 @@ lime_explainer = LimeTabularExplainer(
     discretize_continuous=True,
     mode='classification'
 )
-
-exp = lime_explainer.explain_instance(
-    Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5
-)
-lime_list = exp.as_list(label=1)  # explanation for class 'stable=1'
+exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
+lime_list = exp.as_list(label=1)
 pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
     os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
 )
-
-# ---------- DARWIN LLM prompt (extended) ----------
-darwin_prompt = f"""
-Give an extended, in-depth scientific interpretation of the following Monte Carlo simulation.
-
-Context (from the current run):
-- Samples (universes): {len(df)}
-- Stability ratio: {summary['stable_ratio']:.3f}
-- Goldilocks window in X = E·I: [{summary['E_c_low']:.3f}, {summary['E_c_high']:.3f}]
-- Features available: E (energy), I (information via KL), X = E·I
-
-What to cover:
-1) Global behavior of P(stable | X) and the detected Goldilocks window (location, width, uncertainty).
-2) Separate roles of E and I, and their interaction through X = E·I.
-3) Links to physical concepts (criticality, phase transitions, decoherence, early-universe/cosmology analogies).
-4) Hypotheses for why stabilization occurs specifically in this narrow window.
-5) Limitations of the setup and concrete proposals for follow-up tests/ablations.
-
-Depth & Style requirements:
-- Provide an extended, in-depth interpretation with mathematical detail and explicit derivations where appropriate.
-- Explain results in a form suitable for a peer-reviewed physics paper, including theoretical context, equations, and comparisons to known phenomena.
-- Expand each point with detailed arguments, suggested references to the literature where possible, and connections to open research problems.
-
-Output format:
-- Use clear section headings, equations where needed, and concise bullet points for key claims.
-- Include assumptions, approximations, and potential sources of bias in the estimates.
-"""
-
-# Save as .txt (unchanged)
-with open(os.path.join(SAVE_DIR, "DARWIN_prompt.txt"), "w") as f:
-    f.write(darwin_prompt)
-print("DARWIN prompt saved to:", os.path.join(SAVE_DIR, "DARWIN_prompt.txt"))
-
-# (Already generated) Context JSON with numerical data:
-darwin_ctx = {
-    "N": int(len(df)),
-    "stable_ratio": float(summary["stable_ratio"]),
-    "E_c_low": float(summary["E_c_low"]),
-    "E_c_high": float(summary["E_c_high"]),
-    # these lines only work if the variables come from the XAI block:
-    "cls_accuracy": float(cls_acc) if 'cls_acc' in locals() else None,
-    "reg_r2": float(reg_r2) if 'reg_r2' in locals() and reg_r2 is not None else None,
-    "features": ["E", "I", "X"],
-    "xai_artifacts": {
-        "shap_cls": os.path.join(FIG_DIR, "shap_summary_cls_stable.png"),
-        "shap_reg": os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png") if os.path.exists(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png")) else None,
-        "shap_force_reg_example": os.path.join(FIG_DIR, "shap_force_reg_example.png") if os.path.exists(os.path.join(FIG_DIR, "shap_force_reg_example.png")) else None,
-        "lime_cls_csv": os.path.join(FIG_DIR, "lime_example_classification.csv") if os.path.exists(os.path.join(FIG_DIR, "lime_example_classification.csv")) else None
-    }
-}
-save_json(os.path.join(SAVE_DIR, "DARWIN_context.json"), darwin_ctx)
-
-print("✍️ DARWIN_prompt.txt created at:", os.path.join(SAVE_DIR, "DARWIN_prompt.txt"))
 
 # ======================================================
 # 12) Save all outputs to Google Drive
 # ======================================================
 GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
-GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)  # separate folder for each run
+GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
 os.makedirs(GOOGLE_DIR, exist_ok=True)
 
 for root, dirs, files in os.walk(SAVE_DIR):
     for file in files:
-        if file.endswith((".png", ".fits", ".csv", ".json", ".txt")):
+        # NINCS .txt a listában
+        if file.endswith((".png", ".fits", ".csv", ".json")):
             src = os.path.join(root, file)
             dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
             os.makedirs(dst_dir, exist_ok=True)
