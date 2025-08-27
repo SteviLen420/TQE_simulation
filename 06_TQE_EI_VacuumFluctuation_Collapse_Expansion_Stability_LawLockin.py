@@ -448,70 +448,219 @@ if all_histories:
         "std_c": std_c
     })
     law_df.to_csv(os.path.join(SAVE_DIR, "law_lockin_avg.csv"), index=False)
+
+# ======================================================
+# 12) EXTRA: Seed search — find Top-5 seeds with highest stability
+# (adds results into summary.json)
+# ======================================================
+
+NUM_SEEDS = 100               # how many different seeds to test
+UNIVERSES_PER_SEED = 500      # how many universes per seed (200–500 is fine for quick test)
+
+seed_scores = []
+
+# -- save the original RNG, then reseed one by one
+_old_rng = rng
+
+for s in range(NUM_SEEDS):
+    # use a local RNG for the E component of the simulation
+    rng = np.random.default_rng(seed=s)
+
+    # optional: also reseed numpy’s global RNG,
+    # so that I (quantum states) becomes more deterministic as well
+    try:
+        np.random.seed(s)
+    except Exception:
+        pass
+
+    rows_s = []
+    for i in range(UNIVERSES_PER_SEED):
+        E   = sample_energy_lognormal()
+        I   = sample_information_param(dim=8)
+        X   = E * I
+        stable, lock_at = simulate_lock_in(
+            X,
+            params["N_epoch"],
+            params["rel_eps"],
+            params["sigma0"],
+            params["alpha"]
+        )
+        rows_s.append({"E":E, "I":I, "X":X, "stable":stable, "lock_at":lock_at})
+
+    df_s = pd.DataFrame(rows_s)
+    ratio = float(df_s["stable"].mean())
+    locked_mask = df_s["lock_at"] >= 0
+    locked_frac = float(locked_mask.mean()) if len(df_s) else 0.0
+    mean_lock = float(df_s.loc[locked_mask, "lock_at"].mean()) if locked_mask.any() else None
+
+    seed_scores.append({
+        "seed": s,
+        "stable_ratio": ratio,
+        "locked_fraction": locked_frac,
+        "mean_lock_at": mean_lock
+    })
+
+# restore the original RNG
+rng = _old_rng
+
+# --- sort by stability and save ---
+seed_scores_sorted = sorted(seed_scores, key=lambda r: r["stable_ratio"], reverse=True)
+
+# Top-5 to console
+print("\n🏆 Top-5 seeds by stability ratio")
+for r in seed_scores_sorted[:5]:
+    print(f"Seed {r['seed']:3d} → stability={r['stable_ratio']:.3f}  "
+          f"locked_frac={r['locked_fraction']:.3f}  mean_lock_at={r['mean_lock_at']}")
+
+# CSV export
+top_csv_path = os.path.join(SAVE_DIR, "seed_search_top.csv")
+pd.DataFrame(seed_scores_sorted).to_csv(top_csv_path, index=False)
+print("Seed search table saved to:", top_csv_path)
+
+# --- add to summary and re-save ---
+summary["seed_search"] = {
+    "num_seeds": NUM_SEEDS,
+    "universes_per_seed": UNIVERSES_PER_SEED,
+    "top5": seed_scores_sorted[:5],
+    "csv_path": top_csv_path
+}
+save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
     
 # ======================================================
-# 12) XAI (SHAP + LIME) analysis
+# 13) XAI (SHAP + LIME) 
 # ======================================================
+
+# ---------- Features and targets ----------
+X_feat = df[["E", "I", "X"]].copy()
+y_cls = df["stable"].astype(int).values
+reg_mask = df["lock_at"] >= 0
+X_reg = X_feat[reg_mask]
+y_reg = df.loc[reg_mask, "lock_at"].values
+
+# --- Sanity checks (optional) ---
+assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
+if len(X_reg) > 0:
+    assert not np.isnan(X_reg.values).any(), "NaN in X_reg!"
+
+# On-demand install (only if missing)
+try:
+    import shap
+    from lime.lime_tabular import LimeTabularExplainer
+except Exception:
+    import subprocess, sys
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "shap", "lime", "scikit-learn", "-q"])
+    import shap
+    from lime.lime_tabular import LimeTabularExplainer
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import r2_score, accuracy_score
-import shap
-from lime.lime_tabular import LimeTabularExplainer
 
-# Feature mátrix és célok
-X_feat = df[["E","I","fEI","X"]].fillna(0.0)
-y_reg  = df["X"]                       # példa: a kompozit paraméter előrejelzése
-y_cls  = df["stable"].astype(int)      # stabil-e (0/1)
+# ---------- Train/Test split ----------
+Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
+    X_feat, y_cls, test_size=0.25, random_state=42, stratify=y_cls
+)
+have_reg = len(X_reg) >= 30
+if have_reg:
+    Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
+        X_reg, y_reg, test_size=0.25, random_state=42
+    )
 
-# Train / test split
-Xtr, Xte, ytr_reg, yte_reg = train_test_split(X_feat, y_reg, test_size=0.25, random_state=42)
-_,  _,  ytr_cls, yte_cls   = train_test_split(X_feat, y_cls, test_size=0.25, random_state=42)
+# ---------- Train models ----------
+rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
+rf_cls.fit(Xtr_c, ytr_c)
+cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
+print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
 
-# Baseline modellek
-rf_reg = RandomForestRegressor(n_estimators=400, random_state=42).fit(Xtr, ytr_reg)
-rf_cls = RandomForestClassifier(n_estimators=400, random_state=42).fit(Xtr, ytr_cls)
+if have_reg:
+    rf_reg = RandomForestRegressor(n_estimators=400, random_state=42, n_jobs=-1)
+    rf_reg.fit(Xtr_r, ytr_r)
+    reg_r2 = r2_score(yte_r, rf_reg.predict(Xte_r))
+    print(f"[XAI] Regression R^2 (lock_at): {reg_r2:.3f}")
+else:
+    rf_reg, reg_r2 = None, None
+    print("[XAI] Not enough locked samples for regression (need ~30+).")
 
-print("Reg R^2:", r2_score(yte_reg, rf_reg.predict(Xte)))
-print("Cls Acc:", accuracy_score(yte_cls, rf_cls.predict(Xte)))
+# ---------- SHAP: global explanations (robust, fixed shape) ----------
+X_plot = Xte_c.copy()  # vagy: X_feat.sample(min(3000, len(X_feat)), random_state=42)
 
-# --- SHAP: regresszió ---
-expl_reg = shap.TreeExplainer(rf_reg)
-shap_vals_reg = expl_reg.shap_values(X_feat)
+# TreeExplainer with "raw" output, then format normalization
+try:
+    expl_cls = shap.TreeExplainer(
+        rf_cls, feature_perturbation="interventional", model_output="raw"
+    )
+    sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
+except Exception:
+    expl_cls = shap.Explainer(rf_cls, Xtr_c)
+    sv_cls = expl_cls(X_plot).values  # (n_samples, n_features) expected
+
+if isinstance(sv_cls, list):
+    sv_cls = sv_cls[1]  # positive class
+sv_cls = np.asarray(sv_cls)
+if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
+    sv_cls = sv_cls[:, :, 1]
+elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
+    sv_cls = sv_cls[1, :, :]
+assert sv_cls.shape == X_plot.shape, f"SHAP shape {sv_cls.shape} != data shape {X_plot.shape}"
 
 plt.figure()
-shap.summary_plot(shap_vals_reg, X_feat, show=False)
-plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg.png"), dpi=200, bbox_inches="tight")
+shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
+plt.title("SHAP summary – classification (stable)")
+plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
 plt.close()
 
-# --- SHAP: osztályozás (class=1, stable) ---
-expl_cls = shap.TreeExplainer(rf_cls)
-shap_vals_cls = expl_cls.shap_values(X_feat)[1]
+# Regression SHAP (if trained)
+if rf_reg is not None:
+    X_plot_r = Xte_r.copy()
+    try:
+        expl_reg = shap.TreeExplainer(
+            rf_reg, feature_perturbation="interventional", model_output="raw"
+        )
+        sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
+    except Exception:
+        expl_reg = shap.Explainer(rf_reg, Xtr_r)
+        sv_reg = expl_reg(X_plot_r).values
 
-plt.figure()
-shap.summary_plot(shap_vals_cls, X_feat, show=False)
-plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls.png"), dpi=200, bbox_inches="tight")
-plt.close()
+    sv_reg = np.asarray(sv_reg)
+    if sv_reg.ndim == 3 and sv_reg.shape[0] == X_plot_r.shape[0]:
+        sv_reg = sv_reg[:, :, 0]
+    elif sv_reg.ndim == 3 and sv_reg.shape[-1] == X_plot_r.shape[1]:
+        sv_reg = sv_reg[0, :, :]
+    assert sv_reg.shape == X_plot_r.shape, f"SHAP shape {sv_reg.shape} != data shape {X_plot_r.shape}"
 
-# --- SHAP: lokális példa ---
-i = 0
-shap.force_plot(expl_reg.expected_value, shap_vals_reg[i,:], X_feat.iloc[i,:], matplotlib=True, show=False)
-plt.savefig(os.path.join(FIG_DIR, "shap_force_example.png"), dpi=200, bbox_inches="tight")
-plt.close()
+    plt.figure()
+    shap.summary_plot(sv_reg, X_plot_r.values, feature_names=X_plot_r.columns.tolist(), show=False)
+    plt.title("SHAP summary – regression (lock_at)")
+    plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
+    plt.close()
 
-# --- LIME: lokális magyarázat (regresszió) ---
-explainer = LimeTabularExplainer(
-    training_data=Xtr.values,
+# ---------- LIME: local explanation (classification) ----------
+lime_explainer = LimeTabularExplainer(
+    training_data=Xtr_c.values,
     feature_names=X_feat.columns.tolist(),
     discretize_continuous=True,
-    mode='regression'
+    mode='classification'
 )
-exp = explainer.explain_instance(Xte.iloc[0].values, rf_reg.predict, num_features=5)
-lime_pairs = exp.as_list()
-pd.DataFrame(lime_pairs, columns=["feature","weight"]).to_csv(
-    os.path.join(FIG_DIR, "lime_example.csv"), index=False
+exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
+lime_list = exp.as_list(label=1)
+pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
+    os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
 )
-print("XAI artifacts saved to:", FIG_DIR)
-    
-print("✅ DONE.")
-print(f"☁️ All results saved to Google Drive: {SAVE_DIR}")
+
+# ======================================================
+# 14) Save all outputs to Google Drive
+# ======================================================
+GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
+GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
+os.makedirs(GOOGLE_DIR, exist_ok=True)
+
+for root, dirs, files in os.walk(SAVE_DIR):
+    for file in files:
+        # NINCS .txt a listában
+        if file.endswith((".png", ".fits", ".csv", ".json")):
+            src = os.path.join(root, file)
+            dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
+            os.makedirs(dst_dir, exist_ok=True)
+            shutil.copy2(src, dst_dir)
+
+print(f"☁️ All results saved to Google Drive: {GOOGLE_DIR}")
