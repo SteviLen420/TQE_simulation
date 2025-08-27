@@ -1,6 +1,6 @@
 #  TQE_simulation
 
-Simulation code for the **Theory of the Question of Existence (TQE)** model, developed by Stefan Lengyel.
+Simulation code for the **Theory of the Question of Existence (TQE)** model, developed by Stefan Len.
 
 ---
 
