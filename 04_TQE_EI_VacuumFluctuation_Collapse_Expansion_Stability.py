@@ -47,7 +47,7 @@ except Exception:
 # 1) Parameters
 # ======================================================
 params = {
-    "N_samples": 1200,    # Monte Carlo universes
+    "N_samples": 1000,    # Monte Carlo universes
     "N_epoch": 30,        # time steps
     "rel_eps": 0.05,      # lock-in threshold
     "sigma0": 0.5,        # baseline noise
