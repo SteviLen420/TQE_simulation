@@ -2,7 +2,7 @@
 # Theory of the Question of Existence (TQE)
 # (E, I) Many-universe simulation with Goldilocks principle
 # ========================================================================
-# Author: Stefan Lengyel
+# Author: Stefan Len
 # Description: Monte Carlo simulation of multiple universes evolving from
 # vacuum fluctuations, influenced by energy (E) and information (I) dynamics.
 # Focus: Statistical emergence of law-consistent universes within Goldilocks zone
