@@ -103,7 +103,7 @@ def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
         return sigma0 * (1 + alpha * dist**2)
 
 # ======================================================
-# 4) Lock-in simulation
+# 5) Lock-in simulation
 # ======================================================
 def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=None, E_c_high=None):
     A, ns, H = rng.normal(50, 5), rng.normal(0.8, 0.05), rng.normal(0.7, 0.08)
@@ -133,7 +133,7 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
     return stable, locked_at if locked_at is not None else -1
 
 # ======================================================
-# 5) Monte Carlo universes
+# 6) Monte Carlo universes
 # ======================================================
 rows = []
 for i in range(params["N_samples"]):
@@ -151,7 +151,7 @@ df = pd.DataFrame(rows)
 df.to_csv(os.path.join(SAVE_DIR, "samples.csv"), index=False)
 
 # ======================================================
-# 6) Stability curve (binned) + dynamic Goldilocks zone
+# 7) Stability curve (binned) + dynamic Goldilocks zone
 # ======================================================
 bins = np.linspace(df["X"].min(), df["X"].max(), 40)
 df["bin"] = np.digitize(df["X"], bins)
@@ -201,7 +201,7 @@ plt.legend()
 savefig(os.path.join(FIG_DIR, "stability_curve.png"))
 
 # ======================================================
-# 7) Scatter E vs I
+# 8) Scatter E vs I
 # ======================================================
 plt.figure(figsize=(7,6))
 plt.scatter(df["E"], df["I"], c=df["stable"], cmap="coolwarm", s=10, alpha=0.5)
@@ -211,7 +211,7 @@ cbar = plt.colorbar(label="Stable=1 / Unstable=0")
 savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
 
 # ======================================================
-# 8) Stability summary (counts + percentages)
+# 9) Stability summary (counts + percentages)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -236,7 +236,7 @@ plt.xticks([0, 1], labels)
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
-# 9) Save summary
+# 10) Save summary
 # ======================================================
 summary = {
     "params": params,
@@ -276,10 +276,10 @@ print(f"Goldilocks zone: {E_c_low:.1f} – {E_c_high:.1f}" if E_c_low else "No s
 print(f"📂 Directory: {SAVE_DIR}")
 
 # ======================================================
-# 9/b) XAI (SHAP + LIME) + DARWIN prompt előkészítés
+# 11) XAI (SHAP + LIME) + DARWIN prompt preparation
 # ======================================================
 
-# Biztonság kedvéért telepítés (ha kell)
+# Install on demand (only if missing)
 try:
     import shap
     from lime.lime_tabular import LimeTabularExplainer
@@ -293,35 +293,39 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import r2_score, accuracy_score
 
-# ---------- Feature-k és célváltozók ----------
-# Globális feature mátrix
+# ---------- Features and targets ----------
+# Global feature matrix
 X_feat = df[["E", "I", "X"]].copy()
 
-# Osztályozás: stabilitás (0/1)
+# Classification target: stability (0/1)
 y_cls = df["stable"].astype(int).values
 
-# Regresszió: lock-in idő (csak ahol megtörtént: lock_at >= 0)
+# Regression target: lock-in time (only where it happened: lock_at >= 0)
 reg_mask = df["lock_at"] >= 0
 X_reg = X_feat[reg_mask]
 y_reg = df.loc[reg_mask, "lock_at"].values
 
-# ---------- Train/Test szétosztás ----------
-# Osztályozás
-Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(X_feat, y_cls, test_size=0.25, random_state=42, stratify=y_cls)
+# ---------- Train/Test split ----------
+# Classification
+Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
+    X_feat, y_cls, test_size=0.25, random_state=42, stratify=y_cls
+)
 
-# Regresszió (csak ha van elég lock-in minta)
+# Regression (only if we have enough lock-in samples)
 have_reg = len(X_reg) >= 30
 if have_reg:
-    Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(X_reg, y_reg, test_size=0.25, random_state=42)
+    Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
+        X_reg, y_reg, test_size=0.25, random_state=42
+    )
 
-# ---------- Modellek tanítása ----------
-# Osztályozó: mi hajtja a stabilitást?
+# ---------- Train models ----------
+# Classifier: what drives stability?
 rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
 rf_cls.fit(Xtr_c, ytr_c)
 cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
 print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
 
-# Regresszor: ha van elég adat, mi hat a lock-in időre?
+# Regressor: if enough data, what affects lock-in time?
 if have_reg:
     rf_reg = RandomForestRegressor(n_estimators=400, random_state=42, n_jobs=-1)
     rf_reg.fit(Xtr_r, ytr_r)
@@ -331,8 +335,8 @@ else:
     rf_reg, reg_r2 = None, None
     print("[XAI] Not enough locked samples for regression (need ~30+).")
 
-# ---------- SHAP: globális magyarázatok ----------
-# Osztályozás SHAP (pozitív osztály = stable=1)
+# ---------- SHAP: global explanations ----------
+# Classification SHAP (positive class = stable=1)
 expl_cls = shap.TreeExplainer(rf_cls)
 shap_vals_cls = expl_cls.shap_values(X_feat)[1]  # class 1
 
@@ -342,7 +346,7 @@ plt.title("SHAP summary – classification (stable)")
 plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
 plt.close()
 
-# Regresszió SHAP (ha tanultunk)
+# Regression SHAP (if trained)
 if rf_reg is not None:
     expl_reg = shap.TreeExplainer(rf_reg)
     shap_vals_reg = expl_reg.shap_values(X_reg)
@@ -353,13 +357,16 @@ if rf_reg is not None:
     plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
     plt.close()
 
-    # Lokális SHAP példa egy mintára
+    # Local SHAP example for a single sample
     i = 0
-    shap.force_plot(expl_reg.expected_value, shap_vals_reg[i, :], X_reg.iloc[i, :], matplotlib=True, show=False)
+    shap.force_plot(
+        expl_reg.expected_value, shap_vals_reg[i, :], X_reg.iloc[i, :],
+        matplotlib=True, show=False
+    )
     plt.savefig(os.path.join(FIG_DIR, "shap_force_reg_example.png"), dpi=220, bbox_inches="tight")
     plt.close()
 
-# ---------- LIME: lokális magyarázat (osztályozás) ----------
+# ---------- LIME: local explanation (classification) ----------
 lime_explainer = LimeTabularExplainer(
     training_data=Xtr_c.values,
     feature_names=X_feat.columns.tolist(),
@@ -367,14 +374,16 @@ lime_explainer = LimeTabularExplainer(
     mode='classification'
 )
 
-exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
-lime_list = exp.as_list(label=1)  # magyarázat a 'stable=1' osztályhoz
+exp = lime_explainer.explain_instance(
+    Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5
+)
+lime_list = exp.as_list(label=1)  # explanation for class 'stable=1'
 pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
     os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
 )
 
-# ---------- DARWIN LLM prompt generálás ----------
-# Összeállítunk egy önmagában használható promptot, amit be tudsz adni DARWIN-nak.
+# ---------- DARWIN LLM prompt generation ----------
+# Create a standalone prompt you can feed into DARWIN
 darwin_prompt = f"""
 Give a full scientific interpretation of the following Monte Carlo simulation.
 
@@ -397,7 +406,7 @@ Optional (if helpful): Relate to literature on lock-in/critical phenomena and CM
 with open(os.path.join(SAVE_DIR, "DARWIN_prompt.txt"), "w") as f:
     f.write(darwin_prompt)
 
-# Kontext-JSON (számokkal), ha be akarod adni mellékletként
+# Context JSON (numbers) you can attach alongside the prompt
 darwin_ctx = {
     "N": int(len(df)),
     "stable_ratio": float(summary["stable_ratio"]),
@@ -415,10 +424,10 @@ darwin_ctx = {
 }
 save_json(os.path.join(SAVE_DIR, "DARWIN_context.json"), darwin_ctx)
 
-print("🧠 XAI (SHAP+LIME) kész. ✍️ DARWIN prompt mentve:", os.path.join(SAVE_DIR, "DARWIN_prompt.txt"))
+print("🧠 XAI (SHAP+LIME) done. ✍️ DARWIN prompt saved:", os.path.join(SAVE_DIR, "DARWIN_prompt.txt"))
 
 # ======================================================
-# 10) Save all outputs to Google Drive
+# 12) Save all outputs to Google Drive
 # ======================================================
 GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
 GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)  # separate folder for each run
