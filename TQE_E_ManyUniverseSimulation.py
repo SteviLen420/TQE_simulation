@@ -2,7 +2,7 @@
 # Theory of the Question of Existence (TQE)
 # (E) Many-universe simulation
 # ================================================================
-# Author: Stefan Lengyel
+# Author: Stefan Len
 # Description: Monte Carlo simulation of multiple universes using
 # only vacuum energy fluctuation (E), without informational orientation (I).
 # Focus: Spontaneous emergence of stability and physical laws across universes
