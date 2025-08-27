@@ -2,7 +2,7 @@
 # Theory of the Question of Existence (TQE)
 # (E, I) Vacuum fluctuation → Collapse → Expansion → Stability
 # =================================================================================
-# Author: Stefan Lengyel
+# Author: Stefan Len
 # Description: Monte Carlo simulation of energy-information dynamics
 # Model: E, I coupling, KL divergence, Shannon entropy, Goldilocks zone emergence
 # =================================================================================
