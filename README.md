@@ -31,6 +31,6 @@ Simulation code for the **Theory of the Question of Existence (TQE)** model, dev
 
 ##  Developed by
 
-**Stefan Lengyel** – [@SteviLen420](https://github.com/SteviLen420)
+**Stefan Len** – [@SteviLen420](https://github.com/SteviLen420)
 
 ---
