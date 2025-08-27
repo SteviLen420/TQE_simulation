@@ -2,7 +2,7 @@
 # Theory of the Question of Existence (TQE)
 # (E) Vacuum fluctuation → Collapse → Expansion → Stability → Law lock-in
 # ===========================================================================
-# Author: Stefan Lengyel
+# Author: Stefan Len
 # Description: Energy-only model of cosmogenesis via vacuum fluctuation
 # Focus: Stability emergence without informational orientation (I = 0)
 # Mechanisms: Goldilocks window, critical thresholds, stochastic dynamics
