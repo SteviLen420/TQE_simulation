@@ -1,7 +1,7 @@
 # ===========================================
 # Quantum Cold Spot Simulation (CMB-like)
 # ===========================================
-# Author: Stefan Lengyel
+# Author: Stefan Len
 # Purpose: Many-universe simulation of spontaneous cold spots 
 # ===========================================
 
