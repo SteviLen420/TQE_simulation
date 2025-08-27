@@ -2,7 +2,7 @@
 # Theory of the Question of Existence (TQE)
 # (E) Vacuum fluctuation → Collapse → Expansion → Stability
 # ================================================================
-# Author: Stefan Lengyel
+# Author: Stefan Len
 # Description: Monte Carlo simulation using energy (E) only
 # Focus: Emergence of structure without informational orientation
 # ================================================================
