@@ -74,7 +74,33 @@ def save_json(path, obj):
 print(f"💾 Results saved in: {SAVE_DIR}")
 
 # ======================================================
-# 2) t < 0 : Quantum superposition (Vacuum fluctuation)
+# 2) Information parameter I = g(KL, Shannon)
+# ======================================================
+def sample_information_param(dim=8):
+    psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
+    p1 = np.abs(psi1.full().flatten())**2
+    p2 = np.abs(psi2.full().flatten())**2
+    p1 /= p1.sum(); p2 /= p2.sum()
+    eps = 1e-12
+
+    KL = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
+    I_kl = KL / (1.0 + KL)
+
+    H = -np.sum(p1 * np.log(p1 + eps))
+    I_shannon = H / np.log(len(p1))
+
+    I_raw = I_kl * I_shannon
+    I = I_raw / (1.0 + I_raw)
+    return float(I)
+
+# ======================================================
+# 3) Energy sampling
+# ======================================================
+def sample_energy_lognormal(mu=2.5, sigma=0.9):
+    return float(rng.lognormal(mean=mu, sigma=sigma))
+
+# ======================================================
+# 4) t < 0 : Quantum superposition (Vacuum fluctuation)
 # ======================================================
 Nlev = 12
 a = qt.destroy(Nlev)
@@ -113,7 +139,7 @@ pd.DataFrame({"time": tlist, "entropy": S_sup, "purity": P_sup}) \
 
 
 # ======================================================
-# 3) t = 0 : Collapse (Lock-in around X = E·I)
+# 5) t = 0 : Collapse (Lock-in around X = E·I)
 # ======================================================
 E0 = sample_energy_lognormal()
 I0 = sample_information_param(dim=8)
@@ -137,7 +163,7 @@ pd.DataFrame({"time": t_c, "X": X_traj}).to_csv(
 
 
 # ======================================================
-# 4) t > 0 : Expansion dynamics
+# 6) t > 0 : Expansion dynamics
 # ======================================================
 def expand_series(E, I, n_epoch=30):
     """
@@ -169,32 +195,6 @@ pd.DataFrame({"epoch": np.arange(len(A_ser)),
               "A": A_ser, "I": I_ser}).to_csv(
     os.path.join(SAVE_DIR, "expansion.csv"), index=False
 )
-
-# ======================================================
-# 5) Information parameter I = g(KL, Shannon)
-# ======================================================
-def sample_information_param(dim=8):
-    psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
-    p1 = np.abs(psi1.full().flatten())**2
-    p2 = np.abs(psi2.full().flatten())**2
-    p1 /= p1.sum(); p2 /= p2.sum()
-    eps = 1e-12
-
-    KL = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
-    I_kl = KL / (1.0 + KL)
-
-    H = -np.sum(p1 * np.log(p1 + eps))
-    I_shannon = H / np.log(len(p1))
-
-    I_raw = I_kl * I_shannon
-    I = I_raw / (1.0 + I_raw)
-    return float(I)
-
-# ======================================================
-# 6) Energy sampling
-# ======================================================
-def sample_energy_lognormal(mu=2.5, sigma=0.9):
-    return float(rng.lognormal(mean=mu, sigma=sigma))
 
 # ======================================================
 # 7) Goldilocks noise
