@@ -359,9 +359,9 @@ else:
     print("[XAI] Not enough locked samples for regression (need ~30+).")
 
 # ---------- SHAP: global explanations (robust, fixed shape) ----------
-X_plot = Xte_c.copy()  # vagy: X_feat.sample(min(3000, len(X_feat)), random_state=42)
+X_plot = Xte_c.copy()  # or: X_feat.sample(min(3000, len(X_feat)), random_state=42)
 
-# TreeExplainer "raw" kimenettel, majd formátum-normalizálás
+# TreeExplainer with "raw" output, then format normalization
 try:
     expl_cls = shap.TreeExplainer(
         rf_cls,
@@ -370,21 +370,21 @@ try:
     )
     sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
 except Exception:
-    # Fallback, ha a TreeExplainer nem kompatibilis a környezettel
+    # Fallback, if TreeExplainer is not compatible with the environment
     expl_cls = shap.Explainer(rf_cls, Xtr_c)
-    sv_cls = expl_cls(X_plot).values  # (n_samples, n_features) elvárt
+    sv_cls = expl_cls(X_plot).values  # (n_samples, n_features) expected
 
-# --- Normalizálás: mindig (n_samples, n_features) legyen ---
+# --- Normalization: always enforce (n_samples, n_features) ---
 if isinstance(sv_cls, list):
-    # multiclass: a pozitív osztály (1) SHAP-értékei kellenek
+    # multiclass: take SHAP values for the positive class (1)
     sv_cls = sv_cls[1]
 sv_cls = np.asarray(sv_cls)
 
-# Ha 3D (pl. (samples, features, classes)), vedd ki a class=1 szeletet
+# If 3D (e.g., (samples, features, classes)), extract the class=1 slice
 if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
     sv_cls = sv_cls[:, :, 1]
 elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
-    # ritkább: (classes, samples, features)
+    # rarer case: (classes, samples, features)
     sv_cls = sv_cls[1, :, :]
 
 assert sv_cls.shape == X_plot.shape, f"SHAP shape {sv_cls.shape} != data shape {X_plot.shape}"
@@ -415,7 +415,7 @@ if rf_reg is not None:
         expl_reg = shap.Explainer(rf_reg, Xtr_r)
         sv_reg = expl_reg(X_plot_r).values
 
-    # --- Normalizálás (ritkán 3D lehet itt is) ---
+    # --- Normalization (can occasionally be 3D here as well) ---
     sv_reg = np.asarray(sv_reg)
     if sv_reg.ndim == 3 and sv_reg.shape[0] == X_plot_r.shape[0]:
         sv_reg = sv_reg[:, :, 0]
@@ -435,7 +435,7 @@ if rf_reg is not None:
     plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
     plt.close()
 
-    # Lokális példa (azonos mátrixon)
+    # Local example (on the same matrix)
     i = 0
     try:
         shap.force_plot(
@@ -465,8 +465,7 @@ pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
     os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
 )
 
-# ---------- DARWIN LLM prompt generation ----------
-# Create a standalone prompt you can feed into DARWIN
+# ---------- DARWIN LLM prompt (plain .txt) ----------
 darwin_prompt = f"""
 Give a full scientific interpretation of the following Monte Carlo simulation.
 
@@ -489,25 +488,26 @@ Optional (if helpful): Relate to literature on lock-in/critical phenomena and CM
 with open(os.path.join(SAVE_DIR, "DARWIN_prompt.txt"), "w") as f:
     f.write(darwin_prompt)
 
-# Context JSON (numbers) you can attach alongside the prompt
+# (Already generated) Context JSON with numerical data:
 darwin_ctx = {
     "N": int(len(df)),
     "stable_ratio": float(summary["stable_ratio"]),
     "E_c_low": float(summary["E_c_low"]),
     "E_c_high": float(summary["E_c_high"]),
-    "cls_accuracy": float(cls_acc),
-    "reg_r2": float(reg_r2) if reg_r2 is not None else None,
+    # these lines only work if the variables come from the XAI block:
+    "cls_accuracy": float(cls_acc) if 'cls_acc' in locals() else None,
+    "reg_r2": float(reg_r2) if 'reg_r2' in locals() and reg_r2 is not None else None,
     "features": ["E", "I", "X"],
     "xai_artifacts": {
         "shap_cls": os.path.join(FIG_DIR, "shap_summary_cls_stable.png"),
-        "shap_reg": os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png") if reg_r2 is not None else None,
-        "shap_force_reg_example": os.path.join(FIG_DIR, "shap_force_reg_example.png") if reg_r2 is not None else None,
-        "lime_cls_csv": os.path.join(FIG_DIR, "lime_example_classification.csv")
+        "shap_reg": os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png") if os.path.exists(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png")) else None,
+        "shap_force_reg_example": os.path.join(FIG_DIR, "shap_force_reg_example.png") if os.path.exists(os.path.join(FIG_DIR, "shap_force_reg_example.png")) else None,
+        "lime_cls_csv": os.path.join(FIG_DIR, "lime_example_classification.csv") if os.path.exists(os.path.join(FIG_DIR, "lime_example_classification.csv")) else None
     }
 }
 save_json(os.path.join(SAVE_DIR, "DARWIN_context.json"), darwin_ctx)
 
-print("🧠 XAI (SHAP+LIME) done. ✍️ DARWIN prompt saved:", os.path.join(SAVE_DIR, "DARWIN_prompt.txt"))
+print("✍️ DARWIN_prompt.txt created at:", os.path.join(SAVE_DIR, "DARWIN_prompt.txt"))
 
 # ======================================================
 # 12) Save all outputs to Google Drive
