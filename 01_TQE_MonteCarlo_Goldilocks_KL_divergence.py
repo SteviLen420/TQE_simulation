@@ -290,6 +290,11 @@ print(f"📂 Directory: {SAVE_DIR}")
 # 11) XAI (SHAP + LIME) + DARWIN prompt preparation
 # ======================================================
 
+# Sanity checks (optional)
+assert not np.isnan(X_plot.values).any(), "NaN in X_plot!"
+if rf_reg is not None:
+    assert not np.isnan(X_plot_r.values).any(), "NaN in X_plot_r!"
+
 # Install on demand (only if missing)
 try:
     import shap
@@ -349,10 +354,20 @@ else:
 # ---------- SHAP: global explanations ----------
 # Classification SHAP (positive class = stable=1)
 expl_cls = shap.TreeExplainer(rf_cls)
-shap_vals_cls = expl_cls.shap_values(X_feat)[1]  # class 1
+
+# Use the SAME matrix for SHAP and plotting → avoid shape mismatch
+X_plot = Xte_c.copy()  # or: X_feat.sample(min(3000, len(X_feat)), random_state=42)
+
+# Compute SHAP values on exactly what we will plot
+shap_vals_cls = expl_cls.shap_values(X_plot)[1]  # class 1
 
 plt.figure()
-shap.summary_plot(shap_vals_cls, X_feat, show=False)
+shap.summary_plot(
+    shap_vals_cls,
+    X_plot.values,                          # pass numpy array
+    feature_names=X_plot.columns.tolist(),  # explicit feature names
+    show=False
+)
 plt.title("SHAP summary – classification (stable)")
 plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
 plt.close()
@@ -360,18 +375,28 @@ plt.close()
 # Regression SHAP (if trained)
 if rf_reg is not None:
     expl_reg = shap.TreeExplainer(rf_reg)
-    shap_vals_reg = expl_reg.shap_values(X_reg)
+
+    # Use the test split for both SHAP and plotting
+    X_plot_r = Xte_r.copy()
+    shap_vals_reg = expl_reg.shap_values(X_plot_r)
 
     plt.figure()
-    shap.summary_plot(shap_vals_reg, X_reg, show=False)
+    shap.summary_plot(
+        shap_vals_reg,
+        X_plot_r.values,                        # numpy matrix
+        feature_names=X_plot_r.columns.tolist(),# feature names
+        show=False
+    )
     plt.title("SHAP summary – regression (lock_at)")
     plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
     plt.close()
 
-    # Local SHAP example for a single sample
+    # Local SHAP example for a single sample (use the same matrix)
     i = 0
     shap.force_plot(
-        expl_reg.expected_value, shap_vals_reg[i, :], X_reg.iloc[i, :],
+        expl_reg.expected_value,
+        shap_vals_reg[i, :],
+        X_plot_r.iloc[i, :],
         matplotlib=True, show=False
     )
     plt.savefig(os.path.join(FIG_DIR, "shap_force_reg_example.png"), dpi=220, bbox_inches="tight")
