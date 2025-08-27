@@ -598,7 +598,7 @@ os.makedirs(GOOGLE_DIR, exist_ok=True)
 
 for root, dirs, files in os.walk(SAVE_DIR):
     for file in files:
-        if file.endswith((".png", ".fits", ".csv", ".json", ".txt")):)):
+        if file.endswith((".png", ".fits", ".csv", ".json", ".txt")):
             src = os.path.join(root, file)
             dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
             os.makedirs(dst_dir, exist_ok=True)
