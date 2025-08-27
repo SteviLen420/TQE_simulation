@@ -524,7 +524,10 @@ payload = {
     "stream": False                        # <- request a single JSON response
 }
 
-headers = {"Content-Type": "application/json"}
+headers = {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true"
+}
 
 # 3) Call + error handling
 raw_resp_path = os.path.join(SAVE_DIR, "deepseek_raw_response.txt")
