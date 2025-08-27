@@ -61,7 +61,7 @@ params = {
 rng = np.random.default_rng(seed=params["seed"])
 
 # Output dirs
-run_id  = time.strftime("TQE_(E,I)_KLxSHANNON_%Y%m%d_%H%M%S")
+run_id  = time.strftime("TQE_(E,I)_KL_SHANNON_%Y%m%d_%H%M%S")
 SAVE_DIR = os.path.join(os.getcwd(), run_id)
 FIG_DIR  = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
