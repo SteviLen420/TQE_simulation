@@ -490,7 +490,7 @@ pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
 import requests, json
 
 # 1) Set your quick-tunnel URL here (replace with the link from your log):
-DEEPSEEK_URL = "https://YOUR-TUNNEL-NAME.trycloudflare.com/api/chat"  # <-- REPLACE THIS!
+DEEPSEEK_URL = "https://fig-trying-plays-strange.trycloudflare.com/api/chat"  # <-- REPLACE THIS!
 
 # 2) Read the summary (this will be sent for analysis)
 summary_path = os.path.join(SAVE_DIR, "summary.json")
