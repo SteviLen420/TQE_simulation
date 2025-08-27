@@ -503,40 +503,100 @@ for root, dirs, files in os.walk(SAVE_DIR):
 print(f"☁️ All results saved to Google Drive: {GOOGLE_DIR}")
 
 # ======================================================
-# 13) DeepSeek analysis via Ollama (through Cloudflare Tunnel)
+# 15) DeepSeek analysis via Ollama (through Cloudflare Tunnel) — robust
 # ======================================================
-import requests
+import requests, json
 
-deepseek_url = "https://fig-trying-plays-strange.trycloudflare.com/api/chat"
+# 1) Állítsd be a saját quick-tunnel URL-edet ide (a te logodban látott linket):
+DEEPSEEK_URL = "https://YOUR-TUNNEL-NAME.trycloudflare.com/api/chat"  # <-- CSERÉLD LE!
 
-# Prompt: we send the summary.json to DeepSeek for interpretation
-with open(os.path.join(SAVE_DIR, "summary.json"), "r") as f:
+# 2) Olvassuk be az összefoglalót (ezt küldjük elemzésre)
+summary_path = os.path.join(SAVE_DIR, "summary.json")
+with open(summary_path, "r") as f:
     summary_data = f.read()
 
 prompt = f"""
-You are DeepSeek. Please provide a detailed scientific analysis of the following
-universe simulation results. Explain what they mean, highlight important patterns,
-and suggest possible implications.
+You are an expert scientific analyst. Provide a thorough, plain-English analysis of these
+universe-simulation results: identify key patterns, parameter sensitivities, stability drivers,
+and any caveats. Suggest concrete next experiments (with parameter ranges) and how to validate them.
 
-Data:
+Data (JSON):
 {summary_data}
 """
 
 payload = {
-    "model": "deepseek-r1:7b",
-    "messages": [
-        {"role": "user", "content": prompt}
-    ]
+    "model": "deepseek-r1:7b",            # <- legyen pontosan az a modell, amit az Ollama listáz
+    "messages": [{"role": "user", "content": prompt}],
+    "stream": False                        # <- kérjünk egyetlen JSON választ
 }
 
-resp = requests.post(deepseek_url, json=payload)
-result = resp.json()
+headers = {"Content-Type": "application/json"}
 
-# Extract the AI's answer
-answer = result.get("message", {}).get("content", "No response from DeepSeek.")
+# 3) Hívás + hibatűrés
+raw_resp_path = os.path.join(SAVE_DIR, "deepseek_raw_response.txt")
+analysis_path = os.path.join(SAVE_DIR, "deepseek_analysis.txt")
 
-# Save to file
-with open(os.path.join(SAVE_DIR, "deepseek_analysis.txt"), "w") as f:
+try:
+    resp = requests.post(DEEPSEEK_URL, headers=headers, json=payload, timeout=180)
+    # Mindig mentsük el a NYERS választ debug célra
+    with open(raw_resp_path, "w", encoding="utf-8") as f:
+        f.write(resp.text)
+
+    # Ha HTTP hiba, jelezzük és tegyünk be egy rövid üzenetet
+    resp.raise_for_status()
+
+    # 4) Próbáljuk meg JSON-ként
+    try:
+        data = resp.json()
+        # Ollama /api/chat tipikusan: {"message":{"role":"assistant","content":"..."}}
+        answer = (
+            data.get("message", {}).get("content")
+            or data.get("response")  # /api/generate formátum támogatása
+        )
+    except Exception:
+        # Ha nem tiszta JSON, lehet, hogy NDJSON/stream jött (soronkénti JSON objektumok)
+        lines = []
+        for line in resp.text.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+                lines.append(obj)
+            except Exception:
+                # Nem JSON sor (pl. HTML hibaoldal) – átugorjuk
+                pass
+
+        # Fűzzük össze, ami értelmes
+        if lines:
+            # /api/chat stream esetén gyakran "message":{"content": "..."} darabok jönnek
+            chunks = []
+            for obj in lines:
+                chunk = (
+                    (obj.get("message") or {}).get("content")
+                    or obj.get("response")
+                    or ""
+                )
+                if chunk:
+                    chunks.append(chunk)
+            answer = "".join(chunks) if chunks else resp.text
+        else:
+            # Egyáltalán nem volt értelmezhető JSON – mentsük a nyerset
+            answer = resp.text
+
+    if not answer:
+        answer = "(No content in response. Check tunnel URL, model name, and logs.)"
+
+except requests.exceptions.RequestException as e:
+    # Hálózati/HTTP hiba – log + rövid magyarázat
+    answer = f"[HTTP error] {e}\n" \
+             f"Tippek: 1) Ellenőrizd a tunnel URL-t. 2) Futtatod az 'ollama serve'-öt? " \
+             f"3) 'ollama list' szerint létezik a 'deepseek-r1:7b' modell? 4) Proxy/HTTPS akadály?"
+
+# 5) Mentsük az elemzést
+with open(analysis_path, "w", encoding="utf-8") as f:
     f.write(answer)
 
-print("✅ DeepSeek analysis saved to:", os.path.join(SAVE_DIR, "deepseek_analysis.txt"))
+print("✅ DeepSeek analysis saved to:", analysis_path)
+print("🪵 Raw response saved to:", raw_resp_path)
+
