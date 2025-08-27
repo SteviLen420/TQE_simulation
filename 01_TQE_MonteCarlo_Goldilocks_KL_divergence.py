@@ -489,10 +489,10 @@ pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
 # ======================================================
 import requests, json
 
-# 1) Állítsd be a saját quick-tunnel URL-edet ide (a te logodban látott linket):
-DEEPSEEK_URL = "https://YOUR-TUNNEL-NAME.trycloudflare.com/api/chat"  # <-- CSERÉLD LE!
+# 1) Set your quick-tunnel URL here (replace with the link from your log):
+DEEPSEEK_URL = "https://YOUR-TUNNEL-NAME.trycloudflare.com/api/chat"  # <-- REPLACE THIS!
 
-# 2) Olvassuk be az összefoglalót (ezt küldjük elemzésre)
+# 2) Read the summary (this will be sent for analysis)
 summary_path = os.path.join(SAVE_DIR, "summary.json")
 with open(summary_path, "r") as f:
     summary_data = f.read()
@@ -507,36 +507,36 @@ Data (JSON):
 """
 
 payload = {
-    "model": "deepseek-r1:7b",            # <- legyen pontosan az a modell, amit az Ollama listáz
+    "model": "deepseek-r1:7b",            # <- must match exactly the model name listed by Ollama
     "messages": [{"role": "user", "content": prompt}],
-    "stream": False                        # <- kérjünk egyetlen JSON választ
+    "stream": False                        # <- request a single JSON response
 }
 
 headers = {"Content-Type": "application/json"}
 
-# 3) Hívás + hibatűrés
+# 3) Call + error handling
 raw_resp_path = os.path.join(SAVE_DIR, "deepseek_raw_response.txt")
 analysis_path = os.path.join(SAVE_DIR, "deepseek_analysis.txt")
 
 try:
     resp = requests.post(DEEPSEEK_URL, headers=headers, json=payload, timeout=180)
-    # Mindig mentsük el a NYERS választ debug célra
+    # Always save the RAW response for debugging
     with open(raw_resp_path, "w", encoding="utf-8") as f:
         f.write(resp.text)
 
-    # Ha HTTP hiba, jelezzük és tegyünk be egy rövid üzenetet
+    # If HTTP error, raise immediately
     resp.raise_for_status()
 
-    # 4) Próbáljuk meg JSON-ként
+    # 4) Try parsing as JSON
     try:
         data = resp.json()
-        # Ollama /api/chat tipikusan: {"message":{"role":"assistant","content":"..."}}
+        # Ollama /api/chat typically: {"message":{"role":"assistant","content":"..."}}
         answer = (
             data.get("message", {}).get("content")
-            or data.get("response")  # /api/generate formátum támogatása
+            or data.get("response")  # support for /api/generate format
         )
     except Exception:
-        # Ha nem tiszta JSON, lehet, hogy NDJSON/stream jött (soronkénti JSON objektumok)
+        # If not clean JSON, maybe NDJSON/stream (line-by-line JSON objects)
         lines = []
         for line in resp.text.splitlines():
             line = line.strip()
@@ -546,12 +546,12 @@ try:
                 obj = json.loads(line)
                 lines.append(obj)
             except Exception:
-                # Nem JSON sor (pl. HTML hibaoldal) – átugorjuk
+                # Skip if not JSON (e.g. HTML error page)
                 pass
 
-        # Fűzzük össze, ami értelmes
+        # Combine meaningful chunks
         if lines:
-            # /api/chat stream esetén gyakran "message":{"content": "..."} darabok jönnek
+            # /api/chat stream often sends pieces like "message":{"content": "..."}
             chunks = []
             for obj in lines:
                 chunk = (
@@ -563,64 +563,25 @@ try:
                     chunks.append(chunk)
             answer = "".join(chunks) if chunks else resp.text
         else:
-            # Egyáltalán nem volt értelmezhető JSON – mentsük a nyerset
+            # If nothing parsed, keep the raw text
             answer = resp.text
 
     if not answer:
         answer = "(No content in response. Check tunnel URL, model name, and logs.)"
 
 except requests.exceptions.RequestException as e:
-    # Hálózati/HTTP hiba – log + rövid magyarázat
+    # Network/HTTP error — log + short explanation
     answer = f"[HTTP error] {e}\n" \
-             f"Tippek: 1) Ellenőrizd a tunnel URL-t. 2) Futtatod az 'ollama serve'-öt? " \
-             f"3) 'ollama list' szerint létezik a 'deepseek-r1:7b' modell? 4) Proxy/HTTPS akadály?"
+             f"Tips: 1) Check your tunnel URL. 2) Is 'ollama serve' running? " \
+             f"3) Does 'ollama list' show the model 'deepseek-r1:7b'? 4) Any proxy/HTTPS issues?"
 
-# 5) Mentsük az elemzést
+# 5) Save the analysis
 with open(analysis_path, "w", encoding="utf-8") as f:
     f.write(answer)
 
 print("✅ DeepSeek analysis saved to:", analysis_path)
 print("🪵 Raw response saved to:", raw_resp_path)
 
-# ======================================================
-# Save all outputs to Google Drive (robust copy)
-# ======================================================
-GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
-GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
-os.makedirs(GOOGLE_DIR, exist_ok=True)
-
-copied = []
-skipped = []
-
-for root, dirs, files in os.walk(SAVE_DIR):
-    # hova másolunk a Drive-on
-    dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
-    os.makedirs(dst_dir, exist_ok=True)
-
-    for file in files:
-        # engedélyezett kiterjesztések bővítve: .png, .fits, .csv, .json, .txt
-        if not file.endswith((".png", ".fits", ".csv", ".json", ".txt")):
-            continue
-
-        src = os.path.join(root, file)
-        dst = os.path.join(dst_dir, file)
-
-        # ha ugyanaz a fájl, hagyjuk ki
-        try:
-            if os.path.samefile(src, dst):
-                skipped.append(dst)
-                continue
-        except FileNotFoundError:
-            # ha a dst még nem létezik, samefile dobhat hibát – ilyenkor másolunk
-            pass
-
-        shutil.copy2(src, dst)
-        copied.append(dst)
-
-print("☁️ Copy finished.")
-print(f"Copied: {len(copied)} files")
-print(f"Skipped (same path): {len(skipped)} files")
-print("Google Drive folder:", GOOGLE_DIR)
 
 # ======================================================
 # Save all outputs to Google Drive (robust copy)
@@ -633,25 +594,25 @@ copied = []
 skipped = []
 
 for root, dirs, files in os.walk(SAVE_DIR):
-    # hova másolunk a Drive-on
+    # target folder on Drive
     dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
     os.makedirs(dst_dir, exist_ok=True)
 
     for file in files:
-        # engedélyezett kiterjesztések bővítve: .png, .fits, .csv, .json, .txt
+        # allowed extensions extended: .png, .fits, .csv, .json, .txt
         if not file.endswith((".png", ".fits", ".csv", ".json", ".txt")):
             continue
 
         src = os.path.join(root, file)
         dst = os.path.join(dst_dir, file)
 
-        # ha ugyanaz a fájl, hagyjuk ki
+        # skip if it's the same file
         try:
             if os.path.samefile(src, dst):
                 skipped.append(dst)
                 continue
         except FileNotFoundError:
-            # ha a dst még nem létezik, samefile dobhat hibát – ilyenkor másolunk
+            # if dst doesn’t exist yet, samefile may throw — just copy in that case
             pass
 
         shutil.copy2(src, dst)
@@ -661,4 +622,3 @@ print("☁️ Copy finished.")
 print(f"Copied: {len(copied)} files")
 print(f"Skipped (same path): {len(skipped)} files")
 print("Google Drive folder:", GOOGLE_DIR)
-
