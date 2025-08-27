@@ -48,7 +48,7 @@ except Exception:
 # ======================================================
 params = {
     "N_samples": 1000,    # Monte Carlo universes
-    "N_epoch": 30,        # time steps
+    "N_epoch": 200,        # time steps
     "rel_eps": 0.05,      # lock-in threshold
     "sigma0": 0.5,        # baseline noise
     "alpha": 1.5,         # noise growth toward edges
@@ -74,7 +74,104 @@ def save_json(path, obj):
 print(f"💾 Results saved in: {SAVE_DIR}")
 
 # ======================================================
-# 2) Information parameter I = g(KL, Shannon)
+# 2) t < 0 : Quantum superposition (Vacuum fluctuation)
+# ======================================================
+Nlev = 12
+a = qt.destroy(Nlev)
+
+# Perturbed Hamiltonian with small random noise
+H0 = a.dag()*a + 0.05*(np.random.randn()*a + np.random.randn()*a.dag())
+
+# Initial state: random superposition (not pure vacuum)
+psi0 = qt.rand_ket(Nlev)
+rho0 = psi0 * psi0.dag()
+
+# Time axis and fluctuating environment parameter gamma(t)
+tlist = np.linspace(0, 10, 200)
+gammas = 0.02 + 0.01*np.sin(0.5*tlist) + 0.005*np.random.randn(len(tlist))
+
+def _purity(r):
+    return float((r*r).tr().real) if qt.isoper(r) else float((r*r.dag()).tr().real)
+
+states = []
+for g in gammas:
+    res = qt.mesolve(H0, rho0, np.linspace(0,0.5,5), [np.sqrt(abs(g))*a], [])
+    states.append(res.states[-1])
+
+S_sup = np.array([qt.entropy_vn(r) for r in states])
+P_sup = np.array([_purity(r) for r in states])
+
+plt.figure()
+plt.plot(tlist, S_sup, label="Entropy")
+plt.plot(tlist, P_sup, label="Purity")
+plt.title("t < 0 : Quantum superposition")
+plt.xlabel("time"); plt.legend()
+savefig(os.path.join(FIG_DIR,"superposition.png"))
+
+pd.DataFrame({"time": tlist, "entropy": S_sup, "purity": P_sup}) \
+  .to_csv(os.path.join(SAVE_DIR, "superposition.csv"), index=False)
+
+
+# ======================================================
+# 3) t = 0 : Collapse (Lock-in around X = E·I)
+# ======================================================
+E0 = sample_energy_lognormal()
+I0 = sample_information_param(dim=8)
+X0 = E0 * I0
+
+t_c = np.linspace(-0.2, 0.2, 200)
+X_traj = X0 + 0.5*np.random.randn(len(t_c))
+X_traj[t_c >= 0] = X0 + 0.05*np.random.randn(np.sum(t_c >= 0))
+
+plt.figure()
+plt.plot(t_c, X_traj, "k-", alpha=0.6, label="fluctuation → lock-in")
+plt.axhline(X0, color="r", ls="--", label=f"Lock-in X={X0:.2f}")
+plt.axvline(0, color="r", lw=2)
+plt.title("t = 0 : Collapse (E·I lock-in)")
+plt.xlabel("time"); plt.ylabel("X = E·I"); plt.legend()
+savefig(os.path.join(FIG_DIR, "collapse.png"))
+
+pd.DataFrame({"time": t_c, "X": X_traj}).to_csv(
+    os.path.join(SAVE_DIR, "collapse.csv"), index=False
+)
+
+
+# ======================================================
+# 4) t > 0 : Expansion dynamics
+# ======================================================
+def expand_series(E, I, n_epoch=30):
+    """
+    Toy expansion model after collapse:
+    - A (amplitude) grows with noise
+    - I (orientation) fluctuates and relaxes toward 0.5
+    """
+    A_series, I_series = [], []
+    A = 20.0; orient = I
+    for _ in range(n_epoch):
+        A = A*1.03 + np.random.normal(0, 2.0)
+        noise = 0.25 * (1 + 1.5 * abs(orient - 0.5))
+        orient += (0.5 - orient)*0.35 + np.random.normal(0, noise)
+        orient = max(0.0, min(1.0, orient))
+        A_series.append(A); I_series.append(orient)
+    return np.array(A_series), np.array(I_series)
+
+A_ser, I_ser = expand_series(E0, I0)
+
+plt.figure()
+plt.plot(A_ser, label="Amplitude A")
+plt.plot(I_ser, label="Orientation I")
+plt.axhline(np.mean(A_ser), color="gray", ls="--", alpha=0.5)
+plt.title("t > 0 : Expansion dynamics")
+plt.xlabel("epoch"); plt.ylabel("value"); plt.legend()
+savefig(os.path.join(FIG_DIR, "expansion.png"))
+
+pd.DataFrame({"epoch": np.arange(len(A_ser)),
+              "A": A_ser, "I": I_ser}).to_csv(
+    os.path.join(SAVE_DIR, "expansion.csv"), index=False
+)
+
+# ======================================================
+# 5) Information parameter I = g(KL, Shannon)
 # ======================================================
 def sample_information_param(dim=8):
     psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
@@ -94,13 +191,13 @@ def sample_information_param(dim=8):
     return float(I)
 
 # ======================================================
-# 3) Energy sampling
+# 6) Energy sampling
 # ======================================================
 def sample_energy_lognormal(mu=2.5, sigma=0.9):
     return float(rng.lognormal(mean=mu, sigma=sigma))
 
 # ======================================================
-# 4) Goldilocks noise
+# 7) Goldilocks noise
 # ======================================================
 def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
     if E_c_low is None or E_c_high is None:
@@ -113,7 +210,7 @@ def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
     return sigma0 * (1 + alpha * dist**2)
 
 # ======================================================
-# 5) Lock-in simulation
+# 8) Lock-in simulation
 # ======================================================
 def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=None, E_c_high=None):
     A, ns, H = rng.normal(50, 5), rng.normal(0.8, 0.05), rng.normal(0.7, 0.08)
@@ -137,7 +234,7 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
     return stable, (locked_at if locked_at is not None else -1)
 
 # ======================================================
-# 6) Monte Carlo universes
+# 9) Monte Carlo universes
 # ======================================================
 rows = []
 for i in range(params["N_samples"]):
@@ -152,7 +249,7 @@ df = pd.DataFrame(rows)
 df.to_csv(os.path.join(SAVE_DIR, "samples.csv"), index=False)
 
 # ======================================================
-# 7) Stability curve + Goldilocks zone
+# 10) Stability curve + Goldilocks zone
 # ======================================================
 bins = np.linspace(df["X"].min(), df["X"].max(), 40)
 df["bin"] = np.digitize(df["X"], bins)
@@ -193,7 +290,7 @@ plt.legend()
 savefig(os.path.join(FIG_DIR, "stability_curve.png"))
 
 # ======================================================
-# 8) Scatter E vs I
+# 11) Scatter E vs I
 # ======================================================
 plt.figure(figsize=(7,6))
 plt.scatter(df["E"], df["I"], c=df["stable"], cmap="coolwarm", s=10, alpha=0.5)
@@ -203,7 +300,7 @@ plt.colorbar(label="Stable=1 / Unstable=0")
 savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
 
 # ======================================================
-# 9) Stability summary
+# 12) Stability summary
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -225,7 +322,7 @@ plt.xticks([0, 1], [
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
-# 10) Seed search (Top-5)
+# 13) Seed search (Top-5)
 # ======================================================
 NUM_SEEDS = 50
 UNIVERSES_PER_SEED = 300
@@ -266,7 +363,7 @@ for r in seed_scores_sorted[:5]:
 pd.DataFrame(seed_scores_sorted).to_csv(os.path.join(SAVE_DIR, "seed_search_top.csv"), index=False)
 
 # ======================================================
-# 11) XAI (SHAP + LIME)
+# 14) XAI (SHAP + LIME)
 # ======================================================
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
@@ -333,7 +430,7 @@ except Exception as e:
     print("[ERR] LIME failed:", e)
 
 # ======================================================
-# 12) Save summary + Google Drive
+# 15) Save summary + Google Drive
 # ======================================================
 summary = {
     "params": params,
