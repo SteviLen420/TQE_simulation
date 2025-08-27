@@ -36,7 +36,7 @@ from scipy.interpolate import make_interp_spline
 warnings.filterwarnings("ignore")
 
 # ======================================================
-# Parameters
+# 1) Parameters
 # ======================================================
 # --- Parameters controlling the simulation ---
 params = {
@@ -67,7 +67,7 @@ def save_json(path, obj):
 print(f"💾 Results saved in: {SAVE_DIR}")
 
 # ======================================================
-# 1) Information parameter (I) via KL divergence
+# 2) Information parameter (I) via KL divergence
 # ======================================================
 def sample_information_param(dim=8):
     psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
@@ -78,13 +78,13 @@ def sample_information_param(dim=8):
     return KL / (1.0 + KL)   # 0 ≤ I ≤ 1
 
 # ======================================================
-# 2) Energy sampling
+# 3) Energy sampling
 # ======================================================
 def sample_energy_lognormal(mu=2.5, sigma=0.9):
     return float(rng.lognormal(mean=mu, sigma=sigma))
 
 # ======================================================
-# 3) Goldilocks noise function
+# 4) Goldilocks noise function
 # ======================================================
 def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
     """
@@ -263,6 +263,159 @@ print(f"Unstable universes: {summary['unstable_count']}")
 print(f"Stability ratio: {summary['stable_ratio']:.3f}")
 print(f"Goldilocks zone: {E_c_low:.1f} – {E_c_high:.1f}" if E_c_low else "No stable zone found")
 print(f"📂 Directory: {SAVE_DIR}")
+
+save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
+
+# Print summary to console
+print("\n✅ DONE.")
+print(f"Runs: {len(df)}")
+print(f"Stable universes: {summary['stable_count']}")
+print(f"Unstable universes: {summary['unstable_count']}")
+print(f"Stability ratio: {summary['stable_ratio']:.3f}")
+print(f"Goldilocks zone: {E_c_low:.1f} – {E_c_high:.1f}" if E_c_low else "No stable zone found")
+print(f"📂 Directory: {SAVE_DIR}")
+
+# ======================================================
+# 9/b) XAI (SHAP + LIME) + DARWIN prompt előkészítés
+# ======================================================
+
+# Biztonság kedvéért telepítés (ha kell)
+try:
+    import shap
+    from lime.lime_tabular import LimeTabularExplainer
+except Exception:
+    import subprocess, sys
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "shap", "lime", "scikit-learn", "-q"])
+    import shap
+    from lime.lime_tabular import LimeTabularExplainer
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.metrics import r2_score, accuracy_score
+
+# ---------- Feature-k és célváltozók ----------
+# Globális feature mátrix
+X_feat = df[["E", "I", "X"]].copy()
+
+# Osztályozás: stabilitás (0/1)
+y_cls = df["stable"].astype(int).values
+
+# Regresszió: lock-in idő (csak ahol megtörtént: lock_at >= 0)
+reg_mask = df["lock_at"] >= 0
+X_reg = X_feat[reg_mask]
+y_reg = df.loc[reg_mask, "lock_at"].values
+
+# ---------- Train/Test szétosztás ----------
+# Osztályozás
+Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(X_feat, y_cls, test_size=0.25, random_state=42, stratify=y_cls)
+
+# Regresszió (csak ha van elég lock-in minta)
+have_reg = len(X_reg) >= 30
+if have_reg:
+    Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(X_reg, y_reg, test_size=0.25, random_state=42)
+
+# ---------- Modellek tanítása ----------
+# Osztályozó: mi hajtja a stabilitást?
+rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
+rf_cls.fit(Xtr_c, ytr_c)
+cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
+print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
+
+# Regresszor: ha van elég adat, mi hat a lock-in időre?
+if have_reg:
+    rf_reg = RandomForestRegressor(n_estimators=400, random_state=42, n_jobs=-1)
+    rf_reg.fit(Xtr_r, ytr_r)
+    reg_r2 = r2_score(yte_r, rf_reg.predict(Xte_r))
+    print(f"[XAI] Regression R^2 (lock_at): {reg_r2:.3f}")
+else:
+    rf_reg, reg_r2 = None, None
+    print("[XAI] Not enough locked samples for regression (need ~30+).")
+
+# ---------- SHAP: globális magyarázatok ----------
+# Osztályozás SHAP (pozitív osztály = stable=1)
+expl_cls = shap.TreeExplainer(rf_cls)
+shap_vals_cls = expl_cls.shap_values(X_feat)[1]  # class 1
+
+plt.figure()
+shap.summary_plot(shap_vals_cls, X_feat, show=False)
+plt.title("SHAP summary – classification (stable)")
+plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
+plt.close()
+
+# Regresszió SHAP (ha tanultunk)
+if rf_reg is not None:
+    expl_reg = shap.TreeExplainer(rf_reg)
+    shap_vals_reg = expl_reg.shap_values(X_reg)
+
+    plt.figure()
+    shap.summary_plot(shap_vals_reg, X_reg, show=False)
+    plt.title("SHAP summary – regression (lock_at)")
+    plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
+    plt.close()
+
+    # Lokális SHAP példa egy mintára
+    i = 0
+    shap.force_plot(expl_reg.expected_value, shap_vals_reg[i, :], X_reg.iloc[i, :], matplotlib=True, show=False)
+    plt.savefig(os.path.join(FIG_DIR, "shap_force_reg_example.png"), dpi=220, bbox_inches="tight")
+    plt.close()
+
+# ---------- LIME: lokális magyarázat (osztályozás) ----------
+lime_explainer = LimeTabularExplainer(
+    training_data=Xtr_c.values,
+    feature_names=X_feat.columns.tolist(),
+    discretize_continuous=True,
+    mode='classification'
+)
+
+exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
+lime_list = exp.as_list(label=1)  # magyarázat a 'stable=1' osztályhoz
+pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
+    os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
+)
+
+# ---------- DARWIN LLM prompt generálás ----------
+# Összeállítunk egy önmagában használható promptot, amit be tudsz adni DARWIN-nak.
+darwin_prompt = f"""
+Give a full scientific interpretation of the following Monte Carlo simulation.
+
+Context:
+- Samples (universes): {len(df)}
+- Stability ratio: {summary['stable_ratio']:.3f}
+- Goldilocks zone (X = E·I): [{summary['E_c_low']:.3f}, {summary['E_c_high']:.3f}]
+- Features available: E (energy), I (information via KL), X = E·I
+
+What to cover:
+1) Global behavior of the stability curve in X, including the detected Goldilocks window.
+2) The role of E and I individually, and their interaction through X.
+3) Connections to physical concepts (criticality, phase transitions, decoherence, cosmology).
+4) Hypotheses for why stabilization occurs in this narrow window.
+5) Limitations of the simulation setup and suggestions for further tests (e.g., ablations).
+
+Optional (if helpful): Relate to literature on lock-in/critical phenomena and CMB-like anomalies.
+"""
+
+with open(os.path.join(SAVE_DIR, "DARWIN_prompt.txt"), "w") as f:
+    f.write(darwin_prompt)
+
+# Kontext-JSON (számokkal), ha be akarod adni mellékletként
+darwin_ctx = {
+    "N": int(len(df)),
+    "stable_ratio": float(summary["stable_ratio"]),
+    "E_c_low": float(summary["E_c_low"]),
+    "E_c_high": float(summary["E_c_high"]),
+    "cls_accuracy": float(cls_acc),
+    "reg_r2": float(reg_r2) if reg_r2 is not None else None,
+    "features": ["E", "I", "X"],
+    "xai_artifacts": {
+        "shap_cls": os.path.join(FIG_DIR, "shap_summary_cls_stable.png"),
+        "shap_reg": os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png") if reg_r2 is not None else None,
+        "shap_force_reg_example": os.path.join(FIG_DIR, "shap_force_reg_example.png") if reg_r2 is not None else None,
+        "lime_cls_csv": os.path.join(FIG_DIR, "lime_example_classification.csv")
+    }
+}
+save_json(os.path.join(SAVE_DIR, "DARWIN_context.json"), darwin_ctx)
+
+print("🧠 XAI (SHAP+LIME) kész. ✍️ DARWIN prompt mentve:", os.path.join(SAVE_DIR, "DARWIN_prompt.txt"))
 
 # ======================================================
 # 10) Save all outputs to Google Drive
