@@ -542,30 +542,36 @@ pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
     os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
 )
 
-# ---------- DARWIN LLM prompt (plain .txt) ----------
+# ---------- DARWIN LLM prompt (extended) ----------
 darwin_prompt = f"""
-Give a full scientific interpretation of the following Monte Carlo simulation.
+Give an extended, in-depth scientific interpretation of the following Monte Carlo simulation.
 
-Context:
+Context (from the current run):
 - Samples (universes): {len(df)}
 - Stability ratio: {summary['stable_ratio']:.3f}
-- Goldilocks zone (X = E·I): [{summary['E_c_low']:.3f}, {summary['E_c_high']:.3f}]
+- Goldilocks window in X = E·I: [{summary['E_c_low']:.3f}, {summary['E_c_high']:.3f}]
 - Features available: E (energy), I (information via KL), X = E·I
 
 What to cover:
-1) Global behavior of the stability curve in X, including the detected Goldilocks window.
-2) The role of E and I individually, and their interaction through X.
-3) Connections to physical concepts (criticality, phase transitions, decoherence, cosmology).
-4) Hypotheses for why stabilization occurs in this narrow window.
-5) Limitations of the simulation setup and suggestions for further tests (e.g., ablations).
+1) Global behavior of P(stable | X) and the detected Goldilocks window (location, width, uncertainty).
+2) Separate roles of E and I, and their interaction through X = E·I.
+3) Links to physical concepts (criticality, phase transitions, decoherence, early-universe/cosmology analogies).
+4) Hypotheses for why stabilization occurs specifically in this narrow window.
+5) Limitations of the setup and concrete proposals for follow-up tests/ablations.
 
-Optional (if helpful): Relate to literature on lock-in/critical phenomena and CMB-like anomalies.
+Depth & Style requirements:
+- Provide an extended, in-depth interpretation with mathematical detail and explicit derivations where appropriate.
+- Explain results in a form suitable for a peer-reviewed physics paper, including theoretical context, equations, and comparisons to known phenomena.
+- Expand each point with detailed arguments, suggested references to the literature where possible, and connections to open research problems.
+
+Output format:
+- Use clear section headings, equations where needed, and concise bullet points for key claims.
+- Include assumptions, approximations, and potential sources of bias in the estimates.
 """
 
-# --- Save DARWIN prompt to .txt file ---
+# Save as .txt (unchanged)
 with open(os.path.join(SAVE_DIR, "DARWIN_prompt.txt"), "w") as f:
     f.write(darwin_prompt)
-
 print("DARWIN prompt saved to:", os.path.join(SAVE_DIR, "DARWIN_prompt.txt"))
 
 # (Already generated) Context JSON with numerical data:
