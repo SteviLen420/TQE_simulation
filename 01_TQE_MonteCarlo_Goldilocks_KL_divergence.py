@@ -669,3 +669,23 @@ if analysis_text:
     print("\n--- DeepSeek analysis (preview) ---\n")
     print("\n".join(analysis_text.splitlines()[:40]))
     print("\n[... truncated ...]\n")
+
+# --- Query DeepSeek for detailed analysis ---
+prompt = """
+Give me a full, step-by-step scientific interpretation of the Monte Carlo results,
+covering global stability curve behavior, Goldilocks zone, E and I roles,
+connections to physics (criticality, decoherence, cosmology), hypotheses, and
+limitations with ablation tests.
+"""
+
+response = client.responses.create(
+    model="deepseek-chat",
+    input=[{"role": "user", "content": prompt}]
+)
+
+# --- Show in Colab ---
+print(response.output[0].content[0].text)
+
+# --- Save also to Drive ---
+with open(os.path.join(SAVE_DIR, "deepseek_analysis.txt"), "w") as f:
+    f.write(response.output[0].content[0].text)
