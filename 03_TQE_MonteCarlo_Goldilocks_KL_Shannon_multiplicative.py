@@ -319,24 +319,54 @@ summary["seed_search"] = {
 save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 
 # ======================================================
-# 11) XAI (SHAP + LIME) — no external LLM
+# 11) XAI (SHAP + LIME) — robust saving & logging
 # ======================================================
-# Features & targets
+
+def _savefig_safe(path):
+    """
+    Save a matplotlib figure to file, close it, and log whether it was successful.
+    This ensures you always see if the figure actually got written to disk.
+    """
+    plt.savefig(path, dpi=220, bbox_inches="tight")
+    plt.close()
+    if os.path.exists(path):
+        print(f"[SAVE] Figure saved: {path}")
+    else:
+        print(f"[WARN] Figure NOT saved: {path}")
+
+def _save_df_safe(df, path):
+    """
+    Save a pandas DataFrame as CSV with error handling and logging.
+    Prevents silent failures when saving explanation outputs.
+    """
+    try:
+        df.to_csv(path, index=False)
+        if os.path.exists(path):
+            print(f"[SAVE] CSV saved: {path}")
+        else:
+            print(f"[WARN] CSV NOT saved: {path}")
+    except Exception as e:
+        print(f"[ERR] CSV save failed: {path} -> {e}")
+
+# ------------------------------
+# Features & targets for XAI
+# ------------------------------
 X_feat = df[["E", "I", "X"]].copy()
 y_cls  = df["stable"].astype(int).values
 reg_mask = df["lock_at"] >= 0
 X_reg = X_feat[reg_mask]
 y_reg = df.loc[reg_mask, "lock_at"].values
 
-# Sanity checks
-assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
+# Basic sanity checks
+assert not np.isnan(X_feat.values).any(), "NaN detected in X_feat!"
 if len(X_reg) > 0:
-    assert not np.isnan(X_reg.values).any(), "NaN in X_reg!"
+    assert not np.isnan(X_reg.values).any(), "NaN detected in X_reg!"
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import r2_score, accuracy_score
 
+# Split data
 Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
     X_feat, y_cls, test_size=0.25, random_state=42, stratify=y_cls
 )
@@ -346,83 +376,129 @@ if have_reg:
         X_reg, y_reg, test_size=0.25, random_state=42
     )
 
+# ------------------------------
+# Train models
+# ------------------------------
 rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
 rf_cls.fit(Xtr_c, ytr_c)
 cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
 print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
 
+rf_reg, reg_r2 = None, None
 if have_reg:
     rf_reg = RandomForestRegressor(n_estimators=400, random_state=42, n_jobs=-1)
     rf_reg.fit(Xtr_r, ytr_r)
     reg_r2 = r2_score(yte_r, rf_reg.predict(Xte_r))
     print(f"[XAI] Regression R^2 (lock_at): {reg_r2:.3f}")
 else:
-    rf_reg, reg_r2 = None, None
     print("[XAI] Not enough locked samples for regression (need ~30+).")
 
-# SHAP — classification (robust shape handling)
-X_plot = Xte_c.copy()
+# ------------------------------
+# SHAP (classification)
+# ------------------------------
+shap_cls_png = os.path.join(FIG_DIR, "shap_summary_cls_stable.png")
 try:
-    expl_cls = shap.TreeExplainer(rf_cls, feature_perturbation="interventional", model_output="raw")
-    sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
-except Exception:
-    expl_cls = shap.Explainer(rf_cls, Xtr_c)
-    sv_cls = expl_cls(X_plot).values
+    X_plot = Xte_c.copy()
 
-if isinstance(sv_cls, list):
-    sv_cls = sv_cls[1]  # class 1
-sv_cls = np.asarray(sv_cls)
-if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
-    sv_cls = sv_cls[:, :, 1]
-elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
-    sv_cls = sv_cls[1, :, :]
-assert sv_cls.shape == X_plot.shape, f"SHAP shape {sv_cls.shape} != data shape {X_plot.shape}"
-
-plt.figure()
-shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
-plt.title("SHAP summary – classification (stable)")
-plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
-plt.close()
-
-# SHAP — regression (if available)
-if have_reg and rf_reg is not None:
-    X_plot_r = Xte_r.copy()
+    # Try TreeExplainer first; fall back to Explainer if incompatible
     try:
-        expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional", model_output="raw")
-        sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
+        expl_cls = shap.TreeExplainer(
+            rf_cls, feature_perturbation="interventional", model_output="raw"
+        )
+        sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
     except Exception:
-        expl_reg = shap.Explainer(rf_reg, Xtr_r)
-        sv_reg = expl_reg(X_plot_r).values
+        expl_cls = shap.Explainer(rf_cls, Xtr_c)
+        sv_cls = expl_cls(X_plot).values
 
-    sv_reg = np.asarray(sv_reg)
-    if sv_reg.ndim == 3 and sv_reg.shape[0] == X_plot_r.shape[0]:
-        sv_reg = sv_reg[:, :, 0]
-    elif sv_reg.ndim == 3 and sv_reg.shape[-1] == X_plot_r.shape[1]:
-        sv_reg = sv_reg[0, :, :]
-    assert sv_reg.shape == X_plot_r.shape, f"SHAP shape {sv_reg.shape} != data shape {X_plot_r.shape}"
+    # Normalize shape to (n_samples, n_features)
+    if isinstance(sv_cls, list):
+        sv_cls = sv_cls[1]  # take positive class
+    sv_cls = np.asarray(sv_cls)
+    if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
+        sv_cls = sv_cls[:, :, 1]
+    elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
+        sv_cls = sv_cls[1, :, :]
+    assert sv_cls.shape == X_plot.shape, f"SHAP shape mismatch: {sv_cls.shape} != {X_plot.shape}"
 
     plt.figure()
-    shap.summary_plot(sv_reg, X_plot_r.values, feature_names=X_plot_r.columns.tolist(), show=False)
-    plt.title("SHAP summary – regression (lock_at)")
-    plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
-    plt.close()
+    shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
+    _savefig_safe(shap_cls_png)
 
-# LIME — local classification explanation
-lime_explainer = LimeTabularExplainer(
-    training_data=Xtr_c.values,
-    feature_names=X_feat.columns.tolist(),
-    discretize_continuous=True,
-    mode='classification'
-)
-exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
-lime_list = exp.as_list(label=1)
-pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
-    os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
-)
+    # Save raw SHAP values for debugging / future analysis
+    np.save(os.path.join(FIG_DIR, "shap_values_cls.npy"), sv_cls)
+
+except Exception as e:
+    print(f"[ERR] SHAP classification failed: {e}")
+
+# ------------------------------
+# SHAP (regression, if available)
+# ------------------------------
+if rf_reg is not None:
+    shap_reg_png = os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png")
+    try:
+        X_plot_r = Xte_r.copy()
+        try:
+            expl_reg = shap.TreeExplainer(
+                rf_reg, feature_perturbation="interventional", model_output="raw"
+            )
+            sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
+        except Exception:
+            expl_reg = shap.Explainer(rf_reg, Xtr_r)
+            sv_reg = expl_reg(X_plot_r).values
+
+        sv_reg = np.asarray(sv_reg)
+        if sv_reg.ndim == 3 and sv_reg.shape[0] == X_plot_r.shape[0]:
+            sv_reg = sv_reg[:, :, 0]
+        elif sv_reg.ndim == 3 and sv_reg.shape[-1] == X_plot_r.shape[1]:
+            sv_reg = sv_reg[0, :, :]
+        assert sv_reg.shape == X_plot_r.shape, f"SHAP shape mismatch: {sv_reg.shape} != {X_plot_r.shape}"
+
+        plt.figure()
+        shap.summary_plot(sv_reg, X_plot_r.values, feature_names=X_plot_r.columns.tolist(), show=False)
+        _savefig_safe(shap_reg_png)
+
+        np.save(os.path.join(FIG_DIR, "shap_values_reg.npy"), sv_reg)
+
+    except Exception as e:
+        print(f"[ERR] SHAP regression failed: {e}")
+
+# ------------------------------
+# LIME (local classification explanation)
+# ------------------------------
+lime_csv = os.path.join(FIG_DIR, "lime_example_classification.csv")
+lime_png = os.path.join(FIG_DIR, "lime_example_classification.png")
+try:
+    lime_explainer = LimeTabularExplainer(
+        training_data=Xtr_c.values,
+        feature_names=X_feat.columns.tolist(),
+        discretize_continuous=True,
+        mode='classification'
+    )
+    exp = lime_explainer.explain_instance(
+        Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=min(5, X_feat.shape[1])
+    )
+    lime_list = exp.as_list(label=1)  # explanation for class "stable=1"
+    lime_df = pd.DataFrame(lime_list, columns=["feature", "weight"])
+    _save_df_safe(lime_df, lime_csv)
+
+    # Quick bar chart of LIME weights
+    plt.figure(figsize=(6,4))
+    plt.barh(lime_df["feature"], lime_df["weight"])
+    plt.xlabel("LIME weight")
+    plt.ylabel("Feature")
+    plt.title("LIME explanation (stable=1)")
+    plt.tight_layout()
+    _savefig_safe(lime_png)
+
+except Exception as e:
+    print(f"[ERR] LIME failed: {e}")
 
 # ======================================================
 # 12) Save all outputs to Google Drive (KL×Shannon base)
 # ======================================================
+print("\n[INFO] Files in FIG_DIR before Drive copy:")
+for fn in sorted(os.listdir(FIG_DIR)):
+    print("   -", fn)
 GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_Shannon"
 GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
 os.makedirs(GOOGLE_DIR, exist_ok=True)
