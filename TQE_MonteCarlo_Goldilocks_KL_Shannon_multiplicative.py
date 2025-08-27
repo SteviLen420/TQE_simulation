@@ -2,7 +2,7 @@
 # Theory of the Question of Existence (TQE)
 # Energy–Information Coupling Simulation
 # ===========================================
-# Author: Stefan Lengyel
+# Author: Stefan Len
 # Purpose: Monte Carlo simulation with Goldilocks_KL + Shannon (multiplicative)
 # ===========================================
 
