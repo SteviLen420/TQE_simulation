@@ -285,7 +285,66 @@ plt.xticks([0, 1], labels)
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
-# 10) Save summary
+# 10) Stability by Information parameter I
+#     - exact split: I == 0 vs I > 0
+#     - epsilon sweep: treat "near zero" I <= eps as practical zero
+# ======================================================
+import numpy as np
+import pandas as pd
+
+# Safety checks (should already be true in this notebook)
+assert "I" in df.columns and "stable" in df.columns, "DataFrame must have 'I' and 'stable' columns."
+
+def _stability_stats(mask: pd.Series, label: str):
+    """Return counts and stable ratio for a boolean mask over df."""
+    total = int(mask.sum())
+    stables = int(df.loc[mask, "stable"].sum())
+    ratio = (stables / total) if total > 0 else float("nan")
+    return {"group": label, "n": total, "stable_n": stables, "stable_ratio": ratio}
+
+# ---------- Exact split: I == 0 vs I > 0 ----------
+mask_I_eq0 = (df["I"] == 0.0)
+mask_I_gt0 = (df["I"]  > 0.0)
+
+zero_split_rows = [
+    _stability_stats(mask_I_eq0, "I == 0"),
+    _stability_stats(mask_I_gt0, "I > 0"),
+]
+zero_split_df = pd.DataFrame(zero_split_rows)
+
+# Save to SAVE_DIR
+zero_split_path = os.path.join(SAVE_DIR, "stability_by_I_zero.csv")
+zero_split_df.to_csv(zero_split_path, index=False)
+
+print("\n📈 Stability by I (exact zero vs positive):")
+print(zero_split_df.to_string(index=False))
+if zero_split_df.loc[zero_split_df["group"] == "I == 0", "n"].iloc[0] == 0:
+    print("⚠️ No exact I = 0 values in this sample; see epsilon sweep below.")
+
+# ---------- Epsilon sweep: near-zero thresholds ----------
+# Useful when there are no exact zeros due to floating-point draws.
+eps_list = [1e-12, 1e-9, 1e-6, 1e-3, 1e-2, 5e-2, 1e-1]
+
+eps_rows = []
+for eps in eps_list:
+    # I <= eps as "practically zero"
+    eps_rows.append({**_stability_stats(df["I"] <= eps, f"I <= {eps}"), "eps": eps})
+    # I  > eps as "non-zero"
+    eps_rows.append({**_stability_stats(df["I"]  > eps, f"I > {eps}"),  "eps": eps})
+
+eps_df = pd.DataFrame(eps_rows)
+eps_path = os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv")
+eps_df.to_csv(eps_path, index=False)
+
+print("\n📈 Epsilon sweep (near-zero thresholds, preview):")
+print(eps_df.head(12).to_string(index=False))
+
+print(f"\n📝 Saved breakdowns to:")
+print(f" - {zero_split_path}")
+print(f" - {eps_path}")
+
+# ======================================================
+# 11) Save summary
 # ======================================================
 summary = {
     "params": params,
@@ -318,7 +377,7 @@ print(f"📂 Directory: {SAVE_DIR}")
 save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 
 # ======================================================
-# 11) XAI (SHAP + LIME) 
+# 12) XAI (SHAP + LIME) 
 # ======================================================
 
 # ---------- Features and targets ----------
