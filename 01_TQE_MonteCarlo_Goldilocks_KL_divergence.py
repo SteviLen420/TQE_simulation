@@ -412,6 +412,10 @@ plt.title("SHAP summary – classification (stable)")
 plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
 plt.close()
 
+# --- Save SHAP values (classification) to CSV ---
+df_shap_cls = pd.DataFrame(sv_cls, columns=X_plot.columns)
+df_shap_cls.to_csv(os.path.join(FIG_DIR, "shap_values_classification.csv"), index=False)
+
 # Regression SHAP (if trained)
 if rf_reg is not None:
     X_plot_r = Xte_r.copy()
@@ -436,6 +440,10 @@ if rf_reg is not None:
     plt.title("SHAP summary – regression (lock_at)")
     plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
     plt.close()
+
+    # --- Save SHAP values (regression) to CSV ---
+    df_shap_reg = pd.DataFrame(sv_reg, columns=X_plot_r.columns)
+    df_shap_reg.to_csv(os.path.join(FIG_DIR, "shap_values_regression.csv"), index=False)
 
 # ---------- LIME: local explanation (classification) ----------
 lime_explainer = LimeTabularExplainer(
