@@ -59,7 +59,12 @@ params = {
     "seed":  None         # random seed for reproducibility
 }
 
+# --- Generate a random seed at the start ---
+if params["seed"] is None:
+    params["seed"] = int(np.random.randint(0, 2**32 - 1))
+
 rng = np.random.default_rng(seed=params["seed"])
+print(f"🎲 Using random seed: {params['seed']}")
 
 # Output dirs
 run_id  = time.strftime("TQE_(E,I)KL_divergence_%Y%m%d_%H%M%S")
@@ -176,6 +181,10 @@ for i in range(params["N_samples"]):
         "seed": seed_val   # NEW
     })
 
+# --- Convert to DataFrame after loop ---
+df = pd.DataFrame(rows)
+df.to_csv(os.path.join(SAVE_DIR, "samples.csv"), index=False)
+
 # ======================================================
 # 7) Stability curve (binned) + dynamic Goldilocks zone
 # ======================================================
@@ -273,6 +282,8 @@ summary = {
     "unstable_ratio": float(1 - df["stable"].mean()),
     "E_c_low": E_c_low,
     "E_c_high": E_c_high,
+    "seed": params["seed"],
+    "master_seed": params["seed"],
     "figures": {
         "stability_curve": os.path.join(FIG_DIR, "stability_curve.png"),
         "scatter_EI": os.path.join(FIG_DIR, "scatter_EI.png"),
@@ -291,15 +302,6 @@ print(f"Goldilocks zone: {E_c_low:.1f} – {E_c_high:.1f}" if E_c_low else "No s
 print(f"📂 Directory: {SAVE_DIR}")
 
 save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
-
-# Print summary to console
-print("\n✅ DONE.")
-print(f"Runs: {len(df)}")
-print(f"Stable universes: {summary['stable_count']}")
-print(f"Unstable universes: {summary['unstable_count']}")
-print(f"Stability ratio: {summary['stable_ratio']:.3f}")
-print(f"Goldilocks zone: {E_c_low:.1f} – {E_c_high:.1f}" if E_c_low else "No stable zone found")
-print(f"📂 Directory: {SAVE_DIR}")
 
 # ======================================================
 # 11) XAI (SHAP + LIME) 
