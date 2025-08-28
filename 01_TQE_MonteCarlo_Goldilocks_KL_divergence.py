@@ -6,17 +6,18 @@
 # Purpose: Monte Carlo simulation with Goldilocks_KL divergence
 # =============================================================================
 # SUMMARY
-# This notebook implements a Monte Carlo simulation pipeline that models the
-# coupling between energy (E) and information (I). The information parameter I
-# is normalized from the KL divergence between random quantum states (0..1).
-# Stabilization (“law lock-in”) is analyzed on the composite variable X = E·I,
-# estimating both its probability and timing. The Goldilocks zone is detected
-# via spline fitting on the P(stable | X) curve.
-#
-# Each run is initialized with a master random seed for reproducibility, and
-# every simulated universe also receives a unique seed (saved separately).
-# Results are exported to CSV/JSON summaries and figures, including stability
-# curves, scatter plots, and SHAP/LIME explanations.
+# This notebook implements a Monte Carlo simulation that models the coupling 
+# between energy (E) and information (I). 
+# The information parameter (I) is normalized from the KL divergence between 
+# random quantum states (range 0–1). 
+# The main goal is to determine the domain of the composite variable X = E·I 
+# that allows the emergence of stable universes (the Goldilocks zone). 
+# The stability probability is estimated by fitting a spline to the curve 
+# P(stable | X). 
+# Each run is initialized with a unique master seed for reproducibility, and 
+# every simulated universe also receives its own seed, saved to separate files. 
+# Results (CSV, JSON, figures) include the stability curve, E–I scatter plots, 
+# and SHAP/LIME explanations of the effects of E, I, and X. 
 # =============================================================================
 
 from google.colab import drive
