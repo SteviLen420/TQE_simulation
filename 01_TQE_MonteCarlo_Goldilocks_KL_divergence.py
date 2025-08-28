@@ -185,6 +185,14 @@ for i in range(params["N_samples"]):
 df = pd.DataFrame(rows)
 df.to_csv(os.path.join(SAVE_DIR, "samples.csv"), index=False)
 
+# --- Save master seed separately ---
+with open(os.path.join(SAVE_DIR, "master_seed.json"), "w") as f:
+    json.dump({"master_seed": params["seed"]}, f, indent=2)
+
+# --- Save universe seeds separately ---
+df_seeds = pd.DataFrame({"universe_id": range(len(df)), "seed": df["seed"]})
+df_seeds.to_csv(os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False)
+
 # ======================================================
 # 7) Stability curve (binned) + dynamic Goldilocks zone
 # ======================================================
