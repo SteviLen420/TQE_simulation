@@ -9,9 +9,14 @@
 # This notebook implements a Monte Carlo simulation pipeline that models the
 # coupling between energy (E) and information (I). The information parameter I
 # is normalized from the KL divergence between random quantum states (0..1).
-# We analyze stabilization (“law lock-in”) on the composite variable X = E·I,
+# Stabilization (“law lock-in”) is analyzed on the composite variable X = E·I,
 # estimating both its probability and timing. The Goldilocks zone is detected
 # via spline fitting on the P(stable | X) curve.
+#
+# Each run is initialized with a master random seed for reproducibility, and
+# every simulated universe also receives a unique seed (saved separately).
+# Results are exported to CSV/JSON summaries and figures, including stability
+# curves, scatter plots, and SHAP/LIME explanations.
 # =============================================================================
 
 from google.colab import drive
