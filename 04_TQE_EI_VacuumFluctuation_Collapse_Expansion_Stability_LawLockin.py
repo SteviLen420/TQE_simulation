@@ -188,6 +188,26 @@ def law_lock_in(E, I, n_epoch=500):
 # 4) Monte Carlo Simulation: Stability + Law lock-in for many universes
 # ======================================================
 
+# Helper function: Information parameter based on KL × Shannon
+def sample_information_param_KLxShannon(dim=8):
+    psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
+    p1 = np.abs(psi1.full().flatten())**2
+    p2 = np.abs(psi2.full().flatten())**2
+    p1 /= p1.sum(); p2 /= p2.sum()
+    eps = 1e-12
+
+    # KL divergence normalized
+    KL_val = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
+    I_kl = KL_val / (1.0 + KL_val)
+
+    # Normalized Shannon entropy
+    H = -np.sum(p1 * np.log(p1 + eps))
+    I_shannon = H / np.log(len(p1))
+
+    # Multiplicative fusion → squashed back to [0,1]
+    I_raw = I_kl * I_shannon
+    return I_raw / (1.0 + I_raw)
+
 # Number of universes to simulate
 N = 1000  
 
@@ -329,13 +349,14 @@ if all_histories:
     avg_c = np.mean(truncated, axis=0)
     std_c = np.std(truncated, axis=0)
 
-    # Plot average dynamics
-    plt.figure()
-    plt.plot(avg_c, label="Average c value")
-    plt.fill_between(np.arange(min_len), avg_c-std_c, avg_c+std_c, 
-                     alpha=0.3, color="blue", label="±1σ")
-    plt.axvline(median_epoch, color="r", ls="--", lw=2,
-                label=f"Median lock-in ≈ {median_epoch:.0f}")
+   # Plot average dynamics
+   plt.figure()
+   plt.plot(avg_c, label="Average c value")
+   plt.fill_between(np.arange(min_len), avg_c-std_c, avg_c+std_c, 
+                 alpha=0.3, color="blue", label="±1σ")
+   if median_epoch is not None:  # <-- guard
+       plt.axvline(median_epoch, color="r", ls="--", lw=2,
+                   label=f"Median lock-in ≈ {median_epoch:.0f}")
     plt.title("Average law lock-in dynamics (Monte Carlo)")
     plt.xlabel("epoch")
     plt.ylabel("c value (m/s)")
