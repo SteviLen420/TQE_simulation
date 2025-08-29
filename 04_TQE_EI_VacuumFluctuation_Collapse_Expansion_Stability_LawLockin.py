@@ -268,10 +268,10 @@ for _ in range(N):
     else:
         final_cs.append(np.nan)
 
-# central median lock-in (used by plots later)
+# central median lock-in 
 valid_epochs = [e for e in law_epochs if e >= 0]
-med_lock = float(np.median(valid_epochs)) if len(valid_epochs) > 0 else None
-median_epoch = med_lock   # compatibility: later code expects "median_epoch"
+mean_lock = float(np.mean(valid_epochs)) if len(valid_epochs) > 0 else None
+median_epoch = mean_lock 
 
 # ======================================================
 # 5) Build master DataFrame and save
