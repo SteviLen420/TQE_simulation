@@ -149,26 +149,30 @@ E_vals, stables, law_epochs, final_cs, all_histories = [], [], [], [], []
 X_vals = []  # E-only: X = E
 
 for _ in range(N):
-    Ei = float(np.random.lognormal(2.5, 0.8))  # Sample energy
-
-    # --- Save parameter ---
+    # Sample Energy E from a log-normal distribution
+    Ei = float(np.random.lognormal(2.5, 0.8))
     E_vals.append(Ei)
-    X_vals.append(Ei)  # E-only: X == E
 
-    # --- Stability check for each universe ---
-    s = is_stable(Ei)       # <-- only E is passed
+    # Check if this universe is stable
+    s = is_stable(Ei)
     stables.append(s)
 
-    # --- Law lock-in only for stable universes ---
     if s == 1:
-        lock_epoch, c_hist = law_lock_in(Ei)   # <-- only E is passed
+        # Run law lock-in only for stable universes
+        lock_epoch, c_hist = law_lock_in(Ei, n_epoch=500)  # use 500 epochs if desired
         law_epochs.append(lock_epoch)
+
         if len(c_hist) > 0:
-            final_cs.append(c_hist[-1])        # store final c value
-            all_histories.append(c_hist)       # store full trajectory
+            # If lock-in occurred, save the final c value and full trajectory
+            final_cs.append(c_hist[-1])
+            all_histories.append(c_hist)
+        else:
+            # Stable, but NO lock-in → still append NaN to keep array lengths equal
+            final_cs.append(np.nan)
     else:
-        law_epochs.append(-1)                  # unstable → no lock-in
-        final_cs.append(np.nan)                # NaN for final c
+        # Unstable universe → mark no lock-in and store NaN for c
+        law_epochs.append(-1)
+        final_cs.append(np.nan)
 
 # --- Median epoch of law lock-in (only for universes that actually locked) ---
 valid_epochs = [e for e in law_epochs if e >= 0]
@@ -182,6 +186,8 @@ stability_df = pd.DataFrame({
     "final_c": final_cs
 })
 stability_df.to_csv(os.path.join(SAVE_DIR, "stability.csv"), index=False)
+assert len(E_vals) == len(stables) == len(law_epochs) == len(final_cs), \
+    f"Length mismatch: E={len(E_vals)}, S={len(stables)}, lock={len(law_epochs)}, c={len(final_cs)}"
     
 # ======================================================
 # 6) Stability summary (counts + percentages) - unified
