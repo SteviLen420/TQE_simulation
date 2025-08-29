@@ -534,7 +534,7 @@ for root, dirs, files in os.walk(SAVE_DIR):
 
     for file in files:
         # allowed extensions: .png, .fits, .csv, .json, .txt
-        if not file.endswith((".png", ".fits", ".csv", ".json", ".txt")):
+        if not file.endswith((".png", ".fits", ".csv", ".json", ".txt", ".npy")):
             continue
 
         src = os.path.join(root, file)
