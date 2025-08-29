@@ -155,7 +155,7 @@ collapse_df.to_csv(os.path.join(SAVE_DIR, "collapse.csv"), index=False)
 # ======================================================
 # 3) Additional lock-in: Physical laws (speed of light c)
 # ======================================================
-def law_lock_in(E, I, n_epoch=1000):
+def law_lock_in(E, I, n_epoch=500):
     """
     Simulates the lock-in of physical laws with Goldilocks modulation.
     """
@@ -209,7 +209,7 @@ def sample_information_param_KLxShannon(dim=8):
     return I_raw / (1.0 + I_raw)
 
 # Number of universes to simulate
-N = 1000
+N = 2500
 
 # Storage lists
 X_vals, I_vals, stables, law_epochs, final_cs, all_histories = [], [], [], [], [], []
@@ -240,33 +240,23 @@ def is_stable(E, I, n_epoch=200):
             return 1
     return 0
 
-# Run the simulation for N universes
-for _ in range(N):
-    Ei = float(np.random.lognormal(2.5, 0.8))
-    Ii = sample_information_param_KLxShannon(dim=8)   # <<< I most KL × Shannon !!!
-    fi = f_EI(Ei, Ii) 
-    Xi = Ei * Ii
+# Stability check
+stable = is_stable(Ei, Ii)
+stables.append(stable)
 
-    # Save parameters
-    X_vals.append(Xi)
-    I_vals.append(Ii)
-    E_vals.append(Ei)             
-    f_vals.append(fi)
+# Law lock-in – csak a stabilokra
+if stable == 1:
+    lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=1000)  # hosszabb futás
+else:
+    lock_epoch, c_hist = -1, []
 
-    # Stability check
-    stable = is_stable(Ei, Ii)
-    stables.append(stable)
+law_epochs.append(lock_epoch)
 
-    # Law lock-in
-    lock_epoch, c_hist = law_lock_in(Ei, Ii) 
-    law_epochs.append(lock_epoch)
-
-    # --- Save results (only for stable universes in Goldilocks) ---
-    if stables[-1] == 1 and len(c_hist) > 0:  
-        final_cs.append(c_hist[-1])
-        all_histories.append(c_hist)
-    else:
-        final_cs.append(np.nan)
+if stable == 1 and len(c_hist) > 0:  
+    final_cs.append(c_hist[-1])
+    all_histories.append(c_hist)
+else:
+    final_cs.append(np.nan)
 
 # <<< Compute central median lock-in epoch once (AFTER the loop) >>>
 valid_epochs = [e for e in law_epochs if e >= 0]
@@ -285,6 +275,20 @@ df = pd.DataFrame({
     "final_c": final_cs,
 })
 df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
+
+# ======================================================
+# [DIAG] Stability vs Law lock-in (extra check)
+# ======================================================
+stable_total = int(np.sum(stables))
+valid_lockins = int(np.sum([e >= 0 for e in law_epochs]))
+valid_lockins_among_stable = int(np.sum([e >= 0 for e, s in zip(law_epochs, stables) if s == 1]))
+
+print("\n[DIAG] Stability vs Law lock-in")
+print(f"Stable universes: {stable_total}/{N} ({100*stable_total/N:.1f}%)")
+print(f"Lock-ins (any): {valid_lockins}/{N} ({100*valid_lockins/N:.1f}%)")
+if stable_total > 0:
+    print(f"Lock-ins among stable: {valid_lockins_among_stable}/{stable_total} "
+          f"({100*valid_lockins_among_stable/stable_total:.1f}%)")
         
 # ======================================================
 # 6) Stability summary (counts + percentages)
