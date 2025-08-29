@@ -1,23 +1,17 @@
 # =============================================================================
 # Theory of the Question of Existence (TQE)
-# Energy–Information Coupling Simulation — KL × Shannon (multiplicative)
+# Energy–Information Coupling Simulation — KL × Shannon (multiplicative) [PATCHED]
 # =============================================================================
 # Author: Stefan Len
 # Purpose: Monte Carlo simulation with Goldilocks using I = f(KL, Shannon)
-# =============================================================================
-# SUMMARY
-# This notebook runs a Monte Carlo simulation of the coupling between
-# energy (E) and information (I). Here I is a multiplicative fusion of
-# KL-divergence-based information and normalized Shannon entropy of a
-# random quantum state. We analyze stabilization (“lock-in”) on X = E·I,
-# detect a Goldilocks window on P(stable | X), add XAI (SHAP+LIME),
-# and perform a seed search for the Top-5 seeds by stability.
+#          + reproducible seeds, I==0 / eps sweep, SHAP CSVs, stratify guard,
+#          + extended summary, robust Drive copy, seed search kept
 # =============================================================================
 
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-import os, time, json, math, warnings, sys, subprocess, shutil
+import os, time, json, warnings, sys, subprocess, shutil
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -36,7 +30,7 @@ import pandas as pd
 from scipy.interpolate import make_interp_spline
 warnings.filterwarnings("ignore")
 
-# --- XAI stack: SHAP + LIME only (drop eli5/captum/interpret) ---
+# --- XAI stack: SHAP + LIME only ---
 try:
     import shap
     from lime.lime_tabular import LimeTabularExplainer
@@ -55,10 +49,14 @@ params = {
     "rel_eps": 0.05,      # lock-in threshold on relative change
     "sigma0": 0.5,        # baseline noise amplitude
     "alpha": 1.5,         # noise growth toward edges
-    "seed":  None         # RNG seed (set e.g. 42 for reproducibility)
+    "seed":  None         # RNG seed (if None: generated)
 }
 
+# --------- PATCH: master seed generation + rng ----------
+if params["seed"] is None:
+    params["seed"] = int(np.random.randint(0, 2**32 - 1))
 rng = np.random.default_rng(seed=params["seed"])
+print(f"🎲 Using random seed: {params['seed']}")
 
 # Output dirs
 run_id  = time.strftime("TQE_(E,I)_KL_SHANNON_%Y%m%d_%H%M%S")
@@ -80,7 +78,7 @@ print(f"💾 Results saved in: {SAVE_DIR}")
 # 2) Information parameter I = g(KL, Shannon) (multiplicative fusion)
 # ======================================================
 def sample_information_param(dim=8):
-    # Two random kets for KL, one of them reused for Shannon
+    # Two random kets for KL, one reused for Shannon
     psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
     p1 = np.abs(psi1.full().flatten())**2
     p2 = np.abs(psi2.full().flatten())**2
@@ -95,7 +93,7 @@ def sample_information_param(dim=8):
     H = -np.sum(p1 * np.log(p1 + eps))
     I_shannon = H / np.log(len(p1))
 
-    # Multiplicative coupling, squashed back to [0,1]
+    # Multiplicative coupling, squashed to [0,1]
     I_raw = I_kl * I_shannon
     I = I_raw / (1.0 + I_raw)
     return float(I)
@@ -144,19 +142,34 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
     return stable, (locked_at if locked_at is not None else -1)
 
 # ======================================================
-# 6) Monte Carlo universes
+# 6) Monte Carlo universes  (PATCH: per-universe seed)
 # ======================================================
 rows = []
 for i in range(params["N_samples"]):
+    # unique seed per universe for audit/repro
+    seed_val = int(np.random.randint(0, 2**32 - 1))
+    try:
+        np.random.seed(seed_val)  # for libs that rely on np.random
+    except Exception:
+        pass
+
     E = sample_energy_lognormal()
     I = sample_information_param(dim=8)
     X = E * I
     stable, lock_at = simulate_lock_in(X, params["N_epoch"], params["rel_eps"],
                                        params["sigma0"], params["alpha"])
-    rows.append({"E": E, "I": I, "X": X, "stable": stable, "lock_at": lock_at})
+    rows.append({"E": E, "I": I, "X": X, "stable": stable, "lock_at": lock_at, "seed": seed_val})
 
 df = pd.DataFrame(rows)
 df.to_csv(os.path.join(SAVE_DIR, "samples.csv"), index=False)
+
+# --------- PATCH: save master + per-universe seeds ----------
+with open(os.path.join(SAVE_DIR, "master_seed.json"), "w") as f:
+    json.dump({"master_seed": params["seed"]}, f, indent=2)
+
+pd.DataFrame({"universe_id": range(len(df)), "seed": df["seed"]}).to_csv(
+    os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
+)
 
 # ======================================================
 # 7) Stability curve (binned) + dynamic Goldilocks window
@@ -191,12 +204,11 @@ else:
     print("⚠️ No clear peak zone found, defaulting to peak only.")
 
 plt.figure(figsize=(8,5))
-plt.scatter(xx, yy, s=30, alpha=0.7, label="bin means")
-plt.plot(xs, ys, lw=2, label="spline fit")
-plt.axvline(E_c_low,  ls='--', label=f"E_c_low = {E_c_low:.2f}")
-plt.axvline(E_c_high, ls='--', label=f"E_c_high = {E_c_high:.2f}")
-plt.xlabel("X = E·I")
-plt.ylabel("P(stable)")
+plt.scatter(xx, yy, s=30, c="blue", alpha=0.7, label="bin means")
+plt.plot(xs, ys, "r-", lw=2, label="spline fit")
+plt.axvline(E_c_low,  color='g', ls='--', label=f"E_c_low = {E_c_low:.2f}")
+plt.axvline(E_c_high, color='m', ls='--', label=f"E_c_high = {E_c_high:.2f}")
+plt.xlabel("X = E·I"); plt.ylabel("P(stable)")
 plt.title("Goldilocks zone: stabilization curve (KL × Shannon)")
 plt.legend()
 savefig(os.path.join(FIG_DIR, "stability_curve.png"))
@@ -205,10 +217,10 @@ savefig(os.path.join(FIG_DIR, "stability_curve.png"))
 # 8) Scatter E vs I
 # ======================================================
 plt.figure(figsize=(7,6))
-plt.scatter(df["E"], df["I"], c=df["stable"], cmap="coolwarm", s=10, alpha=0.5)
+sc = plt.scatter(df["E"], df["I"], c=df["stable"], cmap="coolwarm", s=10, alpha=0.5)
 plt.xlabel("Energy (E)"); plt.ylabel("Information parameter (I: KL×Shannon)")
 plt.title("Universe outcomes in (E, I) space")
-plt.colorbar(label="Stable=1 / Unstable=0")
+plt.colorbar(sc, label="Stable=1 / Unstable=0")
 savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
 
 # ======================================================
@@ -223,10 +235,9 @@ print(f"Stable universes:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
 print(f"Unstable universes: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 
 plt.figure()
-plt.bar(["Stable", "Unstable"], [stable_count, unstable_count])
+plt.bar(["Stable", "Unstable"], [stable_count, unstable_count], color=["green", "red"])
 plt.title("Universe Stability Distribution")
-plt.ylabel("Number of Universes")
-plt.xlabel("Category")
+plt.ylabel("Number of Universes"); plt.xlabel("Category")
 plt.xticks([0, 1], [
     f"Stable ({stable_count}, {stable_count/len(df)*100:.1f}%)",
     f"Unstable ({unstable_count}, {unstable_count/len(df)*100:.1f}%)"
@@ -234,7 +245,44 @@ plt.xticks([0, 1], [
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
-# 10) Save summary
+# 10) PATCH: Stability by I (exact zero vs eps sweep)
+# ======================================================
+def _stability_stats(mask: pd.Series, label: str):
+    total = int(mask.sum())
+    stables = int(df.loc[mask, "stable"].sum())
+    ratio = (stables / total) if total > 0 else float("nan")
+    return {"group": label, "n": total, "stable_n": stables, "stable_ratio": ratio}
+
+# Exact split
+mask_I_eq0 = (df["I"] == 0.0)
+mask_I_gt0 = (df["I"]  > 0.0)
+zero_split_rows = [
+    _stability_stats(mask_I_eq0, "I == 0"),
+    _stability_stats(mask_I_gt0, "I > 0"),
+]
+zero_split_df = pd.DataFrame(zero_split_rows)
+zero_split_path = os.path.join(SAVE_DIR, "stability_by_I_zero.csv")
+zero_split_df.to_csv(zero_split_path, index=False)
+print("\n📈 Stability by I (exact zero vs positive):")
+print(zero_split_df.to_string(index=False))
+if zero_split_df.loc[zero_split_df["group"] == "I == 0", "n"].iloc[0] == 0:
+    print("⚠️ No exact I = 0 values in this sample; see epsilon sweep below.")
+
+# Epsilon sweep
+eps_list = [1e-12, 1e-9, 1e-6, 1e-3, 1e-2, 5e-2, 1e-1]
+eps_rows = []
+for eps in eps_list:
+    eps_rows.append({**_stability_stats(df["I"] <= eps, f"I <= {eps}"), "eps": eps})
+    eps_rows.append({**_stability_stats(df["I"]  > eps, f"I > {eps}"),  "eps": eps})
+eps_df = pd.DataFrame(eps_rows)
+eps_path = os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv")
+eps_df.to_csv(eps_path, index=False)
+print("\n📈 Epsilon sweep (near-zero thresholds, preview):")
+print(eps_df.head(12).to_string(index=False))
+print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
+
+# ======================================================
+# 11) Save summary (PATCH: more fields)
 # ======================================================
 summary = {
     "params": params,
@@ -242,8 +290,11 @@ summary = {
     "stable_count": stable_count,
     "unstable_count": unstable_count,
     "stable_ratio": float(df["stable"].mean()),
+    "unstable_ratio": float(1.0 - df["stable"].mean()),
     "E_c_low": E_c_low,
     "E_c_high": E_c_high,
+    "seed": params["seed"],
+    "master_seed": params["seed"],
     "figures": {
         "stability_curve": os.path.join(FIG_DIR, "stability_curve.png"),
         "scatter_EI": os.path.join(FIG_DIR, "scatter_EI.png"),
@@ -261,7 +312,7 @@ print(f"Goldilocks zone: {E_c_low:.2f} – {E_c_high:.2f}")
 print(f"📂 Directory: {SAVE_DIR}")
 
 # ======================================================
-# EXTRA: Seed search — Top-5 seeds with highest stability
+# EXTRA: Seed search — Top-5 seeds with highest stability (kept)
 # ======================================================
 NUM_SEEDS = 100
 UNIVERSES_PER_SEED = 500
@@ -319,66 +370,53 @@ summary["seed_search"] = {
 save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 
 # ======================================================
-# 11) XAI (SHAP + LIME) — robust saving & logging
+# 12) XAI (SHAP + LIME) — stratify guard + CSV saves
 # ======================================================
-
 def _savefig_safe(path):
-    """
-    Save a matplotlib figure to file, close it, and log whether it was successful.
-    This ensures you always see if the figure actually got written to disk.
-    """
     plt.savefig(path, dpi=220, bbox_inches="tight")
     plt.close()
-    if os.path.exists(path):
-        print(f"[SAVE] Figure saved: {path}")
-    else:
-        print(f"[WARN] Figure NOT saved: {path}")
 
-def _save_df_safe(df, path):
-    """
-    Save a pandas DataFrame as CSV with error handling and logging.
-    Prevents silent failures when saving explanation outputs.
-    """
+def _save_df_safe(df_in, path):
     try:
-        df.to_csv(path, index=False)
-        if os.path.exists(path):
-            print(f"[SAVE] CSV saved: {path}")
-        else:
-            print(f"[WARN] CSV NOT saved: {path}")
+        df_in.to_csv(path, index=False)
+        print(f"[SAVE] CSV: {path}")
     except Exception as e:
         print(f"[ERR] CSV save failed: {path} -> {e}")
 
-# ------------------------------
-# Features & targets for XAI
-# ------------------------------
+# Features & targets
 X_feat = df[["E", "I", "X"]].copy()
 y_cls  = df["stable"].astype(int).values
 reg_mask = df["lock_at"] >= 0
 X_reg = X_feat[reg_mask]
 y_reg = df.loc[reg_mask, "lock_at"].values
 
-# Basic sanity checks
-assert not np.isnan(X_feat.values).any(), "NaN detected in X_feat!"
+# Sanity checks
+assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
 if len(X_reg) > 0:
-    assert not np.isnan(X_reg.values).any(), "NaN detected in X_reg!"
+    assert not np.isnan(X_reg.values).any(), "NaN in X_reg!"
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import r2_score, accuracy_score
 
-# Split data
+# --------- PATCH: stratify guard ----------
+vals, cnts = np.unique(y_cls, return_counts=True)
+can_stratify = (len(vals) == 2) and (cnts.min() >= 2)
+stratify_arg = y_cls if can_stratify else None
+if not can_stratify:
+    print(f"[WARN] Skipping stratify: class counts = {dict(zip(vals, cnts))}")
+
 Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
-    X_feat, y_cls, test_size=0.25, random_state=42, stratify=y_cls
+    X_feat, y_cls, test_size=0.25, random_state=42, stratify=stratify_arg
 )
+
 have_reg = len(X_reg) >= 30
 if have_reg:
     Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
         X_reg, y_reg, test_size=0.25, random_state=42
     )
 
-# ------------------------------
 # Train models
-# ------------------------------
 rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
 rf_cls.fit(Xtr_c, ytr_c)
 cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
@@ -393,26 +431,18 @@ if have_reg:
 else:
     print("[XAI] Not enough locked samples for regression (need ~30+).")
 
-# ------------------------------
-# SHAP (classification)
-# ------------------------------
-shap_cls_png = os.path.join(FIG_DIR, "shap_summary_cls_stable.png")
+# SHAP — classification (+ CSV)
 try:
     X_plot = Xte_c.copy()
-
-    # Try TreeExplainer first; fall back to Explainer if incompatible
     try:
-        expl_cls = shap.TreeExplainer(
-            rf_cls, feature_perturbation="interventional", model_output="raw"
-        )
+        expl_cls = shap.TreeExplainer(rf_cls, feature_perturbation="interventional", model_output="raw")
         sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
     except Exception:
         expl_cls = shap.Explainer(rf_cls, Xtr_c)
         sv_cls = expl_cls(X_plot).values
 
-    # Normalize shape to (n_samples, n_features)
     if isinstance(sv_cls, list):
-        sv_cls = sv_cls[1]  # take positive class
+        sv_cls = sv_cls[1]  # positive class
     sv_cls = np.asarray(sv_cls)
     if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
         sv_cls = sv_cls[:, :, 1]
@@ -422,25 +452,22 @@ try:
 
     plt.figure()
     shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
-    _savefig_safe(shap_cls_png)
+    _savefig_safe(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"))
 
-    # Save raw SHAP values for debugging / future analysis
+    # CSV + NPY
+    _save_df_safe(pd.DataFrame(sv_cls, columns=X_plot.columns),
+                  os.path.join(FIG_DIR, "shap_values_classification.csv"))
     np.save(os.path.join(FIG_DIR, "shap_values_cls.npy"), sv_cls)
 
 except Exception as e:
     print(f"[ERR] SHAP classification failed: {e}")
 
-# ------------------------------
-# SHAP (regression, if available)
-# ------------------------------
+# SHAP — regression (+ CSV) if available
 if rf_reg is not None:
-    shap_reg_png = os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png")
     try:
         X_plot_r = Xte_r.copy()
         try:
-            expl_reg = shap.TreeExplainer(
-                rf_reg, feature_perturbation="interventional", model_output="raw"
-            )
+            expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional", model_output="raw")
             sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
         except Exception:
             expl_reg = shap.Explainer(rf_reg, Xtr_r)
@@ -455,18 +482,16 @@ if rf_reg is not None:
 
         plt.figure()
         shap.summary_plot(sv_reg, X_plot_r.values, feature_names=X_plot_r.columns.tolist(), show=False)
-        _savefig_safe(shap_reg_png)
+        _savefig_safe(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"))
 
+        _save_df_safe(pd.DataFrame(sv_reg, columns=X_plot_r.columns),
+                      os.path.join(FIG_DIR, "shap_values_regression.csv"))
         np.save(os.path.join(FIG_DIR, "shap_values_reg.npy"), sv_reg)
 
     except Exception as e:
         print(f"[ERR] SHAP regression failed: {e}")
 
-# ------------------------------
-# LIME (local classification explanation)
-# ------------------------------
-lime_csv = os.path.join(FIG_DIR, "lime_example_classification.csv")
-lime_png = os.path.join(FIG_DIR, "lime_example_classification.png")
+# LIME — local classification explanation (+ CSV + PNG)
 try:
     lime_explainer = LimeTabularExplainer(
         training_data=Xtr_c.values,
@@ -477,38 +502,47 @@ try:
     exp = lime_explainer.explain_instance(
         Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=min(5, X_feat.shape[1])
     )
-    lime_list = exp.as_list(label=1)  # explanation for class "stable=1"
+    lime_list = exp.as_list(label=1)
     lime_df = pd.DataFrame(lime_list, columns=["feature", "weight"])
-    _save_df_safe(lime_df, lime_csv)
+    _save_df_safe(lime_df, os.path.join(FIG_DIR, "lime_example_classification.csv"))
 
-    # Quick bar chart of LIME weights
     plt.figure(figsize=(6,4))
     plt.barh(lime_df["feature"], lime_df["weight"])
-    plt.xlabel("LIME weight")
-    plt.ylabel("Feature")
-    plt.title("LIME explanation (stable=1)")
+    plt.xlabel("LIME weight"); plt.ylabel("Feature"); plt.title("LIME explanation (stable=1)")
     plt.tight_layout()
-    _savefig_safe(lime_png)
+    _savefig_safe(os.path.join(FIG_DIR, "lime_example_classification.png"))
 
 except Exception as e:
     print(f"[ERR] LIME failed: {e}")
 
 # ======================================================
-# 12) Save all outputs to Google Drive (KL×Shannon base)
+# 13) PATCH: Robust copy to Google Drive (counts + .txt allowed)
 # ======================================================
 print("\n[INFO] Files in FIG_DIR before Drive copy:")
 for fn in sorted(os.listdir(FIG_DIR)):
     print("   -", fn)
+
 GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_Shannon"
 GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
 os.makedirs(GOOGLE_DIR, exist_ok=True)
 
+copied, skipped = [], []
 for root, dirs, files in os.walk(SAVE_DIR):
+    dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
+    os.makedirs(dst_dir, exist_ok=True)
     for file in files:
-        if file.endswith((".png", ".fits", ".csv", ".json")):
-            src = os.path.join(root, file)
-            dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
-            os.makedirs(dst_dir, exist_ok=True)
-            shutil.copy2(src, dst_dir)
+        if not file.endswith((".png", ".fits", ".csv", ".json", ".txt")):
+            continue
+        src = os.path.join(root, file)
+        dst = os.path.join(dst_dir, file)
+        try:
+            if os.path.exists(dst) and os.path.samefile(src, dst):
+                skipped.append(dst); continue
+        except Exception:
+            pass
+        shutil.copy2(src, dst); copied.append(dst)
 
-print(f"☁️ All results saved to Google Drive: {GOOGLE_DIR}")
+print("☁️ Copy finished.")
+print(f"Copied: {len(copied)} files")
+print(f"Skipped (same path): {len(skipped)} files")
+print("Google Drive folder:", GOOGLE_DIR)
