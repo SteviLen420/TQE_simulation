@@ -355,21 +355,17 @@ def evolve(E, I, n_epoch=200):
     return A_series, I_series
 
 
-# Run expansion
-A_series, I_series = evolve(E, I, n_epoch=200)
+# t > 0 : Expansion dynamics (use med_lock)
+A_series, I_series = evolve(E, I, n_epoch=params["n_epoch"])
 
-# Plot expansion dynamics with law lock-in marker
+plt.figure()
 plt.plot(A_series, label="Amplitude A")
 plt.plot(I_series, label="Orientation I")
 plt.axhline(np.mean(A_series), color="gray", ls="--", alpha=0.5, label="Equilibrium A")
-
-# red dashed line for the median law lock-in
-plt.axvline(median_epoch, color="r", ls="--", lw=2, label=f"Law lock-in ≈ {median_epoch:.0f}")
-
+if med_lock is not None:
+    plt.axvline(med_lock, color="r", ls="--", lw=2, label=f"Law lock-in ≈ {med_lock:.0f}")
 plt.title("t > 0 : Expansion dynamics")
-plt.xlabel("epoch")
-plt.ylabel("Parameters")
-plt.legend()
+plt.xlabel("epoch"); plt.ylabel("Parameters"); plt.legend()
 savefig(os.path.join(FIG_DIR, "expansion.png"))
 
 # ======================================================
