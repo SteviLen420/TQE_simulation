@@ -36,6 +36,10 @@ SAVE_DIR = os.path.join(GOOGLE_BASE, run_id); os.makedirs(SAVE_DIR, exist_ok=Tru
 FIG_DIR  = os.path.join(SAVE_DIR, "figs"); os.makedirs(FIG_DIR, exist_ok=True)
 summary = {}
 
+# ===== Plot control flags =====
+PLOT_AVG_LOCKIN = False   # average lock-in dynamics plot
+PLOT_LOCKIN_HIST = False  # histogram of lock-in epochs plot
+
 def savefig(p): 
     plt.savefig(p,dpi=150,bbox_inches="tight")
     plt.close()
