@@ -663,6 +663,21 @@ if rf_reg is not None:
     plt.title("SHAP summary – regression (lock_at)")
     plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
     plt.close()
+    
+# ---- SHAP CSV export: regression (if model exists) ----
+shap_reg_csv = os.path.join(FIG_DIR, "shap_values_regression_lock_at.csv")
+shap_reg_importance_csv = os.path.join(FIG_DIR, "shap_feature_importance_regression_lock_at.csv")
+
+# Save sample-level SHAP values
+pd.DataFrame(sv_reg, columns=X_plot_r.columns).to_csv(shap_reg_csv, index=False)
+
+# Save global feature importance (mean |SHAP| across all samples)
+reg_importance = pd.Series(np.mean(np.abs(sv_reg), axis=0), index=X_plot_r.columns) \
+                 .sort_values(ascending=False)
+reg_importance.to_csv(shap_reg_importance_csv, header=["mean_|shap|"])
+
+print(f"[SAVE] SHAP regression CSV -> {shap_reg_csv}")
+print(f"[SAVE] SHAP regression feature importance CSV -> {shap_reg_importance_csv}")
 
 # ---------- LIME: local explanation (classification) ----------
 lime_explainer = LimeTabularExplainer(
