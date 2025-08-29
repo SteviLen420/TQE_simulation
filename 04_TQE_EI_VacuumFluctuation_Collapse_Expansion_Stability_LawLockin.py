@@ -671,6 +671,19 @@ if rf_reg is not None and 'sv_reg' in locals():
 else:
     print("[XAI] Skipping SHAP regression CSV export (not enough lock-in universes).")
 
+# ---- SHAP CSV export: classification ----
+shap_cls_csv = os.path.join(FIG_DIR, "shap_values_classification.csv")
+shap_cls_importance_csv = os.path.join(FIG_DIR, "shap_feature_importance_classification.csv")
+
+pd.DataFrame(np.asarray(sv_cls), columns=X_plot.columns).to_csv(shap_cls_csv, index=False)
+
+cls_importance = pd.Series(np.mean(np.abs(sv_cls), axis=0), index=X_plot.columns) \
+                   .sort_values(ascending=False)
+cls_importance.to_csv(shap_cls_importance_csv, header=["mean_|shap|"])
+
+print(f"[SAVE] SHAP classification CSV -> {shap_cls_csv}")
+print(f"[SAVE] SHAP classification feature importance CSV -> {shap_cls_importance_csv}")
+
 # ---------- LIME: local explanation (classification) ----------
 lime_explainer = LimeTabularExplainer(
     training_data=Xtr_c.values,
