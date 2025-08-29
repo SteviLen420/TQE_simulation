@@ -1,6 +1,6 @@
 # ===========================================================================
 # Theory of the Question of Existence (TQE)
-# (E) Vacuum fluctuation → Collapse → Expansion → Law lock-in
+# (E) Vacuum fluctuation → superposition → Collapse → Expansion → Law lock-in
 # ===========================================================================
 # Author: Stefan Len
 # Description: Energy-only model of cosmogenesis via vacuum fluctuation
