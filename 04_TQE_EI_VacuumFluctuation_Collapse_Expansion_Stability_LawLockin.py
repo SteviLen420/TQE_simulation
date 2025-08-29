@@ -188,79 +188,64 @@ def law_lock_in(E, I, n_epoch=500):
 # 4) Monte Carlo Simulation: Stability + Law lock-in for many universes
 # ======================================================
 
-# Helper function: Information parameter based on KL × Shannon
-def sample_information_param_KLxShannon(dim=8):
-    psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
-    p1 = np.abs(psi1.full().flatten())**2
-    p2 = np.abs(psi2.full().flatten())**2
-    p1 /= p1.sum(); p2 /= p2.sum()
-    eps = 1e-12
-
-    # KL divergence normalized
-    KL_val = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
-    I_kl = KL_val / (1.0 + KL_val)
-
-    # Normalized Shannon entropy
-    H = -np.sum(p1 * np.log(p1 + eps))
-    I_shannon = H / np.log(len(p1))
-
-    # Multiplicative fusion → squashed back to [0,1]
-    I_raw = I_kl * I_shannon
-    return I_raw / (1.0 + I_raw)
-
 # Number of universes to simulate
-N = 2500
+N = 1000  
 
 # Storage lists
 X_vals, I_vals, stables, law_epochs, final_cs, all_histories = [], [], [], [], [], []
 E_vals, f_vals = [], []
 
 def is_stable(E, I, n_epoch=200):
-    """
-    Checks whether a universe stabilizes.
-    Stability is determined by amplitude convergence inside the Goldilocks zone.
-    """
     f = f_EI(E, I)
-    if f < 0.2:  
-        return 0   # too far from Goldilocks → unstable
-    
-    A = 20
-    calm = 0
-    for n in range(n_epoch):
+    if f < 0.2:
+        return 0
+    A, calm = 20, 0
+    for _ in range(n_epoch):
         A_prev = A
-        A = A*1.02 + np.random.normal(0, 2)  # amplitude update with noise
+        A = A*1.02 + np.random.normal(0, 2)
         delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
-
-        if delta < 0.05:
-            calm += 1
-        else:
-            calm = 0
-
-        if calm >= 5:   # stabilized for 5 consecutive steps
+        calm = calm + 1 if delta < 0.05 else 0
+        if calm >= 5:
             return 1
     return 0
 
-# Stability check
-stable = is_stable(Ei, Ii)
-stables.append(stable)
+# --------- MAIN MC LOOP ---------
+for _ in range(N):
+    # sample parameters
+    Ei = float(np.random.lognormal(2.5, 0.8))
+    Ii = sample_information_param_KLxShannon(dim=8)
+    fi = f_EI(Ei, Ii)
+    Xi = Ei * Ii
 
-# Law lock-in – csak a stabilokra
-if stable == 1:
-    lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=1000)  # hosszabb futás
-else:
-    lock_epoch, c_hist = -1, []
+    # save params
+    E_vals.append(Ei)
+    I_vals.append(Ii)
+    f_vals.append(fi)
+    X_vals.append(Xi)
 
-law_epochs.append(lock_epoch)
+    # stability
+    stable = is_stable(Ei, Ii)
+    stables.append(stable)
 
-if stable == 1 and len(c_hist) > 0:  
-    final_cs.append(c_hist[-1])
-    all_histories.append(c_hist)
-else:
-    final_cs.append(np.nan)
+    # law lock-in only for stable
+    if stable == 1:
+        lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=1000)  # hosszabb futás
+    else:
+        lock_epoch, c_hist = -1, []
 
-# <<< Compute central median lock-in epoch once (AFTER the loop) >>>
+    law_epochs.append(lock_epoch)
+
+    # keep histories for averaging
+    if stable == 1 and len(c_hist) > 0:
+        final_cs.append(c_hist[-1])
+        all_histories.append(c_hist)
+    else:
+        final_cs.append(np.nan)
+
+# central median lock-in (used by plots later)
 valid_epochs = [e for e in law_epochs if e >= 0]
 med_lock = float(np.median(valid_epochs)) if len(valid_epochs) > 0 else None
+median_epoch = med_lock   # compatibility: later code expects "median_epoch"
 
 # ======================================================
 # 5) Build master DataFrame and save
