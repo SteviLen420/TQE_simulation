@@ -1,6 +1,6 @@
 # ===========================================================================
 # Theory of the Question of Existence (TQE)
-# (E, I) Vacuum fluctuation → Collapse → Expansion → Law lock-in
+# (E, I) Vacuum fluctuation → superposition → Collapse → Expansion → Law lock-in
 # ===========================================================================
 # Author: Stefan Len
 # Description: Full model simulation of energy-information (E,I) dynamics
