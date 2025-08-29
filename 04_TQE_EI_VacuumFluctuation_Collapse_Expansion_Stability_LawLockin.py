@@ -371,19 +371,13 @@ savefig(os.path.join(FIG_DIR, "expansion.png"))
 # ======================================================
 # 9) Histogram of lock-in epochs
 # ======================================================
-# Histogram of lock-in epochs
-valid_epochs = [e for e in law_epochs if e >= 0]
-
+# Histogram of lock-in epochs (use med_lock)
 if len(valid_epochs) > 0:
-    median_epoch = np.median(valid_epochs)
     plt.figure()
     plt.hist(valid_epochs, bins=50, color="blue", alpha=0.7)
-    plt.axvline(median_epoch, color="r", ls="--", lw=2,
-                label=f"Median lock-in = {median_epoch:.0f}")
+    plt.axvline(med_lock, color="r", ls="--", lw=2, label=f"Median lock-in = {med_lock:.0f}")
     plt.title("Distribution of law lock-in epochs (Monte Carlo)")
-    plt.xlabel("Epoch of lock-in")
-    plt.ylabel("Count")
-    plt.legend()
+    plt.xlabel("Epoch of lock-in"); plt.ylabel("Count"); plt.legend()
     savefig(os.path.join(FIG_DIR, "law_lockin_mc.png"))
     
 # ======================================================
