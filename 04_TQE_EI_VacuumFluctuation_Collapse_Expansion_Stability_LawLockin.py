@@ -155,7 +155,7 @@ collapse_df.to_csv(os.path.join(SAVE_DIR, "collapse.csv"), index=False)
 # ======================================================
 # 3) Additional lock-in: Physical laws (speed of light c)
 # ======================================================
-def law_lock_in(E, I, n_epoch=200):
+def law_lock_in(E, I, n_epoch=1000):
     """
     Simulates the lock-in of physical laws with Goldilocks modulation.
     """
@@ -209,7 +209,7 @@ def sample_information_param_KLxShannon(dim=8):
     return I_raw / (1.0 + I_raw)
 
 # Number of universes to simulate
-N = 5000
+N = 1000
 
 # Storage lists
 X_vals, I_vals, stables, law_epochs, final_cs, all_histories = [], [], [], [], [], []
@@ -665,19 +665,22 @@ if rf_reg is not None:
     plt.close()
     
 # ---- SHAP CSV export: regression (if model exists) ----
-shap_reg_csv = os.path.join(FIG_DIR, "shap_values_regression_lock_at.csv")
-shap_reg_importance_csv = os.path.join(FIG_DIR, "shap_feature_importance_regression_lock_at.csv")
+if rf_reg is not None and 'sv_reg' in locals():
+    shap_reg_csv = os.path.join(FIG_DIR, "shap_values_regression_lock_at.csv")
+    shap_reg_importance_csv = os.path.join(FIG_DIR, "shap_feature_importance_regression_lock_at.csv")
 
-# Save sample-level SHAP values
-pd.DataFrame(sv_reg, columns=X_plot_r.columns).to_csv(shap_reg_csv, index=False)
+    # Save sample-level SHAP values
+    pd.DataFrame(sv_reg, columns=X_plot_r.columns).to_csv(shap_reg_csv, index=False)
 
-# Save global feature importance (mean |SHAP| across all samples)
-reg_importance = pd.Series(np.mean(np.abs(sv_reg), axis=0), index=X_plot_r.columns) \
-                 .sort_values(ascending=False)
-reg_importance.to_csv(shap_reg_importance_csv, header=["mean_|shap|"])
+    # Save global feature importance (mean |SHAP| across all samples)
+    reg_importance = pd.Series(np.mean(np.abs(sv_reg), axis=0), index=X_plot_r.columns)\
+                     .sort_values(ascending=False)
+    reg_importance.to_csv(shap_reg_importance_csv, header=["mean_|shap|"])
 
-print(f"[SAVE] SHAP regression CSV -> {shap_reg_csv}")
-print(f"[SAVE] SHAP regression feature importance CSV -> {shap_reg_importance_csv}")
+    print(f"[SAVE] SHAP regression CSV -> {shap_reg_csv}")
+    print(f"[SAVE] SHAP regression feature importance CSV -> {shap_reg_importance_csv}")
+else:
+    print("[XAI] Skipping SHAP regression CSV export (not enough lock-in universes).")
 
 # ---------- LIME: local explanation (classification) ----------
 lime_explainer = LimeTabularExplainer(
