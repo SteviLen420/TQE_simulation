@@ -160,7 +160,7 @@ def law_lock_in(E, I, n_epoch=500):
     Simulates the lock-in of physical laws with Goldilocks modulation.
     """
     f = f_EI(E, I)
-    if f < 0.2:   # Outside Goldilocks → no lock-in
+    if f < 0.1:   # Outside Goldilocks → no lock-in
         return -1, []
 
     c_val = np.random.normal(3e8, 1e7)  # initial speed of light
