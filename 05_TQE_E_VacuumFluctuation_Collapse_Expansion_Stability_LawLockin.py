@@ -180,6 +180,8 @@ for _ in range(NUM_UNIVERSES):
 valid_epochs = [e for e in law_epochs if e >= 0]
 median_epoch = float(np.median(valid_epochs)) if len(valid_epochs) > 0 else None
 
+print(f"🔒 Universes with lock-in: {len(valid_epochs)} / {NUM_UNIVERSES}")
+
 # --- Stability table ---
 stability_df = pd.DataFrame({
     "E": E_vals,
