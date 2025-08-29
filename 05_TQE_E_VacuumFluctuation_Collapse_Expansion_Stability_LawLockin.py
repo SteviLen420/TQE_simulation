@@ -12,9 +12,8 @@
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-import shap, lime, eli5
-from captum.attr import IntegratedGradients
-from interpret import show
+import shap
+from lime.lime_tabular import LimeTabularExplainer
 import os, time, json, numpy as np, matplotlib.pyplot as plt, shutil
 import qutip as qt
 import pandas as pd
