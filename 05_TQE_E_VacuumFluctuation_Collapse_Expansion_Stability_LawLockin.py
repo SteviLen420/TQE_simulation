@@ -195,12 +195,12 @@ assert len(E_vals) == len(stables) == len(law_epochs) == len(final_cs), \
 # 6) Stability summary (counts + percentages) - unified
 # ======================================================
 stable_count = int(sum(stables))
-unstable_count = int(N - stable_count)
+unstable_count = int(NUM_UNIVERSES - stable_count)
 
 print("\n🌌 Universe Stability Summary")
-print(f"Total universes simulated: {N}")
-print(f"Stable universes:   {stable_count} ({stable_count/N*100:.2f}%)")
-print(f"Unstable universes: {unstable_count} ({unstable_count/N*100:.2f}%)")
+print(f"Total universes simulated: {NUM_UNIVERSES}")
+print(f"Stable universes:   {stable_count} ({stable_count/NUM_UNIVERSES*100:.2f}%)")
+print(f"Unstable universes: {unstable_count} ({unstable_count/NUM_UNIVERSES*100:.2f}%)")
 
 # --- Save to summary JSON ---
 summary = {
@@ -311,7 +311,7 @@ if PLOT_LOCKIN_HIST and len(valid_epochs) > 0:
 # ======================================================
 summary.update({
     "simulation": {
-        "total_universes": N,
+        "total_universes": NUM_UNIVERSES,
         "stable_fraction": float(np.mean(stables)),
         "unstable_fraction": 1.0 - float(np.mean(stables))
     },
