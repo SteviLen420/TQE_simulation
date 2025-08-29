@@ -209,7 +209,7 @@ def sample_information_param_KLxShannon(dim=8):
     return I_raw / (1.0 + I_raw)
 
 # Number of universes to simulate
-N = 1000
+N = 5000
 
 # Storage lists
 X_vals, I_vals, stables, law_epochs, final_cs, all_histories = [], [], [], [], [], []
