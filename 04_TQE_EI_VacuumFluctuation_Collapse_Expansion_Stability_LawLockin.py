@@ -378,7 +378,7 @@ if all_histories:
 # ======================================================
 # 8) t > 0 : Expansion dynamics (reference universe E,I)
 # ======================================================
-def evolve(E, I, n_epoch=200):   
+def evolve(E, I, n_epoch=500):   
     A_series = []
     I_series = []
     A = 20
