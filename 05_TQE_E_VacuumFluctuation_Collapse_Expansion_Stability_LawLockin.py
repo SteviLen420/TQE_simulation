@@ -147,12 +147,14 @@ def law_lock_in(E, n_epoch=200):
 
 N = 1000
 E_vals, stables, law_epochs, final_cs, all_histories = [], [], [], [], []
+X_vals = []  # E-only: X = E
 
 for _ in range(N):
     Ei = float(np.random.lognormal(2.5, 0.8))  # Sample energy
 
     # --- Save parameter ---
     E_vals.append(Ei)
+    X_vals.append(Ei)  # E-only: X == E
 
     # --- Stability check for each universe ---
     s = is_stable(Ei)       # <-- only E is passed
@@ -254,7 +256,7 @@ if len(all_histories) > 0:
 # ======================================================
 # 8) Expansion dynamics (E only)
 # ======================================================
-def evolve(E, n_epoch=200):
+def evolve(E, n_epoch=EXPANSION_EPOCHS):
     A_series = []
     A = 20
     for n in range(n_epoch):
@@ -262,7 +264,7 @@ def evolve(E, n_epoch=200):
         A_series.append(A)
     return A_series
 
-A_series = evolve(E, n_epoch=200)
+A_series = evolve(E, n_epoch=EXPANSION_EPOCHS)
 plt.plot(A_series, label="Amplitude A")
 plt.axhline(np.mean(A_series), color="gray", ls="--", alpha=0.5, label="Equilibrium A")
 plt.axvline(median_epoch, color="r", ls="--", lw=2, label=f"Law lock-in ≈ {median_epoch:.0f}")
