@@ -44,6 +44,8 @@ def savefig(p):
     plt.savefig(p,dpi=150,bbox_inches="tight")
     plt.close()
 
+EXPANSION_EPOCHS = 500   # number of epochs for expansion dynamics
+
 # ======================================================
 # 1) t < 0 : Quantum superposition (vacuum fluctuation)
 # ======================================================
@@ -378,7 +380,7 @@ if all_histories:
 # ======================================================
 # 8) t > 0 : Expansion dynamics (reference universe E,I)
 # ======================================================
-def evolve(E, I, n_epoch=500):   
+def evolve(E, I, n_epoch=EXPANSION_EPOCHS):   
     A_series = []
     I_series = []
     A = 20
@@ -401,7 +403,7 @@ def evolve(E, I, n_epoch=500):
 
 
 # t > 0 : Expansion dynamics (use med_lock)
-A_series, I_series = evolve(E, I, n_epoch=200)
+A_series, I_series = evolve(E, I, n_epoch=EXPANSION_EPOCHS)
 
 plt.figure()
 plt.plot(A_series, label="Amplitude A")
