@@ -228,18 +228,16 @@ for _ in range(N):
     lock_epoch, c_hist = law_lock_in(Ei, Ii) 
     law_epochs.append(lock_epoch)
 
-# <<< Compute central median lock-in epoch once >>>
-valid_epochs = [e for e in law_epochs if e >= 0]
-med_lock = float(np.median(valid_epochs)) if len(valid_epochs) > 0 else None
-
     # --- Save results (only for stable universes in Goldilocks) ---
-    if stables[-1] == 1 and len(c_hist) > 0:   # <-- only stable universes inside Goldilocks
+    if stables[-1] == 1 and len(c_hist) > 0:  
         final_cs.append(c_hist[-1])
         all_histories.append(c_hist)
     else:
         final_cs.append(np.nan)
-# Median epoch of law lock-in (only stable universes with lock-in)
-median_epoch = np.median([e for e in law_epochs if e >= 0])
+
+# <<< Compute central median lock-in epoch once (AFTER the loop) >>>
+valid_epochs = [e for e in law_epochs if e >= 0]
+med_lock = float(np.median(valid_epochs)) if len(valid_epochs) > 0 else None
 
 # ======================================================
 # 5) Build master DataFrame and save
