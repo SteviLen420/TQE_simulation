@@ -228,6 +228,10 @@ for _ in range(N):
     lock_epoch, c_hist = law_lock_in(Ei, Ii) 
     law_epochs.append(lock_epoch)
 
+# <<< Compute central median lock-in epoch once >>>
+valid_epochs = [e for e in law_epochs if e >= 0]
+med_lock = float(np.median(valid_epochs)) if len(valid_epochs) > 0 else None
+
    # --- Save results (only for stable universes in Goldilocks) ---
     if stables[-1] == 1 and len(c_hist) > 0:   # <-- only stable universes inside Goldilocks
         final_cs.append(c_hist[-1])
@@ -273,16 +277,24 @@ summary["stability_counts"] = {
 with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
     json.dump(summary, f, indent=2)
 
-# --- Plot stability as bar chart ---
-plt.figure()
-plt.bar(["Stable", "Unstable"], [stable_count, unstable_count], color=["green", "red"])
-plt.title("Universe Stability Distribution")
-plt.ylabel("Number of Universes")
-plt.xlabel("Category")
-plt.text(0, stable_count/2, f"{stable_count}\n({stable_count/N*100:.1f}%)",
-         ha="center", va="center", color="white", fontsize=12, fontweight="bold")
-plt.text(1, unstable_count/2, f"{unstable_count}\n({unstable_count/N*100:.1f}%)",
-         ha="center", va="center", color="white", fontsize=12, fontweight="bold")
+# --- Stability bar chart (labels below) ---
+fig, ax = plt.subplots()
+counts = [stable_count, unstable_count]
+labels = ["Stable", "Unstable"]
+bars = ax.bar(labels, counts, color=["green", "red"])
+ax.set_title("Universe Stability Distribution")
+ax.set_ylabel("Number of Universes")
+ax.set_xlabel("Category")
+
+
+pcts = [stable_count/len(df)*100, unstable_count/len(df)*100]
+for i, (c, pct) in enumerate(zip(counts, pcts)):
+    ax.annotate(f"{c} ({pct:.1f}%)",
+                xy=(i, 0), xytext=(0, -28),  # lefelé 28 px
+                textcoords="offset points",
+                ha="center", va="top",
+                transform=ax.get_xaxis_transform())
+
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
