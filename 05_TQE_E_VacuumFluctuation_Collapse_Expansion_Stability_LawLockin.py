@@ -205,11 +205,11 @@ print(f"Unstable universes: {unstable_count} ({unstable_count/NUM_UNIVERSES*100:
 # --- Save to summary JSON ---
 summary = {
     "stability_counts": {
-        "total_universes": N,
+        "total_universes": NUM_UNIVERSES,
         "stable_universes": stable_count,
         "unstable_universes": unstable_count,
-        "stable_percent": float(stable_count/N*100),
-        "unstable_percent": float(unstable_count/N*100)
+        "stable_percent": float(stable_count/NUM_UNIVERSES*100),
+        "unstable_percent": float(unstable_count/NUM_UNIVERSES*100)
     }
 }
 with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
