@@ -387,7 +387,7 @@ def evolve(E, I, n_epoch=200):
 
 
 # t > 0 : Expansion dynamics (use med_lock)
-A_series, I_series = evolve(E, I, n_epoch=params["n_epoch"])
+A_series, I_series = evolve(E, I, n_epoch=200)
 
 plt.figure()
 plt.plot(A_series, label="Amplitude A")
