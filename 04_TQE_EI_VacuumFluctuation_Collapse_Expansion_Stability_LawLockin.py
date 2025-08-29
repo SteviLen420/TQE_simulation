@@ -105,10 +105,23 @@ def f_EI(E, I, E_c=2.0, sigma=0.3, alpha=0.8):
     """
     return np.exp(-(E - E_c)**2 / (2 * sigma**2)) * (1 + alpha * I)
 
-# Generate two random quantum states and compute KL-based orientation
+# Generate two random quantum states and compute Information I (KL × Shannon)
 psi1, psi2 = qt.rand_ket(8), qt.rand_ket(8)
 p1, p2 = np.abs(psi1.full().flatten())**2, np.abs(psi2.full().flatten())**2
-I = KL(p1, p2) / (1 + KL(p1, p2))  # Information orientation (0–1)
+p1 /= p1.sum(); p2 /= p2.sum()
+eps = 1e-12
+
+# KL divergence normalized
+KL_val = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
+I_kl = KL_val / (1.0 + KL_val)
+
+# Normalized Shannon entropy of psi1
+H = -np.sum(p1 * np.log(p1 + eps))
+I_shannon = H / np.log(len(p1))
+
+# Multiplicative fusion (squash back to [0,1])
+I_raw = I_kl * I_shannon
+I = I_raw / (1.0 + I_raw)
 
 # Energy fluctuation
 E = float(np.random.lognormal(mean=2.5, sigma=0.8))
@@ -175,6 +188,26 @@ def law_lock_in(E, I, n_epoch=200):
 # 4) Monte Carlo Simulation: Stability + Law lock-in for many universes
 # ======================================================
 
+# Helper function: Information parameter based on KL × Shannon
+def sample_information_param_KLxShannon(dim=8):
+    psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
+    p1 = np.abs(psi1.full().flatten())**2
+    p2 = np.abs(psi2.full().flatten())**2
+    p1 /= p1.sum(); p2 /= p2.sum()
+    eps = 1e-12
+
+    # KL divergence normalized
+    KL_val = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
+    I_kl = KL_val / (1.0 + KL_val)
+
+    # Normalized Shannon entropy
+    H = -np.sum(p1 * np.log(p1 + eps))
+    I_shannon = H / np.log(len(p1))
+
+    # Multiplicative fusion → squashed back to [0,1]
+    I_raw = I_kl * I_shannon
+    return I_raw / (1.0 + I_raw)
+
 # Number of universes to simulate
 N = 1000
 
@@ -209,8 +242,8 @@ def is_stable(E, I, n_epoch=200):
 
 # Run the simulation for N universes
 for _ in range(N):
-    Ei = float(np.random.lognormal(2.5,0.8))
-    Ii = np.random.rand()
+    Ei = float(np.random.lognormal(2.5, 0.8))
+    Ii = sample_information_param_KLxShannon(dim=8)   # <<< I most KL × Shannon !!!
     fi = f_EI(Ei, Ii) 
     Xi = Ei * Ii
 
