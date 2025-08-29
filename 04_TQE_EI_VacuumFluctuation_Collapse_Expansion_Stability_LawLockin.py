@@ -349,14 +349,14 @@ if all_histories:
     avg_c = np.mean(truncated, axis=0)
     std_c = np.std(truncated, axis=0)
 
-   # Plot average dynamics
-   plt.figure()
-   plt.plot(avg_c, label="Average c value")
-   plt.fill_between(np.arange(min_len), avg_c-std_c, avg_c+std_c, 
-                 alpha=0.3, color="blue", label="±1σ")
-   if median_epoch is not None:  # <-- guard
-       plt.axvline(median_epoch, color="r", ls="--", lw=2,
-                   label=f"Median lock-in ≈ {median_epoch:.0f}")
+    # Plot average dynamics
+    plt.figure()
+    plt.plot(avg_c, label="Average c value")
+    plt.fill_between(np.arange(min_len), avg_c - std_c, avg_c + std_c,
+                     alpha=0.3, color="blue", label="±1σ")
+    if median_epoch is not None:  # <-- guard
+        plt.axvline(median_epoch, color="r", ls="--", lw=2,
+                    label=f"Median lock-in ≈ {median_epoch:.0f}")
     plt.title("Average law lock-in dynamics (Monte Carlo)")
     plt.xlabel("epoch")
     plt.ylabel("c value (m/s)")
