@@ -341,35 +341,35 @@ savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 # 7) Average law lock-in dynamics across all universes
 # ======================================================
 if all_histories:
-    # Truncate to the shortest history length
+    # Truncate all histories to the shortest length
     min_len = min(len(h) for h in all_histories)
     truncated = [h[:min_len] for h in all_histories]
 
-    # Compute average and standard deviation
+    # Compute average and standard deviation across universes
     avg_c = np.mean(truncated, axis=0)
     std_c = np.std(truncated, axis=0)
 
-    # Plot average dynamics
-    plt.figure()
-    plt.plot(avg_c, label="Average c value")
-    plt.fill_between(np.arange(min_len), avg_c - std_c, avg_c + std_c,
-                     alpha=0.3, color="blue", label="±1σ")
-    if median_epoch is not None:  # <-- guard
-        plt.axvline(median_epoch, color="r", ls="--", lw=2,
-                    label=f"Median lock-in ≈ {median_epoch:.0f}")
-    plt.title("Average law lock-in dynamics (Monte Carlo)")
-    plt.xlabel("epoch")
-    plt.ylabel("c value (m/s)")
-    plt.legend()
-    savefig(os.path.join(FIG_DIR, "law_lockin_avg.png"))
-
-    # Save average to CSV
+    # Save CSV (ALWAYS)
     avg_df = pd.DataFrame({
         "epoch": np.arange(min_len),
         "avg_c": avg_c,
         "std_c": std_c
     })
     avg_df.to_csv(os.path.join(SAVE_DIR, "law_lockin_avg.csv"), index=False)
+
+    # (OPTIONAL) Plot only if enabled
+    if PLOT_AVG_LOCKIN and (median_epoch is not None):
+        plt.figure()
+        plt.plot(avg_c, label="Average c value")
+        plt.fill_between(np.arange(min_len), avg_c-std_c, avg_c+std_c,
+                         alpha=0.3, color="blue", label="±1σ")
+        plt.axvline(median_epoch, color="r", ls="--", lw=2,
+                    label=f"Median lock-in ≈ {median_epoch:.0f}")
+        plt.title("Average law lock-in dynamics (Monte Carlo)")
+        plt.xlabel("epoch")
+        plt.ylabel("c value (m/s)")
+        plt.legend()
+        savefig(os.path.join(FIG_DIR, "law_lockin_avg.png"))
 
 # ======================================================
 # 8) t > 0 : Expansion dynamics (reference universe E,I)
@@ -410,15 +410,25 @@ plt.xlabel("epoch"); plt.ylabel("Parameters"); plt.legend()
 savefig(os.path.join(FIG_DIR, "expansion.png"))
 
 # ======================================================
-# 9) Histogram of lock-in epochs
+# 9) Histogram of lock-in epochs 
 # ======================================================
-# Histogram of lock-in epochs (use med_lock)
-if len(valid_epochs) > 0:
+
+# Save raw lock-in epochs to CSV
+pd.DataFrame({"lock_epoch": valid_epochs}).to_csv(
+    os.path.join(SAVE_DIR, "law_lockin_epochs.csv"), index=False
+)
+
+# (OPTIONAL) Only plot if enabled
+if PLOT_LOCKIN_HIST and len(valid_epochs) > 0:
     plt.figure()
     plt.hist(valid_epochs, bins=50, color="blue", alpha=0.7)
-    plt.axvline(med_lock, color="r", ls="--", lw=2, label=f"Median lock-in = {med_lock:.0f}")
+    if med_lock is not None:
+        plt.axvline(med_lock, color="r", ls="--", lw=2,
+                    label=f"Median lock-in = {med_lock:.0f}")
+        plt.legend()
     plt.title("Distribution of law lock-in epochs (Monte Carlo)")
-    plt.xlabel("Epoch of lock-in"); plt.ylabel("Count"); plt.legend()
+    plt.xlabel("Epoch of lock-in")
+    plt.ylabel("Count")
     savefig(os.path.join(FIG_DIR, "law_lockin_mc.png"))
     
 # ======================================================
