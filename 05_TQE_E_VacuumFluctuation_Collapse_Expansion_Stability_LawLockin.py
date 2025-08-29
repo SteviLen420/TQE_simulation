@@ -12,8 +12,6 @@
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-import shap
-from lime.lime_tabular import LimeTabularExplainer
 import os, time, json, numpy as np, matplotlib.pyplot as plt, shutil
 import qutip as qt
 import pandas as pd
@@ -34,6 +32,10 @@ PLOT_LOCKIN_HIST = False   # histogram of lock-in epochs plot (optional)
 
 # number of epochs for expansion dynamics
 EXPANSION_EPOCHS = 500
+# Number of epochs used in the law lock-in simulation.
+LOCKIN_EPOCHS = 500
+# number of universes to simulate
+NUM_UNIVERSES = 1000
 
 # ======================================================
 # 1) t < 0 : Quantum superposition (vacuum fluctuation)
@@ -112,7 +114,7 @@ def is_stable(E, n_epoch=30):
 # ======================================================
 # 4) Law lock-in (E only)
 # ======================================================
-def law_lock_in(E, n_epoch=500):
+def law_lock_in(E, n_epoch=LOCKIN_EPOCHS):
     """Simulates the law lock-in process based only on Energy E."""
     f = np.exp(-(E - 2.0)**2 / (2 * 0.3**2))  
 
@@ -144,14 +146,14 @@ def law_lock_in(E, n_epoch=500):
 #   (Energy E only, all universes tracked)
 # ======================================================
 
-N = 1000
 E_vals, stables, law_epochs, final_cs, all_histories = [], [], [], [], []
 X_vals = []  # E-only: X = E
 
-for _ in range(N):
+for _ in range(NUM_UNIVERSES):
     # Sample Energy E from a log-normal distribution
     Ei = float(np.random.lognormal(2.5, 0.8))
     E_vals.append(Ei)
+    X_vals.append(Ei)  # <<< E-only: X = E
 
     # Check if this universe is stable
     s = is_stable(Ei)
@@ -159,7 +161,7 @@ for _ in range(N):
 
     if s == 1:
         # Run law lock-in only for stable universes
-        lock_epoch, c_hist = law_lock_in(Ei, n_epoch=500)  # use 500 epochs if desired
+        lock_epoch, c_hist = law_lock_in(Ei, n_epoch=LOCKIN_EPOCHS)  
         law_epochs.append(lock_epoch)
 
         if len(c_hist) > 0:
@@ -270,10 +272,17 @@ def evolve(E, n_epoch=EXPANSION_EPOCHS):
     return A_series
 
 A_series = evolve(E, n_epoch=EXPANSION_EPOCHS)
+plt.figure()
 plt.plot(A_series, label="Amplitude A")
 plt.axhline(np.mean(A_series), color="gray", ls="--", alpha=0.5, label="Equilibrium A")
-plt.axvline(median_epoch, color="r", ls="--", lw=2, label=f"Law lock-in ≈ {median_epoch:.0f}")
-plt.title("t > 0 : Expansion dynamics")
+
+if median_epoch is not None:
+    plt.axvline(median_epoch, color="r", ls="--", lw=2, label=f"Law lock-in ≈ {int(median_epoch)}")
+    title_suffix = ""
+else:
+    title_suffix = " (no lock-in observed)"
+
+plt.title("t > 0 : Expansion dynamics" + title_suffix)
 plt.xlabel("epoch"); plt.ylabel("Amplitude A"); plt.legend()
 savefig(os.path.join(FIG_DIR, "expansion.png"))
 
@@ -291,7 +300,7 @@ if PLOT_LOCKIN_HIST and len(valid_epochs) > 0:
     plt.hist(valid_epochs, bins=50, color="blue", alpha=0.7)
     if median_epoch is not None:
         plt.axvline(median_epoch, color="r", ls="--", lw=2,
-                    label=f"Median lock-in = {median_epoch:.0f}")
+                    label=f"Median lock-in = {int(median_epoch)}")
         plt.legend()
     plt.title("Distribution of law lock-in epochs (Monte Carlo, E-only)")
     plt.xlabel("Epoch of lock-in"); plt.ylabel("Count")
