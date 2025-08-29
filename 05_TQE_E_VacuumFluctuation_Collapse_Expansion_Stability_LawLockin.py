@@ -113,7 +113,7 @@ def is_stable(E, n_epoch=30):
 # ======================================================
 # 4) Law lock-in (E only)
 # ======================================================
-def law_lock_in(E, n_epoch=200):
+def law_lock_in(E, n_epoch=500):
     """Simulates the law lock-in process based only on Energy E."""
     f = np.exp(-(E - 2.0)**2 / (2 * 0.3**2))  
 
