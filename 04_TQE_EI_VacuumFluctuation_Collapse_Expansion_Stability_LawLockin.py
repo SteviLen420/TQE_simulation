@@ -232,7 +232,7 @@ for _ in range(N):
 valid_epochs = [e for e in law_epochs if e >= 0]
 med_lock = float(np.median(valid_epochs)) if len(valid_epochs) > 0 else None
 
-   # --- Save results (only for stable universes in Goldilocks) ---
+    # --- Save results (only for stable universes in Goldilocks) ---
     if stables[-1] == 1 and len(c_hist) > 0:   # <-- only stable universes inside Goldilocks
         final_cs.append(c_hist[-1])
         all_histories.append(c_hist)
