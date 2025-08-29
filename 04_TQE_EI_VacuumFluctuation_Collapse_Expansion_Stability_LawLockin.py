@@ -684,4 +684,4 @@ pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
     os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
 )
 
-print(f"☁️ All results saved to Google Drive: {GOOGLE_DIR}")
+print(f"☁️ All results saved to Google Drive: {SAVE_DIR}")
