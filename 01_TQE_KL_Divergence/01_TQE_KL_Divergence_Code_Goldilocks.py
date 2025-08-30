@@ -286,7 +286,6 @@ savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
 # 10) Stability by Information parameter I
-#     - exact split: I == 0 vs I > 0
 #     - epsilon sweep: treat "near zero" I <= eps as practical zero
 # ======================================================
 import numpy as np
@@ -301,26 +300,6 @@ def _stability_stats(mask: pd.Series, label: str):
     stables = int(df.loc[mask, "stable"].sum())
     ratio = (stables / total) if total > 0 else float("nan")
     return {"group": label, "n": total, "stable_n": stables, "stable_ratio": ratio}
-
-# ---------- Exact split: I == 0 vs I > 0 ----------
-mask_I_eq0 = (df["I"] == 0.0)
-mask_I_gt0 = (df["I"]  > 0.0)
-
-zero_split_rows = [
-    _stability_stats(mask_I_eq0, "I == 0"),
-    _stability_stats(mask_I_gt0, "I > 0"),
-]
-...
-print("⚠️ No exact I = 0 values in this sample; see epsilon sweep below.")
-
-# Save to SAVE_DIR
-zero_split_path = os.path.join(SAVE_DIR, "stability_by_I_zero.csv")
-zero_split_df.to_csv(zero_split_path, index=False)
-
-print("\n📈 Stability by I (exact zero vs positive):")
-print(zero_split_df.to_string(index=False))
-if zero_split_df.loc[zero_split_df["group"] == "I == 0", "n"].iloc[0] == 0:
-    print("⚠️ No exact I = 0 values in this sample; see epsilon sweep below.")
 
 # ---------- Epsilon sweep: near-zero thresholds ----------
 # Useful when there are no exact zeros due to floating-point draws.
@@ -341,7 +320,6 @@ print("\n📈 Epsilon sweep (near-zero thresholds, preview):")
 print(eps_df.head(12).to_string(index=False))
 
 print(f"\n📝 Saved breakdowns to:")
-print(f" - {zero_split_path}")
 print(f" - {eps_path}")
 
 # ======================================================
