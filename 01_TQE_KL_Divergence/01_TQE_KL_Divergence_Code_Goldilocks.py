@@ -53,16 +53,34 @@ except Exception:
     from lime.lime_tabular import LimeTabularExplainer
 
 # ======================================================
-# 1) Parameters
+# 1) MASTER CONTROLLER – All key settings in one place
 # ======================================================
-# --- Parameters controlling the simulation ---
-params = {
-    "N_samples": 1000,    # number of universes (Monte Carlo runs)
-    "N_epoch": 30,        # number of time steps (30 gives the most precise Goldilocks zone)
-    "rel_eps": 0.05,      # lock-in threshold: max allowed relative change for stability
-    "sigma0": 0.5,        # baseline noise amplitude
-    "alpha": 1.5,         # noise growth factor toward the edges of the Goldilocks zone
-    "seed":  None         # random seed for reproducibility
+
+MASTER_CTRL = {
+    # --- Simulation core ---
+    "N_samples": 1000,          # number of universes (Monte Carlo runs)
+    "N_epoch": 30,              # time steps
+    "rel_eps": 0.05,            # stability threshold
+    "sigma0": 0.5,              # baseline noise amplitude
+    "alpha": 1.5,               # noise growth factor
+    "seed": None,               # global random seed (None → random each run)
+
+    # --- Stability detection ---
+    "lock_consecutive": 20,     # steps required for lock-in
+    "regression_min": 30,       # minimum locked samples needed for regression
+
+    # --- Train/test split ---
+    "test_size": 0.25,
+    "rf_n_estimators": 400,
+
+    # --- XAI controls ---
+    "enable_SHAP": True,
+    "enable_LIME": True,
+
+    # --- Outputs ---
+    "save_figs": True,
+    "save_json": True,
+    "save_drive_copy": True
 }
 
 # --- Generate a random seed at the start ---
@@ -79,12 +97,14 @@ FIG_DIR  = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
 
 def savefig(path):
-    plt.savefig(path, dpi=180, bbox_inches="tight")
-    plt.close()
+    if MASTER_CTRL["save_figs"]:
+        plt.savefig(path, dpi=180, bbox_inches="tight")
+        plt.close()
 
 def save_json(path, obj):
-    with open(path, "w") as f:
-        json.dump(obj, f, indent=2)
+    if MASTER_CTRL["save_json"]:
+        with open(path, "w") as f:
+            json.dump(obj, f, indent=2)
 
 print(f"💾 Results saved in: {SAVE_DIR}")
 
@@ -146,7 +166,7 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
 
         if delta_rel < rel_eps:         # much stricter threshold (2%)
             consecutive += 1            # count consecutive calm steps
-            if consecutive >= 20 and locked_at is None:  # need at least 20 calm steps
+            if consecutive >= MASTER_CTRL["lock_consecutive"] and locked_at is None:
                 locked_at = n
         else:
             consecutive = 0
@@ -395,26 +415,26 @@ if not can_stratify:
 
 Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
     X_feat, y_cls,
-    test_size=0.25,
+    test_size=MASTER_CTRL["test_size"],
     random_state=42,
     stratify=stratify_arg
 )
 
 # regression split handled separately
-have_reg = len(X_reg) >= 30
+have_reg = len(X_reg) >= MASTER_CTRL["regression_min"]
 if have_reg:
     Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
-        X_reg, y_reg, test_size=0.25, random_state=42
-    )
+        X_reg, y_reg, test_size=MASTER_CTRL["test_size"], random_state=42
+)
 
 # ---------- Train models ----------
-rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
+rf_cls = RandomForestClassifier(n_estimators=MASTER_CTRL["rf_n_estimators"], random_state=42, n_jobs=-1)
 rf_cls.fit(Xtr_c, ytr_c)
 cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
 print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
 
 if have_reg:
-    rf_reg = RandomForestRegressor(n_estimators=400, random_state=42, n_jobs=-1)
+    rf_reg = RandomForestRegressor(n_estimators=MASTER_CTRL["rf_n_estimators"], random_state=42, n_jobs=-1)
     rf_reg.fit(Xtr_r, ytr_r)
     reg_r2 = r2_score(yte_r, rf_reg.predict(Xte_r))
     print(f"[XAI] Regression R^2 (lock_at): {reg_r2:.3f}")
@@ -422,6 +442,7 @@ else:
     rf_reg, reg_r2 = None, None
     print("[XAI] Not enough locked samples for regression (need ~30+).")
 
+if MASTER_CTRL["enable_SHAP"]:
 # ---------- SHAP: global explanations (robust, fixed shape) ----------
 X_plot = Xte_c.copy()  # vagy: X_feat.sample(min(3000, len(X_feat)), random_state=42)
 
@@ -452,6 +473,8 @@ shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), 
 plt.title("SHAP summary – classification (stable)")
 plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
 plt.close()
+else:
+    print("[XAI] SHAP disabled by MASTER_CTRL")
 
 # --- Save SHAP values (classification) to CSV ---
 df_shap_cls = pd.DataFrame(sv_cls, columns=X_plot.columns)
@@ -541,3 +564,5 @@ print("☁️ Copy finished.")
 print(f"Copied: {len(copied)} files")
 print(f"Skipped (same path): {len(skipped)} files")
 print("Google Drive folder:", GOOGLE_DIR)
+else:
+    print("[SAVE] Skipping Google Drive copy (disabled in MASTER_CTRL).")
