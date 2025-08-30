@@ -58,10 +58,18 @@ def savejson(path, obj):
 PLOT_AVG_LOCKIN  = True     # average c(t) across lock-in histories
 PLOT_LOCKIN_HIST = True     # histogram of lock-in epochs
 
-# Master hyperparameters
-EXPANSION_EPOCHS = 5000      # epochs for expansion dynamics (t > 0)
-LOCKIN_EPOCHS    = 500      # epochs for law lock-in simulation
-NUM_UNIVERSES    = 1000     # set to 1 for single-universe mode
+# ======================================================
+# MASTER SIMULATION CONTROLS
+# ======================================================
+
+TIME_STEPS          = 5000   # <--- Main control knob: adjust this, and it propagates everywhere
+NUM_UNIVERSES       = 1000   # Number of universes for Monte Carlo run (set to 1 for single-universe mode)
+LOCKIN_EPOCHS       = 5000   # Epochs used in law lock-in simulation
+EXPANSION_EPOCHS    = TIME_STEPS  # Expansion dynamics length, tied to TIME_STEPS
+BEST_STEPS          = TIME_STEPS  # Steps for "best-universe" entropy deep dive
+BEST_NUM_REGIONS    = 10     # Number of spatial regions in the entropy simulation
+BEST_NUM_STATES     = 250    # Number of microstates per region
+STABILITY_THRESHOLD = 3.5    # Entropy threshold used to define stability
 
 # ======================================================
 # 1) t < 0 : Quantum superposition (vacuum fluctuation)
@@ -435,6 +443,10 @@ def simulate_entropy_universe(E, I, steps=BEST_STEPS,
                 consecutive_calm = 0
 
     return region_entropies, global_entropy, lock_in_step
+
+best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(
+    E_best, I=0.0, steps=BEST_STEPS
+)
 
 # ----- Run the deep-dive sim on the chosen (E*, I*) -----
 best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(E_best, I=0.0)
