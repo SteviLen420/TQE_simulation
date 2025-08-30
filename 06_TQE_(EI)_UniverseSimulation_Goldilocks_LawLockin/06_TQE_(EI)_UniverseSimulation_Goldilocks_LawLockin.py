@@ -48,7 +48,7 @@ RUN_XAI          = True    # SHAP + LIME
 RUN_SEED_SEARCH  = False   # heavy; enable when needed
 
 # ===== Global simulation knobs =====
-EXPANSION_EPOCHS = 500     # epochs for expansion demo plot
+EXPANSION_EPOCHS = 1000     # epochs for expansion demo plot
 LOCKIN_EPOCHS    = 500     # epochs used in law_lock_in
 NUM_UNIVERSES    = 2000    # MC sample size
 
