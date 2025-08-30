@@ -372,10 +372,6 @@ I_best = I_vals[best_idx]
 print(f"[BEST] Universe index={best_idx} chosen by {reason}; E*={E_best:.3f}, I*={I_best:.3f}")
 
 # ----- Single-universe entropy simulator (same style as your screenshot) -----
-BEST_NUM_REGIONS = 10
-BEST_NUM_STATES  = 250
-BEST_STEPS       = 500
-STABILITY_THRESHOLD = 3.5   # red dashed line on the plot
 
 def simulate_entropy_universe(E, I, steps=BEST_STEPS,
                               num_regions=BEST_NUM_REGIONS, num_states=BEST_NUM_STATES):
