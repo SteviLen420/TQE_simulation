@@ -444,12 +444,10 @@ def simulate_entropy_universe(E, I, steps=BEST_STEPS,
 
     return region_entropies, global_entropy, lock_in_step
 
+# ----- Run the deep-dive sim on the chosen (E*, I*) -----
 best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(
     E_best, I=0.0, steps=BEST_STEPS
 )
-
-# ----- Run the deep-dive sim on the chosen (E*, I*) -----
-best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(E_best, I=0.0)
 
 # ----- Save CSVs -----
 # global entropy
