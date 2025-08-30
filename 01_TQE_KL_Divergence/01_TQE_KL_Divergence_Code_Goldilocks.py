@@ -528,41 +528,38 @@ else:
 # ======================================================
 # Save all outputs to Google Drive (robust copy)
 # ======================================================
-GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
-GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
-os.makedirs(GOOGLE_DIR, exist_ok=True)
+if MASTER_CTRL["save_drive_copy"]:
+    GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_divergence"
+    GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
+    os.makedirs(GOOGLE_DIR, exist_ok=True)
 
-copied = []
-skipped = []
+    copied = []
+    skipped = []
 
-for root, dirs, files in os.walk(SAVE_DIR):
-    # target folder on Drive
-    dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
-    os.makedirs(dst_dir, exist_ok=True)
+    for root, dirs, files in os.walk(SAVE_DIR):
+        dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
+        os.makedirs(dst_dir, exist_ok=True)
 
-    for file in files:
-        # allowed extensions: .png, .fits, .csv, .json, .txt
-        if not file.endswith((".png", ".fits", ".csv", ".json", ".txt", ".npy")):
-            continue
-
-        src = os.path.join(root, file)
-        dst = os.path.join(dst_dir, file)
-
-        # skip if it's the same file
-        try:
-            if os.path.samefile(src, dst):
-                skipped.append(dst)
+        for file in files:
+            if not file.endswith((".png", ".fits", ".csv", ".json", ".txt", ".npy")):
                 continue
-        except FileNotFoundError:
-            # if dst doesn’t exist yet, samefile may throw — just copy in that case
-            pass
 
-        shutil.copy2(src, dst)
-        copied.append(dst)
+            src = os.path.join(root, file)
+            dst = os.path.join(dst_dir, file)
 
-print("☁️ Copy finished.")
-print(f"Copied: {len(copied)} files")
-print(f"Skipped (same path): {len(skipped)} files")
-print("Google Drive folder:", GOOGLE_DIR)
+            try:
+                if os.path.samefile(src, dst):
+                    skipped.append(dst)
+                    continue
+            except FileNotFoundError:
+                pass
+
+            shutil.copy2(src, dst)
+            copied.append(dst)
+
+    print("☁️ Copy finished.")
+    print(f"Copied: {len(copied)} files")
+    print(f"Skipped (same path): {len(skipped)} files")
+    print("Google Drive folder:", GOOGLE_DIR)
 else:
     print("[SAVE] Skipping Google Drive copy (disabled in MASTER_CTRL).")
