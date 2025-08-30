@@ -443,13 +443,13 @@ else:
     print("[XAI] Not enough locked samples for regression (need ~30+).")
 
 if MASTER_CTRL["enable_SHAP"]:
-   # ---------- SHAP: global explanations (robust, fixed shape) ----------
-   X_plot = Xte_c.copy() 
+    # ---------- SHAP: global explanations (robust, fixed shape) ----------
+    X_plot = Xte_c.copy() 
 
-   # TreeExplainer with "raw" output, then format normalization
-   try:
-       expl_cls = shap.TreeExplainer(
-           rf_cls, feature_perturbation="interventional", model_output="raw"
+    # TreeExplainer with "raw" output, then format normalization
+    try:
+        expl_cls = shap.TreeExplainer(
+            rf_cls, feature_perturbation="interventional", model_output="raw"
         )
         sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
     except Exception:
@@ -473,8 +473,8 @@ if MASTER_CTRL["enable_SHAP"]:
     plt.title("SHAP summary – classification (stable)")
     plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
     plt.close()
-    else:
-        print("[XAI] SHAP disabled by MASTER_CTRL")
+else:
+    print("[XAI] SHAP disabled by MASTER_CTRL")
 
 # --- Save SHAP values (classification) to CSV ---
 df_shap_cls = pd.DataFrame(sv_cls, columns=X_plot.columns)
