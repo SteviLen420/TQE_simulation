@@ -64,7 +64,7 @@ PLOT_LOCKIN_HIST = True     # histogram of lock-in epochs
 
 TIME_STEPS          = 5000   # <--- Main control knob: adjust this, and it propagates everywhere
 NUM_UNIVERSES       = 1000   # Number of universes for Monte Carlo run (set to 1 for single-universe mode)
-LOCKIN_EPOCHS       = 5000   # Epochs used in law lock-in simulation
+LOCKIN_EPOCHS       = TIME_STEPS   # Epochs used in law lock-in simulation
 EXPANSION_EPOCHS    = TIME_STEPS  # Expansion dynamics length, tied to TIME_STEPS
 BEST_STEPS          = TIME_STEPS  # Steps for "best-universe" entropy deep dive
 BEST_NUM_REGIONS    = 10     # Number of spatial regions in the entropy simulation
