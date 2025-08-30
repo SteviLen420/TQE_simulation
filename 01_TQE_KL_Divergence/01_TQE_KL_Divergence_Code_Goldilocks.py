@@ -84,11 +84,11 @@ MASTER_CTRL = {
 }
 
 # --- Generate a random seed at the start ---
-if params["seed"] is None:
-    params["seed"] = int(np.random.randint(0, 2**32 - 1))
+if MASTER_CTRL["seed"] is None:
+    MASTER_CTRL["seed"] = int(np.random.randint(0, 2**32 - 1))
 
-rng = np.random.default_rng(seed=params["seed"])
-print(f"🎲 Using random seed: {params['seed']}")
+rng = np.random.default_rng(seed=MASTER_CTRL["seed"])
+print(f"🎲 Using random seed: {MASTER_CTRL['seed']}")
 
 # Output dirs
 run_id  = time.strftime("TQE_(E,I)KL_divergence_%Y%m%d_%H%M%S")
@@ -178,7 +178,7 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
 # 6) Monte Carlo universes
 # ======================================================
 rows = []
-for i in range(params["N_samples"]):
+for i in range(MASTER_CTRL["N_samples"]):
     # --- unique seed for this universe ---
     seed_val = np.random.randint(0, 2**32)
     np.random.seed(seed_val)   # set numpy seed (for I param reproducibility)
@@ -191,10 +191,10 @@ for i in range(params["N_samples"]):
     # --- run lock-in simulation ---
     stable, lock_at = simulate_lock_in(
         X,
-        params["N_epoch"],
-        params["rel_eps"],
-        params["sigma0"],
-        params["alpha"]
+        MASTER_CTRL["N_epoch"],
+        MASTER_CTRL["rel_eps"],
+        MASTER_CTRL["sigma0"],
+        MASTER_CTRL["alpha"]
     )
 
     # --- save including seed ---
@@ -213,7 +213,7 @@ df.to_csv(os.path.join(SAVE_DIR, "samples.csv"), index=False)
 
 # --- Save master seed separately ---
 with open(os.path.join(SAVE_DIR, "master_seed.json"), "w") as f:
-    json.dump({"master_seed": params["seed"]}, f, indent=2)
+    json.dump({"master_seed": MASTER_CTRL["seed"]}, f, indent=2)
 
 # --- Save universe seeds separately ---
 df_seeds = pd.DataFrame({"universe_id": range(len(df)), "seed": df["seed"]})
@@ -346,7 +346,7 @@ print(f" - {eps_path}")
 # 11) Save summary
 # ======================================================
 summary = {
-    "params": params,
+    "params": MASTER_CTRL,
     "N_samples": int(len(df)),
     "stable_count": int(df["stable"].sum()),              # number of stable universes
     "unstable_count": int((1 - df["stable"]).sum()),      # number of unstable universes
@@ -354,8 +354,8 @@ summary = {
     "unstable_ratio": float(1 - df["stable"].mean()),
     "E_c_low": E_c_low,
     "E_c_high": E_c_high,
-    "seed": params["seed"],
-    "master_seed": params["seed"],
+    "seed": MASTER_CTRL["seed"],
+    "master_seed": MASTER_CTRL["seed"],
     "figures": {
         "stability_curve": os.path.join(FIG_DIR, "stability_curve.png"),
         "scatter_EI": os.path.join(FIG_DIR, "scatter_EI.png"),
@@ -443,38 +443,38 @@ else:
     print("[XAI] Not enough locked samples for regression (need ~30+).")
 
 if MASTER_CTRL["enable_SHAP"]:
-# ---------- SHAP: global explanations (robust, fixed shape) ----------
-X_plot = Xte_c.copy()  # vagy: X_feat.sample(min(3000, len(X_feat)), random_state=42)
+   # ---------- SHAP: global explanations (robust, fixed shape) ----------
+   X_plot = Xte_c.copy() 
 
-# TreeExplainer with "raw" output, then format normalization
-try:
-    expl_cls = shap.TreeExplainer(
-        rf_cls, feature_perturbation="interventional", model_output="raw"
-    )
-    sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
-except Exception:
-    expl_cls = shap.Explainer(rf_cls, Xtr_c)
-    sv_cls = expl_cls(X_plot).values  # (n_samples, n_features) expected
+   # TreeExplainer with "raw" output, then format normalization
+   try:
+       expl_cls = shap.TreeExplainer(
+           rf_cls, feature_perturbation="interventional", model_output="raw"
+        )
+        sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
+    except Exception:
+        expl_cls = shap.Explainer(rf_cls, Xtr_c)
+        sv_cls = expl_cls(X_plot).values  # (n_samples, n_features) expected
 
-if isinstance(sv_cls, list):
-    if len(sv_cls) > 1:
-        sv_cls = sv_cls[1]  # positive class
+    if isinstance(sv_cls, list):
+        if len(sv_cls) > 1:
+            sv_cls = sv_cls[1]  # positive class
+        else:
+            sv_cls = sv_cls[0]  # in case of only one class
+    sv_cls = np.asarray(sv_cls)
+    if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
+        sv_cls = sv_cls[:, :, 1]
+    elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
+        sv_cls = sv_cls[1, :, :]
+    assert sv_cls.shape == X_plot.shape, f"SHAP shape {sv_cls.shape} != data shape {X_plot.shape}"
+
+    plt.figure()
+    shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
+    plt.title("SHAP summary – classification (stable)")
+    plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
+    plt.close()
     else:
-        sv_cls = sv_cls[0]  # in case of only one class
-sv_cls = np.asarray(sv_cls)
-if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
-    sv_cls = sv_cls[:, :, 1]
-elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
-    sv_cls = sv_cls[1, :, :]
-assert sv_cls.shape == X_plot.shape, f"SHAP shape {sv_cls.shape} != data shape {X_plot.shape}"
-
-plt.figure()
-shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
-plt.title("SHAP summary – classification (stable)")
-plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
-plt.close()
-else:
-    print("[XAI] SHAP disabled by MASTER_CTRL")
+        print("[XAI] SHAP disabled by MASTER_CTRL")
 
 # --- Save SHAP values (classification) to CSV ---
 df_shap_cls = pd.DataFrame(sv_cls, columns=X_plot.columns)
