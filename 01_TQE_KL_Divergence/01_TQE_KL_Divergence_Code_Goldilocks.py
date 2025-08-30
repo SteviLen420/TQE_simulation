@@ -310,7 +310,8 @@ zero_split_rows = [
     _stability_stats(mask_I_eq0, "I == 0"),
     _stability_stats(mask_I_gt0, "I > 0"),
 ]
-zero_split_df = pd.DataFrame(zero_split_rows)
+...
+print("⚠️ No exact I = 0 values in this sample; see epsilon sweep below.")
 
 # Save to SAVE_DIR
 zero_split_path = os.path.join(SAVE_DIR, "stability_by_I_zero.csv")
