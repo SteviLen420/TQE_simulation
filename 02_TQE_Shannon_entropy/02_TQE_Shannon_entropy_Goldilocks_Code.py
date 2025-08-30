@@ -141,7 +141,7 @@ rows = []
 seeds = []
 for i in range(params["N_samples"]):
     # --------- PATCH: unique seed per universe for audit/repro ----------
-    seed_val = int(np.random.randint(0, 2**32 - 1))
+    seed_val = int(rng.integers(0, 2**32 - 1))
     try:
         np.random.seed(seed_val)  # for libs using np.random
     except Exception:
