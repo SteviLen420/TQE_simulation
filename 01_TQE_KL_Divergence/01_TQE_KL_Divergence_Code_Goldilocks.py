@@ -487,17 +487,20 @@ if rf_reg is not None:
     df_shap_reg.to_csv(os.path.join(FIG_DIR, "shap_values_regression.csv"), index=False)
 
 # ---------- LIME: local explanation (classification) ----------
-lime_explainer = LimeTabularExplainer(
-    training_data=Xtr_c.values,
-    feature_names=X_feat.columns.tolist(),
-    discretize_continuous=True,
-    mode='classification'
-)
-exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
-lime_list = exp.as_list(label=1)
-pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
-    os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
-)
+if len(np.unique(y_cls)) > 1:  # csak akkor, ha van legalább 2 osztály
+    lime_explainer = LimeTabularExplainer(
+        training_data=Xtr_c.values,
+        feature_names=X_feat.columns.tolist(),
+        discretize_continuous=True,
+        mode='classification'
+    )
+    exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
+    lime_list = exp.as_list(label=1)
+    pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
+        os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
+    )
+else:
+    print("[XAI] Skipping LIME: only one class present in classification data.")
 
 # ======================================================
 # Save all outputs to Google Drive (robust copy)
