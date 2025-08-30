@@ -409,8 +409,8 @@ plt.figure()
 plt.plot(A_series, label="Amplitude A")
 plt.plot(I_series, label="Orientation I")
 plt.axhline(np.mean(A_series), color="gray", ls="--", alpha=0.5, label="Equilibrium A")
-if med_lock is not None:
-    plt.axvline(med_lock, color="r", ls="--", lw=2, label=f"Law lock-in ≈ {med_lock:.0f}")
+if median_epoch is not None:
+    plt.axvline(median_epoch, color="r", ls="--", lw=2, label=f"Law lock-in ≈ {median_epoch:.0f}")
 plt.title("t > 0 : Expansion dynamics")
 plt.xlabel("epoch"); plt.ylabel("Parameters"); plt.legend()
 savefig(os.path.join(FIG_DIR, "expansion.png"))
