@@ -243,20 +243,31 @@ df[["E","X","stable","lock_epoch","final_c"]].to_csv(
 )
 
 # ======================================================
-# 6) Stability summary bar chart
+# 6) Stability summary bar chart  — with lock-in split
 # ======================================================
+num_unstable = NUM_UNIVERSES - num_stable
+num_locked   = int(np.sum([e >= 0 for e in law_epochs]))          # universes with lock-in
+num_stable_no_lock = max(num_stable - num_locked, 0)               # stable but no lock-in
+
+# percentages for labels
+pct_stable_no_lock = 100.0 * num_stable_no_lock / NUM_UNIVERSES
+pct_locked         = 100.0 * num_locked / NUM_UNIVERSES
+pct_unstable       = 100.0 * num_unstable / NUM_UNIVERSES
+
+# --- plot (stacked bar for Stable) ---
 plt.figure()
-counts = [num_stable, NUM_UNIVERSES - num_stable]
-labels = ["Stable", "Unstable"]
-plt.bar(labels, counts)
-plt.title("Universe Stability Distribution (E-only)")
-plt.ylabel("Number of Universes"); plt.xlabel("Category")
-tick_labels = [
-    f"Stable ({counts[0]}, {counts[0]/NUM_UNIVERSES*100:.1f}%)",
-    f"Unstable ({counts[1]}, {counts[1]/NUM_UNIVERSES*100:.1f}%)"
-]
-plt.xticks([0,1], tick_labels)
-savefig(os.path.join(FIG_DIR,"stability_summary.png"))
+
+# x positions: 0 = Stable (stacked), 1 = Unstable
+plt.bar(0, num_stable_no_lock, color="#1f77b4", label=f"Stable (no lock-in) [{num_stable_no_lock}, {pct_stable_no_lock:.1f}%]")
+plt.bar(0, num_locked, bottom=num_stable_no_lock, color="#9467bd", label=f"Stable (lock-in) [{num_locked}, {pct_locked:.1f}%]")
+plt.bar(1, num_unstable, color="#d62728", label=f"Unstable [{num_unstable}, {pct_unstable:.1f}%]")
+
+plt.xticks([0, 1], ["Stable (split by lock-in)", "Unstable"])
+plt.ylabel("Number of Universes")
+plt.title("Universe Stability Distribution (E-only) — with Lock-in")
+plt.legend(loc="upper right", frameon=False)
+plt.tight_layout()
+savefig(os.path.join(FIG_DIR, "stability_summary_with_lockin.png"))
 
 # ======================================================
 # 7) Average law lock-in dynamics across all universes
