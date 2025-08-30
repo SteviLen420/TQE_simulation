@@ -59,9 +59,9 @@ PLOT_AVG_LOCKIN  = True     # average c(t) across lock-in histories
 PLOT_LOCKIN_HIST = True     # histogram of lock-in epochs
 
 # Master hyperparameters
-EXPANSION_EPOCHS = 1000      # epochs for expansion dynamics (t > 0)
-LOCKIN_EPOCHS    = 500      # epochs for law lock-in simulation
-NUM_UNIVERSES    = 2000     # set to 1 for single-universe mode
+EXPANSION_EPOCHS = 5000      # epochs for expansion dynamics (t > 0)
+LOCKIN_EPOCHS    = 1000      # epochs for law lock-in simulation
+NUM_UNIVERSES    = 1000     # set to 1 for single-universe mode
 
 # ======================================================
 # 1) t < 0 : Quantum superposition (vacuum fluctuation)
