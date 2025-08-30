@@ -57,7 +57,7 @@ LOCKIN_EPOCHS       = TIME_STEPS   # Epochs used in law lock-in simulation
 EXPANSION_EPOCHS    = TIME_STEPS  # Expansion dynamics length, tied to TIME_STEPS
 BEST_STEPS          = TIME_STEPS  # Steps for "best-universe" entropy deep dive
 BEST_NUM_REGIONS    = 10     # Number of spatial regions in the entropy simulation
-BEST_NUM_STATES     = 250    # Number of microstates per region
+BEST_NUM_STATES     = 500    # Number of microstates per region
 STABILITY_THRESHOLD = 3.5    # Entropy threshold used to define stability
 
 # ===== Goldilocks window base params =====
