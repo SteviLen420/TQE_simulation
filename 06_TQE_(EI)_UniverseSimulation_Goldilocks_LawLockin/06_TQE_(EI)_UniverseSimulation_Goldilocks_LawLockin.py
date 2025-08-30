@@ -32,8 +32,8 @@ import shap
 from lime.lime_tabular import LimeTabularExplainer
 
 # ---- Directories ----
-GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_UNI_SINGLE_PIPELINE"
-run_id = time.strftime("TQE_(E,I)_PIPE_%Y%m%d_%H%M%S")
+GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_UNIVERSE_SIMULATION"
+run_id = time.strftime("TQE_(E,I)_UNIVERSE_SIMULATION_%Y%m%d_%H%M%S")
 SAVE_DIR = os.path.join(GOOGLE_BASE, run_id); os.makedirs(SAVE_DIR, exist_ok=True)
 FIG_DIR  = os.path.join(SAVE_DIR, "figs"); os.makedirs(FIG_DIR, exist_ok=True)
 
