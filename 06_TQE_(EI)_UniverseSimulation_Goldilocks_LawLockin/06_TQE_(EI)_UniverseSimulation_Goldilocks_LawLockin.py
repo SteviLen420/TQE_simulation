@@ -47,10 +47,18 @@ PLOT_LOCKIN_HIST = False   # histogram of lock-in epochs plot toggle
 RUN_XAI          = True    # SHAP + LIME
 RUN_SEED_SEARCH  = False   # heavy; enable when needed
 
-# ===== Global simulation knobs =====
-EXPANSION_EPOCHS = 1000     # epochs for expansion demo plot
-LOCKIN_EPOCHS    = 500     # epochs used in law_lock_in
-NUM_UNIVERSES    = 2000    # MC sample size
+# ======================================================
+# MASTER SIMULATION CONTROLS
+# ======================================================
+
+TIME_STEPS          = 5000   # <--- Main control knob: adjust this, and it propagates everywhere
+NUM_UNIVERSES       = 1000   # Number of universes for Monte Carlo run (set to 1 for single-universe mode)
+LOCKIN_EPOCHS       = TIME_STEPS   # Epochs used in law lock-in simulation
+EXPANSION_EPOCHS    = TIME_STEPS  # Expansion dynamics length, tied to TIME_STEPS
+BEST_STEPS          = TIME_STEPS  # Steps for "best-universe" entropy deep dive
+BEST_NUM_REGIONS    = 10     # Number of spatial regions in the entropy simulation
+BEST_NUM_STATES     = 250    # Number of microstates per region
+STABILITY_THRESHOLD = 3.5    # Entropy threshold used to define stability
 
 # ===== Goldilocks window base params =====
 E_C   = 2.0
@@ -438,10 +446,6 @@ I_best = I_vals[best_idx]
 print(f"[BEST] Universe index={best_idx} chosen by {reason}; E*={E_best:.3f}, I*={I_best:.3f}")
 
 # ----- Single-universe entropy simulator (same style as your screenshot) -----
-BEST_NUM_REGIONS = 10
-BEST_NUM_STATES  = 250
-BEST_STEPS       = 500
-STABILITY_THRESHOLD = 3.5   # red dashed line on the plot
 
 def simulate_entropy_universe(E, I, steps=BEST_STEPS,
                               num_regions=BEST_NUM_REGIONS, num_states=BEST_NUM_STATES):
