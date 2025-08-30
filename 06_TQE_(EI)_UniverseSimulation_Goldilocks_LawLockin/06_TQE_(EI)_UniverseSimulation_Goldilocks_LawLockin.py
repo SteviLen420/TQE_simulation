@@ -50,7 +50,7 @@ RUN_SEED_SEARCH  = False   # heavy; enable when needed
 # ===== Global simulation knobs =====
 EXPANSION_EPOCHS = 500     # epochs for expansion demo plot
 LOCKIN_EPOCHS    = 500     # epochs used in law_lock_in
-NUM_UNIVERSES    = 1000    # MC sample size
+NUM_UNIVERSES    = 2000    # MC sample size
 
 # ===== Goldilocks window base params =====
 E_C   = 2.0
