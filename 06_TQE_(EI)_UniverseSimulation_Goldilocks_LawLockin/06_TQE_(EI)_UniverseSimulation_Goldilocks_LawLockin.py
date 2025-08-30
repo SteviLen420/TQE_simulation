@@ -275,28 +275,40 @@ if stable_total > 0:
           f"({100*valid_lockins_among_stable/stable_total:.1f}%)")
 
 # ======================================================
-# 6) Stability summary bar chart  — with lock-in split
+# 6) Stability summary — with lock-in split (E,I case)
 # ======================================================
-num_unstable = NUM_UNIVERSES - num_stable
-num_locked   = int(np.sum([e >= 0 for e in law_epochs]))          # universes with lock-in
-num_stable_no_lock = max(num_stable - num_locked, 0)               # stable but no lock-in
+stable_total   = int(np.sum(stables))
+unstable_total = int(NUM_UNIVERSES - stable_total)
 
-# percentages for labels
-pct_stable_no_lock = 100.0 * num_stable_no_lock / NUM_UNIVERSES
-pct_locked         = 100.0 * num_locked / NUM_UNIVERSES
-pct_unstable       = 100.0 * num_unstable / NUM_UNIVERSES
+# universes with lock-in (law_epochs >= 0)
+locked_total = int(np.sum([e >= 0 for e in law_epochs]))
+stable_no_lock = max(stable_total - locked_total, 0)
 
-# --- plot (stacked bar for Stable) ---
+# percentages
+pct_stable_no_lock = 100.0 * stable_no_lock / NUM_UNIVERSES
+pct_locked         = 100.0 * locked_total / NUM_UNIVERSES
+pct_unstable       = 100.0 * unstable_total / NUM_UNIVERSES
+
+print("\n🌌 Universe Stability Summary (E,I)")
+print(f"Total universes simulated: {NUM_UNIVERSES}")
+print(f"Stable universes (lock-in):     {locked_total} ({pct_locked:.2f}%)")
+print(f"Stable universes (no lock-in):  {stable_no_lock} ({pct_stable_no_lock:.2f}%)")
+print(f"Unstable universes:             {unstable_total} ({pct_unstable:.2f}%)")
+
+# --- plot stacked bar ---
 plt.figure()
 
 # x positions: 0 = Stable (stacked), 1 = Unstable
-plt.bar(0, num_stable_no_lock, color="#1f77b4", label=f"Stable (no lock-in) [{num_stable_no_lock}, {pct_stable_no_lock:.1f}%]")
-plt.bar(0, num_locked, bottom=num_stable_no_lock, color="#9467bd", label=f"Stable (lock-in) [{num_locked}, {pct_locked:.1f}%]")
-plt.bar(1, num_unstable, color="#d62728", label=f"Unstable [{num_unstable}, {pct_unstable:.1f}%]")
+plt.bar(0, stable_no_lock, color="#1f77b4",
+        label=f"Stable (no lock-in) [{stable_no_lock}, {pct_stable_no_lock:.1f}%]")
+plt.bar(0, locked_total, bottom=stable_no_lock, color="#9467bd",
+        label=f"Stable (lock-in) [{locked_total}, {pct_locked:.1f}%]")
+plt.bar(1, unstable_total, color="#d62728",
+        label=f"Unstable [{unstable_total}, {pct_unstable:.1f}%]")
 
 plt.xticks([0, 1], ["Stable (split by lock-in)", "Unstable"])
 plt.ylabel("Number of Universes")
-plt.title("Universe Stability Distribution (E-only) — with Lock-in")
+plt.title("Universe Stability Distribution (E,I) — with Lock-in")
 plt.legend(loc="upper right", frameon=False)
 plt.tight_layout()
 savefig(os.path.join(FIG_DIR, "stability_summary_with_lockin.png"))
