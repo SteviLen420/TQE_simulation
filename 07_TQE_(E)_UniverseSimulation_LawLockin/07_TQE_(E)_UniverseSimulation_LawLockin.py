@@ -42,8 +42,8 @@ from sklearn.metrics import accuracy_score, r2_score
 # ======================================================
 # Setup: directories, helpers, and global controls
 # ======================================================
-GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E)_law_lockin_FULL"
-run_id = time.strftime("TQE_(E)_law_lockin_%Y%m%d_%H%M%S")
+GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E)_UNIVERSE_SIMULATION"
+run_id = time.strftime("TQE_(E)_UNIVERSE_SIMULATION_%Y%m%d_%H%M%S")
 SAVE_DIR = os.path.join(GOOGLE_BASE, run_id); os.makedirs(SAVE_DIR, exist_ok=True)
 FIG_DIR  = os.path.join(SAVE_DIR, "figs"); os.makedirs(FIG_DIR, exist_ok=True)
 
