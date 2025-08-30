@@ -103,7 +103,7 @@ def sample_information_param(dim=8):
 # 3) Energy sampling
 # ======================================================
 def sample_energy_lognormal(mu=2.5, sigma=0.9):
-    return float(rng.lognormal(mean=mu, sigma=sigma))
+    return float(np.random.lognormal(mean=mu, sigma=sigma))
 
 # ======================================================
 # 4) Goldilocks noise function
@@ -146,7 +146,7 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
 
         if delta_rel < rel_eps:         # much stricter threshold (2%)
             consecutive += 1            # count consecutive calm steps
-            if consecutive >= 15 and locked_at is None:  # need at least 20 calm steps
+            if consecutive >= 20 and locked_at is None:  # need at least 20 calm steps
                 locked_at = n
         else:
             consecutive = 0
@@ -217,7 +217,7 @@ yy = bin_stats["stable_rate"].values
 if len(xx) > 3:
     spline = make_interp_spline(xx, yy, k=3)
     xs = np.linspace(xx.min(), xx.max(), 300)
-    ys = spline(xs)
+    ys = np.clip(spline(xs), 0, 1)
 else:
     xs, ys = xx, yy
 
@@ -457,7 +457,10 @@ except Exception:
     sv_cls = expl_cls(X_plot).values  # (n_samples, n_features) expected
 
 if isinstance(sv_cls, list):
-    sv_cls = sv_cls[1]  # positive class
+    if len(sv_cls) > 1:
+        sv_cls = sv_cls[1]  # positive class
+    else:
+        sv_cls = sv_cls[0]  # in case of only one class
 sv_cls = np.asarray(sv_cls)
 if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
     sv_cls = sv_cls[:, :, 1]
