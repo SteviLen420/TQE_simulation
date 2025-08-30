@@ -6,7 +6,7 @@
 # Description: Energy-only (I = 0) simulation with a complete pipeline:
 #   - Quantum superposition (diagnostic)
 #   - Collapse snapshot at t = 0
-#   - Monte Carlo over universes (or single-universe if NUM_UNIVERSES = 1)
+#   - Monte Carlo over universes 
 #   - Stability + law lock-in detection
 #   - Optional averaged lock-in plots
 #   - Full CSV/JSON/PNG outputs
