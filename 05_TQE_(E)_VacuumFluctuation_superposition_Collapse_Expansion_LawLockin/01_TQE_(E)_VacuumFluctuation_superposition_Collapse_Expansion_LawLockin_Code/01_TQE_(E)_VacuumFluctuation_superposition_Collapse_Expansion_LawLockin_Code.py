@@ -124,7 +124,9 @@ def is_stable(E, n_epoch=30):
 # ======================================================
 # 4) Law lock-in (E only)
 # ======================================================
-def law_lock_in(E, n_epoch=LOCKIN_EPOCHS):
+def law_lock_in(E, n_epoch=None):
+    if n_epoch is None:
+        n_epoch = MASTER_CTRL["N_epoch"]
     """Simulates the law lock-in process based only on Energy E."""
     f = np.exp(-(E - 2.0)**2 / (2 * 0.3**2))  
 
@@ -261,7 +263,7 @@ if len(all_histories) > 0:
     }).to_csv(os.path.join(SAVE_DIR, "law_lockin_avg.csv"), index=False)
 
     # Optional plot
-    if PLOT_AVG_LOCKIN and (median_epoch is not None):
+    if MASTER_CTRL["PLOT_AVG_LOCKIN"] and (median_epoch is not None):
         plt.figure()
         plt.plot(avg_c, label="Average c value")
         plt.fill_between(np.arange(min_len), avg_c-std_c, avg_c+std_c,
