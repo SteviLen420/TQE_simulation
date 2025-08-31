@@ -91,12 +91,19 @@ SAVE_DIR = os.path.join("/content/drive/MyDrive/TQE_(E,I)_law_lockin", run_id)
 FIG_DIR = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
 
-def savefig(p): 
-    plt.savefig(p,dpi=180,bbox_inches="tight"); plt.close()
-def save_json(path, obj): 
-    with open(path, "w") as f: json.dump(obj, f, indent=2)
+def savefig(p):
+    if not MASTER_CTRL["save_figs"]: 
+        return
+    plt.savefig(p, dpi=180, bbox_inches="tight")
+    plt.close()
 
-summary = {"params": MASTER_CTRL, "master_seed": MASTER_CTRL["seed"]}
+def save_json(path, obj):
+    if not MASTER_CTRL["save_json"]:
+        return
+    with open(path, "w") as f:
+        json.dump(obj, f, indent=2)
+
+save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 
 # ======================================================
 # 2) t < 0 : Quantum superposition (vacuum fluctuation)
@@ -195,8 +202,8 @@ X = E * I * f
 
 # Collapse dynamics (before t=0 fluctuation, after lock-in)
 collapse_t = np.linspace(-0.2, 0.2, 200)
-X_vals = X + 0.5 * rng.normal(size=len(collapse_t))
-X_vals[collapse_t >= 0] = X + 0.05 * rng.normal(size=np.sum(collapse_t >= 0))
+collapse_X_curve = X + 0.5 * rng.normal(size=len(collapse_t))
+collapse_X_curve[collapse_t >= 0] = X + 0.05 * rng.normal(size=np.sum(collapse_t >= 0))
 
 plt.plot(collapse_t, X_vals, "k-", alpha=0.6, label="fluctuation → lock-in")
 plt.axhline(X, color="r", ls="--", label=f"Lock-in X={X:.2f}")
@@ -420,8 +427,7 @@ summary["stability_counts"] = {
     "stable_percent": float(stable_count/total_universes*100),
     "unstable_percent": float(unstable_count/total_universes*100)
 }
-with open(os.path.join(SAVE_DIR, "summary.json"), "w") as f:
-    json.dump(summary, f, indent=2)
+save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 
 # --- Stability bar chart ---
 fig, ax = plt.subplots()
@@ -609,8 +615,7 @@ summary["stability_summary"] = {
     "lockin_percent": float(lockin_count/len(df)*100)
 }
 
-with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
-    json.dump(summary, f, indent=2)
+save_json(os.path.join(SAVE_DIR,"summary.json"), summary)
 
 # --- Save bar chart ---
 plt.figure()
@@ -636,14 +641,6 @@ savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 # ======================================================
 # 13) Save results (JSON + CSV + Figures)
 # ======================================================
-
-# Save expansion dynamics to CSV
-expansion_df = pd.DataFrame({
-    "epoch": np.arange(len(A_series)),
-    "Amplitude_A": A_series,
-    "Orientation_I": I_series
-})
-expansion_df.to_csv(os.path.join(SAVE_DIR, "expansion.csv"), index=False)
 
 # Save stability outcomes to CSV (redundant but simplified)
 stability_df = pd.DataFrame({
@@ -677,8 +674,7 @@ summary.update({
     }
 })
 
-with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
-    json.dump(summary, f, indent=2)
+save_json(os.path.join(SAVE_DIR,"summary.json"), summary)
 
 # ======================================================
 # 14) XAI (SHAP + LIME) 
@@ -703,13 +699,21 @@ stratify_arg = y_cls if can_stratify else None
 if not can_stratify:
     print(f"[WARN] Skipping stratify: class counts = {dict(zip(vals, cnts))}")
 
+# --- Classification split ---
 Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
-    X_feat, y_cls, test_size=0.25, random_state=42, stratify=stratify_arg
+    X_feat, y_cls,
+    test_size=MASTER_CTRL["test_size"],
+    random_state=42,
+    stratify=stratify_arg
 )
+
+# --- Regression split (only if enough samples) ---
 have_reg = len(X_reg) >= MASTER_CTRL["regression_min"]
 if have_reg:
     Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
-        X_reg, y_reg, test_size=0.25, random_state=42
+        X_reg, y_reg,
+        test_size=MASTER_CTRL["test_size"],
+        random_state=42
     )
 
 # ---------- Train models ----------
@@ -767,6 +771,7 @@ try:
 except Exception as e:
     print(f"[ERR] SHAP classification failed: {e}")
 
+if MASTER_CTRL["enable_SHAP"]:
 # ---------- SHAP: regression ----------
 if rf_reg is not None:
     try:
@@ -804,6 +809,8 @@ if rf_reg is not None:
     except Exception as e:
         print(f"[ERR] SHAP regression failed: {e}")
 
+
+if MASTER_CTRL["enable_LIME"] and len(np.unique(y_cls)) > 1:
 # ---------- LIME ----------
 if len(np.unique(y_cls)) > 1:  # only if both classes exist
     try:
