@@ -72,8 +72,15 @@ MASTER_CTRL = {
 
     # Plot controls
     "PLOT_AVG_LOCKIN": True,
-    "PLOT_LOCKIN_HIST": True
+    "PLOT_LOCKIN_HIST": True,   
 }
+
+# --- Goldilocks window tuned to the E distribution ---
+# These are GLOBAL constants, not inside MASTER_CTRL.
+E_MU = 2.5           # lognormal parameter (mean in log-space)
+E_SIGMA = 0.8        # lognormal sigma
+E_CENTER = float(np.exp(E_MU))   # ~12.18, median in linear space
+E_WIDTH  = 6.0       # try 6–8 for ~40%+ stability; smaller = stricter
 
 # Alias for readability
 NUM_UNIVERSES = MASTER_CTRL["N_universes"]
@@ -136,32 +143,34 @@ pd.DataFrame({"time": collapse_t,"X_vals": X_vals}).to_csv(
 # ======================================================
 # 3) Stability check (Energy-dependent)
 # ======================================================
-def is_stable(E, n_epoch=30, E_center=2.0, E_width=0.5):
+def is_stable(E, n_epoch=30, E_center=E_CENTER, E_width=E_WIDTH):
     """
     Check if a universe is stable based on:
     1. Energy Goldilocks window (E dependence)
     2. Internal noise dynamics
     """
-    # --- 1) Energy window check ---
-    if abs(E - E_center) > E_width:
-        return 0   # too far from Goldilocks → unstable
 
-    # --- 2) Noise-based calmness check ---
+    # Quick E gate: outside a very wide range → unstable right away
+    if abs(E - E_center) > 3 * E_width:   # 3-sigma cutoff in linear space
+        return 0
+
+    # --- 2) Internal dynamics ---
     A = 20
     calm = 0
     for n in range(n_epoch):
         A_prev = A
-        A = A * 1.02 + np.random.normal(0, 2)   # random noisy evolution
+        A = A * 1.02 + np.random.normal(0, 2)
         delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
 
         if delta < 0.05:
             calm += 1
-            if calm >= 5:
-                return 1   # stable universe
         else:
             calm = 0
 
-    return 0  # unstable
+        if calm >= 5:
+            return 1   # stable universe
+
+    return 0   # unstable
 
 # ======================================================
 # 4) Law lock-in (E only)
@@ -170,7 +179,9 @@ def law_lock_in(E, n_epoch=None):
     if n_epoch is None:
         n_epoch = MASTER_CTRL["N_epoch"]
     """Simulates the law lock-in process based only on Energy E."""
-    f = np.exp(-(E - 2.0)**2 / (2 * 0.3**2))  
+
+    # Goldilocks alignment with E distribution (Gaussian window around E_CENTER)
+    f = np.exp(-((E - E_CENTER)**2) / (2.0 * (E_WIDTH**2)))
 
     if f < 0.2:
         return -1, []   # too far from Goldilocks → no lock-in
