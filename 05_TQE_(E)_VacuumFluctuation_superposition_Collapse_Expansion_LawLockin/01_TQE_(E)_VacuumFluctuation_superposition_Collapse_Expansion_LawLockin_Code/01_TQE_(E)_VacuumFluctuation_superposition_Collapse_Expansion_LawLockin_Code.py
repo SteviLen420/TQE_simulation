@@ -166,10 +166,12 @@ def law_lock_in(E, n_epoch=None):
 
 E_vals, stables, law_epochs, final_cs, all_histories = [], [], [], [], []
 X_vals = []  # E-only: X = E
+sub_seeds = []     # store per-universe seeds
 
 for i in range(NUM_UNIVERSES):
     # Each universe gets its own seed from the master RNG
     sub_seed = master_rng.integers(0, 2**32)
+    sub_seeds.append(sub_seed)  # <<< save the sub-seed!
     rng = np.random.default_rng(sub_seed)
 
     # Sample Energy E using universe-specific RNG
