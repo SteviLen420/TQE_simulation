@@ -484,34 +484,52 @@ else:
 # ======================================================
 # EXTRA: Seed search — Top-5 seeds by stability (kept)
 # ======================================================
-NUM_SEEDS = 100
-UNIVERSES_PER_SEED = 500
+NUM_SEEDS = 100           # number of seeds to test
+UNIVERSES_PER_SEED = 500  # universes simulated for each seed
 
-seed_scores = []
-_old_rng = rng
+seed_scores = []          # list to store results for each seed
+_old_rng = rng            # save the current RNG state
 
 for s in range(NUM_SEEDS):
+    # Create a reproducible RNG for this seed
     rng = np.random.default_rng(seed=s)
     try:
-        np.random.seed(s)
+        np.random.seed(s)  # compatibility for older libraries using np.random
     except Exception:
         pass
 
-    rows_s = []
+    rows_s = []  # results for universes under this seed
     for i in range(UNIVERSES_PER_SEED):
+        # Sample energy and information parameters
         E   = sample_energy_lognormal()
         I   = sample_information_param(dim=8)
         X   = E * I
-        stable, lock_at = simulate_lock_in(X, params["N_epoch"], params["rel_eps"],
-                                           params["sigma0"], params["alpha"])
-        rows_s.append({"E":E, "I":I, "X":X, "stable":stable, "lock_at":lock_at})
 
+        # Run lock-in simulation
+        stable, lock_at = simulate_lock_in(
+            X,
+            MASTER_CTRL["N_epoch"],
+            MASTER_CTRL["rel_eps"],
+            MASTER_CTRL["sigma0"],
+            MASTER_CTRL["alpha"]
+        )
+
+        # Store results for this universe
+        rows_s.append({
+            "E": E, "I": I, "X": X,
+            "stable": stable, "lock_at": lock_at
+        })
+
+    # Convert results for this seed into DataFrame
     df_s = pd.DataFrame(rows_s)
+
+    # Compute stability ratio and lock statistics
     ratio = float(df_s["stable"].mean())
     locked_mask = df_s["lock_at"] >= 0
     locked_frac = float(locked_mask.mean()) if len(df_s) else 0.0
     mean_lock = float(df_s.loc[locked_mask, "lock_at"].mean()) if locked_mask.any() else None
 
+    # Save summary for this seed
     seed_scores.append({
         "seed": s,
         "stable_ratio": ratio,
@@ -519,19 +537,24 @@ for s in range(NUM_SEEDS):
         "mean_lock_at": mean_lock
     })
 
+# Restore original RNG state
 rng = _old_rng
 
+# Sort seeds by stability ratio
 seed_scores_sorted = sorted(seed_scores, key=lambda r: r["stable_ratio"], reverse=True)
 
+# Print top-5 seeds
 print("\n🏆 Top-5 seeds by stability ratio")
 for r in seed_scores_sorted[:5]:
     print(f"Seed {r['seed']:3d} → stability={r['stable_ratio']:.3f}  "
           f"locked_frac={r['locked_fraction']:.3f}  mean_lock_at={r['mean_lock_at']}")
 
+# Save full seed search results
 top_csv_path = os.path.join(SAVE_DIR, "seed_search_top.csv")
 pd.DataFrame(seed_scores_sorted).to_csv(top_csv_path, index=False)
 print("Seed search table saved to:", top_csv_path)
 
+# Add seed search summary into main JSON
 summary["seed_search"] = {
     "num_seeds": NUM_SEEDS,
     "universes_per_seed": UNIVERSES_PER_SEED,
@@ -544,29 +567,29 @@ save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 # 13) PATCH: Robust copy to Google Drive
 # ======================================================
 if MASTER_CTRL["save_drive_copy"]:
-GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_SHANNON"
-GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
-os.makedirs(GOOGLE_DIR, exist_ok=True)
+    GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_SHANNON"
+    GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
+    os.makedirs(GOOGLE_DIR, exist_ok=True)
 
-copied, skipped = [], []
-for root, dirs, files in os.walk(SAVE_DIR):
-    dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
-    os.makedirs(dst_dir, exist_ok=True)
-    for file in files:
-        if not file.endswith((".png", ".fits", ".csv", ".json", ".txt", ".npy")):
-            continue
-        src = os.path.join(root, file)
-        dst = os.path.join(dst_dir, file)
-        try:
-            if os.path.exists(dst) and os.path.samefile(src, dst):
-                skipped.append(dst); continue
-        except Exception:
-            pass
-        shutil.copy2(src, dst); copied.append(dst)
+    copied, skipped = [], []
+    for root, dirs, files in os.walk(SAVE_DIR):
+        dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
+        os.makedirs(dst_dir, exist_ok=True)
+        for file in files:
+            if not file.endswith((".png", ".fits", ".csv", ".json", ".txt", ".npy")):
+                continue
+            src = os.path.join(root, file)
+            dst = os.path.join(dst_dir, file)
+            try:
+                if os.path.exists(dst) and os.path.samefile(src, dst):
+                    skipped.append(dst); continue
+            except Exception:
+                pass
+            shutil.copy2(src, dst); copied.append(dst)
 
-print("☁️ Copy finished.")
-print(f"Copied: {len(copied)} files")
-print(f"Skipped (same path): {len(skipped)} files")
-print("Google Drive folder:", GOOGLE_DIR)
+    print("☁️ Copy finished.")
+    print(f"Copied: {len(copied)} files")
+    print(f"Skipped (same path): {len(skipped)} files")
+    print("Google Drive folder:", GOOGLE_DIR)
 else:
     print("[SAVE] Skipping Google Drive copy (disabled in MASTER_CTRL).")
