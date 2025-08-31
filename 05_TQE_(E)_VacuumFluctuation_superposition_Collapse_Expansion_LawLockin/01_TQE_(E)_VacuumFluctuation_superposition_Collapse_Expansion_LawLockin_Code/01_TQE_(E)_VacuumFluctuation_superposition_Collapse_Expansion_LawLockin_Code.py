@@ -50,7 +50,7 @@ def savefig(p):
 # 0) MASTER CONTROLLER – central parameters (E-only)
 # ======================================================
 MASTER_CTRL = {
-    "N_universes": 1000,      # number of universes to simulate
+    "N_universes": 5000,      # number of universes to simulate
     "N_epoch": 500,           # number of epochs for law lock-in
     "expansion_epochs": 500,  # number of epochs for expansion
     "rel_eps": 0.05,          # stability tolerance
@@ -380,9 +380,14 @@ summary.update({
     }
 })
 
-# Save summary JSON
+# Save summary JSON (fix: convert numpy types)
 with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
-    json.dump(summary, f, indent=2)
+    json.dump(
+        summary, f, indent=2,
+        default=lambda x: float(x) if isinstance(x, (np.floating,))
+                        else int(x) if isinstance(x, (np.integer,))
+                        else str(x)
+    )
 
 print("✅ DONE.")
 print(f"☁️ All results saved to Google Drive: {SAVE_DIR}")
