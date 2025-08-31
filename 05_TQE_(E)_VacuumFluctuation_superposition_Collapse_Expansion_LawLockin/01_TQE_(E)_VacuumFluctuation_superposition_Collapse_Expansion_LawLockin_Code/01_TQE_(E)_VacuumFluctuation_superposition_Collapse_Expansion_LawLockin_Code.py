@@ -1,12 +1,20 @@
 # ===========================================================================
 # Theory of the Question of Existence (TQE)
-# (E) Vacuum fluctuation → superposition → Collapse → Expansion → Law lock-in
+# Energy-only Simulation — Vacuum fluctuation → Collapse → Expansion → Law lock-in
 # ===========================================================================
 # Author: Stefan Len
-# Description: Energy-only model of cosmogenesis via vacuum fluctuation
-# Focus: Stability emergence without informational orientation (I = 0)
-# Mechanisms: Goldilocks window, critical thresholds, stochastic dynamics
+#
+# SUMMARY
+# Monte Carlo framework modeling cosmogenesis from energy (E) alone, without 
+# informational orientation (I=0). Starting from vacuum fluctuations and 
+# quantum superposition (t < 0), the system undergoes collapse (t = 0), 
+# stabilization, and expansion (t > 0). A Goldilocks window defines critical 
+# thresholds where law lock-in emerges. Outputs include entropy/purity traces, 
+# collapse dynamics, stability fractions, law lock-in epochs, and expansion 
+# trajectories. Reproducible with master + per-universe seeds, results are 
+# saved as CSV/JSON/PNG for analysis.
 # ===========================================================================
+
 
 # ---- Mount Google Drive ----
 from google.colab import drive
@@ -126,26 +134,34 @@ pd.DataFrame({"time": collapse_t,"X_vals": X_vals}).to_csv(
     os.path.join(SAVE_DIR, "collapse.csv"), index=False)
     
 # ======================================================
-# 3) Stability check (Energy-only)
+# 3) Stability check (Energy-dependent)
 # ======================================================
-def is_stable(E, n_epoch=30):
-    """Check if a universe is stable based only on A dynamics."""
+def is_stable(E, n_epoch=30, E_center=2.0, E_width=0.5):
+    """
+    Check if a universe is stable based on:
+    1. Energy Goldilocks window (E dependence)
+    2. Internal noise dynamics
+    """
+    # --- 1) Energy window check ---
+    if abs(E - E_center) > E_width:
+        return 0   # too far from Goldilocks → unstable
+
+    # --- 2) Noise-based calmness check ---
     A = 20
     calm = 0
     for n in range(n_epoch):
         A_prev = A
-        A = A * 1.02 + np.random.normal(0, 2)
+        A = A * 1.02 + np.random.normal(0, 2)   # random noisy evolution
         delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
 
         if delta < 0.05:
             calm += 1
+            if calm >= 5:
+                return 1   # stable universe
         else:
             calm = 0
 
-        if calm >= 5:
-            return 1   # stable universe
-
-    return 0   # unstable
+    return 0  # unstable
 
 # ======================================================
 # 4) Law lock-in (E only)
