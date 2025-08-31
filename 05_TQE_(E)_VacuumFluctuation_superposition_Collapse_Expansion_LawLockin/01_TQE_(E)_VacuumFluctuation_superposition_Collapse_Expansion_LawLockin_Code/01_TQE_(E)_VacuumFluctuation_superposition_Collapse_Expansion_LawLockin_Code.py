@@ -257,17 +257,25 @@ summary = {
 with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
     json.dump(summary, f, indent=2)
 
-# --- Save bar chart ---
+# --- Save bar chart with Lock-in ---
+lockin_count = len(valid_epochs)   # universes that actually locked in
+
 plt.figure()
-plt.bar(["Stable", "Unstable"], [stable_count, unstable_count], color=["green", "red"])
+plt.bar(
+    ["Lock-in", "Stable", "Unstable"],
+    [lockin_count, stable_count, unstable_count],
+    color=["blue", "green", "red"]
+)
 plt.title("Universe Stability Distribution")
 plt.ylabel("Number of Universes")
 plt.xlabel("Category")
+
 labels = [
+    f"Lock-in ({lockin_count}, {lockin_count/NUM_UNIVERSES*100:.1f}%)",
     f"Stable ({stable_count}, {stable_count/NUM_UNIVERSES*100:.1f}%)",
     f"Unstable ({unstable_count}, {unstable_count/NUM_UNIVERSES*100:.1f}%)"
 ]
-plt.xticks([0, 1], labels)
+plt.xticks([0, 1, 2], labels)
 
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
