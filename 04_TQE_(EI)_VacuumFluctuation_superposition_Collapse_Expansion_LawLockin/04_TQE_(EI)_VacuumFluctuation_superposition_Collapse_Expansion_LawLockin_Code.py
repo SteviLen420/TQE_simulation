@@ -65,7 +65,6 @@ MASTER_CTRL = {
     "save_drive_copy": True,
     "save_figs": True,
     "save_json": True
-
     "PLOT_AVG_LOCKIN": True,
     "PLOT_LOCKIN_HIST": True,
 }
@@ -559,7 +558,7 @@ if len(valid_epochs) > 0:
     }
 
     # (OPTIONAL) Plot only if enabled
-    if PLOT_LOCKIN_HIST:
+    if MASTER_CTRL.get("PLOT_LOCKIN_HIST", False):
         plt.figure()
         bins = min(50, len(valid_epochs))  # adaptive binning
         plt.hist(valid_epochs, bins=bins, color="blue", alpha=0.7)
