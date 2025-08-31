@@ -41,15 +41,33 @@ except Exception:
     from lime.lime_tabular import LimeTabularExplainer
 
 # ======================================================
-# 1) Parameters
+# 1) MASTER CONTROLLER – All key settings in one place
 # ======================================================
-params = {
-    "N_samples": 1000,    # Monte Carlo universes
-    "N_epoch": 30,        # time steps (robust for Goldilocks detection)
-    "rel_eps": 0.05,      # lock-in threshold on relative change
-    "sigma0": 0.5,        # baseline noise amplitude
-    "alpha": 1.5,         # noise growth toward edges
-    "seed":  None         # RNG seed (if None: generated)
+MASTER_CTRL = {
+    # --- Simulation core ---
+    "N_samples": 5000,
+    "N_epoch": 50,
+    "rel_eps": 0.05,
+    "sigma0": 0.5,
+    "alpha": 1.5,
+    "seed": None,  # master RNG seed
+
+    # --- Stability detection ---
+    "lock_consecutive": 20,    # consecutive calm steps to lock
+    "regression_min": 30,      # min. locked samples for regression
+
+    # --- Train/test split ---
+    "test_size": 0.25,
+    "rf_n_estimators": 400,
+
+    # --- XAI controls ---
+    "enable_SHAP": True,
+    "enable_LIME": True,
+
+    # --- Outputs ---
+    "save_figs": True,
+    "save_json": True,
+    "save_drive_copy": True
 }
 
 # --------- PATCH: master seed generation + rng ----------
@@ -134,7 +152,7 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
                      abs(H - H_prev)/abs(H_prev)) / 3.0
         if delta_rel < rel_eps:
             consecutive += 1
-            if consecutive >= 15 and locked_at is None:
+            if consecutive >= MASTER_CTRL["lock_consecutive"] and locked_at is None:
                 locked_at = n
         else:
             consecutive = 0
