@@ -341,67 +341,6 @@ print(f"Goldilocks zone: {E_c_low:.2f} – {E_c_high:.2f}")
 print(f"📂 Directory: {SAVE_DIR}")
 
 # ======================================================
-# EXTRA: Seed search — Top-5 seeds with highest stability (kept)
-# ======================================================
-seed_scores = []
-_old_rng = rng
-
-for s in range(MASTER_CTRL["seed_search_num"]):
-    rng = np.random.default_rng(seed=s)
-    try:
-        np.random.seed(s)
-    except Exception:
-        pass
-
-    rows_s = []
-    for i in range(MASTER_CTRL["seed_search_universes"]):
-        E = sample_energy_lognormal()
-        I = sample_information_param(dim=8)
-        X = E * I
-        stable, lock_at = simulate_lock_in(
-            X,
-            MASTER_CTRL["N_epoch"],
-            MASTER_CTRL["rel_eps"],
-            MASTER_CTRL["sigma0"],
-            MASTER_CTRL["alpha"]
-        )
-        rows_s.append({"E":E, "I":I, "X":X, "stable":stable, "lock_at":lock_at})
-
-    df_s = pd.DataFrame(rows_s)
-    ratio = float(df_s["stable"].mean())
-    locked_mask = df_s["lock_at"] >= 0
-    locked_frac = float(locked_mask.mean()) if len(df_s) else 0.0
-    mean_lock = float(df_s.loc[locked_mask, "lock_at"].mean()) if locked_mask.any() else None
-
-    seed_scores.append({
-        "seed": s,
-        "stable_ratio": ratio,
-        "locked_fraction": locked_frac,
-        "mean_lock_at": mean_lock
-    })
-
-rng = _old_rng
-seed_scores_sorted = sorted(seed_scores, key=lambda r: r["stable_ratio"], reverse=True)
-
-print("\n🏆 Top-5 seeds by stability ratio")
-for r in seed_scores_sorted[:5]:
-    print(f"Seed {r['seed']:3d} → stability={r['stable_ratio']:.3f}  "
-          f"locked_frac={r['locked_fraction']:.3f}  mean_lock_at={r['mean_lock_at']}")
-
-top_csv_path = os.path.join(SAVE_DIR, "seed_search_top.csv")
-pd.DataFrame(seed_scores_sorted).to_csv(top_csv_path, index=False)
-print("Seed search table saved to:", top_csv_path)
-
-summary["seed_search"] = {
-    "num_seeds": MASTER_CTRL["seed_search_num"],
-    "universes_per_seed": MASTER_CTRL["seed_search_universes"],
-    "top5": seed_scores_sorted[:5],
-    "csv_path": top_csv_path
-}
-if MASTER_CTRL["save_json"]:
-    save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
-
-# ======================================================
 # 12) XAI (SHAP + LIME) — stratify guard + CSV saves
 # ======================================================
 def _savefig_safe(path):
