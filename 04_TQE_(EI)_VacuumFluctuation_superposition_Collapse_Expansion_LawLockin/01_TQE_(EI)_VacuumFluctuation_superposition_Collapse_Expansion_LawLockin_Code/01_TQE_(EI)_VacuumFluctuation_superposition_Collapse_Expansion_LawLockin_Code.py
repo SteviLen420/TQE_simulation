@@ -430,7 +430,7 @@ for i, (c, pct) in enumerate(zip(counts, pcts)):
                 textcoords="offset points",
                 ha="center", va="bottom")
 
-savefig(os.path.join(FIG_DIR, "stability_summary.png"))
+savefig(os.path.join(FIG_DIR, "stability_summary_basic.png"))
 
 # ======================================================
 # 9) Average law lock-in dynamics across all universes
@@ -459,6 +459,17 @@ if all_histories:
         "std_c": std_c
     })
     avg_df.to_csv(os.path.join(SAVE_DIR, "law_lockin_avg.csv"), index=False)
+
+    # ---- Save per-universe seeds for full reproducibility ----
+    pd.DataFrame({"universe_id": np.arange(N), "seed": universe_seeds}) \
+      .to_csv(os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False)
+
+    # ---- Add pointers into summary ----
+    summary.setdefault("seeds", {})
+    summary["seeds"]["master_seed"] = master_seed
+    summary["seeds"]["universe_seeds_csv"] = "universe_seeds.csv"
+    with open(os.path.join(SAVE_DIR, "summary.json"), "w") as f:
+        json.dump(summary, f, indent=2)
 
     # Add to summary JSON
     summary["law_lockin_avg"] = {
@@ -697,10 +708,6 @@ y_reg = df.loc[reg_mask, "lock_epoch"].values
 assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
 if len(X_reg) > 0:
     assert not np.isnan(X_reg.values).any(), "NaN in X_reg!"
-
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.metrics import r2_score, accuracy_score
 
 # --------- Stratify guard ---------
 vals, cnts = np.unique(y_cls, return_counts=True)
