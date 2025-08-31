@@ -67,6 +67,7 @@ MASTER_CTRL = {
     "save_json": True
 
     # --- Plot controls ---
+    "save_json": True,
     "PLOT_AVG_LOCKIN": True,
     "PLOT_LOCKIN_HIST": True,
 }
