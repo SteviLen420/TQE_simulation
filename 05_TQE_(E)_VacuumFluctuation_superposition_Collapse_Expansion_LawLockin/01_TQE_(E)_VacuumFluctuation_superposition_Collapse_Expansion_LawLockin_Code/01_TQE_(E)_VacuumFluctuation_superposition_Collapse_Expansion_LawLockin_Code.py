@@ -50,6 +50,9 @@ MASTER_CTRL = {
 # Alias for readability
 NUM_UNIVERSES = MASTER_CTRL["N_universes"]
 
+# Create master RNG
+master_rng = np.random.default_rng(MASTER_CTRL["seed"])
+
 # ======================================================
 # 1) t < 0 : Quantum superposition (vacuum fluctuation)
 # ======================================================
@@ -164,30 +167,30 @@ def law_lock_in(E, n_epoch=None):
 E_vals, stables, law_epochs, final_cs, all_histories = [], [], [], [], []
 X_vals = []  # E-only: X = E
 
-for _ in range(NUM_UNIVERSES):
-    # Sample Energy E from a log-normal distribution
-    Ei = float(np.random.lognormal(2.5, 0.8))
-    E_vals.append(Ei)
-    X_vals.append(Ei)  # <<< E-only: X = E
+for i in range(NUM_UNIVERSES):
+    # Each universe gets its own seed from the master RNG
+    sub_seed = master_rng.integers(0, 2**32)
+    rng = np.random.default_rng(sub_seed)
 
-    # Check if this universe is stable
+    # Sample Energy E using universe-specific RNG
+    Ei = float(rng.lognormal(2.5, 0.8))
+    E_vals.append(Ei)
+    X_vals.append(Ei)
+
+    # Stability check uses rng too if you want reproducibility
     s = is_stable(Ei)
     stables.append(s)
 
     if s == 1:
-        # Run law lock-in only for stable universes
-        lock_epoch, c_hist = law_lock_in(Ei, n_epoch=MASTER_CTRL["N_epoch"])    
+        lock_epoch, c_hist = law_lock_in(Ei, n_epoch=MASTER_CTRL["N_epoch"])
         law_epochs.append(lock_epoch)
 
         if len(c_hist) > 0:
-            # If lock-in occurred, save the final c value and full trajectory
             final_cs.append(c_hist[-1])
             all_histories.append(c_hist)
         else:
-            # Stable, but NO lock-in → still append NaN to keep array lengths equal
             final_cs.append(np.nan)
     else:
-        # Unstable universe → mark no lock-in and store NaN for c
         law_epochs.append(-1)
         final_cs.append(np.nan)
 
@@ -314,7 +317,7 @@ pd.DataFrame({"lock_epoch": valid_epochs}).to_csv(
 )
 
 # Optional plot
-if PLOT_LOCKIN_HIST and len(valid_epochs) > 0:
+if MASTER_CTRL["PLOT_LOCKIN_HIST"] and len(valid_epochs) > 0:
     plt.figure()
     plt.hist(valid_epochs, bins=50, color="blue", alpha=0.7)
     if median_epoch is not None:
