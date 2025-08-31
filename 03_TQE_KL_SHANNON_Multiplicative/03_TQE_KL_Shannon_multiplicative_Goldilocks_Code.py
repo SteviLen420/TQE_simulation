@@ -51,8 +51,7 @@ MASTER_CTRL = {
     "sigma0": 0.5,
     "alpha": 1.5,
     "seed": None,  # master RNG seed
-    "seed_search_num": 100,
-    "seed_search_universes": 500,
+    
 
     # --- Stability detection ---
     "lock_consecutive": 20,    # consecutive calm steps to lock
@@ -162,16 +161,17 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
     return stable, (locked_at if locked_at is not None else -1)
 
 # ======================================================
-# 6) Monte Carlo universes  (PATCH: per-universe seed)
+# 6) Monte Carlo universes
 # ======================================================
 rows = []
+
+# reset RNG to master seed (deterministic universes)
+rng = np.random.default_rng(seed=MASTER_CTRL["seed"])
+
 for i in range(MASTER_CTRL["N_samples"]):
-    # unique seed per universe for audit/repro
-    seed_val = int(np.random.randint(0, 2**32 - 1))
-    try:
-        np.random.seed(seed_val)  # for libs that rely on np.random
-    except Exception:
-        pass
+    # per-universe seed derived deterministically from master seed
+    seed_val = rng.integers(0, 2**32 - 1)
+    np.random.seed(seed_val)  # for libs that rely on np.random
 
     E = sample_energy_lognormal()
     I = sample_information_param(dim=8)
@@ -186,13 +186,13 @@ for i in range(MASTER_CTRL["N_samples"]):
     rows.append({
         "E": E, "I": I, "X": X,
         "stable": stable, "lock_at": lock_at,
-        "seed": seed_val
+        "seed": int(seed_val)
     })
 
 df = pd.DataFrame(rows)
 df.to_csv(os.path.join(SAVE_DIR, "samples.csv"), index=False)
 
-# --------- PATCH: save master + per-universe seeds ----------
+# save master + per-universe seeds
 with open(os.path.join(SAVE_DIR, "master_seed.json"), "w") as f:
     json.dump({"master_seed": MASTER_CTRL["seed"]}, f, indent=2)
 
