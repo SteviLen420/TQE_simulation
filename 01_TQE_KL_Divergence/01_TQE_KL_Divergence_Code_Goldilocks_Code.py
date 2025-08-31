@@ -58,8 +58,8 @@ except Exception:
 
 MASTER_CTRL = {
     # --- Simulation core ---
-    "N_samples": 1000,          # number of universes (Monte Carlo runs)
-    "N_epoch": 30,              # time steps
+    "N_samples": 5000,          # number of universes (Monte Carlo runs)
+    "N_epoch": 50,              # time steps
     "rel_eps": 0.05,            # stability threshold
     "sigma0": 0.5,              # baseline noise amplitude
     "alpha": 1.5,               # noise growth factor
