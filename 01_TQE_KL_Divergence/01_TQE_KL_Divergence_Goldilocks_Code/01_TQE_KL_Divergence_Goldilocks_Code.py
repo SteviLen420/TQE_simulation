@@ -6,7 +6,7 @@
 # Tested on: Python 3.11, qutip 5.x, numpy 1.26, shap 0.45.0, lime 0.2.0.1
 #
 # ABSTRACT
-# We present a Monte Carlo simulation framework exploring the coupling 
+# This study presents a Monte Carlo simulation framework exploring the coupling 
 # between energy (E) and information (I) as a potential foundation for 
 # law-locking dynamics in early-universe scenarios. The information parameter 
 # is derived from the Kullback–Leibler divergence between random quantum states 
