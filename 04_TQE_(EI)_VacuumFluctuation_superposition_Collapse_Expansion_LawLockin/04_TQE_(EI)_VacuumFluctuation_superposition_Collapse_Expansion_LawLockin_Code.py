@@ -87,28 +87,28 @@ def save_json(path, obj):
 summary = {"params": MASTER_CTRL, "master_seed": MASTER_CTRL["seed"]}
 
 # ======================================================
-# 1) t < 0 : Quantum superposition (vacuum fluctuation)
+# 2) t < 0 : Quantum superposition (vacuum fluctuation)
 # ======================================================
 Nlev = 12
 a = qt.destroy(Nlev)
 
 # perturbed Hamiltonian with small random noise
-H0 = a.dag()*a + 0.05*(np.random.randn()*a + np.random.randn()*a.dag())
+H0 = a.dag()*a + 0.05*(rng.normal()*a + rng.normal()*a.dag())
 
 # initial state: random superposition (not just vacuum)
 psi0 = qt.rand_ket(Nlev)
 rho = psi0 * psi0.dag()
 
 # time scale
-tlist = np.linspace(0,10,200)
+tlist = np.linspace(0, 10, 200)
 
 # time-dependent gamma (fluctuating environment)
-gammas = 0.02 + 0.01*np.sin(0.5*tlist) + 0.005*np.random.randn(len(tlist))
+gammas = 0.02 + 0.01*np.sin(0.5*tlist) + 0.005*rng.normal(size=len(tlist))
 
 states = []
 for g in gammas:
     # actual time evolution in a small window
-    res = qt.mesolve(H0, rho, np.linspace(0,0.5,5), [np.sqrt(abs(g))*a], [])
+    res = qt.mesolve(H0, rho, np.linspace(0, 0.5, 5), [np.sqrt(abs(g))*a], [])
     states.append(res.states[-1])
 
 # purity and entropy
@@ -119,10 +119,12 @@ S = np.array([qt.entropy_vn(r) for r in states])
 P = np.array([purity(r) for r in states])
 
 # plot
-plt.plot(tlist,S,label="Entropy")
-plt.plot(tlist,P,label="Purity")
+plt.plot(tlist, S, label="Entropy")
+plt.plot(tlist, P, label="Purity")
 plt.title("t < 0 : Quantum superposition (vacuum fluctuation)")
-plt.xlabel("time"); plt.legend(); savefig(os.path.join(FIG_DIR,"superposition.png"))
+plt.xlabel("time"); plt.legend()
+savefig(os.path.join(FIG_DIR, "superposition.png"))
+
 # Save superposition results to CSV
 superposition_df = pd.DataFrame({
     "time": tlist,
@@ -132,7 +134,7 @@ superposition_df = pd.DataFrame({
 superposition_df.to_csv(os.path.join(SAVE_DIR, "superposition.csv"), index=False)
 
 # ======================================================
-# 2) t = 0 : Collapse (E·I coupling + Goldilocks factor)
+# 3) t = 0 : Collapse (E·I coupling + Goldilocks factor)
 # ======================================================
 
 # Kullback–Leibler divergence
@@ -169,8 +171,8 @@ I_shannon = H / np.log(len(p1))
 I_raw = I_kl * I_shannon
 I = I_raw / (1.0 + I_raw)
 
-# Energy fluctuation
-E = float(np.random.lognormal(mean=2.5, sigma=0.8))
+# Energy fluctuation (lognormal from master rng)
+E = float(rng.lognormal(mean=2.5, sigma=0.8))
 
 # Apply Goldilocks filter
 f = f_EI(E, I)
@@ -180,8 +182,8 @@ X = E * I * f
 
 # Collapse dynamics (before t=0 fluctuation, after lock-in)
 collapse_t = np.linspace(-0.2, 0.2, 200)
-X_vals = X + 0.5 * np.random.randn(len(collapse_t))
-X_vals[collapse_t >= 0] = X + 0.05 * np.random.randn(np.sum(collapse_t >= 0))
+X_vals = X + 0.5 * rng.normal(size=len(collapse_t))
+X_vals[collapse_t >= 0] = X + 0.05 * rng.normal(size=np.sum(collapse_t >= 0))
 
 plt.plot(collapse_t, X_vals, "k-", alpha=0.6, label="fluctuation → lock-in")
 plt.axhline(X, color="r", ls="--", label=f"Lock-in X={X:.2f}")
@@ -197,29 +199,32 @@ collapse_df = pd.DataFrame({
 })
 collapse_df.to_csv(os.path.join(SAVE_DIR, "collapse.csv"), index=False)
 
-
 # ======================================================
-# 3) Additional lock-in: Physical laws (speed of light c)
+# 4) Additional lock-in: Physical laws (speed of light c)
 # ======================================================
 def law_lock_in(E, I, n_epoch=500):
     """
     Simulates the lock-in of physical laws with Goldilocks modulation.
+    Uses master-seeded RNG for reproducibility.
     """
     f = f_EI(E, I)
     if f < 0.1:   # Outside Goldilocks → no lock-in
         return -1, []
 
-    c_val = np.random.normal(3e8, 1e7)  # initial speed of light
+    # initial speed of light (normally distributed)
+    c_val = rng.normal(3e8, 1e7)
     calm = 0
     locked_at = None
     history = []
 
     for n in range(n_epoch):
         prev = c_val
-        noise = 1e6 * (1 + abs(E*I - 5)/10) * np.random.uniform(0.8, 1.2)
-        c_val += np.random.normal(0, noise)
+        # noise term depends on E*I
+        noise = 1e6 * (1 + abs(E*I - 5)/10) * rng.uniform(0.8, 1.2)
+        c_val += rng.normal(0, noise)
         history.append(c_val)
 
+        # check relative stability
         delta = abs(c_val - prev) / max(abs(prev), 1e-9)
         if delta < 1e-3:
             calm += 1
@@ -231,54 +236,55 @@ def law_lock_in(E, I, n_epoch=500):
     return locked_at if locked_at is not None else -1, history
     
 # ======================================================
-# 4) Monte Carlo Simulation: Stability + Law lock-in for many universes
+# 5) Monte Carlo Simulation: Stability + Law lock-in for many universes
 # ======================================================
 
-# Helper function: Information parameter based on KL × Shannon
 def sample_information_param_KLxShannon(dim=8):
+    """Sample I using KL × Shannon fusion (normalized to [0,1])."""
     psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
     p1 = np.abs(psi1.full().flatten())**2
     p2 = np.abs(psi2.full().flatten())**2
     p1 /= p1.sum(); p2 /= p2.sum()
     eps = 1e-12
 
-    # KL divergence normalized
     KL_val = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
     I_kl = KL_val / (1.0 + KL_val)
 
-    # Normalized Shannon entropy
     H = -np.sum(p1 * np.log(p1 + eps))
     I_shannon = H / np.log(len(p1))
 
-    # Multiplicative fusion → squashed back to [0,1]
     I_raw = I_kl * I_shannon
     return I_raw / (1.0 + I_raw)
 
-# Number of universes to simulate
-N = 1000  
 
-# Storage lists
-X_vals, I_vals, stables, law_epochs, final_cs, all_histories = [], [], [], [], [], []
-E_vals, f_vals = [], []
+def is_stable(E, I, n_epoch=None, rel_eps=None, lock_consec=None):
+    """Check if a universe stabilizes given parameters (uses MASTER_CTRL defaults)."""
+    if n_epoch is None: n_epoch = MASTER_CTRL["N_epoch"]
+    if rel_eps is None: rel_eps = MASTER_CTRL["rel_eps"]
+    if lock_consec is None: lock_consec = MASTER_CTRL["lock_consecutive"]
 
-def is_stable(E, I, n_epoch=200):
     f = f_EI(E, I)
     if f < 0.2:
         return 0
     A, calm = 20, 0
     for _ in range(n_epoch):
         A_prev = A
-        A = A*1.02 + np.random.normal(0, 2)
+        A = A*1.02 + rng.normal(0, 2)   # <-- seeded RNG
         delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
-        calm = calm + 1 if delta < 0.05 else 0
-        if calm >= 5:
+        calm = calm + 1 if delta < rel_eps else 0
+        if calm >= lock_consec:
             return 1
     return 0
 
+
 # --------- MAIN MC LOOP ---------
+N = MASTER_CTRL["N_universes"]
+
+X_vals, I_vals, E_vals, f_vals = [], [], [], []
+stables, law_epochs, final_cs, all_histories = [], [], [], []
+
 for _ in range(N):
-    # sample parameters
-    Ei = float(np.random.lognormal(2.5, 0.8))
+    Ei = rng.lognormal(2.5, 0.8)  # <-- seeded RNG
     Ii = sample_information_param_KLxShannon(dim=8)
     fi = f_EI(Ei, Ii)
     Xi = Ei * Ii
@@ -293,30 +299,31 @@ for _ in range(N):
     stable = is_stable(Ei, Ii)
     stables.append(stable)
 
-    # law lock-in only for stable
+    # law lock-in only for stable universes
     if stable == 1:
-        lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=1000)  # hosszabb futás
+        lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=MASTER_CTRL["N_epoch"])
     else:
         lock_epoch, c_hist = -1, []
 
     law_epochs.append(lock_epoch)
 
-    # keep histories for averaging
-    if stable == 1 and len(c_hist) > 0:
+    if stable == 1 and c_hist:
         final_cs.append(c_hist[-1])
         all_histories.append(c_hist)
     else:
         final_cs.append(np.nan)
 
-# central median lock-in 
+# central statistics
 valid_epochs = [e for e in law_epochs if e >= 0]
-mean_lock = float(np.mean(valid_epochs)) if len(valid_epochs) > 0 else None
-median_epoch = mean_lock 
+mean_lock   = float(np.mean(valid_epochs))   if valid_epochs else None
+median_epoch = float(np.median(valid_epochs)) if valid_epochs else None
 
 # ======================================================
-# 5) Build master DataFrame and save
+# 6) Build master DataFrame and save
 # ======================================================
+
 df = pd.DataFrame({
+    "universe_id": np.arange(N),
     "E": E_vals,
     "I": I_vals,
     "fEI": f_vals,
@@ -324,15 +331,29 @@ df = pd.DataFrame({
     "stable": stables,
     "lock_epoch": law_epochs,
     "final_c": final_cs,
+    # opcionálisan: universe seed-ek is, ha külön listában tárolod
+    # "seed": universe_seeds  
 })
+
 df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
 
+# Friss summary információ
+summary["runs"] = {
+    "csv_path": os.path.join(SAVE_DIR, "tqe_runs.csv"),
+    "total": int(len(df)),
+    "stable_count": int(df["stable"].sum()),
+    "unstable_count": int(len(df) - df["stable"].sum()),
+    "stable_ratio": float(df["stable"].mean()),
+    "mean_lock_epoch": float(np.mean([e for e in df["lock_epoch"] if e >= 0])) if any(df["lock_epoch"] >= 0) else None,
+    "median_lock_epoch": float(np.median([e for e in df["lock_epoch"] if e >= 0])) if any(df["lock_epoch"] >= 0) else None
+}
+
 # ======================================================
-# [DIAG] Stability vs Law lock-in (extra check)
+# 7) [DIAG] Stability vs Law lock-in (extra check)
 # ======================================================
-stable_total = int(np.sum(stables))
-valid_lockins = int(np.sum([e >= 0 for e in law_epochs]))
-valid_lockins_among_stable = int(np.sum([e >= 0 for e, s in zip(law_epochs, stables) if s == 1]))
+stable_total = int(df["stable"].sum())
+valid_lockins = int(np.sum(df["lock_epoch"] >= 0))
+valid_lockins_among_stable = int(np.sum((df["lock_epoch"] >= 0) & (df["stable"] == 1)))
 
 print("\n[DIAG] Stability vs Law lock-in")
 print(f"Stable universes: {stable_total}/{N} ({100*stable_total/N:.1f}%)")
@@ -340,30 +361,41 @@ print(f"Lock-ins (any): {valid_lockins}/{N} ({100*valid_lockins/N:.1f}%)")
 if stable_total > 0:
     print(f"Lock-ins among stable: {valid_lockins_among_stable}/{stable_total} "
           f"({100*valid_lockins_among_stable/stable_total:.1f}%)")
+
+# --- Add to summary ---
+summary["diagnostics"] = {
+    "stable_total": stable_total,
+    "valid_lockins": valid_lockins,
+    "valid_lockins_among_stable": valid_lockins_among_stable,
+    "stable_ratio": float(stable_total / N),
+    "lockin_ratio": float(valid_lockins / N),
+    "lockin_ratio_among_stable": float(valid_lockins_among_stable / stable_total) if stable_total > 0 else None
+}
         
 # ======================================================
-# 6) Stability summary (counts + percentages)
+# 8) Stability summary (counts + percentages)
 # ======================================================
+total_universes = len(df)
 stable_count = int(df["stable"].sum())
-unstable_count = int(len(df) - stable_count)
+unstable_count = total_universes - stable_count
 
 print("\n🌌 Universe Stability Summary")
-print(f"Total universes simulated: {N}")
-print(f"Stable universes:   {stable_count} ({stable_count/N*100:.2f}%)")
-print(f"Unstable universes: {unstable_count} ({unstable_count/N*100:.2f}%)")
+print(f"Total universes simulated: {total_universes}")
+print(f"Stable universes:   {stable_count} ({stable_count/total_universes*100:.2f}%)")
+print(f"Unstable universes: {unstable_count} ({unstable_count/total_universes*100:.2f}%)")
 
 # --- Save to summary JSON (extend existing summary dict) ---
 summary["stability_counts"] = {
-    "total_universes": N,
+    "total_universes": total_universes,
     "stable_universes": stable_count,
     "unstable_universes": unstable_count,
-    "stable_percent": float(stable_count/N*100),
-    "unstable_percent": float(unstable_count/N*100)
+    "stable_percent": float(stable_count/total_universes*100),
+    "unstable_percent": float(unstable_count/total_universes*100)
 }
-with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
+with open(os.path.join(SAVE_DIR, "summary.json"), "w") as f:
     json.dump(summary, f, indent=2)
 
-# --- Stability bar chart (labels below) ---
+# --- Stability bar chart ---
 fig, ax = plt.subplots()
 counts = [stable_count, unstable_count]
 labels = ["Stable", "Unstable"]
@@ -372,45 +404,60 @@ ax.set_title("Universe Stability Distribution")
 ax.set_ylabel("Number of Universes")
 ax.set_xlabel("Category")
 
-
-pcts = [stable_count/len(df)*100, unstable_count/len(df)*100]
+# Annotate counts + percentages above bars (not below axis)
+pcts = [stable_count/total_universes*100, unstable_count/total_universes*100]
 for i, (c, pct) in enumerate(zip(counts, pcts)):
     ax.annotate(f"{c} ({pct:.1f}%)",
-                xy=(i, 0), xytext=(0, -28),  # lefelé 28 px
+                xy=(i, c), xytext=(0, 5),
                 textcoords="offset points",
-                ha="center", va="top",
-                transform=ax.get_xaxis_transform())
+                ha="center", va="bottom")
 
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
-# 7) Average law lock-in dynamics across all universes
+# 9) Average law lock-in dynamics across all universes
 # ======================================================
 if all_histories:
-    # Truncate all histories to the shortest length
+    # Option A: truncate to shortest
     min_len = min(len(h) for h in all_histories)
     truncated = [h[:min_len] for h in all_histories]
 
-    # Compute average and standard deviation across universes
+    # Option B (better): pad with NaN and use nanmean
+    # max_len = max(len(h) for h in all_histories)
+    # padded = np.full((len(all_histories), max_len), np.nan)
+    # for i, h in enumerate(all_histories):
+    #     padded[i, :len(h)] = h
+    # avg_c = np.nanmean(padded, axis=0)
+    # std_c = np.nanstd(padded, axis=0)
+
+    # Current: truncated version
     avg_c = np.mean(truncated, axis=0)
     std_c = np.std(truncated, axis=0)
 
     # Save CSV (ALWAYS)
     avg_df = pd.DataFrame({
-        "epoch": np.arange(min_len),
+        "epoch": np.arange(len(avg_c)),
         "avg_c": avg_c,
         "std_c": std_c
     })
     avg_df.to_csv(os.path.join(SAVE_DIR, "law_lockin_avg.csv"), index=False)
 
+    # Add to summary JSON
+    summary["law_lockin_avg"] = {
+        "epochs": len(avg_c),
+        "mean_final_c": float(avg_c[-1]),
+        "std_final_c": float(std_c[-1])
+    }
+
     # (OPTIONAL) Plot only if enabled
-    if PLOT_AVG_LOCKIN and (median_epoch is not None):
+    if MASTER_CTRL.get("PLOT_AVG_LOCKIN", False) and ("median_epoch" in globals()):
         plt.figure()
         plt.plot(avg_c, label="Average c value")
-        plt.fill_between(np.arange(min_len), avg_c-std_c, avg_c+std_c,
+        plt.fill_between(np.arange(len(avg_c)), avg_c-std_c, avg_c+std_c,
                          alpha=0.3, color="blue", label="±1σ")
-        plt.axvline(median_epoch, color="r", ls="--", lw=2,
-                    label=f"Median lock-in ≈ {median_epoch:.0f}")
+        if median_epoch is not None:
+            plt.axvline(median_epoch, color="r", ls="--", lw=2,
+                        label=f"Median lock-in ≈ {median_epoch:.0f}")
         plt.title("Average law lock-in dynamics (Monte Carlo)")
         plt.xlabel("epoch")
         plt.ylabel("c value (m/s)")
@@ -418,22 +465,26 @@ if all_histories:
         savefig(os.path.join(FIG_DIR, "law_lockin_avg.png"))
 
 # ======================================================
-# 8) t > 0 : Expansion dynamics (reference universe E,I)
+# 10) t > 0 : Expansion dynamics (reference universe E,I)
 # ======================================================
-def evolve(E, I, n_epoch=EXPANSION_EPOCHS):   
+def evolve(E, I, n_epoch=None):   
+    """Simulate expansion dynamics after law lock-in."""
+    if n_epoch is None:
+        n_epoch = MASTER_CTRL["expansion_epochs"]
+
     A_series = []
     I_series = []
     A = 20
     orient = I
     for n in range(n_epoch):
-        # Amplitude growth with stronger noise
-        A = A * 1.005 + np.random.normal(0, 1.0)
+        # Amplitude growth with noise
+        A = A * 1.005 + rng.normal(0, 1.0)
 
-        # Orientation: stronger convergence + larger noise
+        # Orientation dynamics with convergence + noise
         noise = 0.25 * (1 + 1.5 * abs(orient - 0.5))
-        orient += (0.5 - orient) * 0.35 + np.random.normal(0, noise)
+        orient += (0.5 - orient) * 0.35 + rng.normal(0, noise)
 
-        # Clamp orientation between 0 and 1
+        # Clamp orientation between [0,1]
         orient = max(0, min(1, orient))
 
         A_series.append(A)
@@ -441,61 +492,112 @@ def evolve(E, I, n_epoch=EXPANSION_EPOCHS):
 
     return A_series, I_series
 
+# --- Pick reference universe for expansion (any stable one)
+if df["stable"].sum() > 0:
+    ref_universe = df[df["stable"] == 1].sample(1, random_state=MASTER_CTRL["seed"])
+    E_ref, I_ref = ref_universe["E"].values[0], ref_universe["I"].values[0]
+else:
+    E_ref, I_ref = E, I   # fallback: collapse values
 
-# t > 0 : Expansion dynamics (use med_lock)
-A_series, I_series = evolve(E, I, n_epoch=EXPANSION_EPOCHS)
+# Run expansion
+A_series, I_series = evolve(E_ref, I_ref)
 
+# Save expansion dynamics
+expansion_df = pd.DataFrame({
+    "epoch": np.arange(len(A_series)),
+    "Amplitude_A": A_series,
+    "Orientation_I": I_series
+})
+expansion_df.to_csv(os.path.join(SAVE_DIR, "expansion.csv"), index=False)
+
+# Update summary
+summary["expansion"] = {
+    "E_ref": float(E_ref),
+    "I_ref": float(I_ref),
+    "mean_A": float(np.mean(A_series)),
+    "mean_I": float(np.mean(I_series))
+}
+
+# Plot expansion
 plt.figure()
 plt.plot(A_series, label="Amplitude A")
 plt.plot(I_series, label="Orientation I")
 plt.axhline(np.mean(A_series), color="gray", ls="--", alpha=0.5, label="Equilibrium A")
-if median_epoch is not None:
+if "median_epoch" in globals() and median_epoch is not None:
     plt.axvline(median_epoch, color="r", ls="--", lw=2, label=f"Law lock-in ≈ {median_epoch:.0f}")
-plt.title("t > 0 : Expansion dynamics")
-plt.xlabel("epoch"); plt.ylabel("Parameters"); plt.legend()
+plt.title("t > 0 : Expansion dynamics (reference universe)")
+plt.xlabel("epoch"); plt.ylabel("Parameters")
+plt.legend()
 savefig(os.path.join(FIG_DIR, "expansion.png"))
 
 # ======================================================
-# 9) Histogram of lock-in epochs 
+# 11) Histogram of lock-in epochs 
 # ======================================================
 
-# Save raw lock-in epochs to CSV
-pd.DataFrame({"lock_epoch": valid_epochs}).to_csv(
-    os.path.join(SAVE_DIR, "law_lockin_epochs.csv"), index=False
-)
+if len(valid_epochs) > 0:
+    # Save raw lock-in epochs to CSV
+    pd.DataFrame({"lock_epoch": valid_epochs}).to_csv(
+        os.path.join(SAVE_DIR, "law_lockin_epochs.csv"), index=False
+    )
 
-# (OPTIONAL) Only plot if enabled
-if PLOT_LOCKIN_HIST and len(valid_epochs) > 0:
-    plt.figure()
-    plt.hist(valid_epochs, bins=50, color="blue", alpha=0.7)
-    if med_lock is not None:
-        plt.axvline(med_lock, color="r", ls="--", lw=2,
-                    label=f"Median lock-in = {med_lock:.0f}")
-        plt.legend()
-    plt.title("Distribution of law lock-in epochs (Monte Carlo)")
-    plt.xlabel("Epoch of lock-in")
-    plt.ylabel("Count")
-    savefig(os.path.join(FIG_DIR, "law_lockin_mc.png"))
+    # Update summary
+    summary["law_lockin_epochs"] = {
+        "count": len(valid_epochs),
+        "mean": float(np.mean(valid_epochs)),
+        "median": float(np.median(valid_epochs)),
+        "min": int(np.min(valid_epochs)),
+        "max": int(np.max(valid_epochs))
+    }
+
+    # (OPTIONAL) Plot only if enabled
+    if PLOT_LOCKIN_HIST:
+        plt.figure()
+        bins = min(50, len(valid_epochs))  # adaptive binning
+        plt.hist(valid_epochs, bins=bins, color="blue", alpha=0.7)
+
+        if median_epoch is not None:
+            plt.axvline(median_epoch, color="r", ls="--", lw=2,
+                        label=f"Median lock-in = {median_epoch:.0f}")
+            plt.legend()
+
+        plt.title("Distribution of law lock-in epochs (Monte Carlo)")
+        plt.xlabel("Epoch of lock-in")
+        plt.ylabel("Count")
+        savefig(os.path.join(FIG_DIR, "law_lockin_mc.png"))
+else:
+    print("[INFO] No valid lock-in epochs to save or plot.")
     
 # ======================================================
-# 10) Stability summary (counts + percentages)
+# 12) Stability summary (counts + percentages)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
 
-print("\n🌌 Universe Stability Summary")
+print("\n🌌 Universe Stability Summary (final)")
 print(f"Total universes simulated: {len(df)}")
 print(f"Stable universes:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
 print(f"Unstable universes: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 
+# --- Update summary JSON ---
+summary["stability_summary"] = {
+    "total_universes": int(len(df)),
+    "stable_universes": stable_count,
+    "unstable_universes": unstable_count,
+    "stable_percent": float(stable_count/len(df)*100),
+    "unstable_percent": float(unstable_count/len(df)*100)
+}
+
+with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
+    json.dump(summary, f, indent=2)
+
 # --- Save bar chart ---
 plt.figure()
 plt.bar(["Stable", "Unstable"], [stable_count, unstable_count], color=["green", "red"])
-plt.title("Universe Stability Distribution")
+plt.title("Universe Stability Distribution (Final)")
 plt.ylabel("Number of Universes")
 plt.xlabel("Category")
 
-# Labels with counts + percentages next to categories
+# Labels with counts + percentages
 labels = [
     f"Stable ({stable_count}, {stable_count/len(df)*100:.1f}%)",
     f"Unstable ({unstable_count}, {unstable_count/len(df)*100:.1f}%)"
@@ -505,7 +607,7 @@ plt.xticks([0, 1], labels)
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
-# 11) Save results (JSON + CSV + Figures)
+# 13) Save results (JSON + CSV + Figures)
 # ======================================================
 
 # Save expansion dynamics to CSV
@@ -516,15 +618,16 @@ expansion_df = pd.DataFrame({
 })
 expansion_df.to_csv(os.path.join(SAVE_DIR, "expansion.csv"), index=False)
 
-# Save stability outcomes to CSV
+# Save stability outcomes to CSV (redundant but simplified)
 stability_df = pd.DataFrame({
     "X": X_vals,
     "Stable": stables
 })
 stability_df.to_csv(os.path.join(SAVE_DIR, "stability.csv"), index=False)
 
-# Save summary JSON (only once, full info)
-summary = {
+# --- Extend summary dict instead of overwriting ---
+valid_epochs = [e for e in law_epochs if e >= 0]
+summary.update({
     "simulation": {
         "total_universes": N,
         "stable_fraction": float(np.mean(stables)),
@@ -539,13 +642,13 @@ summary = {
         "std_X": float(np.std(X_vals))
     },
     "law_lockin": {
-        "mean_lock_epoch": float(np.mean([e for e in law_epochs if e >= 0])),
-        "median_lock_epoch": float(np.median([e for e in law_epochs if e >= 0])),
-        "locked_fraction": float(np.mean([1 if e >= 0 else 0 for e in law_epochs])),
-        "mean_final_c": float(np.mean(final_cs)),
-        "std_final_c": float(np.std(final_cs))
+        "mean_lock_epoch": float(np.mean(valid_epochs)) if valid_epochs else None,
+        "median_lock_epoch": float(np.median(valid_epochs)) if valid_epochs else None,
+        "locked_fraction": float(len(valid_epochs) / len(law_epochs)) if law_epochs else 0.0,
+        "mean_final_c": float(np.nanmean(final_cs)),
+        "std_final_c": float(np.nanstd(final_cs))
     }
-}
+})
 
 with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
     json.dump(summary, f, indent=2)
@@ -560,70 +663,7 @@ if all_histories:
     law_df.to_csv(os.path.join(SAVE_DIR, "law_lockin_avg.csv"), index=False)
 
 # ======================================================
-# 12) EXTRA: Seed search — Top-5 seeds (stability ratio via is_stable)
-# ======================================================
-
-NUM_SEEDS = 100             # number of different seeds to test
-UNIVERSES_PER_SEED = 1000   # number of universes per seed
-
-def _sample_energy_lognormal_rng(rng, mu=2.5, sigma=0.8):
-    """Sample energy from a lognormal distribution with local RNG."""
-    return float(rng.lognormal(mean=mu, sigma=sigma))
-
-def _sample_information_param_KL_only(dim=8):
-    """Sample information parameter I (0..1) using KL divergence between random states."""
-    psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
-    p1 = np.abs(psi1.full().flatten())**2
-    p2 = np.abs(psi2.full().flatten())**2
-    p1 /= p1.sum(); p2 /= p2.sum()
-    eps = 1e-12
-    KL = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
-    return KL / (1.0 + KL)
-
-seed_scores = []
-
-for s in range(NUM_SEEDS):
-    # Local RNG for energy; reseed NumPy global RNG for qutip.rand_ket reproducibility
-    rng_local = np.random.default_rng(seed=s)
-    np.random.seed(s)
-
-    stable_flags = []
-    for _ in range(UNIVERSES_PER_SEED):
-        E = _sample_energy_lognormal_rng(rng_local)
-        I = _sample_information_param_KL_only(dim=8)
-        stable_flags.append(is_stable(E, I))
-
-    ratio = float(np.mean(stable_flags))
-    seed_scores.append({"seed": s, "stable_ratio": ratio})
-
-# Sort by stability ratio (descending) and keep Top-5
-seed_scores_sorted = sorted(seed_scores, key=lambda r: r["stable_ratio"], reverse=True)
-
-print("\n🏆 Top-5 seeds by stability ratio")
-for r in seed_scores_sorted[:5]:
-    print(f"Seed {r['seed']:3d} → stability={r['stable_ratio']:.3f}")
-
-# Save results to CSV
-top_csv_path = os.path.join(SAVE_DIR, "seed_search_top.csv")
-pd.DataFrame(seed_scores_sorted).to_csv(top_csv_path, index=False)
-print("Seed search table saved to:", top_csv_path)
-
-# Add to summary.json (if summary exists)
-try:
-    summary
-except NameError:
-    summary = {}
-summary["seed_search"] = {
-    "num_seeds": NUM_SEEDS,
-    "universes_per_seed": UNIVERSES_PER_SEED,
-    "top5": seed_scores_sorted[:5],
-    "csv_path": top_csv_path,
-}
-with open(os.path.join(SAVE_DIR, "summary.json"), "w") as f:
-    json.dump(summary, f, indent=2)
-
-# ======================================================
-# 13) XAI (SHAP + LIME) 
+# 14) XAI (SHAP + LIME) 
 # ======================================================
 
 # ---------- Features and targets ----------
@@ -633,145 +673,140 @@ reg_mask = df["lock_epoch"] >= 0
 X_reg = X_feat[reg_mask]
 y_reg = df.loc[reg_mask, "lock_epoch"].values
 
-# --- Sanity checks (optional) ---
+# --- Sanity checks ---
 assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
 if len(X_reg) > 0:
     assert not np.isnan(X_reg.values).any(), "NaN in X_reg!"
-
-# On-demand install (only if missing)
-try:
-    import shap
-    from lime.lime_tabular import LimeTabularExplainer
-except Exception:
-    import subprocess, sys
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "shap", "lime", "scikit-learn", "-q"])
-    import shap
-    from lime.lime_tabular import LimeTabularExplainer
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import r2_score, accuracy_score
 
-# ---------- Train/Test split ----------
+# --------- Stratify guard ---------
+vals, cnts = np.unique(y_cls, return_counts=True)
+can_stratify = (len(vals) == 2) and (cnts.min() >= 2)
+stratify_arg = y_cls if can_stratify else None
+if not can_stratify:
+    print(f"[WARN] Skipping stratify: class counts = {dict(zip(vals, cnts))}")
+
 Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
-    X_feat, y_cls, test_size=0.25, random_state=42, stratify=y_cls
+    X_feat, y_cls, test_size=0.25, random_state=42, stratify=stratify_arg
 )
-have_reg = len(X_reg) >= 30
+have_reg = len(X_reg) >= MASTER_CTRL["regression_min"]
 if have_reg:
     Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
         X_reg, y_reg, test_size=0.25, random_state=42
     )
 
 # ---------- Train models ----------
-rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
+rf_cls = RandomForestClassifier(n_estimators=MASTER_CTRL["rf_n_estimators"],
+                                random_state=42, n_jobs=-1)
 rf_cls.fit(Xtr_c, ytr_c)
 cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
 print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
 
+rf_reg, reg_r2 = None, None
 if have_reg:
-    rf_reg = RandomForestRegressor(n_estimators=400, random_state=42, n_jobs=-1)
+    rf_reg = RandomForestRegressor(n_estimators=MASTER_CTRL["rf_n_estimators"],
+                                   random_state=42, n_jobs=-1)
     rf_reg.fit(Xtr_r, ytr_r)
     reg_r2 = r2_score(yte_r, rf_reg.predict(Xte_r))
-    print(f"[XAI] Regression R^2 (lock_at): {reg_r2:.3f}")
+    print(f"[XAI] Regression R^2 (lock_epoch): {reg_r2:.3f}")
 else:
-    rf_reg, reg_r2 = None, None
-    print("[XAI] Not enough locked samples for regression (need ~30+).")
+    print("[XAI] Not enough lock-in samples for regression.")
 
-# ---------- SHAP: global explanations (robust, fixed shape) ----------
-X_plot = Xte_c.copy()  # vagy: X_feat.sample(min(3000, len(X_feat)), random_state=42)
-
-# TreeExplainer with "raw" output, then format normalization
+# ---------- SHAP: classification ----------
 try:
-    expl_cls = shap.TreeExplainer(
-        rf_cls, feature_perturbation="interventional", model_output="raw"
-    )
-    sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
-except Exception:
-    expl_cls = shap.Explainer(rf_cls, Xtr_c)
-    sv_cls = expl_cls(X_plot).values  # (n_samples, n_features) expected
-
-if isinstance(sv_cls, list):
-    sv_cls = sv_cls[1]  # positive class
-sv_cls = np.asarray(sv_cls)
-if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
-    sv_cls = sv_cls[:, :, 1]
-elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
-    sv_cls = sv_cls[1, :, :]
-assert sv_cls.shape == X_plot.shape, f"SHAP shape {sv_cls.shape} != data shape {X_plot.shape}"
-
-plt.figure()
-shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
-plt.title("SHAP summary – classification (stable)")
-plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
-plt.close()
-
-# Regression SHAP (if trained)
-if rf_reg is not None:
-    X_plot_r = Xte_r.copy()
+    X_plot = Xte_c.copy()
     try:
-        expl_reg = shap.TreeExplainer(
-            rf_reg, feature_perturbation="interventional", model_output="raw"
-        )
-        sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
+        expl_cls = shap.TreeExplainer(rf_cls, feature_perturbation="interventional",
+                                      model_output="raw")
+        sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
     except Exception:
-        expl_reg = shap.Explainer(rf_reg, Xtr_r)
-        sv_reg = expl_reg(X_plot_r).values
+        expl_cls = shap.Explainer(rf_cls, Xtr_c)
+        sv_cls = expl_cls(X_plot).values
 
-    sv_reg = np.asarray(sv_reg)
-    if sv_reg.ndim == 3 and sv_reg.shape[0] == X_plot_r.shape[0]:
-        sv_reg = sv_reg[:, :, 0]
-    elif sv_reg.ndim == 3 and sv_reg.shape[-1] == X_plot_r.shape[1]:
-        sv_reg = sv_reg[0, :, :]
-    assert sv_reg.shape == X_plot_r.shape, f"SHAP shape {sv_reg.shape} != data shape {X_plot_r.shape}"
+    if isinstance(sv_cls, list) and len(sv_cls) > 1:
+        sv_cls = sv_cls[1]  # positive class only if exists
+    sv_cls = np.asarray(sv_cls)
+    if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
+        sv_cls = sv_cls[:, :, 1]
+    elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
+        sv_cls = sv_cls[1, :, :]
+    assert sv_cls.shape == X_plot.shape, f"SHAP mismatch {sv_cls.shape} vs {X_plot.shape}"
 
     plt.figure()
-    shap.summary_plot(sv_reg, X_plot_r.values, feature_names=X_plot_r.columns.tolist(), show=False)
-    plt.title("SHAP summary – regression (lock_at)")
-    plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
+    shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
+    plt.title("SHAP summary – classification (stable)")
+    plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
     plt.close()
-    
-# ---- SHAP CSV export: regression (if model exists) ----
-if rf_reg is not None and 'sv_reg' in locals():
-    shap_reg_csv = os.path.join(FIG_DIR, "shap_values_regression_lock_at.csv")
-    shap_reg_importance_csv = os.path.join(FIG_DIR, "shap_feature_importance_regression_lock_at.csv")
 
-    # Save sample-level SHAP values
-    pd.DataFrame(sv_reg, columns=X_plot_r.columns).to_csv(shap_reg_csv, index=False)
+    # Save CSVs
+    pd.DataFrame(sv_cls, columns=X_plot.columns).to_csv(
+        os.path.join(SAVE_DIR, "shap_values_classification.csv"), index=False
+    )
+    cls_importance = pd.Series(np.mean(np.abs(sv_cls), axis=0), index=X_plot.columns) \
+                       .sort_values(ascending=False)
+    cls_importance.to_csv(os.path.join(SAVE_DIR, "shap_feature_importance_classification.csv"),
+                          header=["mean_|shap|"])
 
-    # Save global feature importance (mean |SHAP| across all samples)
-    reg_importance = pd.Series(np.mean(np.abs(sv_reg), axis=0), index=X_plot_r.columns)\
-                     .sort_values(ascending=False)
-    reg_importance.to_csv(shap_reg_importance_csv, header=["mean_|shap|"])
+except Exception as e:
+    print(f"[ERR] SHAP classification failed: {e}")
 
-    print(f"[SAVE] SHAP regression CSV -> {shap_reg_csv}")
-    print(f"[SAVE] SHAP regression feature importance CSV -> {shap_reg_importance_csv}")
-else:
-    print("[XAI] Skipping SHAP regression CSV export (not enough lock-in universes).")
+# ---------- SHAP: regression ----------
+if rf_reg is not None:
+    try:
+        X_plot_r = Xte_r.copy()
+        try:
+            expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional",
+                                          model_output="raw")
+            sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
+        except Exception:
+            expl_reg = shap.Explainer(rf_reg, Xtr_r)
+            sv_reg = expl_reg(X_plot_r).values
 
-# ---- SHAP CSV export: classification ----
-shap_cls_csv = os.path.join(FIG_DIR, "shap_values_classification.csv")
-shap_cls_importance_csv = os.path.join(FIG_DIR, "shap_feature_importance_classification.csv")
+        sv_reg = np.asarray(sv_reg)
+        if sv_reg.ndim == 3 and sv_reg.shape[0] == X_plot_r.shape[0]:
+            sv_reg = sv_reg[:, :, 0]
+        elif sv_reg.ndim == 3 and sv_reg.shape[-1] == X_plot_r.shape[1]:
+            sv_reg = sv_reg[0, :, :]
+        assert sv_reg.shape == X_plot_r.shape, f"SHAP mismatch {sv_reg.shape} vs {X_plot_r.shape}"
 
-pd.DataFrame(np.asarray(sv_cls), columns=X_plot.columns).to_csv(shap_cls_csv, index=False)
+        plt.figure()
+        shap.summary_plot(sv_reg, X_plot_r.values, feature_names=X_plot_r.columns.tolist(), show=False)
+        plt.title("SHAP summary – regression (lock_epoch)")
+        plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_epoch.png"), dpi=220, bbox_inches="tight")
+        plt.close()
 
-cls_importance = pd.Series(np.mean(np.abs(sv_cls), axis=0), index=X_plot.columns) \
-                   .sort_values(ascending=False)
-cls_importance.to_csv(shap_cls_importance_csv, header=["mean_|shap|"])
+        # Save CSVs
+        pd.DataFrame(sv_reg, columns=X_plot_r.columns).to_csv(
+            os.path.join(SAVE_DIR, "shap_values_regression.csv"), index=False
+        )
+        reg_importance = pd.Series(np.mean(np.abs(sv_reg), axis=0), index=X_plot_r.columns) \
+                           .sort_values(ascending=False)
+        reg_importance.to_csv(os.path.join(SAVE_DIR, "shap_feature_importance_regression.csv"),
+                              header=["mean_|shap|"])
 
-print(f"[SAVE] SHAP classification CSV -> {shap_cls_csv}")
-print(f"[SAVE] SHAP classification feature importance CSV -> {shap_cls_importance_csv}")
+    except Exception as e:
+        print(f"[ERR] SHAP regression failed: {e}")
 
-# ---------- LIME: local explanation (classification) ----------
-lime_explainer = LimeTabularExplainer(
-    training_data=Xtr_c.values,
-    feature_names=X_feat.columns.tolist(),
-    discretize_continuous=True,
-    mode='classification'
-)
-exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
-lime_list = exp.as_list(label=1)
-pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
-    os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
-)
+# ---------- LIME ----------
+if len(np.unique(y_cls)) > 1:  # only if both classes exist
+    try:
+        lime_explainer = LimeTabularExplainer(
+            training_data=Xtr_c.values,
+            feature_names=X_feat.columns.tolist(),
+            discretize_continuous=True,
+            mode='classification'
+        )
+        exp = lime_explainer.explain_instance(
+            Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=min(5, X_feat.shape[1])
+        )
+        lime_list = exp.as_list(label=1 if 1 in np.unique(y_cls) else 0)
+        pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
+            os.path.join(SAVE_DIR, "lime_example_classification.csv"), index=False
+        )
+    except Exception as e:
+        print(f"[ERR] LIME failed: {e}")
 
-print(f"☁️ All results saved to Google Drive: {SAVE_DIR}")
+print(f"☁️ All XAI results saved to Google Drive: {SAVE_DIR}")
