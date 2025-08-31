@@ -71,6 +71,21 @@ MASTER_CTRL = {
     "PLOT_LOCKIN_HIST": True,
 }
 
+# --- Energy distribution & Goldilocks (linear scale) ---
+E_LOG_MU    = 2.5
+E_LOG_SIGMA = 0.8
+E_CENTER    = float(np.exp(E_LOG_MU))   # ~12.18 (median of lognormal)
+E_WIDTH     = 6.0                       # try 6–8 for a reasonable window
+ALPHA_I     = 0.8
+
+# --- Master RNG + sync qutip/np.random (for reproducibility) ---
+if MASTER_CTRL["seed"] is None:
+    MASTER_CTRL["seed"] = int(np.random.SeedSequence().entropy)
+master_seed = MASTER_CTRL["seed"]
+rng = np.random.default_rng(master_seed)
+np.random.seed(master_seed)  # sync for qutip.rand_ket()
+print(f"🎲 Using master seed: {master_seed}")
+
 # master seed init
 if MASTER_CTRL["seed"] is None:
     MASTER_CTRL["seed"] = int(np.random.randint(0, 2**32 - 1))
@@ -148,14 +163,11 @@ def KL(p, q, eps=1e-12):
     return np.sum(p * np.log(p / q))
 
 # Goldilocks modulation factor
-def f_EI(E, I, E_c=2.0, sigma=0.3, alpha=0.8):
+def f_EI(E, I, E_c=E_CENTER, sigma=E_WIDTH, alpha=ALPHA_I):
     """
-    Gaussian Goldilocks window centered at E_c with I-coupling.
-    - E_c: preferred energy (Goldilocks center)
-    - sigma: width of stability window
-    - alpha: strength of I-coupling
+    Gaussian Goldilocks window around E_c (LINEAR E), with information coupling.
     """
-    return np.exp(-(E - E_c)**2 / (2 * sigma**2)) * (1 + alpha * I)
+    return np.exp(-((E - E_c) ** 2) / (2.0 * (sigma ** 2))) * (1.0 + alpha * I)
 
 # Generate two random quantum states and compute Information I (KL × Shannon)
 psi1, psi2 = qt.rand_ket(8), qt.rand_ket(8)
@@ -261,19 +273,26 @@ def sample_information_param_KLxShannon(dim=8):
     return I_raw / (1.0 + I_raw)
 
 
-def is_stable(E, I, n_epoch=None, rel_eps=None, lock_consec=None):
-    """Check if a universe stabilizes given parameters (uses MASTER_CTRL defaults)."""
+# --- Stability check uses ONLY the provided rng ---
+def is_stable(E, I, n_epoch=None, rel_eps=None, lock_consec=None, rng=None):
+    """
+    Returns 1 if the universe stabilizes; 0 otherwise.
+    All randomness (noise) must come from the given rng to keep per-universe determinism.
+    """
+    if rng is None:
+        rng = np.random.default_rng()
     if n_epoch is None: n_epoch = MASTER_CTRL["N_epoch"]
     if rel_eps is None: rel_eps = MASTER_CTRL["rel_eps"]
     if lock_consec is None: lock_consec = MASTER_CTRL["lock_consecutive"]
 
     f = f_EI(E, I)
-    if f < 0.2:
+    if f < 0.2:    # too far from Goldilocks -> unstable immediately
         return 0
-    A, calm = 20, 0
+
+    A, calm = 20.0, 0
     for _ in range(n_epoch):
         A_prev = A
-        A = A*1.02 + rng.normal(0, 2)   # <-- seeded RNG
+        A = A * 1.02 + rng.normal(0, 2.0)       # <-- use rng, not np.random
         delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
         calm = calm + 1 if delta < rel_eps else 0
         if calm >= lock_consec:
@@ -281,42 +300,77 @@ def is_stable(E, I, n_epoch=None, rel_eps=None, lock_consec=None):
     return 0
 
 
-# --------- MAIN MC LOOP ---------
+# --- Law lock-in uses ONLY the provided rng ---
+def law_lock_in(E, I, n_epoch=500, rng=None):
+    """
+    Simulates lock-in of a 'law' proxy (e.g., c).
+    Lock when relative step change stays below 1e-3 for 5 consecutive epochs.
+    All randomness uses rng to ensure per-universe reproducibility.
+    """
+    if rng is None:
+        rng = np.random.default_rng()
+
+    f = f_EI(E, I)
+    if f < 0.1:
+        return -1, []   # too far from Goldilocks -> no lock-in
+
+    c_val = rng.normal(3e8, 1e7)  # initial value for 'c'
+    calm, locked_at = 0, None
+    history = []
+
+    for n in range(n_epoch):
+        prev = c_val
+        # noise intensity modulated by E*I distance from ~5
+        noise = 1e6 * (1 + abs(E * I - 5) / 10.0) * rng.uniform(0.8, 1.2)
+        c_val += rng.normal(0, noise)
+        history.append(c_val)
+
+        delta = abs(c_val - prev) / max(abs(prev), 1e-9)
+        calm = calm + 1 if delta < 1e-3 else 0
+        if calm >= 5 and locked_at is None:
+            locked_at = n
+
+    return locked_at if locked_at is not None else -1, history
+
+
+# --------- MAIN MC LOOP (per-universe RNG) ---------
 N = MASTER_CTRL["N_universes"]
 
 X_vals, I_vals, E_vals, f_vals = [], [], [], []
 stables, law_epochs, final_cs, all_histories = [], [], [], []
-universe_seeds = []  
+universe_seeds = []
+
+# If you store lognormal params elsewhere, use those; otherwise set them here:
+E_LOG_MU, E_LOG_SIGMA = 2.5, 0.8  # example; align with your config
 
 for _ in range(N):
-    # ---- Generate per-universe seed ----
-    uni_seed = int(rng.integers(0, 2**32 - 1))  
+    # 1) draw a unique seed from the master rng and keep it
+    uni_seed = int(rng.integers(0, 2**32 - 1))
     universe_seeds.append(uni_seed)
 
-    # ---- Sample parameters ----
-    Ei = rng.lognormal(2.5, 0.8)  
-    Ii = sample_information_param_KLxShannon(dim=8)
+    # 2) build a per-universe RNG and sync legacy np.random for qutip
+    rng_uni = np.random.default_rng(uni_seed)
+    np.random.seed(uni_seed)   # ensures qt.rand_ket() etc. are reproducible
+
+    # 3) sample everything using the per-universe rng
+    Ei = float(rng_uni.lognormal(E_LOG_MU, E_LOG_SIGMA))
+    Ii = sample_information_param_KLxShannon(dim=8)   # uses qutip + np.random (already seeded)
     fi = f_EI(Ei, Ii)
-    Xi = Ei * Ii
+    Xi = Ei * Ii * fi
 
-    # Save params
-    E_vals.append(Ei)
-    I_vals.append(Ii)
-    f_vals.append(fi)
-    X_vals.append(Xi)
+    E_vals.append(Ei); I_vals.append(Ii); f_vals.append(fi); X_vals.append(Xi)
 
-    # Stability
-    stable = is_stable(Ei, Ii)
+    # 4) call the updated functions, passing rng_uni
+    stable = is_stable(Ei, Ii, rng=rng_uni)
     stables.append(stable)
 
-    # Law lock-in
     if stable == 1:
-        lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=MASTER_CTRL["N_epoch"])
+        lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=MASTER_CTRL["N_epoch"], rng=rng_uni)
     else:
         lock_epoch, c_hist = -1, []
-    law_epochs.append(lock_epoch)
 
-    if stable == 1 and c_hist:
+    law_epochs.append(lock_epoch)
+    if c_hist:
         final_cs.append(c_hist[-1])
         all_histories.append(c_hist)
     else:
