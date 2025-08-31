@@ -239,7 +239,7 @@ for i in range(NUM_UNIVERSES):
     np.random.seed(int(sub_seed))
 
     # Sample Energy E using universe-specific RNG
-    Ei = float(rng.lognormal(2.5, 0.8))
+    Ei = float(rng.lognormal(E_MU, E_SIGMA))
     E_vals.append(Ei)
     X_vals.append(Ei)
 
@@ -276,6 +276,11 @@ stability_df = pd.DataFrame({
 stability_df.to_csv(os.path.join(SAVE_DIR, "stability.csv"), index=False)
 assert len(E_vals) == len(stables) == len(law_epochs) == len(final_cs), \
     f"Length mismatch: E={len(E_vals)}, S={len(stables)}, lock={len(law_epochs)}, c={len(final_cs)}"
+
+# --- Save per-universe seeds (for reproducibility) ---
+pd.DataFrame({"universe_id": np.arange(NUM_UNIVERSES), "seed": sub_seeds}).to_csv(
+    os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
+)
     
 # ======================================================
 # 6) Stability summary (counts + percentages) - unified
