@@ -68,6 +68,8 @@ MASTER_CTRL = {
     # --- Plot controls ---
     "PLOT_AVG_LOCKIN": True,
     "PLOT_LOCKIN_HIST": True,
+
+    "PLOT_STABILITY_BASIC": False,
 }
 
 # --- Energy distribution & Goldilocks (linear scale) ---
@@ -431,24 +433,20 @@ summary["stability_counts"] = {
 }
 save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 
-# --- Stability bar chart ---
-fig, ax = plt.subplots()
-counts = [stable_count, unstable_count]
-labels = ["Stable", "Unstable"]
-bars = ax.bar(labels, counts, color=["green", "red"])
-ax.set_title("Universe Stability Distribution")
-ax.set_ylabel("Number of Universes")
-ax.set_xlabel("Category")
-
-# Annotate counts + percentages above bars (not below axis)
-pcts = [stable_count/total_universes*100, unstable_count/total_universes*100]
-for i, (c, pct) in enumerate(zip(counts, pcts)):
-    ax.annotate(f"{c} ({pct:.1f}%)",
-                xy=(i, c), xytext=(0, 5),
-                textcoords="offset points",
-                ha="center", va="bottom")
-
-savefig(os.path.join(FIG_DIR, "stability_summary_basic.png"))
+# --- Stability bar chart (basic) ---
+if MASTER_CTRL.get("PLOT_STABILITY_BASIC", False):
+    fig, ax = plt.subplots()
+    counts = [stable_count, unstable_count]
+    labels = ["Stable", "Unstable"]
+    ax.bar(labels, counts, color=["green", "red"])
+    ax.set_title("Universe Stability Distribution")
+    ax.set_ylabel("Number of Universes")
+    ax.set_xlabel("Category")
+    pcts = [stable_count/total_universes*100, unstable_count/total_universes*100]
+    for i, (c, pct) in enumerate(zip(counts, pcts)):
+        ax.annotate(f"{c} ({pct:.1f}%)", xy=(i, c), xytext=(0, 5),
+                    textcoords="offset points", ha="center", va="bottom")
+    savefig(os.path.join(FIG_DIR, "stability_summary_basic.png"))
 
 # ======================================================
 # 9) Average law lock-in dynamics across all universes
@@ -474,7 +472,7 @@ if all_histories:
     }
 
     # (OPTIONAL) Plot only if enabled
-    if MASTER_CTRL.get("PLOT_AVG_LOCKIN", False) and ("median_epoch" in globals()):
+    if MASTER_CTRL["PLOT_AVG_LOCKIN"] and (median_epoch is not None):
         plt.figure()
         plt.plot(avg_c, label="Average c value")
         plt.fill_between(np.arange(len(avg_c)), avg_c-std_c, avg_c+std_c,
