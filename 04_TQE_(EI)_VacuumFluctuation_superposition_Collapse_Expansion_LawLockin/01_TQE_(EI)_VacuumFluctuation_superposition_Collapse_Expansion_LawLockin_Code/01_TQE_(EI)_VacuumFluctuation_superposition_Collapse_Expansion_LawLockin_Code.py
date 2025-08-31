@@ -442,23 +442,11 @@ savefig(os.path.join(FIG_DIR, "stability_summary_basic.png"))
 # 9) Average law lock-in dynamics across all universes
 # ======================================================
 if all_histories:
-    # Option A: truncate to shortest
     min_len = min(len(h) for h in all_histories)
     truncated = [h[:min_len] for h in all_histories]
-
-    # Option B (better): pad with NaN and use nanmean
-    # max_len = max(len(h) for h in all_histories)
-    # padded = np.full((len(all_histories), max_len), np.nan)
-    # for i, h in enumerate(all_histories):
-    #     padded[i, :len(h)] = h
-    # avg_c = np.nanmean(padded, axis=0)
-    # std_c = np.nanstd(padded, axis=0)
-
-    # Current: truncated version
     avg_c = np.mean(truncated, axis=0)
     std_c = np.std(truncated, axis=0)
 
-    # Save CSV (ALWAYS)
     avg_df = pd.DataFrame({
         "epoch": np.arange(len(avg_c)),
         "avg_c": avg_c,
@@ -466,16 +454,7 @@ if all_histories:
     })
     avg_df.to_csv(os.path.join(SAVE_DIR, "law_lockin_avg.csv"), index=False)
 
-    # ---- Save per-universe seeds for full reproducibility ----
-    pd.DataFrame({"universe_id": np.arange(N), "seed": universe_seeds}) \
-      
-
-    # ---- Add pointers into summary ----
-    summary.setdefault("seeds", {})
-    summary["seeds"]["master_seed"] = master_seed
-    summary["seeds"]["universe_seeds_csv"] = "universe_seeds.csv"
-
-    # Add to summary JSON
+    # Add to summary JSON (in-memory; a file-t később amúgy is írjuk)
     summary["law_lockin_avg"] = {
         "epochs": len(avg_c),
         "mean_final_c": float(avg_c[-1]),
