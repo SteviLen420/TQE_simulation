@@ -160,9 +160,9 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
 # ======================================================
 rows = []
 seeds = []
-for i in range(params["N_samples"]):
+for i in range(MASTER_CTRL["N_samples"]):
     # --------- PATCH: unique seed per universe for audit/repro ----------
-    for i in range(MASTER_CTRL["N_samples"]):
+    seed_val = int(rng.integers(0, 2**32 - 1))
     try:
         np.random.seed(seed_val)  # for libs using np.random
     except Exception:
@@ -173,20 +173,24 @@ for i in range(params["N_samples"]):
     I   = sample_information_param(dim=8)
     X   = E * I
     stable, lock_at = simulate_lock_in(
-    X,
-    MASTER_CTRL["N_epoch"],
-    MASTER_CTRL["rel_eps"],
-    MASTER_CTRL["sigma0"],
-    MASTER_CTRL["alpha"]
-)
-    rows.append({"E":E, "I":I, "X":X, "stable":stable, "lock_at":lock_at, "seed":seed_val})
+        X,
+        MASTER_CTRL["N_epoch"],
+        MASTER_CTRL["rel_eps"],
+        MASTER_CTRL["sigma0"],
+        MASTER_CTRL["alpha"]
+    )
+    rows.append({
+        "E": E, "I": I, "X": X,
+        "stable": stable, "lock_at": lock_at,
+        "seed": seed_val
+    })
 
 df = pd.DataFrame(rows)
 df.to_csv(os.path.join(SAVE_DIR, "samples.csv"), index=False)
 
 # --------- PATCH: save master + per-universe seeds ----------
 with open(os.path.join(SAVE_DIR, "master_seed.json"), "w") as f:
-    json.dump({"master_seed": params["seed"]}, f, indent=2)
+    json.dump({"master_seed": MASTER_CTRL["seed"]}, f, indent=2)
 
 pd.DataFrame({"universe_id": range(len(df)), "seed": df["seed"]}).to_csv(
     os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
