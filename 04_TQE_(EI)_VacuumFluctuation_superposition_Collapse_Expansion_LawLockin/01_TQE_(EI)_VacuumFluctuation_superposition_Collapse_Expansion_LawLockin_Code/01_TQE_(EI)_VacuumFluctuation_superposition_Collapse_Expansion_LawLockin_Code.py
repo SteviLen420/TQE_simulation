@@ -354,6 +354,12 @@ df = pd.DataFrame({
 })
 
 df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
+pd.DataFrame({"universe_id": np.arange(N), "seed": universe_seeds}) \
+  .to_csv(os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False)
+
+summary.setdefault("seeds", {})
+summary["seeds"]["master_seed"] = master_seed
+summary["seeds"]["universe_seeds_csv"] = "universe_seeds.csv"
 
 # Friss summary információ
 summary["runs"] = {
@@ -462,14 +468,12 @@ if all_histories:
 
     # ---- Save per-universe seeds for full reproducibility ----
     pd.DataFrame({"universe_id": np.arange(N), "seed": universe_seeds}) \
-      .to_csv(os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False)
+      
 
     # ---- Add pointers into summary ----
     summary.setdefault("seeds", {})
     summary["seeds"]["master_seed"] = master_seed
     summary["seeds"]["universe_seeds_csv"] = "universe_seeds.csv"
-    with open(os.path.join(SAVE_DIR, "summary.json"), "w") as f:
-        json.dump(summary, f, indent=2)
 
     # Add to summary JSON
     summary["law_lockin_avg"] = {
