@@ -593,7 +593,7 @@ if RUN_XAI:
     from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
     from sklearn.metrics import r2_score, accuracy_score
 
-    # Features and targets
+    # ---------- Features & targets ----------
     X_feat = df[["E", "I", "X"]].copy()
     y_cls  = df["stable"].astype(int).values
 
@@ -601,32 +601,40 @@ if RUN_XAI:
     X_reg = X_feat[reg_mask]
     y_reg = df.loc[reg_mask, "lock_epoch"].values
 
-        # -------- Train/Test split with stratify guard (classification) --------
-    from sklearn.model_selection import train_test_split
+    # ---------- Guard: van-e mindkét osztály? ----------
+    uniq_vals, uniq_cnts = np.unique(y_cls, return_counts=True)
+    have_two_classes = (len(uniq_vals) == 2)
 
-    # Only stratify if we truly have both classes and at least 2 samples each
-    vals, cnts = np.unique(y_cls, return_counts=True)
-    can_stratify = (len(vals) == 2) and (cnts.min() >= 2)
+    # ---------- Train/Test split (classification) ----------
+    can_stratify = have_two_classes and (uniq_cnts.min() >= 2)
     stratify_arg = y_cls if can_stratify else None
     if not can_stratify:
-        print(f"[XAI] Stratify disabled (class counts = {dict(zip(vals, cnts))})")
+        print(f"[XAI] Stratify disabled (class counts = {dict(zip(uniq_vals, uniq_cnts))})")
 
-    Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
-        X_feat, y_cls, test_size=0.25, random_state=42, stratify=stratify_arg
-    )
+    # Ha csak egyetlen osztály létezik az egész mintában, ugorjuk a klasszifikációt
+    do_classification = have_two_classes
 
-    # -------- Regression split (only if we have enough lock-ins) ----------
+    if do_classification:
+        Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
+            X_feat, y_cls, test_size=0.25, random_state=42, stratify=stratify_arg
+        )
+
+    # ---------- Regression split (lock_epoch) ----------
     have_reg = len(X_reg) >= 30
     if have_reg:
         Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
             X_reg, y_reg, test_size=0.25, random_state=42
         )
-        
-    # Train models
-    rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
-    rf_cls.fit(Xtr_c, ytr_c)
-    cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
-    print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
+
+    # ---------- Train models ----------
+    if do_classification:
+        rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
+        rf_cls.fit(Xtr_c, ytr_c)
+        cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
+        print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
+    else:
+        rf_cls = None
+        print("[XAI] Skipping classification (only one class present).")
 
     if have_reg:
         rf_reg = RandomForestRegressor(n_estimators=400, random_state=42, n_jobs=-1)
@@ -637,34 +645,43 @@ if RUN_XAI:
         rf_reg, reg_r2 = None, None
         print("[XAI] Not enough locked samples for regression (need ~30+).")
 
-    # SHAP — classification
-    X_plot = Xte_c.copy()
-    try:
-        expl_cls = shap.TreeExplainer(
-            rf_cls, feature_perturbation="interventional", model_output="raw"
+    # ---------- SHAP plots & CSV ----------
+    if do_classification:
+        X_plot = Xte_c.copy()
+        try:
+            expl_cls = shap.TreeExplainer(
+                rf_cls, feature_perturbation="interventional", model_output="raw"
+            )
+            sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
+        except Exception:
+            expl_cls = shap.Explainer(rf_cls, Xtr_c)
+            sv_cls = expl_cls(X_plot).values
+
+        if isinstance(sv_cls, list):
+            sv_cls = sv_cls[1]  # pozitív osztály
+        sv_cls = np.asarray(sv_cls)
+        if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
+            sv_cls = sv_cls[:, :, 1]
+        elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
+            sv_cls = sv_cls[1, :, :]
+        assert sv_cls.shape == X_plot.shape, f"SHAP shape {sv_cls.shape} != data {X_plot.shape}"
+
+        plt.figure()
+        shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
+        plt.title("SHAP summary – classification (stable)")
+        plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
+        plt.close()
+
+        pd.DataFrame(np.asarray(sv_cls), columns=X_plot.columns).to_csv(
+            os.path.join(FIG_DIR, "shap_values_classification.csv"), index=False
         )
-        sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
-    except Exception:
-        expl_cls = shap.Explainer(rf_cls, Xtr_c)
-        sv_cls = expl_cls(X_plot).values
+        cls_importance = pd.Series(np.mean(np.abs(sv_cls), axis=0), index=X_plot.columns)\
+                         .sort_values(ascending=False)
+        cls_importance.to_csv(
+            os.path.join(FIG_DIR, "shap_feature_importance_classification.csv"),
+            header=["mean_|shap|"]
+        )
 
-    if isinstance(sv_cls, list):
-        sv_cls = sv_cls[1]  # positive class
-    sv_cls = np.asarray(sv_cls)
-    # Normalize possible shapes
-    if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
-        sv_cls = sv_cls[:, :, 1]
-    elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
-        sv_cls = sv_cls[1, :, :]
-    assert sv_cls.shape == X_plot.shape, f"SHAP shape {sv_cls.shape} != data shape {X_plot.shape}"
-
-    plt.figure()
-    shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
-    plt.title("SHAP summary – classification (stable)")
-    plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
-    plt.close()
-
-    # SHAP — regression (if trained)
     if rf_reg is not None:
         X_plot_r = Xte_r.copy()
         try:
@@ -681,7 +698,7 @@ if RUN_XAI:
             sv_reg = sv_reg[:, :, 0]
         elif sv_reg.ndim == 3 and sv_reg.shape[-1] == X_plot_r.shape[1]:
             sv_reg = sv_reg[0, :, :]
-        assert sv_reg.shape == X_plot_r.shape, f"SHAP shape {sv_reg.shape} != data shape {X_plot_r.shape}"
+        assert sv_reg.shape == X_plot_r.shape, f"SHAP shape {sv_reg.shape} != data {X_plot_r.shape}"
 
         plt.figure()
         shap.summary_plot(sv_reg, X_plot_r.values, feature_names=X_plot_r.columns.tolist(), show=False)
@@ -689,7 +706,6 @@ if RUN_XAI:
         plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
         plt.close()
 
-        # CSV exports
         pd.DataFrame(sv_reg, columns=X_plot_r.columns).to_csv(
             os.path.join(FIG_DIR, "shap_values_regression_lock_at.csv"), index=False
         )
@@ -699,32 +715,20 @@ if RUN_XAI:
             os.path.join(FIG_DIR, "shap_feature_importance_regression_lock_at.csv"),
             header=["mean_|shap|"]
         )
-    else:
-        print("[XAI] Skipping SHAP regression CSV export (not enough lock-in universes).")
 
-    # SHAP classification CSVs
-    pd.DataFrame(np.asarray(sv_cls), columns=X_plot.columns).to_csv(
-        os.path.join(FIG_DIR, "shap_values_classification.csv"), index=False
-    )
-    cls_importance = pd.Series(np.mean(np.abs(sv_cls), axis=0), index=X_plot.columns)\
-                     .sort_values(ascending=False)
-    cls_importance.to_csv(
-        os.path.join(FIG_DIR, "shap_feature_importance_classification.csv"),
-        header=["mean_|shap|"]
-    )
-
-    # LIME — quick local explanation example
-    lime_explainer = LimeTabularExplainer(
-        training_data=X_feat.values,
-        feature_names=X_feat.columns.tolist(),
-        discretize_continuous=True,
-        mode='classification'
-    )
-    exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
-    lime_list = exp.as_list(label=1)
-    pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
-        os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
-    )
+    # ---------- LIME (csak ha futott klasszifikáció) ----------
+    if do_classification:
+        lime_explainer = LimeTabularExplainer(
+            training_data=X_feat.values,
+            feature_names=X_feat.columns.tolist(),
+            discretize_continuous=True,
+            mode='classification'
+        )
+        exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
+        lime_list = exp.as_list(label=1)
+        pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
+            os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
+        )
 
 print("\n✅ DONE.")
 print(f"☁️ All results saved to Google Drive: {SAVE_DIR}")
