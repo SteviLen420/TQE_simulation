@@ -363,7 +363,6 @@ df = pd.DataFrame({
     "stable": stables,
     "lock_epoch": law_epochs,
     "final_c": final_cs,
-    # opcionálisan: universe seed-ek is, ha külön listában tárolod
     # "seed": universe_seeds  
 })
 
@@ -431,21 +430,6 @@ summary["stability_counts"] = {
     "unstable_percent": float(unstable_count/total_universes*100)
 }
 save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
-
-# --- Stability bar chart (basic) ---
-if MASTER_CTRL.get("PLOT_STABILITY_BASIC", False):
-    fig, ax = plt.subplots()
-    counts = [stable_count, unstable_count]
-    labels = ["Stable", "Unstable"]
-    ax.bar(labels, counts, color=["green", "red"])
-    ax.set_title("Universe Stability Distribution")
-    ax.set_ylabel("Number of Universes")
-    ax.set_xlabel("Category")
-    pcts = [stable_count/total_universes*100, unstable_count/total_universes*100]
-    for i, (c, pct) in enumerate(zip(counts, pcts)):
-        ax.annotate(f"{c} ({pct:.1f}%)", xy=(i, c), xytext=(0, 5),
-                    textcoords="offset points", ha="center", va="bottom")
-    savefig(os.path.join(FIG_DIR, "stability_summary_basic.png"))
 
 # ======================================================
 # 9) Average law lock-in dynamics across all universes
