@@ -16,6 +16,23 @@ import os, time, json, numpy as np, matplotlib.pyplot as plt, shutil
 import qutip as qt
 import pandas as pd
 
+import sys, subprocess
+
+def install_if_missing(packages):
+    for pkg in packages:
+        try:
+            __import__(pkg)
+        except ImportError:
+            print(f"[INSTALL] Missing package: {pkg} → installing...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
+
+# List of required packages
+required_packages = [
+    "numpy", "pandas", "matplotlib", "qutip"
+]
+
+install_if_missing(required_packages)
+
 # --- Directories ---
 GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E)_law_lockin"
 run_id = time.strftime("TQE_(E)law_lockin_%Y%m%d_%H%M%S")
