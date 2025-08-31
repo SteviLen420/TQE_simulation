@@ -123,7 +123,8 @@ pd.DataFrame({"time": tlist, "Entropy": S, "Purity": P}).to_csv(
 # ======================================================
 # 2) t = 0 : Collapse (E only)
 # ======================================================
-E = float(np.random.lognormal(mean=2.5, sigma=0.8))
+# Use the same lognormal parameters as the global E distribution
+E = float(np.random.lognormal(mean=E_MU, sigma=E_SIGMA))
 X = E
 
 collapse_t = np.linspace(-0.2, 0.2, 200)
@@ -233,6 +234,9 @@ for i in range(NUM_UNIVERSES):
     sub_seed = master_rng.integers(0, 2**32)
     sub_seeds.append(sub_seed)  # <<< save the sub-seed!
     rng = np.random.default_rng(sub_seed)
+
+    # 🔧 Sync legacy RNG so functions using np.random become per-universe reproducible
+    np.random.seed(int(sub_seed))
 
     # Sample Energy E using universe-specific RNG
     Ei = float(rng.lognormal(2.5, 0.8))
