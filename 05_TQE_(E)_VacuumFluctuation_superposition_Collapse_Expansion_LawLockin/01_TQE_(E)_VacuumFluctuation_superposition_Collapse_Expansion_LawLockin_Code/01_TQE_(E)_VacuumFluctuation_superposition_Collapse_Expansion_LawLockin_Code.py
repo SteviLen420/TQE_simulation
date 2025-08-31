@@ -30,6 +30,7 @@ def savefig(p):
 # 0) MASTER CONTROLLER – central parameters (E-only)
 # ======================================================
 MASTER_CTRL = {
+    NUM_UNIVERSES = MASTER_CTRL["N_universes"]
     "N_universes": 1000,      # number of universes to simulate
     "N_epoch": 500,           # number of epochs for law lock-in
     "expansion_epochs": 500,  # number of epochs for expansion
@@ -46,6 +47,9 @@ MASTER_CTRL = {
     "PLOT_AVG_LOCKIN": True,
     "PLOT_LOCKIN_HIST": True
 }
+
+# Alias for readability
+NUM_UNIVERSES = MASTER_CTRL["N_universes"]
 
 # ======================================================
 # 1) t < 0 : Quantum superposition (vacuum fluctuation)
