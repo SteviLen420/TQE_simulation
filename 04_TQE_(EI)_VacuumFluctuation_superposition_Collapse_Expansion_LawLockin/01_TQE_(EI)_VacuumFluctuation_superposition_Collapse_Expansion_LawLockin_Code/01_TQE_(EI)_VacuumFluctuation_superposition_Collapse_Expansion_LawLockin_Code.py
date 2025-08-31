@@ -735,44 +735,6 @@ if have_reg:
 else:
     print("[XAI] Not enough lock-in samples for regression.")
 
-# ---------- SHAP: classification ----------
-try:
-    X_plot = Xte_c.copy()
-    try:
-        expl_cls = shap.TreeExplainer(rf_cls, feature_perturbation="interventional",
-                                      model_output="raw")
-        sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
-    except Exception:
-        expl_cls = shap.Explainer(rf_cls, Xtr_c)
-        sv_cls = expl_cls(X_plot).values
-
-    if isinstance(sv_cls, list) and len(sv_cls) > 1:
-        sv_cls = sv_cls[1]  # positive class only if exists
-    sv_cls = np.asarray(sv_cls)
-    if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
-        sv_cls = sv_cls[:, :, 1]
-    elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
-        sv_cls = sv_cls[1, :, :]
-    assert sv_cls.shape == X_plot.shape, f"SHAP mismatch {sv_cls.shape} vs {X_plot.shape}"
-
-    plt.figure()
-    shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
-    plt.title("SHAP summary – classification (stable)")
-    plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
-    plt.close()
-
-    # Save CSVs
-    pd.DataFrame(sv_cls, columns=X_plot.columns).to_csv(
-        os.path.join(SAVE_DIR, "shap_values_classification.csv"), index=False
-    )
-    cls_importance = pd.Series(np.mean(np.abs(sv_cls), axis=0), index=X_plot.columns) \
-                       .sort_values(ascending=False)
-    cls_importance.to_csv(os.path.join(SAVE_DIR, "shap_feature_importance_classification.csv"),
-                          header=["mean_|shap|"])
-
-except Exception as e:
-    print(f"[ERR] SHAP classification failed: {e}")
-
 # ---------- SHAP ----------
 if MASTER_CTRL["enable_SHAP"]:
     # Classification
