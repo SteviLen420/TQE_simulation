@@ -351,6 +351,10 @@ summary.update({
         "locked_fraction": float(np.mean([1 if e >= 0 else 0 for e in law_epochs])),
         "mean_final_c": float(np.nanmean(final_cs)) if len(final_cs) > 0 else None,
         "std_final_c": float(np.nanstd(final_cs)) if len(final_cs) > 0 else None
+    },
+    "seeds": {
+        "master_seed": MASTER_CTRL["seed"],
+        "sub_seeds": sub_seeds
     }
 })
 
