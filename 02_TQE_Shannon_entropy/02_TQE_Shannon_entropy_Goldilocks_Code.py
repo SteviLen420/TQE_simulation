@@ -473,8 +473,20 @@ if MASTER_CTRL["enable_LIME"] and len(np.unique(y_cls)) > 1:
         discretize_continuous=True,
         mode='classification'
     )
-    exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
-    lime_list = exp.as_list(label=1)
+
+    # Dinamikus label választás
+    if len(rf_cls.classes_) > 1:
+        target_label = 1
+    else:
+        target_label = 0
+
+    exp = lime_explainer.explain_instance(
+        Xte_c.iloc[0].values,
+        rf_cls.predict_proba,
+        num_features=min(5, X_feat.shape[1])
+    )
+    lime_list = exp.as_list(label=target_label)
+
     pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
         os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
     )
