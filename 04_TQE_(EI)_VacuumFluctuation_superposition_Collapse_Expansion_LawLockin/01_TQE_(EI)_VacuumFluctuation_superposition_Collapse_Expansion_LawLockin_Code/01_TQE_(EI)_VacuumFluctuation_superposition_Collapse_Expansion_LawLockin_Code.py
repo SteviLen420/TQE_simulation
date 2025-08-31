@@ -349,6 +349,8 @@ valid_epochs = [e for e in law_epochs if e >= 0]
 mean_lock   = float(np.mean(valid_epochs))   if valid_epochs else None
 median_epoch = float(np.median(valid_epochs)) if valid_epochs else None
 
+np.random.seed(master_seed)
+
 # ======================================================
 # 6) Build master DataFrame and save
 # ======================================================
