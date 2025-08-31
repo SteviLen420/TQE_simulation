@@ -583,18 +583,24 @@ else:
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
 
+# Count lock-in universes (only those with lock_epoch >= 0)
+lockin_count = int((df["lock_epoch"] >= 0).sum())
+
 print("\n🌌 Universe Stability Summary (final)")
 print(f"Total universes simulated: {len(df)}")
 print(f"Stable universes:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
 print(f"Unstable universes: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
+print(f"Lock-in universes:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # --- Update summary JSON ---
 summary["stability_summary"] = {
     "total_universes": int(len(df)),
     "stable_universes": stable_count,
     "unstable_universes": unstable_count,
+    "lockin_universes": lockin_count,
     "stable_percent": float(stable_count/len(df)*100),
-    "unstable_percent": float(unstable_count/len(df)*100)
+    "unstable_percent": float(unstable_count/len(df)*100),
+    "lockin_percent": float(lockin_count/len(df)*100)
 }
 
 with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
@@ -602,17 +608,22 @@ with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
 
 # --- Save bar chart ---
 plt.figure()
-plt.bar(["Stable", "Unstable"], [stable_count, unstable_count], color=["green", "red"])
+plt.bar(
+    ["Stable", "Unstable", "Lock-in"],
+    [stable_count, unstable_count, lockin_count],
+    color=["green", "red", "blue"]
+)
 plt.title("Universe Stability Distribution (Final)")
 plt.ylabel("Number of Universes")
 plt.xlabel("Category")
 
-# Labels with counts + percentages
+# Labels with counts + percentages UNDER the bars
 labels = [
     f"Stable ({stable_count}, {stable_count/len(df)*100:.1f}%)",
-    f"Unstable ({unstable_count}, {unstable_count/len(df)*100:.1f}%)"
+    f"Unstable ({unstable_count}, {unstable_count/len(df)*100:.1f}%)",
+    f"Lock-in ({lockin_count}, {lockin_count/len(df)*100:.1f}%)"
 ]
-plt.xticks([0, 1], labels)
+plt.xticks([0, 1, 2], labels)
 
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
