@@ -38,7 +38,7 @@ from sklearn.metrics import r2_score, accuracy_score
 # ======================================================
 MASTER_CTRL = {
     # --- Simulation core ---
-    "N_universes": 5000,
+    "N_universes": 10000,
     "N_epoch": 500,
     "expansion_epochs": 1000,
     "rel_eps": 0.05,
