@@ -60,6 +60,11 @@ BEST_NUM_REGIONS    = 10     # Number of spatial regions in the entropy simulati
 BEST_NUM_STATES     = 500    # Number of microstates per region
 STABILITY_THRESHOLD = 3.5    # Entropy threshold used to define stability
 
+# ---- Master RNG (new, non-fixed but reproducible by saving) ----
+master_seed = int(np.random.SeedSequence().generate_state(1)[0])
+master_rng  = np.random.default_rng(master_seed)
+print(f"[SEED] master_seed = {master_seed}")
+
 # ===== Goldilocks window base params =====
 E_C   = 2.0
 SIGMA = 0.5
@@ -135,7 +140,8 @@ def sample_energy(mu=2.5, sigma=0.8):
 def f_EI(E, I, E_c=E_C, sigma=SIGMA, alpha=ALPHA):
     return np.exp(-(E - E_c)**2 / (2 * sigma**2)) * (1 + alpha * I)
 
-# Draw one (E, I) pair for the collapse demo
+# Draw one (E, I) pair for the collapse demo — tied to master RNG
+np.random.seed(int(master_rng.integers(0, 2**32 - 1)))  # ensure qutip/numpy sync
 E0 = sample_energy()
 I0 = info_param()
 f0 = f_EI(E0, I0)
@@ -215,17 +221,19 @@ def sample_I(dim=8):
 
 E_vals, I_vals, f_vals, X_vals = [], [], [], []
 stables, law_epochs, final_cs, all_histories = [], [], [], []
+sub_seeds = []  # <--- add this
 
 for _ in range(NUM_UNIVERSES):
+    sub_seed = int(master_rng.integers(0, 2**32 - 1))
+    sub_seeds.append(sub_seed)
+    np.random.seed(sub_seed)  # sync numpy + qutip random
+
     Ei = sample_energy()
-    Ii = sample_I(dim=8)
+    Ii = info_param()
     fi = f_EI(Ei, Ii)
     Xi = Ei * Ii * fi
 
-    E_vals.append(Ei)
-    I_vals.append(Ii)
-    f_vals.append(fi)
-    X_vals.append(Xi)
+    E_vals.append(Ei); I_vals.append(Ii); f_vals.append(fi); X_vals.append(Xi)
 
     s = is_stable(Ei, Ii)
     stables.append(s)
@@ -247,6 +255,11 @@ median_epoch = float(np.median(valid_epochs)) if len(valid_epochs) > 0 else None
 mean_epoch   = float(np.mean(valid_epochs))   if len(valid_epochs) > 0 else None
 
 print(f"\n🔒 Universes with lock-in: {len(valid_epochs)} / {NUM_UNIVERSES}")
+
+# Save per-universe seeds for reproducibility
+pd.DataFrame({"universe_id": np.arange(NUM_UNIVERSES), "seed": sub_seeds}).to_csv(
+    os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
+)
 
 # ======================================================
 # 5) Master DataFrame and saves
@@ -410,6 +423,10 @@ summary = {
         "total_universes": NUM_UNIVERSES,
         "stable_fraction": float(np.mean(stables)),
         "unstable_fraction": 1.0 - float(np.mean(stables))
+    },
+    "seeds": {
+    "master_seed": master_seed,
+    "universe_seeds_csv": "universe_seeds.csv"
     },
     "superposition": {
         "mean_entropy": float(np.mean(S)),
@@ -584,15 +601,18 @@ if RUN_XAI:
     X_reg = X_feat[reg_mask]
     y_reg = df.loc[reg_mask, "lock_epoch"].values
 
-    # Train/Test split
+   from sklearn.model_selection import train_test_split
+
+   # Guard for stratify (ha nincs mindkét osztály, ne stratifikáljunk)
+   vals, cnts = np.unique(y_cls, return_counts=True)
+   can_stratify = (len(vals) == 2) and (cnts.min() >= 2)
+   stratify_arg = y_cls if can_stratify else None
+    if not can_stratify:
+        print(f"[XAI] Stratify disabled (class counts = {dict(zip(vals, cnts))})")
+
     Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
-        X_feat, y_cls, test_size=0.25, random_state=42, stratify=y_cls
+        X_feat, y_cls, test_size=0.25, random_state=42, stratify=stratify_arg
     )
-    have_reg = len(X_reg) >= 30
-    if have_reg:
-        Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
-            X_reg, y_reg, test_size=0.25, random_state=42
-        )
 
     # Train models
     rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
@@ -697,57 +717,6 @@ if RUN_XAI:
     pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
         os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
     )
-
-# ======================================================
-# 12) EXTRA: Seed search — Top-5 seeds (stability ratio)
-# ======================================================
-if RUN_SEED_SEARCH:
-    NUM_SEEDS = 100
-    UNIVERSES_PER_SEED = 1000
-
-    def _sample_energy_lognormal_rng(rng, mu=2.5, sigma=0.8):
-        return float(rng.lognormal(mean=mu, sigma=sigma))
-
-    def _sample_information_param_KL_only(dim=8):
-        psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
-        p1 = np.abs(psi1.full().flatten())**2
-        p2 = np.abs(psi2.full().flatten())**2
-        p1 /= p1.sum(); p2 /= p2.sum()
-        eps = 1e-12
-        KLv = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
-        return KLv / (1.0 + KLv)
-
-    seed_scores = []
-    for s in range(NUM_SEEDS):
-        rng_local = np.random.default_rng(seed=s)
-        np.random.seed(s)
-        stable_flags = []
-        for _ in range(UNIVERSES_PER_SEED):
-            E = _sample_energy_lognormal_rng(rng_local)
-            I = _sample_information_param_KL_only(dim=8)
-            stable_flags.append(is_stable(E, I))
-        ratio = float(np.mean(stable_flags))
-        seed_scores.append({"seed": s, "stable_ratio": ratio})
-
-    seed_scores_sorted = sorted(seed_scores, key=lambda r: r["stable_ratio"], reverse=True)
-
-    print("\n🏆 Top-5 seeds by stability ratio")
-    for r in seed_scores_sorted[:5]:
-        print(f"Seed {r['seed']:3d} → stability={r['stable_ratio']:.3f}")
-
-    top_csv_path = os.path.join(SAVE_DIR, "seed_search_top.csv")
-    pd.DataFrame(seed_scores_sorted).to_csv(top_csv_path, index=False)
-    print("Seed search table saved to:", top_csv_path)
-
-    # Append to summary.json
-    summary["seed_search"] = {
-        "num_seeds": NUM_SEEDS,
-        "universes_per_seed": UNIVERSES_PER_SEED,
-        "top5": seed_scores_sorted[:5],
-        "csv_path": top_csv_path,
-    }
-    with open(os.path.join(SAVE_DIR, "summary.json"), "w") as f:
-        json.dump(summary, f, indent=2)
 
 print("\n✅ DONE.")
 print(f"☁️ All results saved to Google Drive: {SAVE_DIR}")
