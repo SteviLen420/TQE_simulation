@@ -65,6 +65,8 @@ MASTER_CTRL = {
     "save_drive_copy": True,
     "save_figs": True,
     "save_json": True
+
+    # --- Plot controls ---
     "PLOT_AVG_LOCKIN": True,
     "PLOT_LOCKIN_HIST": True,
 }
