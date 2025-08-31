@@ -601,12 +601,13 @@ if RUN_XAI:
     X_reg = X_feat[reg_mask]
     y_reg = df.loc[reg_mask, "lock_epoch"].values
 
-   from sklearn.model_selection import train_test_split
+        # -------- Train/Test split with stratify guard (classification) --------
+    from sklearn.model_selection import train_test_split
 
-   # Guard for stratify (ha nincs mindkét osztály, ne stratifikáljunk)
-   vals, cnts = np.unique(y_cls, return_counts=True)
-   can_stratify = (len(vals) == 2) and (cnts.min() >= 2)
-   stratify_arg = y_cls if can_stratify else None
+    # Only stratify if we truly have both classes and at least 2 samples each
+    vals, cnts = np.unique(y_cls, return_counts=True)
+    can_stratify = (len(vals) == 2) and (cnts.min() >= 2)
+    stratify_arg = y_cls if can_stratify else None
     if not can_stratify:
         print(f"[XAI] Stratify disabled (class counts = {dict(zip(vals, cnts))})")
 
@@ -614,6 +615,13 @@ if RUN_XAI:
         X_feat, y_cls, test_size=0.25, random_state=42, stratify=stratify_arg
     )
 
+    # -------- Regression split (only if we have enough lock-ins) ----------
+    have_reg = len(X_reg) >= 30
+    if have_reg:
+        Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
+            X_reg, y_reg, test_size=0.25, random_state=42
+        )
+        
     # Train models
     rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
     rf_cls.fit(Xtr_c, ytr_c)
