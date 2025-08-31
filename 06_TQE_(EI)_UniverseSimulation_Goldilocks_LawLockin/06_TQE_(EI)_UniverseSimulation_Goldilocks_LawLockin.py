@@ -51,8 +51,8 @@ RUN_SEED_SEARCH  = False   # heavy; enable when needed
 # MASTER SIMULATION CONTROLS
 # ======================================================
 
-TIME_STEPS          = 5000   # <--- Main control knob: adjust this, and it propagates everywhere
-NUM_UNIVERSES       = 1000   # Number of universes for Monte Carlo run (set to 1 for single-universe mode)
+TIME_STEPS          = 500   # <--- Main control knob: adjust this, and it propagates everywhere
+NUM_UNIVERSES       = 5000   # Number of universes for Monte Carlo run (set to 1 for single-universe mode)
 LOCKIN_EPOCHS       = TIME_STEPS   # Epochs used in law lock-in simulation
 EXPANSION_EPOCHS    = TIME_STEPS  # Expansion dynamics length, tied to TIME_STEPS
 BEST_STEPS          = TIME_STEPS  # Steps for "best-universe" entropy deep dive
@@ -601,7 +601,7 @@ if RUN_XAI:
     X_reg = X_feat[reg_mask]
     y_reg = df.loc[reg_mask, "lock_epoch"].values
 
-    # ---------- Guard: van-e mindkét osztály? ----------
+    # ---------- Guard: check if both classes exist ---------- 
     uniq_vals, uniq_cnts = np.unique(y_cls, return_counts=True)
     have_two_classes = (len(uniq_vals) == 2)
 
@@ -611,7 +611,7 @@ if RUN_XAI:
     if not can_stratify:
         print(f"[XAI] Stratify disabled (class counts = {dict(zip(uniq_vals, uniq_cnts))})")
 
-    # Ha csak egyetlen osztály létezik az egész mintában, ugorjuk a klasszifikációt
+    # If only a single class exists in the entire sample, skip classification
     do_classification = have_two_classes
 
     if do_classification:
@@ -658,7 +658,7 @@ if RUN_XAI:
             sv_cls = expl_cls(X_plot).values
 
         if isinstance(sv_cls, list):
-            sv_cls = sv_cls[1]  # pozitív osztály
+            sv_cls = sv_cls[1]  # positive class
         sv_cls = np.asarray(sv_cls)
         if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
             sv_cls = sv_cls[:, :, 1]
@@ -716,7 +716,7 @@ if RUN_XAI:
             header=["mean_|shap|"]
         )
 
-    # ---------- LIME (csak ha futott klasszifikáció) ----------
+    # ---------- LIME (only if classification ran) ----------
     if do_classification:
         lime_explainer = LimeTabularExplainer(
             training_data=X_feat.values,
