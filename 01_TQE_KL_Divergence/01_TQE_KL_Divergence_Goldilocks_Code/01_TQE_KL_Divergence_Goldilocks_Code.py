@@ -1,6 +1,6 @@
 # =============================================================================
 # Theory of the Question of Existence (TQE)
-# Energy–Information Coupling Simulation
+# Energy–Information Coupling Simulation: KL-Divergence
 # =============================================================================
 # Author: Stefan Len
 # Tested on: Python 3.11, qutip 5.x, numpy 1.26, shap 0.45.0, lime 0.2.0.1
