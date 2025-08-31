@@ -28,7 +28,6 @@ for pkg in ["qutip", "pandas", "scikit-learn", "shap", "lime"]:
 import qutip as qt
 import shap
 from lime.lime_tabular import LimeTabularExplainer
-from scipy.interpolate import make_interp_spline
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import r2_score, accuracy_score
@@ -80,17 +79,11 @@ ALPHA_I     = 0.8
 
 # --- Master RNG + sync qutip/np.random (for reproducibility) ---
 if MASTER_CTRL["seed"] is None:
-    MASTER_CTRL["seed"] = int(np.random.SeedSequence().entropy)
+    MASTER_CTRL["seed"] = int(np.random.SeedSequence().generate_state(1)[0])
 master_seed = MASTER_CTRL["seed"]
 rng = np.random.default_rng(master_seed)
 np.random.seed(master_seed)  # sync for qutip.rand_ket()
 print(f"🎲 Using master seed: {master_seed}")
-
-# master seed init
-if MASTER_CTRL["seed"] is None:
-    MASTER_CTRL["seed"] = int(np.random.randint(0, 2**32 - 1))
-rng = np.random.default_rng(MASTER_CTRL["seed"])
-print(f"🎲 Using master seed: {MASTER_CTRL['seed']}")
 
 # --- Directories ---
 run_id = time.strftime("TQE_(E,I)_law_lockin_%Y%m%d_%H%M%S")
@@ -214,42 +207,6 @@ collapse_df = pd.DataFrame({
     "X_vals": X_vals
 })
 collapse_df.to_csv(os.path.join(SAVE_DIR, "collapse.csv"), index=False)
-
-# ======================================================
-# 4) Additional lock-in: Physical laws (speed of light c)
-# ======================================================
-def law_lock_in(E, I, n_epoch=500):
-    """
-    Simulates the lock-in of physical laws with Goldilocks modulation.
-    Uses master-seeded RNG for reproducibility.
-    """
-    f = f_EI(E, I)
-    if f < 0.1:   # Outside Goldilocks → no lock-in
-        return -1, []
-
-    # initial speed of light (normally distributed)
-    c_val = rng.normal(3e8, 1e7)
-    calm = 0
-    locked_at = None
-    history = []
-
-    for n in range(n_epoch):
-        prev = c_val
-        # noise term depends on E*I
-        noise = 1e6 * (1 + abs(E*I - 5)/10) * rng.uniform(0.8, 1.2)
-        c_val += rng.normal(0, noise)
-        history.append(c_val)
-
-        # check relative stability
-        delta = abs(c_val - prev) / max(abs(prev), 1e-9)
-        if delta < 1e-3:
-            calm += 1
-            if calm >= 5 and locked_at is None:
-                locked_at = n
-        else:
-            calm = 0
-
-    return locked_at if locked_at is not None else -1, history
     
 # ======================================================
 # 5) Monte Carlo Simulation: Stability + Law lock-in for many universes
@@ -339,9 +296,6 @@ N = MASTER_CTRL["N_universes"]
 X_vals, I_vals, E_vals, f_vals = [], [], [], []
 stables, law_epochs, final_cs, all_histories = [], [], [], []
 universe_seeds = []
-
-# If you store lognormal params elsewhere, use those; otherwise set them here:
-E_LOG_MU, E_LOG_SIGMA = 2.5, 0.8  # example; align with your config
 
 for _ in range(N):
     # 1) draw a unique seed from the master rng and keep it
@@ -727,15 +681,6 @@ summary.update({
 
 with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
     json.dump(summary, f, indent=2)
-
-# Save law lock-in dynamics to CSV
-if all_histories:
-    law_df = pd.DataFrame({
-        "epoch": np.arange(min_len),
-        "avg_c": avg_c,
-        "std_c": std_c
-    })
-    law_df.to_csv(os.path.join(SAVE_DIR, "law_lockin_avg.csv"), index=False)
 
 # ======================================================
 # 14) XAI (SHAP + LIME) 
