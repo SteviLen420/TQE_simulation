@@ -147,19 +147,24 @@ def is_stable(E, n_epoch=30, E_center=E_CENTER, E_width=E_WIDTH):
     """
     Check if a universe is stable based on:
     1. Energy Goldilocks window (E dependence)
-    2. Internal noise dynamics
+    2. Internal noise dynamics scaling with distance from E_center
     """
 
-    # Quick E gate: outside a very wide range → unstable right away
+    # --- 1) Quick cutoff: if energy too far, unstable right away ---
     if abs(E - E_center) > 3 * E_width:   # 3-sigma cutoff in linear space
         return 0
 
-    # --- 2) Internal dynamics ---
+    # --- 2) Internal dynamics with E-dependent noise ---
     A = 20
     calm = 0
     for n in range(n_epoch):
         A_prev = A
-        A = A * 1.02 + np.random.normal(0, 2)
+
+        # Noise grows with distance from Goldilocks center
+        dist = abs(E - E_center) / max(E_width, 1e-12)
+        noise_scale = 2.0 * (1.0 + 0.5 * dist**2)   # tweak factor 0.5 if needed
+
+        A = A * 1.02 + np.random.normal(0, noise_scale)
         delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
 
         if delta < 0.05:
@@ -173,29 +178,37 @@ def is_stable(E, n_epoch=30, E_center=E_CENTER, E_width=E_WIDTH):
     return 0   # unstable
 
 # ======================================================
-# 4) Law lock-in (E only)
+# 4) Law lock-in (E only, energy-dependent noise)
 # ======================================================
 def law_lock_in(E, n_epoch=None):
     if n_epoch is None:
         n_epoch = MASTER_CTRL["N_epoch"]
     """Simulates the law lock-in process based only on Energy E."""
 
-    # Goldilocks alignment with E distribution (Gaussian window around E_CENTER)
+    # --- Goldilocks alignment with E distribution (Gaussian window around E_CENTER) ---
     f = np.exp(-((E - E_CENTER)**2) / (2.0 * (E_WIDTH**2)))
 
+    # If energy is too far from Goldilocks → no lock-in possible
     if f < 0.2:
-        return -1, []   # too far from Goldilocks → no lock-in
+        return -1, []
 
-    c_val = np.random.normal(3e8, 1e7)  # initial c
+    # Initial "c" value (speed of light candidate)
+    c_val = np.random.normal(3e8, 1e7)
     calm, locked_at = 0, None
     history = []
 
     for n in range(n_epoch):
         prev = c_val
-        noise = 1e6 * (1 + abs(E - 5) / 10) * np.random.uniform(0.8, 1.2)
+
+        # --- Noise grows with distance from E_CENTER ---
+        dist = abs(E - E_CENTER) / max(E_WIDTH, 1e-12)
+        noise = 1e6 * (1.0 + 0.4 * dist) * np.random.uniform(0.8, 1.2)
+
+        # Update c with stochastic noise
         c_val += np.random.normal(0, noise)
         history.append(c_val)
 
+        # Detect calm/lock-in
         delta = abs(c_val - prev) / max(abs(prev), 1e-9)
         if delta < 1e-3:
             calm += 1
