@@ -3,21 +3,27 @@
 # Energy–Information Coupling Simulation
 # =============================================================================
 # Author: Stefan Len
-# Purpose: Monte Carlo simulation with Goldilocks_KL divergence
-# =============================================================================
-# SUMMARY
-# This notebook implements a Monte Carlo simulation that models the coupling 
-# between energy (E) and information (I). 
-# The information parameter (I) is normalized from the KL divergence between 
-# random quantum states (range 0–1). 
-# The main goal is to determine the domain of the composite variable X = E·I 
-# that allows the emergence of stable universes (the Goldilocks zone). 
-# The stability probability is estimated by fitting a spline to the curve 
-# P(stable | X). 
-# Each run is initialized with a unique master seed for reproducibility, and 
-# every simulated universe also receives its own seed, saved to separate files. 
-# Results (CSV, JSON, figures) include the stability curve, E–I scatter plots, 
-# and SHAP/LIME explanations of the effects of E, I, and X. 
+# Tested on: Python 3.11, qutip 5.x, numpy 1.26, shap 0.45.0, lime 0.2.0.1
+#
+# ABSTRACT
+# We present a Monte Carlo simulation framework exploring the coupling 
+# between energy (E) and information (I) as a potential foundation for 
+# law-locking dynamics in early-universe scenarios. The information parameter 
+# is derived from the Kullback–Leibler divergence between random quantum states 
+# (normalized to 0–1), while energy is sampled from a log-normal distribution. 
+# The composite variable X = E·I determines whether universes reach stability 
+# within a Goldilocks zone, where noise levels σ(X) are minimized at the center 
+# and increase towards the edges. Stability is defined as a sequence of calm 
+# epochs (Δrel < ε) sustained for k consecutive steps. Each simulation run is 
+# reproducible through a master seed and individual universe seeds (CSV/JSON). 
+# Outputs include stability curves, E–I scatter plots, and explainable AI 
+# (SHAP, LIME) analyses quantifying the relative contributions of E, I, and X 
+# to stability and lock-in times. The framework provides a reproducible tool 
+# for investigating energy–information dynamics underlying the emergence of 
+# stable law-bound universes.
+#
+# KEYWORDS: Goldilocks zone, KL divergence, energy–information coupling, 
+# Monte Carlo, SHAP, LIME, law lock-in, stability dynamics
 # =============================================================================
 
 from google.colab import drive
