@@ -26,16 +26,26 @@ def savefig(p):
     plt.savefig(p,dpi=150,bbox_inches="tight")
     plt.close()
 
-# ===== Plot control flags =====
-PLOT_AVG_LOCKIN  = False   # average lock-in dynamics plot (optional)
-PLOT_LOCKIN_HIST = False   # histogram of lock-in epochs plot (optional)
+# ======================================================
+# 0) MASTER CONTROLLER – central parameters (E-only)
+# ======================================================
+MASTER_CTRL = {
+    "N_universes": 1000,      # number of universes to simulate
+    "N_epoch": 500,           # number of epochs for law lock-in
+    "expansion_epochs": 500,  # number of epochs for expansion
+    "rel_eps": 0.05,          # stability tolerance
+    "lock_consecutive": 5,    # consecutive calm epochs required
+    "seed": None,             # master RNG seed
 
-# number of epochs for expansion dynamics
-EXPANSION_EPOCHS = 500
-# Number of epochs used in the law lock-in simulation.
-LOCKIN_EPOCHS = 500
-# number of universes to simulate
-NUM_UNIVERSES = 1000
+    # Output controls
+    "save_drive_copy": True,
+    "save_figs": True,
+    "save_json": True,
+
+    # Plot controls
+    "PLOT_AVG_LOCKIN": True,
+    "PLOT_LOCKIN_HIST": True
+}
 
 # ======================================================
 # 1) t < 0 : Quantum superposition (vacuum fluctuation)
@@ -224,8 +234,8 @@ plt.title("Universe Stability Distribution")
 plt.ylabel("Number of Universes")
 plt.xlabel("Category")
 labels = [
-    f"Stable ({stable_count}, {stable_count/N*100:.1f}%)",
-    f"Unstable ({unstable_count}, {unstable_count/N*100:.1f}%)"
+    f"Stable ({stable_count}, {stable_count/NUM_UNIVERSES*100:.1f}%)",
+    f"Unstable ({unstable_count}, {unstable_count/NUM_UNIVERSES*100:.1f}%)"
 ]
 plt.xticks([0, 1], labels)
 
