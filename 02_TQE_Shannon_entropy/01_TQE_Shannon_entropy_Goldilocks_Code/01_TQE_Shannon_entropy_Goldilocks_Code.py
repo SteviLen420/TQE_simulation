@@ -3,9 +3,25 @@
 # Energy–Information Coupling Simulation (Shannon entropy variant, PATCHED)
 # =============================================================================
 # Author: Stefan Len
-# Purpose: Monte Carlo simulation with Goldilocks (Shannon-based I)
-#          + reproducible seeds, I==0 / eps sweep, SHAP CSVs, stratify guard,
-#          + extended summary, robust Drive copy, seed search kept
+#
+# ABSTRACT
+# This study presents a Monte Carlo framework that probes the coupling between energy (E)
+# and information (I) where I is computed from the normalized Shannon entropy of
+# random quantum states (0–1). Energy samples are drawn from a log-normal model,
+# and the composite driver X = E·I governs stabilization under a Goldilocks
+# noise schedule σ(X): minimal near the zone center and increasing towards the
+# edges. Stability is operationalized as sustained calm dynamics (Δ_rel < ε)
+# for k consecutive epochs. The pipeline is fully reproducible via a master
+# seed and per-universe seeds (CSV/JSON audit trails). Outputs include the
+# P(stable | X) curve via spline fitting, an E–I outcome scatter, stability
+# breakdowns for exact I=0 and an ε-sweep near zero, and explainable-AI
+# diagnostics (Random Forest + SHAP summary CSVs and optional LIME) with a
+# stratified split guard. A compact summary.json and optional Google Drive copy
+# complete the run artifacts, providing a reusable basis for interrogating
+# Shannon-based energy–information stabilization.
+#
+# KEYWORDS: Goldilocks zone, Shannon entropy, energy–information coupling,
+# Monte Carlo, stability detection, SHAP, LIME, reproducibility, seeds
 # =============================================================================
 
 from google.colab import drive
