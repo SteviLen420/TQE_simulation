@@ -51,6 +51,8 @@ MASTER_CTRL = {
     "sigma0": 0.5,
     "alpha": 1.5,
     "seed": None,  # master RNG seed
+    "seed_search_num": 100,
+    "seed_search_universes": 500,
 
     # --- Stability detection ---
     "lock_consecutive": 20,    # consecutive calm steps to lock
@@ -341,13 +343,10 @@ print(f"📂 Directory: {SAVE_DIR}")
 # ======================================================
 # EXTRA: Seed search — Top-5 seeds with highest stability (kept)
 # ======================================================
-NUM_SEEDS = 100
-UNIVERSES_PER_SEED = 500
-
 seed_scores = []
 _old_rng = rng
 
-for s in range(NUM_SEEDS):
+for s in range(MASTER_CTRL["seed_search_num"]):
     rng = np.random.default_rng(seed=s)
     try:
         np.random.seed(s)
@@ -355,12 +354,17 @@ for s in range(NUM_SEEDS):
         pass
 
     rows_s = []
-    for i in range(UNIVERSES_PER_SEED):
+    for i in range(MASTER_CTRL["seed_search_universes"]):
         E = sample_energy_lognormal()
         I = sample_information_param(dim=8)
         X = E * I
-        stable, lock_at = simulate_lock_in(X, params["N_epoch"], params["rel_eps"],
-                                           params["sigma0"], params["alpha"])
+        stable, lock_at = simulate_lock_in(
+            X,
+            MASTER_CTRL["N_epoch"],
+            MASTER_CTRL["rel_eps"],
+            MASTER_CTRL["sigma0"],
+            MASTER_CTRL["alpha"]
+        )
         rows_s.append({"E":E, "I":I, "X":X, "stable":stable, "lock_at":lock_at})
 
     df_s = pd.DataFrame(rows_s)
@@ -389,12 +393,13 @@ pd.DataFrame(seed_scores_sorted).to_csv(top_csv_path, index=False)
 print("Seed search table saved to:", top_csv_path)
 
 summary["seed_search"] = {
-    "num_seeds": NUM_SEEDS,
-    "universes_per_seed": UNIVERSES_PER_SEED,
+    "num_seeds": MASTER_CTRL["seed_search_num"],
+    "universes_per_seed": MASTER_CTRL["seed_search_universes"],
     "top5": seed_scores_sorted[:5],
     "csv_path": top_csv_path
 }
-save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
+if MASTER_CTRL["save_json"]:
+    save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 
 # ======================================================
 # 12) XAI (SHAP + LIME) — stratify guard + CSV saves
@@ -561,31 +566,34 @@ if MASTER_CTRL["enable_LIME"] and len(np.unique(y_cls)) > 1:
 # ======================================================
 # 13) PATCH: Robust copy to Google Drive (counts + .txt allowed)
 # ======================================================
-print("\n[INFO] Files in FIG_DIR before Drive copy:")
-for fn in sorted(os.listdir(FIG_DIR)):
-    print("   -", fn)
+if MASTER_CTRL["save_drive_copy"]:
+    print("\n[INFO] Files in FIG_DIR before Drive copy:")
+    for fn in sorted(os.listdir(FIG_DIR)):
+        print("   -", fn)
 
-GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_Shannon"
-GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
-os.makedirs(GOOGLE_DIR, exist_ok=True)
+    GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_KL_Shannon"
+    GOOGLE_DIR = os.path.join(GOOGLE_BASE, run_id)
+    os.makedirs(GOOGLE_DIR, exist_ok=True)
 
-copied, skipped = [], []
-for root, dirs, files in os.walk(SAVE_DIR):
-    dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
-    os.makedirs(dst_dir, exist_ok=True)
-    for file in files:
-        if not file.endswith((".png", ".fits", ".csv", ".json", ".txt", ".npy")):
-            continue
-        src = os.path.join(root, file)
-        dst = os.path.join(dst_dir, file)
-        try:
-            if os.path.exists(dst) and os.path.samefile(src, dst):
-                skipped.append(dst); continue
-        except Exception:
-            pass
-        shutil.copy2(src, dst); copied.append(dst)
+    copied, skipped = [], []
+    for root, dirs, files in os.walk(SAVE_DIR):
+        dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(root, SAVE_DIR))
+        os.makedirs(dst_dir, exist_ok=True)
+        for file in files:
+            if not file.endswith((".png", ".fits", ".csv", ".json", ".txt", ".npy")):
+                continue
+            src = os.path.join(root, file)
+            dst = os.path.join(dst_dir, file)
+            try:
+                if os.path.exists(dst) and os.path.samefile(src, dst):
+                    skipped.append(dst)
+                    continue
+            except Exception:
+                pass
+            shutil.copy2(src, dst)
+            copied.append(dst)
 
-print("☁️ Copy finished.")
-print(f"Copied: {len(copied)} files")
-print(f"Skipped (same path): {len(skipped)} files")
-print("Google Drive folder:", GOOGLE_DIR)
+    print("☁️ Copy finished.")
+    print(f"Copied: {len(copied)} files")
+    print(f"Skipped (same path): {len(skipped)} files")
+    print("Google Drive folder:", GOOGLE_DIR)
