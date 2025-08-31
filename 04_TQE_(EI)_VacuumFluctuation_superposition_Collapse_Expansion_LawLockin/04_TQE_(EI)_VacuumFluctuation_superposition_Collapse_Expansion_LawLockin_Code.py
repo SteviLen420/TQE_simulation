@@ -65,6 +65,9 @@ MASTER_CTRL = {
     "save_drive_copy": True,
     "save_figs": True,
     "save_json": True
+
+    "PLOT_AVG_LOCKIN": True,
+    "PLOT_LOCKIN_HIST": True,
 }
 
 # master seed init
@@ -282,29 +285,34 @@ N = MASTER_CTRL["N_universes"]
 
 X_vals, I_vals, E_vals, f_vals = [], [], [], []
 stables, law_epochs, final_cs, all_histories = [], [], [], []
+universe_seeds = []  
 
 for _ in range(N):
-    Ei = rng.lognormal(2.5, 0.8)  # <-- seeded RNG
+    # ---- Generate per-universe seed ----
+    uni_seed = int(rng.integers(0, 2**32 - 1))  
+    universe_seeds.append(uni_seed)
+
+    # ---- Sample parameters ----
+    Ei = rng.lognormal(2.5, 0.8)  
     Ii = sample_information_param_KLxShannon(dim=8)
     fi = f_EI(Ei, Ii)
     Xi = Ei * Ii
 
-    # save params
+    # Save params
     E_vals.append(Ei)
     I_vals.append(Ii)
     f_vals.append(fi)
     X_vals.append(Xi)
 
-    # stability
+    # Stability
     stable = is_stable(Ei, Ii)
     stables.append(stable)
 
-    # law lock-in only for stable universes
+    # Law lock-in
     if stable == 1:
         lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=MASTER_CTRL["N_epoch"])
     else:
         lock_epoch, c_hist = -1, []
-
     law_epochs.append(lock_epoch)
 
     if stable == 1 and c_hist:
@@ -324,6 +332,7 @@ median_epoch = float(np.median(valid_epochs)) if valid_epochs else None
 
 df = pd.DataFrame({
     "universe_id": np.arange(N),
+    "seed": universe_seeds,
     "E": E_vals,
     "I": I_vals,
     "fEI": f_vals,
