@@ -13,11 +13,11 @@ from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
 import os, time, json, numpy as np, matplotlib.pyplot as plt, shutil
-import qutip as qt
-import pandas as pd
-
 import sys, subprocess
 
+# ======================================================
+# Auto-install required packages (only if missing)
+# ======================================================
 def install_if_missing(packages):
     for pkg in packages:
         try:
@@ -27,11 +27,14 @@ def install_if_missing(packages):
             subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
 
 # List of required packages
-required_packages = [
-    "numpy", "pandas", "matplotlib", "qutip"
-]
+required_packages = ["numpy", "pandas", "matplotlib", "qutip"]
 
+# Install if missing
 install_if_missing(required_packages)
+
+# --- Imports after ensuring install ---
+import qutip as qt
+import pandas as pd
 
 # --- Directories ---
 GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E)_law_lockin"
