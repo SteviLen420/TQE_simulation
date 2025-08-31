@@ -1,6 +1,6 @@
 # =============================================================================
 # Theory of the Question of Existence (TQE)
-# Energy–Information Coupling Simulation (Shannon entropy variant, PATCHED)
+# Energy–Information Coupling Simulation (Shannon entropy variant)
 # =============================================================================
 # Author: Stefan Len
 #
