@@ -84,6 +84,7 @@ master_seed = MASTER_CTRL["seed"]
 rng = np.random.default_rng(master_seed)
 np.random.seed(master_seed)  # sync for qutip.rand_ket()
 print(f"🎲 Using master seed: {master_seed}")
+summary = {"params": MASTER_CTRL, "master_seed": master_seed}
 
 # --- Directories ---
 run_id = time.strftime("TQE_(E,I)_law_lockin_%Y%m%d_%H%M%S")
@@ -103,7 +104,6 @@ def save_json(path, obj):
     with open(path, "w") as f:
         json.dump(obj, f, indent=2)
 
-save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 
 # ======================================================
 # 2) t < 0 : Quantum superposition (vacuum fluctuation)
@@ -205,7 +205,8 @@ collapse_t = np.linspace(-0.2, 0.2, 200)
 collapse_X_curve = X + 0.5 * rng.normal(size=len(collapse_t))
 collapse_X_curve[collapse_t >= 0] = X + 0.05 * rng.normal(size=np.sum(collapse_t >= 0))
 
-plt.plot(collapse_t, X_vals, "k-", alpha=0.6, label="fluctuation → lock-in")
+# plot
+plt.plot(collapse_t, collapse_X_curve, "k-", alpha=0.6, label="fluctuation → lock-in")
 plt.axhline(X, color="r", ls="--", label=f"Lock-in X={X:.2f}")
 plt.axvline(0, color="r", lw=2)
 plt.title("t = 0 : Collapse (E·I coupling + Goldilocks)")
@@ -213,9 +214,10 @@ plt.xlabel("time (collapse)"); plt.ylabel("X = E·I·f")
 plt.legend()
 savefig(os.path.join(FIG_DIR, "collapse.png"))
 
+# Save collapse results to CSV
 collapse_df = pd.DataFrame({
     "time": collapse_t,
-    "X_vals": X_vals
+    "X_curve": collapse_X_curve
 })
 collapse_df.to_csv(os.path.join(SAVE_DIR, "collapse.csv"), index=False)
     
@@ -771,48 +773,81 @@ try:
 except Exception as e:
     print(f"[ERR] SHAP classification failed: {e}")
 
+# ---------- SHAP ----------
 if MASTER_CTRL["enable_SHAP"]:
-# ---------- SHAP: regression ----------
-if rf_reg is not None:
+    # Classification
     try:
-        X_plot_r = Xte_r.copy()
+        X_plot = Xte_c.copy()
         try:
-            expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional",
+            expl_cls = shap.TreeExplainer(rf_cls, feature_perturbation="interventional",
                                           model_output="raw")
-            sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
+            sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
         except Exception:
-            expl_reg = shap.Explainer(rf_reg, Xtr_r)
-            sv_reg = expl_reg(X_plot_r).values
+            expl_cls = shap.Explainer(rf_cls, Xtr_c)
+            sv_cls = expl_cls(X_plot).values
 
-        sv_reg = np.asarray(sv_reg)
-        if sv_reg.ndim == 3 and sv_reg.shape[0] == X_plot_r.shape[0]:
-            sv_reg = sv_reg[:, :, 0]
-        elif sv_reg.ndim == 3 and sv_reg.shape[-1] == X_plot_r.shape[1]:
-            sv_reg = sv_reg[0, :, :]
-        assert sv_reg.shape == X_plot_r.shape, f"SHAP mismatch {sv_reg.shape} vs {X_plot_r.shape}"
+        if isinstance(sv_cls, list) and len(sv_cls) > 1:
+            sv_cls = sv_cls[1]  # positive class only
+        sv_cls = np.asarray(sv_cls)
+        if sv_cls.ndim == 3 and sv_cls.shape[0] == X_plot.shape[0]:
+            sv_cls = sv_cls[:, :, 1]
+        elif sv_cls.ndim == 3 and sv_cls.shape[-1] == X_plot.shape[1]:
+            sv_cls = sv_cls[1, :, :]
+        assert sv_cls.shape == X_plot.shape, f"SHAP mismatch {sv_cls.shape} vs {X_plot.shape}"
 
         plt.figure()
-        shap.summary_plot(sv_reg, X_plot_r.values, feature_names=X_plot_r.columns.tolist(), show=False)
-        plt.title("SHAP summary – regression (lock_epoch)")
-        plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_epoch.png"), dpi=220, bbox_inches="tight")
-        plt.close()
+        shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
+        savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"))
 
-        # Save CSVs
-        pd.DataFrame(sv_reg, columns=X_plot_r.columns).to_csv(
-            os.path.join(SAVE_DIR, "shap_values_regression.csv"), index=False
+        pd.DataFrame(sv_cls, columns=X_plot.columns).to_csv(
+            os.path.join(SAVE_DIR, "shap_values_classification.csv"), index=False
         )
-        reg_importance = pd.Series(np.mean(np.abs(sv_reg), axis=0), index=X_plot_r.columns) \
+        cls_importance = pd.Series(np.mean(np.abs(sv_cls), axis=0), index=X_plot.columns) \
                            .sort_values(ascending=False)
-        reg_importance.to_csv(os.path.join(SAVE_DIR, "shap_feature_importance_regression.csv"),
-                              header=["mean_|shap|"])
-
+        cls_importance.to_csv(
+            os.path.join(SAVE_DIR, "shap_feature_importance_classification.csv"),
+            header=["mean_|shap|"]
+        )
     except Exception as e:
-        print(f"[ERR] SHAP regression failed: {e}")
+        print(f"[ERR] SHAP classification failed: {e}")
 
+    # Regression 
+    if rf_reg is not None:
+        try:
+            X_plot_r = Xte_r.copy()
+            try:
+                expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional",
+                                              model_output="raw")
+                sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
+            except Exception:
+                expl_reg = shap.Explainer(rf_reg, Xtr_r)
+                sv_reg = expl_reg(X_plot_r).values
 
-if MASTER_CTRL["enable_LIME"] and len(np.unique(y_cls)) > 1:
+            sv_reg = np.asarray(sv_reg)
+            if sv_reg.ndim == 3 and sv_reg.shape[0] == X_plot_r.shape[0]:
+                sv_reg = sv_reg[:, :, 0]
+            elif sv_reg.ndim == 3 and sv_reg.shape[-1] == X_plot_r.shape[1]:
+                sv_reg = sv_reg[0, :, :]
+            assert sv_reg.shape == X_plot_r.shape, f"SHAP mismatch {sv_reg.shape} vs {X_plot_r.shape}"
+
+            plt.figure()
+            shap.summary_plot(sv_reg, X_plot_r.values, feature_names=X_plot_r.columns.tolist(), show=False)
+            savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_epoch.png"))
+
+            pd.DataFrame(sv_reg, columns=X_plot_r.columns).to_csv(
+                os.path.join(SAVE_DIR, "shap_values_regression.csv"), index=False
+            )
+            reg_importance = pd.Series(np.mean(np.abs(sv_reg), axis=0), index=X_plot_r.columns) \
+                               .sort_values(ascending=False)
+            reg_importance.to_csv(
+                os.path.join(SAVE_DIR, "shap_feature_importance_regression.csv"),
+                header=["mean_|shap|"]
+            )
+        except Exception as e:
+            print(f"[ERR] SHAP regression failed: {e}")
+
 # ---------- LIME ----------
-if len(np.unique(y_cls)) > 1:  # only if both classes exist
+if MASTER_CTRL["enable_LIME"] and (len(np.unique(y_cls)) > 1):
     try:
         lime_explainer = LimeTabularExplainer(
             training_data=Xtr_c.values,
