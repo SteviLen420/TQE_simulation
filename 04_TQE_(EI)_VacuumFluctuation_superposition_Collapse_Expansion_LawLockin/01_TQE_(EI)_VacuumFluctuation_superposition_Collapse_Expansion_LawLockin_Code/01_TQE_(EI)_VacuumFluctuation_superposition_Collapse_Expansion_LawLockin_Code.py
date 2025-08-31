@@ -38,9 +38,9 @@ from sklearn.metrics import r2_score, accuracy_score
 # ======================================================
 MASTER_CTRL = {
     # --- Simulation core ---
-    "N_universes": 10000,
+    "N_universes": 5000,
     "N_epoch": 500,
-    "expansion_epochs": 1000,
+    "expansion_epochs": 500,
     "rel_eps": 0.05,
     "seed": None,   # master seed (generated if None)
 
