@@ -12,7 +12,7 @@
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-import os, time, json, numpy as np, pandas as pd, matplotlib.pyplot as plt, shutil
+import os, time, json, numpy as np, pandas as pd, matplotlib.pyplot as plt
 import sys, subprocess, warnings
 warnings.filterwarnings("ignore")
 
@@ -228,14 +228,13 @@ collapse_df.to_csv(os.path.join(SAVE_DIR, "collapse.csv"), index=False)
 # ======================================================
 
 def sample_information_param_KLxShannon(dim=8):
-    """Sample I using KL × Shannon fusion (normalized to [0,1])."""
     psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
     p1 = np.abs(psi1.full().flatten())**2
     p2 = np.abs(psi2.full().flatten())**2
     p1 /= p1.sum(); p2 /= p2.sum()
     eps = 1e-12
 
-    KL_val = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
+    KL_val = KL(p1, p2, eps=eps)
     I_kl = KL_val / (1.0 + KL_val)
 
     H = -np.sum(p1 * np.log(p1 + eps))
@@ -545,7 +544,7 @@ plt.figure()
 plt.plot(A_series, label="Amplitude A")
 plt.plot(I_series, label="Orientation I")
 plt.axhline(np.mean(A_series), color="gray", ls="--", alpha=0.5, label="Equilibrium A")
-if "median_epoch" in globals() and median_epoch is not None:
+if median_epoch is not None:
     plt.axvline(median_epoch, color="r", ls="--", lw=2, label=f"Law lock-in ≈ {median_epoch:.0f}")
 plt.title("t > 0 : Expansion dynamics (reference universe)")
 plt.xlabel("epoch"); plt.ylabel("Parameters")
