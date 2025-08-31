@@ -176,7 +176,7 @@ for _ in range(NUM_UNIVERSES):
 
     if s == 1:
         # Run law lock-in only for stable universes
-        lock_epoch, c_hist = law_lock_in(Ei, n_epoch=LOCKIN_EPOCHS)  
+        lock_epoch, c_hist = law_lock_in(Ei, n_epoch=MASTER_CTRL["N_epoch"])    
         law_epochs.append(lock_epoch)
 
         if len(c_hist) > 0:
@@ -280,7 +280,9 @@ if len(all_histories) > 0:
 # ======================================================
 # 8) Expansion dynamics (E only)
 # ======================================================
-def evolve(E, n_epoch=EXPANSION_EPOCHS):
+def evolve(E, n_epoch=None):
+    if n_epoch is None:
+        n_epoch = MASTER_CTRL["expansion_epochs"]
     A_series = []
     A = 20
     for n in range(n_epoch):
@@ -288,7 +290,7 @@ def evolve(E, n_epoch=EXPANSION_EPOCHS):
         A_series.append(A)
     return A_series
 
-A_series = evolve(E, n_epoch=EXPANSION_EPOCHS)
+A_series = evolve(E, n_epoch=MASTER_CTRL["expansion_epochs"])
 plt.figure()
 plt.plot(A_series, label="Amplitude A")
 plt.axhline(np.mean(A_series), color="gray", ls="--", alpha=0.5, label="Equilibrium A")
