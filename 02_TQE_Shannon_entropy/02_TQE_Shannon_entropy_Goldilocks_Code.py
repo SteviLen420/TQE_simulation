@@ -45,8 +45,8 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Simulation core ---
-    "N_samples": 1000,
-    "N_epoch": 30,
+    "N_samples": 5000,
+    "N_epoch": 100,
     "rel_eps": 0.05,
     "sigma0": 0.5,
     "alpha": 1.5,
