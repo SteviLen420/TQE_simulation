@@ -8,6 +8,16 @@
 # Mechanisms: Goldilocks zone emergence, KL divergence, lock-in detection
 # ===========================================================================
 
+# ===========================================================================
+# Theory of the Question of Existence (TQE)
+# (E, I) Vacuum fluctuation → superposition → Collapse → Expansion → Law lock-in
+# ===========================================================================
+# Author: Stefan Len
+# Description: Full model simulation of energy-information (E,I) dynamics
+# Improvements: MASTER_CTRL, reproducible seeds, eps sweep, XAI guards,
+#               unified summary, robust Drive copy
+# ===========================================================================
+
 # ---- Mount Google Drive ----
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
@@ -28,62 +38,103 @@ for pkg in ["qutip", "pandas", "scikit-learn", "shap", "lime"]:
 import qutip as qt
 import shap
 from lime.lime_tabular import LimeTabularExplainer
+from scipy.interpolate import make_interp_spline
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.metrics import r2_score, accuracy_score
+
+# ======================================================
+# 1) MASTER CONTROLLER – central parameters
+# ======================================================
+MASTER_CTRL = {
+    # --- Simulation core ---
+    "N_universes": 1000,
+    "N_epoch": 500,
+    "expansion_epochs": 500,
+    "rel_eps": 0.05,
+    "seed": None,   # master seed (generated if None)
+
+    # --- Law lock-in ---
+    "lock_consecutive": 5,
+    "regression_min": 30,
+
+    # --- Train/test split ---
+    "test_size": 0.25,
+    "rf_n_estimators": 400,
+
+    # --- XAI controls ---
+    "enable_SHAP": True,
+    "enable_LIME": True,
+
+    # --- Seed search ---
+    "enable_seed_search": False,
+    "seed_search_num": 100,
+    "seed_search_universes": 500,
+
+    # --- Outputs ---
+    "save_drive_copy": True,
+    "save_figs": True,
+    "save_json": True
+}
+
+# master seed init
+if MASTER_CTRL["seed"] is None:
+    MASTER_CTRL["seed"] = int(np.random.randint(0, 2**32 - 1))
+rng = np.random.default_rng(MASTER_CTRL["seed"])
+print(f"🎲 Using master seed: {MASTER_CTRL['seed']}")
 
 # --- Directories ---
-GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_law_lockin"
-run_id = time.strftime("TQE_(E,I)law_lockin_%Y%m%d_%H%M%S")
-SAVE_DIR = os.path.join(GOOGLE_BASE, run_id); os.makedirs(SAVE_DIR, exist_ok=True)
-FIG_DIR  = os.path.join(SAVE_DIR, "figs"); os.makedirs(FIG_DIR, exist_ok=True)
-summary = {}
-
-# ===== Plot control flags =====
-PLOT_AVG_LOCKIN = False   # average lock-in dynamics plot
-PLOT_LOCKIN_HIST = False  # histogram of lock-in epochs plot
+run_id = time.strftime("TQE_(E,I)_law_lockin_%Y%m%d_%H%M%S")
+SAVE_DIR = os.path.join("/content/drive/MyDrive/TQE_runs", run_id)
+FIG_DIR = os.path.join(SAVE_DIR, "figs")
+os.makedirs(FIG_DIR, exist_ok=True)
 
 def savefig(p): 
-    plt.savefig(p,dpi=150,bbox_inches="tight")
-    plt.close()
+    plt.savefig(p,dpi=180,bbox_inches="tight"); plt.close()
+def save_json(path, obj): 
+    with open(path, "w") as f: json.dump(obj, f, indent=2)
 
-EXPANSION_EPOCHS = 500   # number of epochs for expansion dynamics
+summary = {"params": MASTER_CTRL, "master_seed": MASTER_CTRL["seed"]}
 
-# ======================================================
-# 1) t < 0 : Quantum superposition (vacuum fluctuation)
-# ======================================================
+# ===========================================================================
+# 2) Superposition stage (t < 0 : vacuum fluctuation)
+# ===========================================================================
 Nlev = 12
 a = qt.destroy(Nlev)
 
 # perturbed Hamiltonian with small random noise
-H0 = a.dag()*a + 0.05*(np.random.randn()*a + np.random.randn()*a.dag())
+H0 = a.dag()*a + 0.05*(rng.normal()*a + rng.normal()*a.dag())
 
-# initial state: random superposition (not just vacuum)
+# initial state: random superposition
 psi0 = qt.rand_ket(Nlev)
 rho = psi0 * psi0.dag()
 
-# time scale
+# time evolution scale
 tlist = np.linspace(0,10,200)
 
-# time-dependent gamma (fluctuating environment)
-gammas = 0.02 + 0.01*np.sin(0.5*tlist) + 0.005*np.random.randn(len(tlist))
+# time-dependent gamma (environment fluctuation)
+gammas = 0.02 + 0.01*np.sin(0.5*tlist) + 0.005*rng.normal(size=len(tlist))
 
 states = []
 for g in gammas:
-    # actual time evolution in a small window
     res = qt.mesolve(H0, rho, np.linspace(0,0.5,5), [np.sqrt(abs(g))*a], [])
     states.append(res.states[-1])
 
-# purity and entropy
+# purity and entropy functions
 def purity(r): 
     return float((r*r).tr().real) if qt.isoper(r) else float((r*r.dag()).tr().real)
 
 S = np.array([qt.entropy_vn(r) for r in states])
 P = np.array([purity(r) for r in states])
 
-# plot
+# plot entropy and purity
 plt.plot(tlist,S,label="Entropy")
 plt.plot(tlist,P,label="Purity")
 plt.title("t < 0 : Quantum superposition (vacuum fluctuation)")
-plt.xlabel("time"); plt.legend(); savefig(os.path.join(FIG_DIR,"superposition.png"))
-# Save superposition results to CSV
+plt.xlabel("time"); plt.legend()
+savefig(os.path.join(FIG_DIR,"superposition.png"))
+
+# Save results to CSV
 superposition_df = pd.DataFrame({
     "time": tlist,
     "Entropy": S,
@@ -91,188 +142,159 @@ superposition_df = pd.DataFrame({
 })
 superposition_df.to_csv(os.path.join(SAVE_DIR, "superposition.csv"), index=False)
 
-# ======================================================
-# 2) t = 0 : Collapse (E·I coupling + Goldilocks factor)
-# ======================================================
+# Add to summary
+summary["superposition"] = {
+    "mean_entropy": float(np.mean(S)),
+    "mean_purity": float(np.mean(P))
+}
 
-# Kullback–Leibler divergence
+# ===========================================================================
+# 3) Collapse (t = 0 : E·I coupling + Goldilocks factor)
+# ===========================================================================
 def KL(p, q, eps=1e-12):
+    """Kullback-Leibler divergence with clipping (numerical safety)."""
     p = np.clip(p, eps, None); q = np.clip(q, eps, None)
     p /= p.sum(); q /= q.sum()
     return np.sum(p * np.log(p / q))
 
-# Goldilocks modulation factor
 def f_EI(E, I, E_c=2.0, sigma=0.3, alpha=0.8):
     """
-    Gaussian Goldilocks window centered at E_c with I-coupling.
+    Gaussian Goldilocks modulation centered at E_c with I-coupling.
     - E_c: preferred energy (Goldilocks center)
     - sigma: width of stability window
-    - alpha: strength of I-coupling
+    - alpha: coupling strength with information parameter
     """
     return np.exp(-(E - E_c)**2 / (2 * sigma**2)) * (1 + alpha * I)
 
-# Generate two random quantum states and compute Information I (KL × Shannon)
-psi1, psi2 = qt.rand_ket(8), qt.rand_ket(8)
-p1, p2 = np.abs(psi1.full().flatten())**2, np.abs(psi2.full().flatten())**2
-p1 /= p1.sum(); p2 /= p2.sum()
-eps = 1e-12
+def sample_information_param(dim=8):
+    """Sample I via KL × Shannon (normalized to [0,1])."""
+    psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
+    p1, p2 = np.abs(psi1.full().flatten())**2, np.abs(psi2.full().flatten())**2
+    p1 /= p1.sum(); p2 /= p2.sum()
+    eps = 1e-12
+    KL_val = KL(p1, p2, eps)
+    I_kl = KL_val / (1.0 + KL_val)
+    H = -np.sum(p1 * np.log(p1 + eps))
+    I_shannon = H / np.log(len(p1))
+    I_raw = I_kl * I_shannon
+    return I_raw / (1.0 + I_raw)
 
-# KL divergence normalized
-KL_val = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
-I_kl = KL_val / (1.0 + KL_val)
+def sample_energy(mu=2.5, sigma=0.8):
+    """Sample energy from lognormal distribution."""
+    return float(rng.lognormal(mean=mu, sigma=sigma))
 
-# Normalized Shannon entropy of psi1
-H = -np.sum(p1 * np.log(p1 + eps))
-I_shannon = H / np.log(len(p1))
-
-# Multiplicative fusion (squash back to [0,1])
-I_raw = I_kl * I_shannon
-I = I_raw / (1.0 + I_raw)
-
-# Energy fluctuation
-E = float(np.random.lognormal(mean=2.5, sigma=0.8))
-
-# Apply Goldilocks filter
+# Collapse dynamics demonstration (single trajectory)
+E = sample_energy()
+I = sample_information_param()
 f = f_EI(E, I)
-
-# Coupled parameter
 X = E * I * f
 
-# Collapse dynamics (before t=0 fluctuation, after lock-in)
 collapse_t = np.linspace(-0.2, 0.2, 200)
-X_vals = X + 0.5 * np.random.randn(len(collapse_t))
-X_vals[collapse_t >= 0] = X + 0.05 * np.random.randn(np.sum(collapse_t >= 0))
+X_vals = X + 0.5 * rng.normal(size=len(collapse_t))
+X_vals[collapse_t >= 0] = X + 0.05 * rng.normal(size=np.sum(collapse_t >= 0))
 
 plt.plot(collapse_t, X_vals, "k-", alpha=0.6, label="fluctuation → lock-in")
 plt.axhline(X, color="r", ls="--", label=f"Lock-in X={X:.2f}")
 plt.axvline(0, color="r", lw=2)
 plt.title("t = 0 : Collapse (E·I coupling + Goldilocks)")
-plt.xlabel("time (collapse)"); plt.ylabel("X = E·I·f")
+plt.xlabel("time"); plt.ylabel("X = E·I·f")
 plt.legend()
 savefig(os.path.join(FIG_DIR, "collapse.png"))
 
-collapse_df = pd.DataFrame({
-    "time": collapse_t,
-    "X_vals": X_vals
-})
-collapse_df.to_csv(os.path.join(SAVE_DIR, "collapse.csv"), index=False)
+pd.DataFrame({"time": collapse_t, "X_vals": X_vals}).to_csv(
+    os.path.join(SAVE_DIR, "collapse.csv"), index=False
+)
+
+summary["collapse"] = {
+    "E": E, "I": I, "f": f, "X": X,
+    "mean_X_vals": float(np.mean(X_vals)),
+    "std_X_vals": float(np.std(X_vals))
+}
 
 
-# ======================================================
-# 3) Additional lock-in: Physical laws (speed of light c)
-# ======================================================
-def law_lock_in(E, I, n_epoch=500):
-    """
-    Simulates the lock-in of physical laws with Goldilocks modulation.
-    """
+# ===========================================================================
+# 4) Monte Carlo universes (stability + law lock-in)
+# ===========================================================================
+def is_stable(E, I, n_epoch=200, rel_eps=0.05):
+    """Check if a universe stabilizes within given epochs."""
     f = f_EI(E, I)
-    if f < 0.1:   # Outside Goldilocks → no lock-in
-        return -1, []
-
-    c_val = np.random.normal(3e8, 1e7)  # initial speed of light
-    calm = 0
-    locked_at = None
-    history = []
-
-    for n in range(n_epoch):
-        prev = c_val
-        noise = 1e6 * (1 + abs(E*I - 5)/10) * np.random.uniform(0.8, 1.2)
-        c_val += np.random.normal(0, noise)
-        history.append(c_val)
-
-        delta = abs(c_val - prev) / max(abs(prev), 1e-9)
-        if delta < 1e-3:
-            calm += 1
-            if calm >= 5 and locked_at is None:
-                locked_at = n
-        else:
-            calm = 0
-
-    return locked_at if locked_at is not None else -1, history
-    
-# ======================================================
-# 4) Monte Carlo Simulation: Stability + Law lock-in for many universes
-# ======================================================
-
-# Helper function: Information parameter based on KL × Shannon
-def sample_information_param_KLxShannon(dim=8):
-    psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
-    p1 = np.abs(psi1.full().flatten())**2
-    p2 = np.abs(psi2.full().flatten())**2
-    p1 /= p1.sum(); p2 /= p2.sum()
-    eps = 1e-12
-
-    # KL divergence normalized
-    KL_val = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
-    I_kl = KL_val / (1.0 + KL_val)
-
-    # Normalized Shannon entropy
-    H = -np.sum(p1 * np.log(p1 + eps))
-    I_shannon = H / np.log(len(p1))
-
-    # Multiplicative fusion → squashed back to [0,1]
-    I_raw = I_kl * I_shannon
-    return I_raw / (1.0 + I_raw)
-
-# Number of universes to simulate
-N = 1000  
-
-# Storage lists
-X_vals, I_vals, stables, law_epochs, final_cs, all_histories = [], [], [], [], [], []
-E_vals, f_vals = [], []
-
-def is_stable(E, I, n_epoch=200):
-    f = f_EI(E, I)
-    if f < 0.2:
+    if f < 0.2:  # outside Goldilocks → unstable
         return 0
     A, calm = 20, 0
     for _ in range(n_epoch):
         A_prev = A
-        A = A*1.02 + np.random.normal(0, 2)
+        A = A*1.02 + rng.normal(0, 2)
         delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
-        calm = calm + 1 if delta < 0.05 else 0
-        if calm >= 5:
+        calm = calm + 1 if delta < rel_eps else 0
+        if calm >= MASTER_CTRL["lock_consecutive"]:
             return 1
     return 0
 
-# --------- MAIN MC LOOP ---------
-for _ in range(N):
-    # sample parameters
-    Ei = float(np.random.lognormal(2.5, 0.8))
-    Ii = sample_information_param_KLxShannon(dim=8)
+def law_lock_in(E, I, n_epoch=500):
+    """Simulate law lock-in dynamics (speed of light c)."""
+    f = f_EI(E, I)
+    if f < 0.1:  # outside Goldilocks
+        return -1, []
+    c_val = rng.normal(3e8, 1e7)
+    calm, locked_at = 0, None
+    history = []
+    for n in range(n_epoch):
+        prev = c_val
+        noise = 1e6 * (1 + abs(E*I - 5)/10) * rng.uniform(0.8, 1.2)
+        c_val += rng.normal(0, noise)
+        history.append(c_val)
+        delta = abs(c_val - prev) / max(abs(prev), 1e-9)
+        if delta < 1e-3:
+            calm += 1
+            if calm >= MASTER_CTRL["lock_consecutive"] and locked_at is None:
+                locked_at = n
+        else:
+            calm = 0
+    return locked_at if locked_at is not None else -1, history
+
+
+# --- Monte Carlo main loop ---
+rows, all_histories = [], []
+for uid in range(MASTER_CTRL["N_universes"]):
+    # deterministic per-universe seed from master seed
+    seed_val = rng.integers(0, 2**32 - 1)
+    np.random.seed(seed_val)
+
+    Ei = sample_energy()
+    Ii = sample_information_param()
     fi = f_EI(Ei, Ii)
     Xi = Ei * Ii
 
-    # save params
-    E_vals.append(Ei)
-    I_vals.append(Ii)
-    f_vals.append(fi)
-    X_vals.append(Xi)
-
-    # stability
-    stable = is_stable(Ei, Ii)
-    stables.append(stable)
-
-    # law lock-in only for stable
+    stable = is_stable(Ei, Ii, n_epoch=MASTER_CTRL["N_epoch"], rel_eps=MASTER_CTRL["rel_eps"])
     if stable == 1:
-        lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=1000)  # hosszabb futás
+        lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=MASTER_CTRL["N_epoch"])
     else:
         lock_epoch, c_hist = -1, []
 
-    law_epochs.append(lock_epoch)
+    rows.append({
+        "universe_id": uid, "seed": int(seed_val),
+        "E": Ei, "I": Ii, "fEI": fi, "X": Xi,
+        "stable": stable, "lock_epoch": lock_epoch,
+        "final_c": c_hist[-1] if c_hist else np.nan
+    })
 
-    # keep histories for averaging
-    if stable == 1 and len(c_hist) > 0:
-        final_cs.append(c_hist[-1])
+    if stable == 1 and c_hist:
         all_histories.append(c_hist)
-    else:
-        final_cs.append(np.nan)
 
-# central median lock-in 
-valid_epochs = [e for e in law_epochs if e >= 0]
-mean_lock = float(np.mean(valid_epochs)) if len(valid_epochs) > 0 else None
-median_epoch = mean_lock 
+df = pd.DataFrame(rows)
+df.to_csv(os.path.join(SAVE_DIR, "universes.csv"), index=False)
 
+# Save per-universe seeds for reproducibility
+pd.DataFrame({"universe_id": df["universe_id"], "seed": df["seed"]}).to_csv(
+    os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
+)
+
+summary["universes"] = {
+    "total": int(len(df)),
+    "stable_count": int(df["stable"].sum()),
+    "unstable_count": int(len(df) - int(df["stable"].sum())),
+    "stable_ratio": float(df["stable"].mean())
+}
 # ======================================================
 # 5) Build master DataFrame and save
 # ======================================================
