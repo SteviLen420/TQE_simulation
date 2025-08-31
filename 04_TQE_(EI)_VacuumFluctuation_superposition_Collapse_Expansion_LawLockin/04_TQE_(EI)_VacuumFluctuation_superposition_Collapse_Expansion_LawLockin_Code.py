@@ -79,7 +79,7 @@ print(f"🎲 Using master seed: {MASTER_CTRL['seed']}")
 
 # --- Directories ---
 run_id = time.strftime("TQE_(E,I)_law_lockin_%Y%m%d_%H%M%S")
-SAVE_DIR = os.path.join("/content/drive/MyDrive/(E,I)_law_lockin", run_id)
+SAVE_DIR = os.path.join("/content/drive/MyDrive/TQE_(E,I)_law_lockin", run_id)
 FIG_DIR = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
 
