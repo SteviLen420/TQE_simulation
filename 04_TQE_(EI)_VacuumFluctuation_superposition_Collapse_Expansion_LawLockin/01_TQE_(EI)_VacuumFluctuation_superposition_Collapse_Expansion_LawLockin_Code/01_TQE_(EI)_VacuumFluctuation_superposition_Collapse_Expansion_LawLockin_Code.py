@@ -169,8 +169,12 @@ p1 /= p1.sum(); p2 /= p2.sum()
 eps = 1e-12
 
 # KL divergence normalized
-KL_val = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
-I_kl = KL_val / (1.0 + KL_val)
+# Compute KL divergence between the two amplitude distributions.
+# (Using the helper makes the intent explicit and avoids duplicating math.)
+KL_val = KL(p1, p2, eps=eps)  # KL-divergencia a helperrel
+
+# Convert raw KL to a bounded information factor in [0,1] for stability.
+I_kl = KL_val / (1.0 + KL_val)  # normalizált KL → [0,1]
 
 # Normalized Shannon entropy of psi1
 H = -np.sum(p1 * np.log(p1 + eps))
