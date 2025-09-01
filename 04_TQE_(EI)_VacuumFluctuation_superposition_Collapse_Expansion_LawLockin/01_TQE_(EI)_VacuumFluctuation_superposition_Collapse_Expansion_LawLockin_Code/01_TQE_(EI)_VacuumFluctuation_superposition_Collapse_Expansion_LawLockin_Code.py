@@ -344,39 +344,6 @@ def is_stable(E, I, n_epoch=None, rel_eps=None, lock_consec=None, rng=None):
 
     return 0
 
-
-# --- Law lock-in uses ONLY the provided rng ---
-def law_lock_in(E, I, n_epoch=500, rng=None):
-    """
-    Simulates lock-in of a 'law' proxy (e.g., c).
-    Lock when relative step change stays below 1e-3 for 5 consecutive epochs.
-    All randomness uses rng to ensure per-universe reproducibility.
-    """
-    if rng is None:
-        rng = np.random.default_rng()
-
-    f = f_EI(E, I)
-    if f < 0.1:
-        return -1, []   # too far from Goldilocks -> no lock-in
-
-    c_val = rng.normal(3e8, 1e7)  # initial value for 'c'
-    calm, locked_at = 0, None
-    history = []
-
-    for n in range(n_epoch):
-        prev = c_val
-        # noise intensity modulated by E*I distance from ~5
-        noise = 1e6 * (1 + abs(E * I - 5) / 10.0) * rng.uniform(0.8, 1.2)
-        c_val += rng.normal(0, noise)
-        history.append(c_val)
-
-        delta = abs(c_val - prev) / max(abs(prev), 1e-9)
-        calm = calm + 1 if delta < 1e-3 else 0
-        if calm >= 5 and locked_at is None:
-            locked_at = n
-
-    return locked_at if locked_at is not None else -1, history
-
 # 5/B — Law lock-in dynamics with adaptive noise and threshold
 def law_lock_in(E, I, n_epoch=500, rng=None):
     """
