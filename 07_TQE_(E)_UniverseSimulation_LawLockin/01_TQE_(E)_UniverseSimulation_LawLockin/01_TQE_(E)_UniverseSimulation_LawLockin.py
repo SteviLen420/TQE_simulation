@@ -541,7 +541,4 @@ summary = {
 savejson(os.path.join(SAVE_DIR, "summary.json"), summary)
 
 print("\n✅ DONE.")
-print(f"☁️ All results saved to: {SAVE_DIR}")
-
-print("\n✅ DONE.")
 print(f"☁️ All results saved to Google Drive: {SAVE_DIR}")
