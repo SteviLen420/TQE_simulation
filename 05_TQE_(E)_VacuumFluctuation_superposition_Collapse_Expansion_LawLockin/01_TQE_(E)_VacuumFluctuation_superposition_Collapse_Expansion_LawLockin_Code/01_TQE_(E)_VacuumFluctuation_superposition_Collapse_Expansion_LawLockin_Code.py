@@ -20,8 +20,8 @@
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-import os, time, json, numpy as np, matplotlib.pyplot as plt,
-import sys, subprocess
+# Clean base imports (no third-party here yet)
+import os, time, json, sys, subprocess
 
 # ======================================================
 # Auto-install required packages (only if missing)
@@ -36,13 +36,13 @@ def install_if_missing(packages):
 
 # List of required packages
 required_packages = ["numpy", "pandas", "matplotlib", "qutip"]
-
-# Install if missing
 install_if_missing(required_packages)
 
 # --- Imports after ensuring install ---
-import qutip as qt
+import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
+import qutip as qt
 
 # --- Directories ---
 GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E)_law_lockin"
@@ -84,9 +84,6 @@ E_WIDTH  = 6.0       # try 6–8 for ~40%+ stability; smaller = stricter
 
 # Alias for readability
 NUM_UNIVERSES = MASTER_CTRL["N_universes"]
-
-# Create master RNG
-master_rng = np.random.default_rng(MASTER_CTRL["seed"])
 
 # --- Master seed (reproducibility) ---
 if MASTER_CTRL["seed"] is None:
@@ -147,7 +144,7 @@ plt.title("t = 0 : Collapse (E only)")
 plt.xlabel("time (collapse)"); plt.ylabel("X = E"); plt.legend()
 savefig(os.path.join(FIG_DIR, "collapse.png"))
 
-pd.DataFrame({"time": collapse_t, "X_vals": X_curve}).to_csv(
+pd.DataFrame({"time": collapse_t, "X_curve": X_curve}).to_csv(
     os.path.join(SAVE_DIR, "collapse.csv"), index=False)
     
 # ======================================================
