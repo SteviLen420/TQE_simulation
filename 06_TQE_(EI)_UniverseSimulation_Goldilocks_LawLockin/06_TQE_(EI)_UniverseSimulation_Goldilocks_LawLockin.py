@@ -47,11 +47,6 @@ def savefig(path):
     plt.savefig(path, dpi=180, bbox_inches="tight")
     plt.close()
 
-# ===== Feature flags =====
-PLOT_AVG_LOCKIN  = False   # average lock-in c(t) plot toggle
-PLOT_LOCKIN_HIST = False   # histogram of lock-in epochs plot toggle
-RUN_XAI          = True    # SHAP + LIME
-
 # ======================================================
 # MASTER CONTROLLER – everything in one place
 # ======================================================
@@ -106,7 +101,7 @@ MASTER_CTRL = {
     "LL_BASE_NOISE":        1e6,
 
     # ---- Best-universe deep dive ----
-    "BEST_STEPS":           300,
+    "BEST_STEPS":           1000,
     "BEST_NUM_REGIONS":     10,
     "BEST_NUM_STATES":      500,
     "ENTROPY_STAB_THRESH":  3.5,
@@ -140,6 +135,11 @@ CALM_STEPS_LOCKIN    = MASTER_CTRL["CALM_STEPS_LOCKIN"]
 RUN_XAI              = MASTER_CTRL["RUN_XAI"]
 PLOT_AVG_LOCKIN      = MASTER_CTRL["PLOT_AVG_LOCKIN"]
 PLOT_LOCKIN_HIST     = MASTER_CTRL["PLOT_LOCKIN_HIST"]
+
+# --- Master RNG (reproducibility) ---
+master_seed = int(np.random.SeedSequence().generate_state(1)[0])
+master_rng  = np.random.default_rng(master_seed)
+print(f"[SEED] master_seed = {master_seed}")
 
 # ======================================================
 # Shared helpers (E,I,f)
@@ -472,6 +472,12 @@ plt.title("Universe Stability Distribution (E,I) — three categories")
 plt.grid(axis="y", alpha=0.2)
 
 savefig(os.path.join(FIG_DIR, "stability_three_bars.png"))
+# Save counts used in the 3-bar chart
+pd.DataFrame(
+    {"metric": ["lock_in", "stable", "unstable"],
+     "count":  [lockin_count, stable_count, unstable_count],
+     "percent":[p_lockin,     p_stable,     p_unstable]}
+).to_csv(os.path.join(SAVE_DIR, "stability_three_bars.csv"), index=False)
 
 # ======================================================
 # 7) Average law lock-in dynamics across all universes (optional plot)
@@ -553,41 +559,7 @@ if PLOT_LOCKIN_HIST and len(valid_epochs) > 0:
     savefig(os.path.join(FIG_DIR, "law_lockin_mc.png"))
 
 # ======================================================
-# 10) Summary JSON
-# ======================================================
-summary = {
-    "seeds": {"master_seed": master_seed, "universe_seeds_csv": "universe_seeds.csv"},
-    "simulation": {
-        "total_universes": NUM_UNIVERSES,
-        "stable_fraction": float(np.mean(stables)),
-        "unstable_fraction": 1.0 - float(np.mean(stables))
-    },
-    "superposition": {
-        "mean_entropy": float(np.mean(S)),
-        "mean_purity": float(np.mean(P))
-    },
-    "collapse": {
-        "E0": float(E0), "I0": float(I0), "f0": float(f0),
-        "mean_X": float(np.mean(X_vals)), "std_X": float(np.std(X_vals))
-    },
-    "law_lockin": {
-        "mean_lock_epoch": float(np.mean(valid_epochs)) if valid_epochs else None,
-        "median_lock_epoch": float(np.median(valid_epochs)) if valid_epochs else None,
-        "locked_fraction": float(len(valid_epochs) / len(law_epochs)) if law_epochs else 0.0,
-        "mean_final_c": float(np.nanmean(final_cs)) if len(final_cs) > 0 else None,
-        "std_final_c": float(np.nanstd(final_cs)) if len(final_cs) > 0 else None
-    },
-    "diag": {
-        "stable_total": stable_total,
-        "valid_lockins": valid_lockins,
-        "valid_lockins_among_stable": valid_lockins_among_stable
-    }
-}
-with open(os.path.join(SAVE_DIR, "summary.json"), "w") as f:
-    json.dump(summary, f, indent=2)
-
-# ======================================================
-# 11) Best-universe deep-dive (entropy plot)
+# 10) Best-universe deep-dive (entropy plot)
 # ======================================================
 locked_idxs = [i for i, e in enumerate(law_epochs) if e >= 0 and stables[i] == 1]
 if len(locked_idxs) > 0:
@@ -663,7 +635,13 @@ time_axis = np.arange(len(best_global_entropy))
 for r in range(min(10, best_re_mat.shape[1])):
     plt.plot(time_axis, best_re_mat[:, r], lw=1, label=f"Region {r} entropy")
 plt.plot(time_axis, best_global_entropy, color="black", linewidth=2, label="Global entropy")
-plt.axhline(y=3.5, color="red", linestyle="--", label="Stability threshold")
+thr = MASTER_CTRL["ENTROPY_STAB_THRESH"]
+plt.axhline(y=thr, color="red", linestyle="--", label="Stability threshold")
+# annotate calmness rule used for lock detection
+plt.text(0.01, 0.02,
+         f"calmness: eps={MASTER_CTRL['ENTROPY_CALM_EPS']}, "
+         f"consec={MASTER_CTRL['ENTROPY_CALM_CONSEC']}",
+         transform=plt.gca().transAxes, fontsize=9, alpha=0.8)
 if best_lock is not None:
     plt.axvline(x=best_lock, color="purple", linestyle="--", linewidth=2, label=f"Lock-in step = {best_lock}")
 plt.title("Best-universe entropy evolution (chosen from MC)")
@@ -672,7 +650,7 @@ plt.grid(True, alpha=0.3)
 savefig(os.path.join(FIG_DIR, "best_universe_entropy_evolution.png"))
 
 # ======================================================
-# 12) XAI (SHAP + LIME) — save PNGs and CSVs robustly
+# 11) XAI (SHAP + LIME) — save PNGs and CSVs robustly
 # ======================================================
 try:
     from sklearn.model_selection import train_test_split
@@ -681,6 +659,10 @@ try:
 except Exception as e:
     print(f"[XAI] scikit-learn not available: {e}")
     RUN_XAI = False
+
+# Prepare holders for metrics so they always exist
+cls_acc = None
+reg_r2  = None
 
 if RUN_XAI:
     # -------- Prepare features/targets --------
@@ -819,6 +801,40 @@ if RUN_XAI:
                 pass
         except Exception as e:
             print(f"[XAI] LIME failed: {e}")
+
+# ======================================================
+# 11) Summary JSON
+# ======================================================
+summary = {
+    "seeds": {"master_seed": master_seed, "universe_seeds_csv": "universe_seeds.csv"},
+    "simulation": {
+        "total_universes": NUM_UNIVERSES,
+        "stable_fraction": float(np.mean(stables)),
+        "unstable_fraction": 1.0 - float(np.mean(stables))
+    },
+    "superposition": {
+        "mean_entropy": float(np.mean(S)),
+        "mean_purity": float(np.mean(P))
+    },
+    "collapse": {
+        "E0": float(E0), "I0": float(I0), "f0": float(f0),
+        "mean_X": float(np.mean(X_vals)), "std_X": float(np.std(X_vals))
+    },
+    "law_lockin": {
+        "mean_lock_epoch": float(np.mean(valid_epochs)) if valid_epochs else None,
+        "median_lock_epoch": float(np.median(valid_epochs)) if valid_epochs else None,
+        "locked_fraction": float(len(valid_epochs) / len(law_epochs)) if law_epochs else 0.0,
+        "mean_final_c": float(np.nanmean(final_cs)) if len(final_cs) > 0 else None,
+        "std_final_c": float(np.nanstd(final_cs)) if len(final_cs) > 0 else None
+    },
+    "diag": {
+        "stable_total": stable_total,
+        "valid_lockins": valid_lockins,
+        "valid_lockins_among_stable": valid_lockins_among_stable
+    }
+}
+with open(os.path.join(SAVE_DIR, "summary.json"), "w") as f:
+    json.dump(summary, f, indent=2)
 
 print("\n✅ DONE.")
 print(f"☁️ All results saved to: {SAVE_DIR}")
