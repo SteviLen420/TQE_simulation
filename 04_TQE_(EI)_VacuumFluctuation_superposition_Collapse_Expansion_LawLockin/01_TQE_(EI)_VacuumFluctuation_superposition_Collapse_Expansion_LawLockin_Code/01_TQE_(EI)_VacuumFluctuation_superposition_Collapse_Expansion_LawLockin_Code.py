@@ -379,11 +379,11 @@ for _ in range(N):
 
     law_epochs.append(lock_epoch)
     if c_hist:
-    final_cs.append(c_hist[-1])
-    if MASTER_CTRL.get("PLOT_AVG_LOCKIN", False):
-        all_histories.append(c_hist)
-else:
-    final_cs.append(np.nan)
+        final_cs.append(c_hist[-1])
+        if MASTER_CTRL.get("PLOT_AVG_LOCKIN", False):
+            all_histories.append(c_hist)
+    else:
+        final_cs.append(np.nan)
 
 # central statistics
 valid_epochs = [e for e in law_epochs if e >= 0]
