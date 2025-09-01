@@ -284,30 +284,51 @@ def sample_information_param_KLxShannon(dim=8):
     return I_raw / (1.0 + I_raw)
 
 
-# --- Stability check uses ONLY the provided rng ---
+# 5/A — Stability check driven by f(E,I) and X = E * I * f
 def is_stable(E, I, n_epoch=None, rel_eps=None, lock_consec=None, rng=None):
     """
     Returns 1 if the universe stabilizes; 0 otherwise.
-    All randomness (noise) must come from the given rng to keep per-universe determinism.
+    Now the dynamics (growth, noise, lock threshold) are modulated by f(E,I) and X.
     """
+    # -- defaults and RNG wiring --
     if rng is None:
         rng = np.random.default_rng()
-    if n_epoch is None: n_epoch = MASTER_CTRL["N_epoch"]
-    if rel_eps is None: rel_eps = MASTER_CTRL["rel_eps"]
-    if lock_consec is None: lock_consec = MASTER_CTRL["lock_consecutive"]
+    if n_epoch is None:
+        n_epoch = MASTER_CTRL["N_epoch"]
+    if rel_eps is None:
+        rel_eps = MASTER_CTRL["rel_eps"]
+    if lock_consec is None:
+        lock_consec = MASTER_CTRL["lock_consecutive"]
 
+    # -- Goldilocks gate --
     f = f_EI(E, I)
-    if f < 0.2:    # too far from Goldilocks -> unstable immediately
+    if f < 0.2:                 # too far from Goldilocks -> immediately unstable
         return 0
+
+    # -- bring X into the dynamics in a smooth, bounded way --
+    X  = E * I * f
+    Xn = X / (1.0 + X)          # normalized to [0,1] for stability
 
     A, calm = 20.0, 0
     for _ in range(n_epoch):
         A_prev = A
-        A = A * 1.02 + rng.normal(0, 2.0)       # <-- use rng, not np.random
-        delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
-        calm = calm + 1 if delta < rel_eps else 0
+
+        # Slightly faster growth when f / X are larger.
+        growth = 1.01 + 0.015 * f + 0.01 * Xn   # ~1.01..1.035
+
+        # Smaller noise for larger f (calmer environment near Goldilocks).
+        noise_sigma = 2.0 * (1.2 - 0.6 * f)     # ~(2.4..0.48)
+
+        A = A * growth + rng.normal(0, max(0.05, noise_sigma))
+
+        # Effective relative step threshold: a bit looser at high f
+        delta   = abs(A - A_prev) / max(abs(A_prev), 1e-6)
+        eps_eff = rel_eps * (1.1 - 0.4 * f)     # 5% → ~3–5%
+
+        calm = calm + 1 if delta < eps_eff else 0
         if calm >= lock_consec:
             return 1
+
     return 0
 
 
@@ -338,6 +359,58 @@ def law_lock_in(E, I, n_epoch=500, rng=None):
 
         delta = abs(c_val - prev) / max(abs(prev), 1e-9)
         calm = calm + 1 if delta < 1e-3 else 0
+        if calm >= 5 and locked_at is None:
+            locked_at = n
+
+    return locked_at if locked_at is not None else -1, history
+
+# 5/B — Law lock-in dynamics with adaptive noise and threshold
+def law_lock_in(E, I, n_epoch=500, rng=None):
+    """
+    Simulates law lock-in, but noise and threshold now adapt to f(E,I) and X.
+    Where f and X are favorable (closer to Goldilocks), lock-in happens faster and easier.
+    """
+    if rng is None:
+        rng = np.random.default_rng()
+
+    f = f_EI(E, I)
+    if f < 0.1:   # too far from Goldilocks: no chance of lock-in
+        return -1, []
+
+    # Incorporate E*I*f into dynamics
+    X  = E * I * f
+    Xn = X / (1.0 + X)    # normalized [0,1]
+
+    # Starting value for c: narrower distribution when f is high (less chaotic)
+    c_val = rng.normal(3e8, 1e7 * (1.1 - 0.3 * f))
+    calm, locked_at = 0, None
+    history = []
+
+    # Target X reference for noise shaping
+    target_X = 5.0
+    base = 1e6
+
+    for n in range(n_epoch):
+        prev = c_val
+
+        # Shape factor: closer to target_X → smaller noise
+        shape = (1 + abs(X - target_X) / 10.0)
+
+        # Damping factor: smaller noise if f and X are high
+        damp = (1.15 - 0.5 * f) * (1.05 - 0.4 * Xn)
+
+        # Effective noise
+        noise = base * shape * damp * rng.uniform(0.8, 1.2)
+
+        # Update c with adaptive noise
+        c_val += rng.normal(0, noise)
+        history.append(c_val)
+
+        # Lock-in threshold: looser if f is high (easier lock-in)
+        calm_eps = 1e-3 * (1.1 - 0.5 * f)
+        delta = abs(c_val - prev) / max(abs(prev), 1e-9)
+
+        calm = calm + 1 if delta < calm_eps else 0
         if calm >= 5 and locked_at is None:
             locked_at = n
 
