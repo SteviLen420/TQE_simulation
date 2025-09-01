@@ -81,7 +81,7 @@ MASTER_CTRL = {
 
     # ---- Goldilocks window & info coupling (linear E) ----
     "E_CENTER":             6.0,
-    "E_WIDTH":              2.5,
+    "E_WIDTH":              3,
     "ALPHA_I":              0.8,
 
     # ---- Stability / lock-in thresholds ----
