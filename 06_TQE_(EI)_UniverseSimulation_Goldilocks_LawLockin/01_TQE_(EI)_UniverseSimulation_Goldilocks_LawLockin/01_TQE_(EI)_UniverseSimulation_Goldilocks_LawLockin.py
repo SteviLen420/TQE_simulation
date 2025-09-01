@@ -673,36 +673,40 @@ best_re_df = pd.DataFrame(best_re_mat, columns=re_cols)
 best_re_df.insert(0, "time", np.arange(best_re_mat.shape[0]))
 best_re_df.to_csv(os.path.join(SAVE_DIR, "best_universe_region_entropies.csv"), index=False)
 
-# --- Improved Plot ---
-plt.figure(figsize=(16, 10))  # bigger figure for clarity
+# --- Plot with dual Y-axis ---
+fig, ax1 = plt.subplots(figsize=(16, 10))
 time_axis = np.arange(len(best_global_entropy))
 
-# regional entropies (faint, so global stands out)
+# --- region entropies (left y-axis) ---
 for r in range(min(10, best_re_mat.shape[1])):
-    plt.plot(time_axis, best_re_mat[:, r], lw=1, alpha=0.3, label=f"Region {r} entropy")
+    ax1.plot(time_axis, best_re_mat[:, r], lw=1, alpha=0.7, label=f"Region {r} entropy")
 
-# global entropy (thick line)
-plt.plot(time_axis, best_global_entropy, color="black", linewidth=3, label="Global entropy")
-
-# stability threshold
 thr = MASTER_CTRL["ENTROPY_STAB_THRESH"]
-plt.axhline(y=thr, color="red", linestyle="--", label="Stability threshold")
+ax1.axhline(y=thr, color="red", linestyle="--", label="Stability threshold")
+ax1.set_ylabel("Region entropy")
+ax1.set_xlabel("Time step")
+ax1.grid(True, alpha=0.3)
 
-# annotation for calmness
-plt.text(0.01, 0.02,
+# --- global entropy (right y-axis) ---
+ax2 = ax1.twinx()
+ax2.plot(time_axis, best_global_entropy, color="black", linewidth=2.5, label="Global entropy")
+ax2.set_ylabel("Global entropy")
+
+# --- lock-in step ---
+if best_lock is not None:
+    ax1.axvline(x=best_lock, color="purple", linestyle="--", linewidth=2, label=f"Lock-in step = {best_lock}")
+
+# --- calmness info ---
+ax1.text(0.01, 0.02,
          f"calmness: eps={MASTER_CTRL['ENTROPY_CALM_EPS']}, "
          f"consec={MASTER_CTRL['ENTROPY_CALM_CONSEC']}",
-         transform=plt.gca().transAxes, fontsize=10, alpha=0.8)
+         transform=ax1.transAxes, fontsize=9, alpha=0.8)
 
-# lock-in step
-if best_lock is not None:
-    plt.axvline(x=best_lock, color="purple", linestyle="--", linewidth=2, label=f"Lock-in step = {best_lock}")
+# --- legend handling ---
+fig.suptitle("Best-universe entropy evolution (E,I)", fontsize=14)
+fig.legend(loc="upper right", fontsize=10)
+fig.tight_layout()
 
-# final touches
-plt.title("Best-universe entropy evolution (E,I)")
-plt.xlabel("Time step"); plt.ylabel("Entropy"); plt.legend(ncol=2)
-plt.grid(True, alpha=0.3)
-plt.ylim(thr - 0.2, max(best_global_entropy) + 0.2)  # zoom Y range
 savefig(os.path.join(FIG_DIR, "best_universe_entropy_evolution.png"))
 
 # ======================================================
