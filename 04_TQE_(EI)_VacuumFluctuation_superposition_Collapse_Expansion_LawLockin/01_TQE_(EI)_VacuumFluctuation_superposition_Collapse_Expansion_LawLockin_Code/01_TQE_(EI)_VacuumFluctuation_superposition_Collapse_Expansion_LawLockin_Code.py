@@ -25,32 +25,6 @@
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-import os, time, json, numpy as np, pandas as pd, matplotlib.pyplot as plt
-import sys, subprocess, warnings
-warnings.filterwarnings("ignore")
-
-plt.rcParams.update({
-    "figure.dpi": 120,
-    "savefig.dpi": 180,
-    "axes.unicode_minus": False
-})
-
-# ensure core deps (only if needed)
-def _ensure(pkg):
-    try:
-        __import__(pkg)
-    except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
-for pkg in ["qutip", "pandas", "scikit-learn", "shap", "lime"]:
-    _ensure(pkg)
-
-import qutip as qt
-import shap
-from lime.lime_tabular import LimeTabularExplainer
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.metrics import r2_score, accuracy_score
-
 # -- (optional) Exact versions for publication (single-pass) --
 PINNED = {
     "numpy": "1.26.4",
@@ -63,19 +37,39 @@ PINNED = {
 }
 
 def ensure_exact(pkgs):
-    import importlib, pkg_resources
+    # local imports to avoid relying on later global imports
+    import importlib
+    import pkg_resources
+    import sys
+    import subprocess
     for name, ver in pkgs.items():
         try:
-            mod = importlib.import_module(name)
             have = pkg_resources.get_distribution(name).version
             if have != ver:
-                raise Exception(f"Version mismatch: {name} {have} != {ver}")
+                raise Exception(f"{name} {have} != {ver}")
         except Exception:
-            subprocess.check_call(
-                [sys.executable, "-m", "pip", "install", f"{name}=={ver}", "-q"]
-            )
+            subprocess.check_call([sys.executable, "-m", "pip", "install", f"{name}=={ver}", "-q"])
 
 ensure_exact(PINNED)
+
+# ---- Now import libraries (guaranteed pinned) ----
+import os, time, json, warnings
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import qutip as qt
+import shap
+from lime.lime_tabular import LimeTabularExplainer
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.metrics import r2_score, accuracy_score
+
+warnings.filterwarnings("ignore")
+plt.rcParams.update({
+    "figure.dpi": 120,
+    "savefig.dpi": 180,
+    "axes.unicode_minus": False
+})
 
 # ======================================================
 # 1) MASTER CONTROLLER – central parameters
