@@ -13,6 +13,10 @@
 # collapse dynamics, stability fractions, law lock-in epochs, and expansion 
 # trajectories. Reproducible with master + per-universe seeds, results are 
 # saved as CSV/JSON/PNG for analysis.
+# ---------------------------------------------------------------------------
+# Keywords: Theory of the Question of Existence, TQE, Energy-only cosmogenesis,
+# Vacuum fluctuation, Quantum superposition, Collapse, Expansion, Law lock-in,
+# Monte Carlo universes, Goldilocks principle, Stability, Reproducibility
 # ===========================================================================
 
 
