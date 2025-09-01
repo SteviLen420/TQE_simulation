@@ -121,7 +121,7 @@ MASTER_CTRL = {
     # ---- Best-universe entropy tuning ----
     "ENTROPY_NOISE_SCALE": 0.5,     # base fluctuation strength (smaller → smoother)
     "ENTROPY_NOISE_SPIKE": 0.5,     # occasional spike magnitude (set lower to avoid big jumps)
-    "ENTROPY_SPIKE_PROB": 0.005,     # probability of a spike at each step (reduce for smoother curves)
+    "ENTROPY_SPIKE_PROB": 0.001,     # probability of a spike at each step (reduce for smoother curves)
     "ENTROPY_SMOOTH_WIN": 100,        # moving average window size (increase to smooth global entropy line) 
 
     # ---- Best-universe deep dive ----
@@ -673,13 +673,20 @@ best_re_df = pd.DataFrame(best_re_mat, columns=re_cols)
 best_re_df.insert(0, "time", np.arange(best_re_mat.shape[0]))
 best_re_df.to_csv(os.path.join(SAVE_DIR, "best_universe_region_entropies.csv"), index=False)
 
-# --- Plot with dual Y-axis ---
+# --- Plot with dual Y-axis, bigger fonts, less noisy ---
+plt.rcParams.update({
+    "font.size": 14,
+    "axes.labelsize": 16,
+    "axes.titlesize": 18,
+    "legend.fontsize": 12
+})
+
 fig, ax1 = plt.subplots(figsize=(16, 10))
 time_axis = np.arange(len(best_global_entropy))
 
 # --- region entropies (left y-axis) ---
 for r in range(min(10, best_re_mat.shape[1])):
-    ax1.plot(time_axis, best_re_mat[:, r], lw=1, alpha=0.7, label=f"Region {r} entropy")
+    ax1.plot(time_axis, best_re_mat[:, r], lw=1, alpha=0.6, label=f"Region {r} entropy")
 
 thr = MASTER_CTRL["ENTROPY_STAB_THRESH"]
 ax1.axhline(y=thr, color="red", linestyle="--", label="Stability threshold")
@@ -689,7 +696,7 @@ ax1.grid(True, alpha=0.3)
 
 # --- global entropy (right y-axis) ---
 ax2 = ax1.twinx()
-ax2.plot(time_axis, best_global_entropy, color="black", linewidth=2.5, label="Global entropy")
+ax2.plot(time_axis, best_global_entropy, color="black", linewidth=3, label="Global entropy")
 ax2.set_ylabel("Global entropy")
 
 # --- lock-in step ---
@@ -700,11 +707,11 @@ if best_lock is not None:
 ax1.text(0.01, 0.02,
          f"calmness: eps={MASTER_CTRL['ENTROPY_CALM_EPS']}, "
          f"consec={MASTER_CTRL['ENTROPY_CALM_CONSEC']}",
-         transform=ax1.transAxes, fontsize=9, alpha=0.8)
+         transform=ax1.transAxes, fontsize=12, alpha=0.8)
 
 # --- legend handling ---
-fig.suptitle("Best-universe entropy evolution (E,I)", fontsize=14)
-fig.legend(loc="upper right", fontsize=10)
+fig.suptitle("Best-universe entropy evolution (E,I)", fontsize=18, weight="bold")
+fig.legend(loc="upper right", fontsize=12)
 fig.tight_layout()
 
 savefig(os.path.join(FIG_DIR, "best_universe_entropy_evolution.png"))
