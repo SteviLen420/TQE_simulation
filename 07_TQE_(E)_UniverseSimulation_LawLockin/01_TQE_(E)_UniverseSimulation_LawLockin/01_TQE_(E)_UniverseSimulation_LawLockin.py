@@ -79,8 +79,8 @@ MASTER_CTRL = {
     "E_WIDTH":           6,   # Goldilocks width
 
     # Stability thresholds
-    "REL_EPS_STABLE":    0.05,
-    "REL_EPS_LOCKIN":    1e-3,
+    "REL_EPS_STABLE":    0.005,
+    "REL_EPS_LOCKIN":    5e-4,
     "CALM_STEPS":        5,
 
     # Randomness
