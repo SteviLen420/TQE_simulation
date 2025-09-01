@@ -16,6 +16,12 @@ import os, time, json, numpy as np, pandas as pd, matplotlib.pyplot as plt
 import sys, subprocess, warnings
 warnings.filterwarnings("ignore")
 
+plt.rcParams.update({
+    "figure.dpi": 120,
+    "savefig.dpi": 180,
+    "axes.unicode_minus": False
+})
+
 # ensure core deps (only if needed)
 def _ensure(pkg):
     try:
@@ -24,6 +30,25 @@ def _ensure(pkg):
         subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
 for pkg in ["qutip", "pandas", "scikit-learn", "shap", "lime"]:
     _ensure(pkg)
+
+# -- (optional) Pin versions for publication --
+PINNED = {
+    "numpy": "1.26.4",
+    "scipy": "1.11.4",
+    "qutip": "5.0.3",
+    "scikit-learn": "1.3.2",
+    "shap": "0.43.0",
+    "lime": "0.2.0.1"
+}
+def _pin(pkg, ver):
+    try:
+        import importlib
+        importlib.import_module(pkg)
+    except Exception:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", f"{pkg}=={ver}", "-q"])
+
+for _p, _v in PINNED.items():
+    _pin(_p, _v)
 
 import qutip as qt
 import shap
@@ -35,6 +60,10 @@ from sklearn.metrics import r2_score, accuracy_score
 # ======================================================
 # 1) MASTER CONTROLLER – central parameters
 # ======================================================
+DEMO_MODE = False  # Set to True for fast run
+if DEMO_MODE:
+    MASTER_CTRL.update({"N_universes": 800, "N_epoch": 200, "expansion_epochs": 200})
+
 MASTER_CTRL = {
     # --- Simulation core ---
     "N_universes": 5000,
@@ -811,3 +840,6 @@ if MASTER_CTRL["enable_LIME"] and (len(np.unique(y_cls)) > 1):
         print(f"[ERR] LIME failed: {e}")
 
 print(f"☁️ All XAI results saved to Google Drive: {SAVE_DIR}")
+# -- ensure final summary on disk --
+save_json(os.path.join(SAVE_DIR,"summary.json"), summary)
+print(f"📦 Artifacts saved to: {SAVE_DIR}")
