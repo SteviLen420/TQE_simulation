@@ -624,5 +624,154 @@ plt.xlabel("Time step"); plt.ylabel("Entropy"); plt.legend(ncol=2)
 plt.grid(True, alpha=0.3)
 savefig(os.path.join(FIG_DIR, "best_universe_entropy_evolution.png"))
 
+# ======================================================
+# 12) XAI (SHAP + LIME) — save PNGs and CSVs robustly
+# ======================================================
+try:
+    from sklearn.model_selection import train_test_split
+    from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+    from sklearn.metrics import r2_score, accuracy_score
+except Exception as e:
+    print(f"[XAI] scikit-learn not available: {e}")
+    RUN_XAI = False
+
+if RUN_XAI:
+    # -------- Prepare features/targets --------
+    X_feat = df[["E", "I", "X"]].copy()
+    y_cls  = df["stable"].astype(int).values
+
+    reg_mask = df["lock_epoch"] >= 0
+    X_reg = X_feat[reg_mask]
+    y_reg = df.loc[reg_mask, "lock_epoch"].values
+
+    # -------- Classification guard --------
+    uniq_vals, uniq_cnts = np.unique(y_cls, return_counts=True)
+    have_two_classes = (len(uniq_vals) == 2 and uniq_cnts.min() >= 2)
+    if not have_two_classes:
+        print(f"[XAI] Skipping classification: class counts = {dict(zip(uniq_vals, uniq_cnts))}")
+
+    # -------- Regression guard --------
+    have_reg = len(X_reg) >= 30
+    if not have_reg:
+        print(f"[XAI] Skipping regression: not enough lock-ins (have {len(X_reg)}, need >= 30).")
+
+    # -------- Train/test splits --------
+    if have_two_classes:
+        Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
+            X_feat, y_cls, test_size=0.25, random_state=42, stratify=y_cls
+        )
+        rf_cls = RandomForestClassifier(n_estimators=400, random_state=42, n_jobs=-1)
+        rf_cls.fit(Xtr_c, ytr_c)
+        cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
+        print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
+    else:
+        rf_cls, Xte_c = None, None
+
+    if have_reg:
+        Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
+            X_reg, y_reg, test_size=0.25, random_state=42
+        )
+        rf_reg = RandomForestRegressor(n_estimators=400, random_state=42, n_jobs=-1)
+        rf_reg.fit(Xtr_r, ytr_r)
+        reg_r2 = r2_score(yte_r, rf_reg.predict(Xte_r))
+        print(f"[XAI] Regression R^2 (lock_epoch): {reg_r2:.3f}")
+    else:
+        rf_reg, Xte_r = None, None
+
+    # -------- SHAP: classification --------
+    if rf_cls is not None:
+        try:
+            # Use TreeExplainer; fallback to generic Explainer if needed
+            try:
+                expl_cls = shap.TreeExplainer(rf_cls, feature_perturbation="interventional", model_output="raw")
+                sv_cls = expl_cls.shap_values(Xte_c, check_additivity=False)
+            except Exception:
+                expl_cls = shap.Explainer(rf_cls, Xtr_c)
+                sv_cls = expl_cls(Xte_c).values
+
+            # Pick positive class if list returned
+            if isinstance(sv_cls, list):
+                sv_cls = sv_cls[1]
+            sv_cls = np.asarray(sv_cls)
+            if sv_cls.ndim == 3 and sv_cls.shape[0] == Xte_c.shape[0]:
+                sv_cls = sv_cls[:, :, 1]
+            elif sv_cls.ndim == 3 and sv_cls.shape[-1] == Xte_c.shape[1]:
+                sv_cls = sv_cls[1, :, :]
+
+            plt.figure()
+            shap.summary_plot(sv_cls, Xte_c.values, feature_names=Xte_c.columns.tolist(), show=False)
+            plt.title("SHAP summary – classification (stable)")
+            plt.savefig(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"), dpi=220, bbox_inches="tight")
+            plt.close()
+
+            # Save CSVs
+            pd.DataFrame(sv_cls, columns=Xte_c.columns).to_csv(
+                os.path.join(SAVE_DIR, "shap_values_classification.csv"), index=False
+            )
+            pd.Series(np.mean(np.abs(sv_cls), axis=0), index=Xte_c.columns).sort_values(ascending=False).to_csv(
+                os.path.join(SAVE_DIR, "shap_feature_importance_classification.csv"),
+                header=["mean_|shap|"]
+            )
+        except Exception as e:
+            print(f"[XAI] SHAP classification failed: {e}")
+
+    # -------- SHAP: regression --------
+    if rf_reg is not None:
+        try:
+            try:
+                expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional", model_output="raw")
+                sv_reg = expl_reg.shap_values(Xte_r, check_additivity=False)
+            except Exception:
+                expl_reg = shap.Explainer(rf_reg, Xtr_r)
+                sv_reg = expl_reg(Xte_r).values
+
+            sv_reg = np.asarray(sv_reg)
+            if sv_reg.ndim == 3 and sv_reg.shape[0] == Xte_r.shape[0]:
+                sv_reg = sv_reg[:, :, 0]
+            elif sv_reg.ndim == 3 and sv_reg.shape[-1] == Xte_r.shape[1]:
+                sv_reg = sv_reg[0, :, :]
+
+            plt.figure()
+            shap.summary_plot(sv_reg, Xte_r.values, feature_names=Xte_r.columns.tolist(), show=False)
+            plt.title("SHAP summary – regression (lock_epoch)")
+            plt.savefig(os.path.join(FIG_DIR, "shap_summary_reg_lock_at.png"), dpi=220, bbox_inches="tight")
+            plt.close()
+
+            pd.DataFrame(sv_reg, columns=Xte_r.columns).to_csv(
+                os.path.join(SAVE_DIR, "shap_values_regression.csv"), index=False
+            )
+            pd.Series(np.mean(np.abs(sv_reg), axis=0), index=Xte_r.columns).sort_values(ascending=False).to_csv(
+                os.path.join(SAVE_DIR, "shap_feature_importance_regression.csv"),
+                header=["mean_|shap|"]
+            )
+        except Exception as e:
+            print(f"[XAI] SHAP regression failed: {e}")
+
+    # -------- LIME (only if classification ran) --------
+    if rf_cls is not None:
+        try:
+            lime_explainer = LimeTabularExplainer(
+                training_data=X_feat.values,
+                feature_names=X_feat.columns.tolist(),
+                discretize_continuous=True,
+                mode='classification'
+            )
+            exp = lime_explainer.explain_instance(
+                Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=min(5, X_feat.shape[1])
+            )
+            lime_list = exp.as_list(label=1 if 1 in np.unique(y_cls) else 0)
+            pd.DataFrame(lime_list, columns=["feature", "weight"]).to_csv(
+                os.path.join(SAVE_DIR, "lime_example_classification.csv"), index=False
+            )
+            # Save a quick LIME bar plot as PNG
+            try:
+                fig = exp.as_pyplot_figure()
+                fig.savefig(os.path.join(FIG_DIR, "lime_example_classification.png"), dpi=220, bbox_inches="tight")
+                plt.close(fig)
+            except Exception:
+                pass
+        except Exception as e:
+            print(f"[XAI] LIME failed: {e}")
+
 print("\n✅ DONE.")
 print(f"☁️ All results saved to: {SAVE_DIR}")
