@@ -101,6 +101,12 @@ MASTER_CTRL = {
     "COLLAPSE_NOISE_PRE":0.5,
     "COLLAPSE_NOISE_POST":0.05,
 
+    # Best-universe entropy controls
+    "ENTROPY_NOISE_SCALE": 5.0,    # base fluctuation size
+    "ENTROPY_NOISE_SPIKE": 8.0,    # occasional spike size
+    "ENTROPY_SPIKE_PROB": 0.02,    # spike probability per step
+    "ENTROPY_SMOOTH_WIN": 5,       # smoothing window (moving avg for global entropy)
+
     # Best-universe deep dive
     "BEST_STEPS":        1000,
     "BEST_NUM_REGIONS":  10,
@@ -431,9 +437,10 @@ if len(valid_epochs) > 0:
     savefig(os.path.join(FIG_DIR, "law_lockin_mc.png"))
 
 # ======================================================
-# 10) Best-universe deep-dive (entropy)
+# 10) Best-universe deep-dive (entropy analysis)
 # ======================================================
 
+# --- pick the "best" universe: earliest lock-in or max f(E) if none locked ---
 locked_idxs = [i for i, e in enumerate(law_epochs) if e >= 0 and stables[i] == 1]
 if locked_idxs:
     best_idx = locked_idxs[int(np.argmin([law_epochs[i] for i in locked_idxs]))]
@@ -447,33 +454,69 @@ from scipy.stats import entropy as _entropy
 E_best = E_vals[best_idx]
 print(f"[BEST] Universe index={best_idx} chosen by {reason}; E*={E_best:.3f}")
 
+# --- entropy simulator for a single universe ---
 def simulate_entropy_universe(E,
                               steps=MASTER_CTRL["BEST_STEPS"],
                               num_regions=MASTER_CTRL["BEST_NUM_REGIONS"],
                               num_states=MASTER_CTRL["BEST_NUM_STATES"]):
-    states = np.zeros((num_regions, num_states)); states[0, :] = 1.0
+    """
+    Runs entropy evolution for the chosen "best" universe.
+    Includes tunable noise, rare spikes, and optional smoothing of global entropy.
+    Returns:
+        region_entropies : list of per-region entropy trajectories
+        global_entropy   : list of global entropy values
+        lock_in_step     : step index where calmness criterion triggers lock-in
+    """
+    # --- initialize region states ---
+    states = np.zeros((num_regions, num_states))
+    states[0, :] = 1.0  # break symmetry
     region_entropies, global_entropy = [], []
     lock_in_step, consecutive_calm = None, 0
     A, E_run = 1.0, float(E)
 
     for step in range(steps):
+        # noise amplitude decreases over time
         noise_scale = max(0.02, 1.0 - step / steps)
+
+        # update amplitude A
         if step > 0:
             A = A * 1.01 + np.random.normal(0, 0.02)
 
+        # update energy value
         E_run += np.random.normal(0, 0.05)
         f_step_base = f_E(E_run)
 
+        # --- update each region ---
         for r in range(num_regions):
-            noise = np.random.normal(0, noise_scale * 5.0, num_states)
-            if np.random.rand() < 0.05:
-                noise += np.random.normal(0, 8.0, num_states)
+            # base noise
+            noise = np.random.normal(
+                0,
+                noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"],
+                num_states
+            )
+
+            # rare spike noise (added, not replacing)
+            if np.random.rand() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
+                noise += np.random.normal(
+                    0,
+                    MASTER_CTRL["ENTROPY_NOISE_SPIKE"],
+                    num_states
+                )
+
+            # Goldilocks modulation
             f_step = f_step_base * (1 + np.random.normal(0, 0.1))
             states[r] = np.clip(states[r] + f_step * noise, 0, 1)
 
+        # --- compute entropies ---
         region_entropies.append([_entropy(states[r]) for r in range(num_regions)])
         global_entropy.append(_entropy(states.flatten()))
 
+        # optional smoothing (moving average)
+        if MASTER_CTRL["ENTROPY_SMOOTH_WIN"] > 1 and len(global_entropy) >= MASTER_CTRL["ENTROPY_SMOOTH_WIN"]:
+            win = MASTER_CTRL["ENTROPY_SMOOTH_WIN"]
+            global_entropy[-1] = np.mean(global_entropy[-win:])
+
+        # --- lock-in detection: calmness rule ---
         if step > 0:
             prev, cur = global_entropy[-2], global_entropy[-1]
             delta = abs(cur - prev) / max(prev, 1e-9)
@@ -486,8 +529,10 @@ def simulate_entropy_universe(E,
 
     return region_entropies, global_entropy, lock_in_step
 
+# --- run simulation for best universe ---
 best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(E_best)
 
+# --- save CSVs ---
 pd.DataFrame({"time": np.arange(len(best_global_entropy)), "global_entropy": best_global_entropy}).to_csv(
     os.path.join(SAVE_DIR, "best_universe_global_entropy.csv"), index=False
 )
@@ -497,17 +542,22 @@ re_cols = [f"region_{i}_entropy" for i in range(best_re_mat.shape[1])]
 pd.DataFrame(best_re_mat, columns=re_cols).assign(time=np.arange(best_re_mat.shape[0])) \
     .to_csv(os.path.join(SAVE_DIR, "best_universe_region_entropies.csv"), index=False)
 
+# --- plot results ---
 plt.figure(figsize=(12, 6))
 time_axis = np.arange(len(best_global_entropy))
 for r in range(min(MASTER_CTRL["BEST_NUM_REGIONS"], best_re_mat.shape[1])):
     plt.plot(time_axis, best_re_mat[:, r], lw=1, label=f"Region {r} entropy")
+
 plt.plot(time_axis, best_global_entropy, color="black", linewidth=2, label="Global entropy")
 plt.axhline(y=MASTER_CTRL["ENTROPY_STAB_THRESH"], color="red", linestyle="--", label="Stability threshold")
+
+# mark lock-in if found
 if best_lock is not None:
     plt.axvline(x=best_lock, color="purple", linestyle="--", linewidth=2, label=f"Lock-in step = {best_lock}")
+
 plt.title("Best-universe entropy evolution (E-only)")
-plt.xlabel("Time step"); plt.ylabel("Entropy"); plt.legend(ncol=2)
-plt.grid(True, alpha=0.3)
+plt.xlabel("Time step"); plt.ylabel("Entropy")
+plt.legend(ncol=2); plt.grid(True, alpha=0.3)
 savefig(os.path.join(FIG_DIR, "best_universe_entropy_evolution.png"))
 
 # ======================================================
