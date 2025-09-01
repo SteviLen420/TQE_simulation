@@ -159,19 +159,16 @@ pd.DataFrame({"time": collapse_t, "X_vals": X_series}).to_csv(
 # ======================================================
 # 3) Stability criterion (toy model, E only)
 # ======================================================
-def is_stable(E, n_epoch=200):
-    """
-    Simple amplitude-based stability:
-    - A grows with noise; if relative change stays small for 5 consecutive steps,
-      mark as stable (represents 'settling' into a regime).
-    """
+def is_stable(E, n_epoch=None):
+    if n_epoch is None:
+        n_epoch = MASTER_CTRL["TIME_STEPS"]
     A, calm = 20.0, 0
     for _ in range(n_epoch):
         A_prev = A
         A = A*1.02 + np.random.normal(0, 2.0)
         delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
-        calm = calm + 1 if delta < 0.05 else 0
-        if calm >= 5:
+        calm = calm + 1 if delta < MASTER_CTRL["REL_EPS_STABLE"] else 0
+        if calm >= MASTER_CTRL["CALM_STEPS"]:
             return 1
     return 0
 
@@ -199,9 +196,9 @@ def law_lock_in(E, n_epoch=None):
         history.append(c_val)
 
         delta = abs(c_val - prev) / max(abs(prev), 1e-9)
-        if delta < 1e-3:
+        if delta < MASTER_CTRL["REL_EPS_LOCKIN"]:
             calm += 1
-            if calm >= 5 and locked_at is None:
+            if calm >= MASTER_CTRL["CALM_STEPS"] and locked_at is None:
                 locked_at = n
         else:
             calm = 0
@@ -211,19 +208,21 @@ def law_lock_in(E, n_epoch=None):
 # ======================================================
 # 5) Monte Carlo over universes (or single universe)
 # ======================================================
-E_vals, X_vals = [], []
+E_vals, X_vals, f_vals = [], [], []
 stables, law_epochs, final_cs, all_histories = [], [], [], []
 
 for _ in range(MASTER_CTRL["NUM_UNIVERSES"]):
     Ei = sample_energy()
+    fi = np.exp(-(Ei - MASTER_CTRL["E_CENTER"])**2 / (2 * MASTER_CTRL["E_WIDTH"]**2))
     E_vals.append(Ei)
-    X_vals.append(Ei)  # E-only: X == E
+    X_vals.append(Ei)
+    f_vals.append(fi)
 
     s = is_stable(Ei)
     stables.append(s)
 
     if s == 1:
-        lock_epoch, c_hist = law_lock_in(Ei, n_epoch=LOCKIN_EPOCHS)
+        lock_epoch, c_hist = law_lock_in(Ei, n_epoch=MASTER_CTRL["LOCKIN_EPOCHS"])
         law_epochs.append(lock_epoch)
         if len(c_hist) > 0:
             final_cs.append(c_hist[-1])
@@ -250,12 +249,13 @@ df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
 # Quick diagnostics
 num_stable = int(np.sum(stables))
 num_lockin = int(np.sum([e >= 0 for e in law_epochs]))
-print(f"\n🔒 Universes with lock-in: {num_lockin} / {NUM_UNIVERSES}")
+print(f"\n🔒 Universes with lock-in: {num_lockin} / {MASTER_CTRL['NUM_UNIVERSES']}")
 
 print("\n🌌 Universe Stability Summary")
-print(f"Total universes simulated: {NUM_UNIVERSES}")
-print(f"Stable universes:   {num_stable} ({100*num_stable/NUM_UNIVERSES:.2f}%)")
-print(f"Unstable universes: {NUM_UNIVERSES-num_stable} ({100*(NUM_UNIVERSES-num_stable)/NUM_UNIVERSES:.2f}%)")
+print(f"Total universes simulated: {MASTER_CTRL['NUM_UNIVERSES']}")
+print(f"Stable universes:   {num_stable} ({num_stable/MASTER_CTRL['NUM_UNIVERSES']*100:.2f}%)")
+print(f"Unstable universes: {MASTER_CTRL['NUM_UNIVERSES']-num_stable} "
+      f"({100*(MASTER_CTRL['NUM_UNIVERSES']-num_stable)/MASTER_CTRL['NUM_UNIVERSES']:.2f}%)")
 
 # Convenience export (stability-only view)
 df[["E","X","stable","lock_epoch","final_c"]].to_csv(
@@ -266,13 +266,13 @@ df[["E","X","stable","lock_epoch","final_c"]].to_csv(
 # 6) Stability summary bar chart  — with lock-in split
 # ======================================================
 num_unstable = MASTER_CTRL["NUM_UNIVERSES"] - num_stable
-pct_stable_no_lock = 100.0 * num_stable_no_lock / MASTER_CTRL["NUM_UNIVERSES"]          # universes with lock-in
+num_locked   = int(np.sum([e >= 0 for e in law_epochs]))
 num_stable_no_lock = max(num_stable - num_locked, 0)               # stable but no lock-in
 
 # percentages for labels
-pct_stable_no_lock = 100.0 * num_stable_no_lock / NUM_UNIVERSES
-pct_locked         = 100.0 * num_locked / NUM_UNIVERSES
-pct_unstable       = 100.0 * num_unstable / NUM_UNIVERSES
+pct_stable_no_lock = 100.0 * num_stable_no_lock / MASTER_CTRL["NUM_UNIVERSES"]
+pct_locked         = 100.0 * num_locked / MASTER_CTRL["NUM_UNIVERSES"]
+pct_unstable       = 100.0 * num_unstable / MASTER_CTRL["NUM_UNIVERSES"]
 
 # --- plot (stacked bar for Stable) ---
 plt.figure()
@@ -358,7 +358,7 @@ if PLOT_LOCKIN_HIST and len(valid_epochs) > 0:
 # ======================================================
 summary = {
     "simulation": {
-        "total_universes": NUM_UNIVERSES,
+        "total_universes": MASTER_CTRL["NUM_UNIVERSES"],
         "stable_fraction": float(np.mean(stables)),
         "unstable_fraction": 1.0 - float(np.mean(stables))
     },
@@ -391,17 +391,14 @@ savejson(os.path.join(SAVE_DIR, "summary.json"), summary)
 locked_idxs = [i for i, e in enumerate(law_epochs) if e >= 0 and stables[i] == 1]
 
 if len(locked_idxs) > 0:
-    # earliest lock-in epoch
     best_idx = locked_idxs[int(np.argmin([law_epochs[i] for i in locked_idxs]))]
     reason = f"earliest lock-in (epoch={law_epochs[best_idx]})"
 else:
-    # fallback: pick universe with the largest Goldilocks modulation f(E,I)
     best_idx = int(np.argmax(f_vals))
-    reason = "no lock-ins → picked max f(E,I)"
+    reason = "no lock-ins → picked max f(E)"
 
 E_best = E_vals[best_idx]
-I_best = I_vals[best_idx]
-print(f"[BEST] Universe index={best_idx} chosen by {reason}; E*={E_best:.3f}, I*={I_best:.3f}")
+print(f"[BEST] Universe index={best_idx} chosen by {reason}; E*={E_best:.3f}")
 
 # ----- Single-universe entropy simulator (same style as your screenshot) -----
 
@@ -495,12 +492,10 @@ plt.figure(figsize=(12, 6))
 time_axis = np.arange(len(best_global_entropy))
 
 # region curves
-for r in range(min(BEST_NUM_REGIONS, best_re_mat.shape[1])):
+for r in range(min(MASTER_CTRL["BEST_NUM_REGIONS"], best_re_mat.shape[1])):
     plt.plot(time_axis, best_re_mat[:, r], lw=1, label=f"Region {r} entropy")
 
-# global + thresholds
-plt.plot(time_axis, best_global_entropy, color="black", linewidth=2, label="Global entropy")
-plt.axhline(y=STABILITY_THRESHOLD, color="red", linestyle="--", label="Stability threshold")
+plt.axhline(y=MASTER_CTRL["STABILITY_THRESHOLD"], color="red", linestyle="--", label="Stability threshold")
 
 # lock-in indicator
 if best_lock is not None:
