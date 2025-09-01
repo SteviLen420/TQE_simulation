@@ -590,6 +590,7 @@ if PLOT_LOCKIN_HIST and len(valid_epochs) > 0:
 # ======================================================
 # 10) Best-universe deep-dive (entropy plot)
 # ======================================================
+
 locked_idxs = [i for i, e in enumerate(law_epochs) if e >= 0 and stables[i] == 1]
 if len(locked_idxs) > 0:
     best_idx = locked_idxs[int(np.argmin([law_epochs[i] for i in locked_idxs]))]
@@ -616,7 +617,7 @@ def simulate_entropy_universe(E, I,
     for step in range(steps):
         noise_scale = max(0.02, 1.0 - step / steps)
 
-        # --- small dynamics for A and orientation ---
+        # --- small dynamics ---
         if step > 0:
             A = A * 1.01 + np.random.normal(0, 0.02)
             orient += (0.5 - orient) * 0.10 + np.random.normal(0, 0.02)
@@ -628,22 +629,18 @@ def simulate_entropy_universe(E, I,
 
         # --- update each region ---
         for r in range(num_regions):
-            # base noise
             noise = np.random.normal(0, noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
-
-            # occasional spike noise (added, not replacing)
             if np.random.rand() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
                 noise += np.random.normal(0, MASTER_CTRL["ENTROPY_NOISE_SPIKE"], num_states)
 
-            # apply Goldilocks modulation
-            f_step = f_step_base * (1 + np.random.normal(0, 0.1))
+            f_step = f_step_base * (1 + np.random.normal(0, 0.05))  # reduced random factor
             states[r] = np.clip(states[r] + f_step * noise, 0, 1)
 
         # --- compute entropies ---
         region_entropies.append([_entropy(states[r]) for r in range(num_regions)])
         global_entropy.append(_entropy(states.flatten()))
 
-        # --- optional smoothing of global entropy ---
+        # --- smoothing ---
         if MASTER_CTRL["ENTROPY_SMOOTH_WIN"] > 1 and len(global_entropy) >= MASTER_CTRL["ENTROPY_SMOOTH_WIN"]:
             win = MASTER_CTRL["ENTROPY_SMOOTH_WIN"]
             global_entropy[-1] = np.mean(global_entropy[-win:])
@@ -661,14 +658,14 @@ def simulate_entropy_universe(E, I,
 
     return region_entropies, global_entropy, lock_in_step
 
-# --- Run the deep-dive sim on the chosen (E*, I*) ---
+# --- Run sim ---
 best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(E_best, I_best)
 
 # --- Save CSVs ---
-pd.DataFrame(
-    {"time": np.arange(len(best_global_entropy)),
-     "global_entropy": best_global_entropy}
-).to_csv(os.path.join(SAVE_DIR, "best_universe_global_entropy.csv"), index=False)
+pd.DataFrame({"time": np.arange(len(best_global_entropy)),
+              "global_entropy": best_global_entropy}).to_csv(
+    os.path.join(SAVE_DIR, "best_universe_global_entropy.csv"), index=False
+)
 
 best_re_mat = np.array(best_region_entropies)
 re_cols = [f"region_{i}_entropy" for i in range(best_re_mat.shape[1])]
@@ -676,34 +673,36 @@ best_re_df = pd.DataFrame(best_re_mat, columns=re_cols)
 best_re_df.insert(0, "time", np.arange(best_re_mat.shape[0]))
 best_re_df.to_csv(os.path.join(SAVE_DIR, "best_universe_region_entropies.csv"), index=False)
 
-# --- Plot ---
-plt.figure(figsize=(18, 10))  # bigger figure
-
+# --- Improved Plot ---
+plt.figure(figsize=(16, 10))  # bigger figure for clarity
 time_axis = np.arange(len(best_global_entropy))
 
-# Plot fewer region lines, lighter and thinner so they don’t clutter
-for r in range(min(10, best_re_mat.shape[1])):  
-    plt.plot(time_axis, best_re_mat[:, r], lw=0.1, alpha=0.5, label=f"Region {r} entropy")
+# regional entropies (faint, so global stands out)
+for r in range(min(10, best_re_mat.shape[1])):
+    plt.plot(time_axis, best_re_mat[:, r], lw=1, alpha=0.3, label=f"Region {r} entropy")
 
-# Strong global entropy line
-plt.plot(time_axis, best_global_entropy, color="black", linewidth=2.5, label="Global entropy")
+# global entropy (thick line)
+plt.plot(time_axis, best_global_entropy, color="black", linewidth=3, label="Global entropy")
 
+# stability threshold
 thr = MASTER_CTRL["ENTROPY_STAB_THRESH"]
 plt.axhline(y=thr, color="red", linestyle="--", label="Stability threshold")
 
+# annotation for calmness
 plt.text(0.01, 0.02,
          f"calmness: eps={MASTER_CTRL['ENTROPY_CALM_EPS']}, "
          f"consec={MASTER_CTRL['ENTROPY_CALM_CONSEC']}",
          transform=plt.gca().transAxes, fontsize=10, alpha=0.8)
 
+# lock-in step
 if best_lock is not None:
-    plt.axvline(x=best_lock, color="purple", linestyle="--", linewidth=2.5, label=f"Lock-in step = {best_lock}")
+    plt.axvline(x=best_lock, color="purple", linestyle="--", linewidth=2, label=f"Lock-in step = {best_lock}")
 
-plt.title("Best-universe entropy evolution (E,I)", fontsize=18)
-plt.xlabel("Time step", fontsize=14); 
-plt.ylabel("Entropy", fontsize=14)
-plt.legend(ncol=2, fontsize=12)
-plt.grid(True, alpha=0.4)
+# final touches
+plt.title("Best-universe entropy evolution (E,I)")
+plt.xlabel("Time step"); plt.ylabel("Entropy"); plt.legend(ncol=2)
+plt.grid(True, alpha=0.3)
+plt.ylim(thr - 0.2, max(best_global_entropy) + 0.2)  # zoom Y range
 savefig(os.path.join(FIG_DIR, "best_universe_entropy_evolution.png"))
 
 # ======================================================
