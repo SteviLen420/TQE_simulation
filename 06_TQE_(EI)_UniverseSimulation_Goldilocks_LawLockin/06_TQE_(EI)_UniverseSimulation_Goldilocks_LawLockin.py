@@ -438,45 +438,50 @@ if stable_total > 0:
 # 6) Stability summary — with lock-in split (E,I case)
 # ======================================================
 # --- Three-bar chart: Lock-in, Stable, Unstable (no legend; labels under bars) ---
+total = int(len(df))
+stable_count   = int(np.sum(np.asarray(stables, dtype=int)))           # all stable (with or without lock-in)
+unstable_count = max(0, total - stable_count)                          # all unstable
+lockin_count   = int(np.sum(np.asarray(law_epochs) >= 0))              # universes with law lock-in
 
-total = len(df)
-stable_count   = int(np.sum(stables))                 # all stable (with or without lock-in)
-unstable_count = int(total - stable_count)            # all unstable
-lockin_count   = int(np.sum(np.array(law_epochs) >= 0))  # universes with law lock-in (may overlap with "stable")
+# --- Safe denominator to avoid division by zero ---
+den = max(1, total)
 
-# Percentages
-p_lockin   = 100.0 * lockin_count   / total
-p_stable   = 100.0 * stable_count   / total
-p_unstable = 100.0 * unstable_count / total
+# Percentages (one decimal), also keep float values for CSV
+p_lockin   = 100.0 * lockin_count   / den
+p_stable   = 100.0 * stable_count   / den
+p_unstable = 100.0 * unstable_count / den
 
-# Build labels shown *under* the bars
+# Labels shown *under* the bars
 xtick_labels = [
     f"Lock-in ({lockin_count}, {p_lockin:.1f}%)",
     f"Stable ({stable_count}, {p_stable:.1f}%)",
-    f"Unstable ({unstable_count}, {p_unstable:.1f}%)"
+    f"Unstable ({unstable_count}, {p_unstable:.1f}%)",
 ]
 
 # Values in the same order
 yvals = [lockin_count, stable_count, unstable_count]
 
+# --- Plot ---
 plt.figure()
-# Use distinct colors (consistent with earlier palette)
 plt.bar([0, 1, 2], yvals, color=["#6baed6", "#2ca02c", "#d62728"])
-
-# Tick labels carry the counts/percents; no legend
 plt.xticks([0, 1, 2], xtick_labels, rotation=0)
 plt.ylabel("Number of Universes")
 plt.title("Universe Stability Distribution (E,I) — three categories")
 
 # Optional: light grid for readability
 plt.grid(axis="y", alpha=0.2)
+plt.ylim(bottom=0)  # always start from zero
 
 savefig(os.path.join(FIG_DIR, "stability_three_bars.png"))
-# Save counts used in the 3-bar chart
+
+# --- Save counts used in the 3-bar chart ---
 pd.DataFrame(
-    {"metric": ["lock_in", "stable", "unstable"],
-     "count":  [lockin_count, stable_count, unstable_count],
-     "percent":[p_lockin,     p_stable,     p_unstable]}
+    {
+        "metric":  ["lock_in", "stable", "unstable"],
+        "count":   [lockin_count, stable_count, unstable_count],
+        "percent": [p_lockin,     p_stable,     p_unstable],
+        "total":   [total,        total,        total],
+    }
 ).to_csv(os.path.join(SAVE_DIR, "stability_three_bars.csv"), index=False)
 
 # ======================================================
@@ -572,14 +577,11 @@ else:
 E_best, I_best = E_vals[best_idx], I_vals[best_idx]
 print(f"[BEST] Universe index={best_idx} chosen by {reason}; E*={E_best:.3f}, I*={I_best:.3f}")
 
-from scipy.stats import entropy as _entropy
-
 def simulate_entropy_universe(E, I,
                               steps=MASTER_CTRL["BEST_STEPS"],
                               num_regions=MASTER_CTRL["BEST_NUM_REGIONS"],
                               num_states=MASTER_CTRL["BEST_NUM_STATES"]):
     """Entropy evolution with f(E,I) modulation; returns (regions, global, lock_step)."""
-    from scipy.stats import entropy as _entropy
     states = np.zeros((num_regions, num_states)); states[0, :] = 1.0
     region_entropies, global_entropy = [], []
     lock_in_step, consecutive_calm = None, 0
@@ -620,8 +622,9 @@ def simulate_entropy_universe(E, I,
 best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(E_best, I_best)
 
 # Save CSVs
-pd.DataFrame({"time": np.arange(len(best_global_entropy)), "global_entropy": best_global_entropy}).to_csv(
-    os.path.join(SAVE_DIR, "best_universe_global_entropy.csv"), index=False
+best_re_df = pd.DataFrame(best_re_mat, columns=re_cols)
+best_re_df.insert(0, "time", np.arange(best_re_mat.shape[0]))
+best_re_df.to_csv(os.path.join(SAVE_DIR, "best_universe_region_entropies.csv"), index=False)
 )
 best_re_mat = np.array(best_region_entropies)
 re_cols = [f"region_{i}_entropy" for i in range(best_re_mat.shape[1])]
@@ -805,12 +808,20 @@ if RUN_XAI:
 # ======================================================
 # 11) Summary JSON
 # ======================================================
+
+xai_summary = {
+    "did_classification": bool(RUN_XAI and ('rf_cls' in locals()) and (rf_cls is not None)),
+    "did_regression":     bool(RUN_XAI and ('rf_reg' in locals()) and (rf_reg is not None)),
+    "cls_accuracy":       None if cls_acc is None else float(cls_acc),
+    "reg_r2":             None if reg_r2  is None else float(reg_r2),
+},
 summary = {
     "seeds": {"master_seed": master_seed, "universe_seeds_csv": "universe_seeds.csv"},
     "simulation": {
         "total_universes": NUM_UNIVERSES,
         "stable_fraction": float(np.mean(stables)),
         "unstable_fraction": 1.0 - float(np.mean(stables))
+        "xai": xai_summary
     },
     "superposition": {
         "mean_entropy": float(np.mean(S)),
