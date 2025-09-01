@@ -25,40 +25,6 @@
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-# --- Coherent scientific stack for Colab Python 3.12 (fixes NumPy/SciPy ABI) ---
-import sys, subprocess, pkgutil
-
-PY312_OR_NEWER = sys.version_info >= (3, 12)
-
-# Választott, egymással kompatibilis verziók (Py 3.12)
-pins = {
-    "numpy": "2.0.2",
-    "scipy": "1.14.1",
-    "pandas": "2.2.2",
-    "matplotlib": "3.9.0",
-    "scikit-learn": "1.5.1",
-    "qutip": "5.0.3",
-    "shap": "0.46.0",        # NumPy 2-vel kompatibilis
-    "lime": "0.2.0.1"
-}
-
-def install_coherent_stack(pins):
-    # Egy lépésben, force-reinstall: elkerüli a keveredő binárisokat
-    pkgs = [f"{k}=={v}" for k, v in pins.items()]
-    print("[SETUP] Installing coherent stack:\n  " + " ".join(pkgs))
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "-U", "--quiet",
-         "--no-cache-dir", "--force-reinstall", *pkgs]
-    )
-    print("\n[SETUP] ✅ Installation done. Please RESTART the runtime now "
-          "(Runtime → Restart runtime) before importing these packages.")
-
-if PY312_OR_NEWER:
-    install_coherent_stack(pins)
-else:
-    # Régebbi Python esetén a régi stack is működhet, de maradhat ez is
-    install_coherent_stack(pins)
-
 # --- Clean base imports (standard library only) ---
 import os, time, json, sys, subprocess, warnings
 
