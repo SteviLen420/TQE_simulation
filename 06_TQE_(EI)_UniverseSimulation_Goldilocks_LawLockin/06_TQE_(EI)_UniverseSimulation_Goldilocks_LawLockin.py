@@ -48,56 +48,104 @@ RUN_XAI          = True    # SHAP + LIME
 RUN_SEED_SEARCH  = False   # heavy; enable when needed
 
 # ======================================================
-# MASTER SIMULATION CONTROLS
+# MASTER CONTROLLER – one source of truth for all params
 # ======================================================
+MASTER_CTRL = {
+    # --- Core sizes ---
+    "NUM_UNIVERSES": 5000,
+    "TIME_STEPS": 500,
+    "LOCKIN_EPOCHS": 500,
+    "EXPANSION_EPOCHS": 500,
 
-TIME_STEPS          = 500   # <--- Main control knob: adjust this, and it propagates everywhere
-NUM_UNIVERSES       = 5000   # Number of universes for Monte Carlo run (set to 1 for single-universe mode)
-LOCKIN_EPOCHS       = TIME_STEPS   # Epochs used in law lock-in simulation
-EXPANSION_EPOCHS    = TIME_STEPS  # Expansion dynamics length, tied to TIME_STEPS
-BEST_STEPS          = TIME_STEPS  # Steps for "best-universe" entropy deep dive
-BEST_NUM_REGIONS    = 10     # Number of spatial regions in the entropy simulation
-BEST_NUM_STATES     = 500    # Number of microstates per region
-STABILITY_THRESHOLD = 3.5    # Entropy threshold used to define stability
+    # --- Energy distribution (lognormal) ---
+    "E_LOG_MU": 2.5,
+    "E_LOG_SIGMA": 0.8,
 
-# ---- Master RNG (new, non-fixed but reproducible by saving) ----
-master_seed = int(np.random.SeedSequence().generate_state(1)[0])
-master_rng  = np.random.default_rng(master_seed)
-print(f"[SEED] master_seed = {master_seed}")
+    # --- Goldilocks window (linear E) + info weight ---
+    "E_CENTER": 2.0,      # was E_C
+    "E_WIDTH": 0.5,       # was SIGMA
+    "ALPHA_I": 0.8,       # was ALPHA
 
-# ===== Goldilocks window base params =====
-E_C   = 2.0
-SIGMA = 0.5
-ALPHA = 0.8
+    # --- Stability thresholds ---
+    "F_GATE_STABLE": 0.20,
+    "F_GATE_LOCKIN": 0.10,
+    "CALM_STEPS_STABLE": 5,
+    "CALM_STEPS_LOCKIN": 5,
+    "REL_EPS_STABLE": 0.05,   # relative change threshold for stability
+    "REL_EPS_LOCKIN": 1e-3,   # relative change threshold for lock-in
+
+    # --- Expansion dynamics coupling ---
+    "EXP_GROWTH_BASE": 1.005,
+    "EXP_NOISE_BASE": 1.0,
+    "EXP_COUPLE_TO_X": True,   # couple growth/noise to X = E*I*f
+
+    # --- XAI / plots / extras ---
+    "RUN_XAI": True,
+    "RUN_SEED_SEARCH": False,
+    "PLOT_AVG_LOCKIN": False,
+    "PLOT_LOCKIN_HIST": False,
+    "RUN_BEST_UNIVERSE": True,  # entropy deep-dive
+
+    # --- Optional pin set (avoid NumPy/SciPy binary issues) ---
+    "USE_PINNED_ENV": False,
+    "PINNED": {
+        "numpy": "1.26.4",
+        "scipy": "1.11.4",
+        "qutip": "5.0.3",
+        "scikit-learn": "1.3.2",
+        "shap": "0.43.0",
+        "lime": "0.2.0.1",
+        "pandas": "2.2.2"
+    }
+}
 
 # ======================================================
 # 1) t < 0 : Quantum superposition (vacuum fluctuation)
 # ======================================================
+
+# --- Per-block RNG setup (reproducible with master_rng) ---
+sub_seed_super = int(master_rng.integers(0, 2**32 - 1))
+rng_super = np.random.default_rng(sub_seed_super)
+
+# Important: QuTiP's rand_ket uses NumPy's global RNG; keep it in sync
+np.random.seed(sub_seed_super)
+
 Nlev = 12
 a = qt.destroy(Nlev)
 
-# Perturbed Hamiltonian with small random noise
-H0 = a.dag()*a + 0.05*(np.random.randn()*a + np.random.randn()*a.dag())
+# Perturbed Hamiltonian with small random noise (use local RNG)
+H0 = a.dag()*a + 0.05 * (rng_super.normal() * a + rng_super.normal() * a.dag())
 
-# Initial state: random superposition
+# Initial state: random superposition (driven by the synced global RNG above)
 psi0 = qt.rand_ket(Nlev)
 rho0 = psi0 * psi0.dag()
 
-# Coarse time evolution windows across a longer timeline
+# Coarse time grid and time-varying dissipation rate gamma(t)
 tlist = np.linspace(0, 10, 200)
-gammas = 0.02 + 0.01*np.sin(0.5*tlist) + 0.005*np.random.randn(len(tlist))
+gammas = 0.02 + 0.01 * np.sin(0.5 * tlist) + 0.005 * rng_super.normal(size=len(tlist))
 
 states = []
 for g in gammas:
-    res = qt.mesolve(H0, rho0, np.linspace(0,0.5,5), [np.sqrt(abs(g))*a], [])
+    # Short window evolution; ensure non-negative rate with abs()
+    res = qt.mesolve(
+        H0,
+        rho0,
+        np.linspace(0, 0.5, 5),
+        [np.sqrt(abs(g)) * a],
+        [],
+        progress_bar=None  # avoid overhead in tight loops
+    )
     states.append(res.states[-1])
 
 def purity(r):
-    return float((r*r).tr().real) if qt.isoper(r) else float((r*r.dag()).tr().real)
+    # Works for both density matrices and kets
+    return float((r * r).tr().real) if qt.isoper(r) else float((r * r.dag()).tr().real)
 
-S = np.array([qt.entropy_vn(r) for r in states])
-P = np.array([purity(r) for r in states])
+# Von Neumann entropy and purity traces
+S = np.array([qt.entropy_vn(r) for r in states], dtype=float)
+P = np.array([purity(r)       for r in states], dtype=float)
 
+# Plot & save
 plt.figure()
 plt.plot(tlist, S, label="Entropy")
 plt.plot(tlist, P, label="Purity")
@@ -106,7 +154,8 @@ plt.xlabel("time"); plt.legend()
 savefig(os.path.join(FIG_DIR, "superposition.png"))
 
 pd.DataFrame({"time": tlist, "Entropy": S, "Purity": P}).to_csv(
-    os.path.join(SAVE_DIR, "superposition.csv"), index=False
+    os.path.join(SAVE_DIR, "superposition.csv"),
+    index=False
 )
 
 # ======================================================
@@ -115,42 +164,69 @@ pd.DataFrame({"time": tlist, "Entropy": S, "Purity": P}).to_csv(
 
 # KL divergence helper (safe)
 def KL(p, q, eps=1e-12):
+    # Clip and renormalize to avoid division by zero / log of zero
     p = np.clip(p, eps, None); q = np.clip(q, eps, None)
-    p /= p.sum(); q /= q.sum()
+    p = p / p.sum(); q = q / q.sum()
     return float(np.sum(p * np.log(p / q)))
 
 # Information parameter I (KL × Shannon, squashed to [0,1])
 def info_param(dim=8):
+    """
+    Uses QuTiP's rand_ket (global NumPy RNG). Make sure to sync np.random.seed()
+    BEFORE calling this function if you need reproducibility.
+    """
     psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
-    p1, p2 = np.abs(psi1.full().flatten())**2, np.abs(psi2.full().flatten())**2
-    p1 /= p1.sum(); p2 /= p2.sum()
-    eps = 1e-12
-    KL_val = np.sum(p1 * np.log((p1 + eps)/(p2 + eps)))
+    p1 = np.abs(psi1.full().ravel())**2
+    p2 = np.abs(psi2.full().ravel())**2
+    # Use the shared KL helper for consistency
+    KL_val = KL(p1, p2)
     I_kl   = KL_val / (1.0 + KL_val)
-    H      = -np.sum(p1 * np.log(p1 + eps))
-    I_sh   = H / np.log(len(p1))
-    I_raw  = I_kl * I_sh
+    # Normalized Shannon entropy on p1
+    eps = 1e-12
+    H    = -np.sum(p1 * np.log(p1 + eps))
+    I_sh = H / np.log(len(p1))
+    # Multiplicative fusion, then squash back to [0,1]
+    I_raw = I_kl * I_sh
     return I_raw / (1.0 + I_raw)
 
-# Energy sampling
-def sample_energy(mu=2.5, sigma=0.8):
-    return float(np.random.lognormal(mean=mu, sigma=sigma))
+# Energy sampling with optional RNG
+def sample_energy(mu=2.5, sigma=0.8, rng=None):
+    """
+    Draws E from a lognormal. If rng is provided, use it; else fall back to np.random.
+    """
+    if rng is None:
+        return float(np.random.lognormal(mean=mu, sigma=sigma))
+    return float(rng.lognormal(mean=mu, sigma=sigma))
 
 # Goldilocks modulation f(E,I)
 def f_EI(E, I, E_c=E_C, sigma=SIGMA, alpha=ALPHA):
-    return np.exp(-(E - E_c)**2 / (2 * sigma**2)) * (1 + alpha * I)
+    """
+    Gaussian window in linear E, scaled by (1 + alpha*I).
+    Always non-negative; grows with I for fixed E proximity to E_c.
+    """
+    return np.exp(-(E - E_c)**2 / (2.0 * sigma**2)) * (1.0 + alpha * I)
 
-# Draw one (E, I) pair for the collapse demo — tied to master RNG
-np.random.seed(int(master_rng.integers(0, 2**32 - 1)))  # ensure qutip/numpy sync
-E0 = sample_energy()
+# --- Per-block RNG setup: draw a local sub-seed and sync QuTiP/NumPy ---
+sub_seed_collapse = int(master_rng.integers(0, 2**32 - 1))
+rng_collapse = np.random.default_rng(sub_seed_collapse)
+# QuTiP's rand_ket uses global NumPy RNG; keep it in sync for reproducibility
+np.random.seed(sub_seed_collapse)
+
+# Draw one (E, I) pair for the collapse demo (uses the local RNG + synced global)
+E0 = sample_energy(rng=rng_collapse)
 I0 = info_param()
 f0 = f_EI(E0, I0)
 X0 = E0 * I0 * f0
 
+# Build the collapse trace around t=0:
+#   - pre-collapse: larger fluctuations
+#   - post-collapse: calmer dynamics
 collapse_t = np.linspace(-0.2, 0.2, 200)
-X_series = X0 + 0.5 * np.random.randn(len(collapse_t))               # pre-collapse fluctuation
-X_series[collapse_t >= 0] = X0 + 0.05*np.random.randn((collapse_t >= 0).sum())  # post-collapse calm
+X_series = X0 + 0.5 * rng_collapse.normal(size=len(collapse_t))  # pre-collapse fluctuation
+post_mask = (collapse_t >= 0)
+X_series[post_mask] = X0 + 0.05 * rng_collapse.normal(size=post_mask.sum())  # post-collapse calm
 
+# Plot and save
 plt.figure()
 plt.plot(collapse_t, X_series, "k-", alpha=0.6, label="fluctuation → lock-in")
 plt.axhline(X0, color="r", ls="--", label=f"Lock-in X={X0:.2f}")
@@ -165,83 +241,179 @@ pd.DataFrame({"time": collapse_t, "X_vals": X_series}).to_csv(
 
 # ======================================================
 # 3) Law lock-in model: c(t) stabilization with calmness check
+#     – RNG-safe, MASTER_CTRL-driven thresholds, explicit E,I,f influence
 # ======================================================
-def law_lock_in(E, I, n_epoch=LOCKIN_EPOCHS):
+
+def law_lock_in(E, I, n_epoch=None, rng=None,
+                f_min=0.1, target_X=5.0, base_noise=1e6, lock_eps_base=1e-3):
     """
-    Simulates lock-in of a 'law' proxy (e.g., c) driven by E,I via f(E,I).
-    Lock when relative step change < 1e-3 for 5 consecutive epochs.
-    Returns: (locked_at_epoch or -1, history_list)
+    Simulate the stabilization ('lock-in') of a law proxy (e.g., speed of light c).
+    - All randomness comes from `rng` (np.random.Generator). If None, a local one is used.
+    - Thresholds are MASTER_CTRL-driven and softly modulated by f(E,I) and X=E*I*f.
+
+    Returns
+    -------
+    (locked_at_epoch or -1, history_list)
     """
+    # --- wire defaults from MASTER_CTRL ---
+    if n_epoch is None:
+        n_epoch = MASTER_CTRL.get("N_epoch", 500)
+    if rng is None:
+        rng = np.random.default_rng()
+
+    # --- Goldilocks gate ---
     f = f_EI(E, I)
-    if f < 0.1:   # too far from Goldilocks → no lock-in
+    if f < f_min:
         return -1, []
 
-    c_val = np.random.normal(3e8, 1e7)  # initial c
+    # --- Coupled driver X and its squashed form for stable scaling ---
+    X  = E * I * f
+    Xn = X / (1.0 + X)  # in [0,1)
+
+    # --- Initial c: narrower prior when f is larger (calmer environment) ---
+    c_mean  = 3e8
+    c_sigma = 1e7 * (1.1 - 0.3 * f)  # ~[0.8..1.1] scaling
+    c_val   = float(rng.normal(c_mean, c_sigma))
+
     calm = 0
     locked_at = None
     history = []
 
+    # --- Lock calmness threshold: loosen slightly at high f ---
+    lock_eps = lock_eps_base * (1.1 - 0.5 * f)  # ≈ 1e-3 → [~5e-4..1.1e-3]
+    lock_consec = MASTER_CTRL.get("lock_consecutive", 5)
+
     for n in range(n_epoch):
         prev = c_val
-        # noise scale decreases when E*I is near ~5 and increases otherwise
-        noise = 1e6 * (1 + abs(E*I - 5)/10) * np.random.uniform(0.8, 1.2)
-        c_val += np.random.normal(0, noise)
+
+        # Noise shaped by proximity to target_X and damped by f and Xn
+        #  - closer to target_X ⇒ smaller "shape"
+        #  - higher f or Xn ⇒ more damping (calmer)
+        shape = (1.0 + abs(X - target_X) / 10.0)
+        damp  = (1.15 - 0.5 * f) * (1.05 - 0.4 * Xn)
+        noise = base_noise * shape * damp * float(rng.uniform(0.8, 1.2))
+
+        # Update c with adaptive noise
+        c_val = c_val + float(rng.normal(0.0, noise))
         history.append(c_val)
 
+        # Calmness check (relative step)
         delta = abs(c_val - prev) / max(abs(prev), 1e-9)
-        if delta < 1e-3:
+        if delta < lock_eps:
             calm += 1
-            if calm >= 5 and locked_at is None:
+            if calm >= lock_consec and locked_at is None:
                 locked_at = n
         else:
             calm = 0
 
     return locked_at if locked_at is not None else -1, history
 
+
+# ======================================================
 # Stability predicate used in MC (amplitude calmness gated by f(E,I))
-def is_stable(E, I, n_epoch=200):
+#     – RNG-safe, MASTER_CTRL thresholds, explicit E,I,f influence
+# ======================================================
+def is_stable(E, I, n_epoch=None, rel_eps=None, lock_consec=None, rng=None):
+    """
+    Returns 1 if the universe stabilizes; 0 otherwise.
+    Dynamics depend on f(E,I) and X=E*I*f:
+      - growth rate slightly increases with f and Xn
+      - noise decreases as f grows (calmer near Goldilocks)
+      - calmness threshold is MASTER_CTRL-driven and mildly modulated by f
+    """
+    # --- wire defaults from MASTER_CTRL ---
+    if rng is None:
+        rng = np.random.default_rng()
+    if n_epoch is None:
+        n_epoch = MASTER_CTRL.get("N_epoch", 500)
+    if rel_eps is None:
+        rel_eps = MASTER_CTRL.get("rel_eps", 0.05)
+    if lock_consec is None:
+        lock_consec = MASTER_CTRL.get("lock_consecutive", 5)
+
+    # --- Goldilocks gate ---
     f = f_EI(E, I)
     if f < 0.2:
         return 0
+
+    # --- Coupled driver X and squashed form ---
+    X  = E * I * f
+    Xn = X / (1.0 + X)
+
+    # --- Initial amplitude and calm counter ---
     A, calm = 20.0, 0
+
     for _ in range(n_epoch):
         A_prev = A
-        A = A*1.02 + np.random.normal(0, 2.0)
-        delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
-        calm = calm + 1 if delta < 0.05 else 0
-        if calm >= 5:
+
+        # Growth slightly boosted by f and Xn
+        growth = 1.01 + 0.015 * f + 0.01 * Xn     # ~1.01 .. 1.035
+
+        # Noise decreases with f (calmer near Goldilocks), with a floor
+        noise_sigma = max(0.05, 2.0 * (1.2 - 0.6 * f))  # ~(2.4 .. 0.48), floored
+
+        # Update amplitude
+        A = A * growth + float(rng.normal(0.0, noise_sigma))
+
+        # Effective calmness threshold (slightly looser for high f)
+        delta   = abs(A - A_prev) / max(abs(A_prev), 1e-6)
+        eps_eff = rel_eps * (1.1 - 0.4 * f)       # ≈ 5% → ~3–5%
+
+        calm = calm + 1 if delta < eps_eff else 0
+        if calm >= lock_consec:
             return 1
+
     return 0
 
 # ======================================================
 # 4) Monte Carlo: Stability + Law lock-in for many universes
+#      – per-universe RNG, safe QuTiP seeding, fully reproducible
 # ======================================================
+
 def sample_I(dim=8):
+    # Wrapper kept for readability; info_param() belül QuTiP-et hív.
     return info_param(dim=dim)
 
 E_vals, I_vals, f_vals, X_vals = [], [], [], []
 stables, law_epochs, final_cs, all_histories = [], [], [], []
-sub_seeds = []  # <--- add this
+sub_seeds = []  # store per-universe seeds for reproducibility
 
 for _ in range(NUM_UNIVERSES):
+    # --- draw a unique per-universe seed from the master RNG ---
     sub_seed = int(master_rng.integers(0, 2**32 - 1))
     sub_seeds.append(sub_seed)
-    np.random.seed(sub_seed)  # sync numpy + qutip random
 
-    Ei = sample_energy()
-    Ii = info_param()
+    # --- per-universe modern Generator (use this everywhere we can) ---
+    rng_uni = np.random.default_rng(sub_seed)
+
+    # --- sample Energy with the per-universe RNG (no global RNG used here) ---
+    Ei = float(rng_uni.lognormal(mean=2.5, sigma=0.8))
+
+    # --- sample Information I with QuTiP (needs legacy RNG); do it safely ---
+    # Save legacy RNG state, seed it to sub_seed for deterministic qt.rand_ket, then restore.
+    legacy_state = np.random.get_state()
+    np.random.seed(sub_seed)          # sync for qt.rand_ket() internals
+    Ii = sample_I(dim=8)
+    np.random.set_state(legacy_state) # restore previous global RNG state
+
+    # --- compute Goldilocks modulation and coupled driver ---
     fi = f_EI(Ei, Ii)
     Xi = Ei * Ii * fi
 
-    E_vals.append(Ei); I_vals.append(Ii); f_vals.append(fi); X_vals.append(Xi)
+    E_vals.append(Ei)
+    I_vals.append(Ii)
+    f_vals.append(fi)
+    X_vals.append(Xi)
 
-    s = is_stable(Ei, Ii)
+    # --- stability and lock-in, driven by the same per-universe RNG ---
+    s = is_stable(Ei, Ii, rng=rng_uni)
     stables.append(s)
 
     if s == 1:
-        lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=LOCKIN_EPOCHS)
+        lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=LOCKIN_EPOCHS, rng=rng_uni)
         law_epochs.append(lock_epoch)
-        if len(c_hist) > 0:
+
+        if c_hist:
             final_cs.append(c_hist[-1])
             all_histories.append(c_hist)
         else:
@@ -250,16 +422,17 @@ for _ in range(NUM_UNIVERSES):
         law_epochs.append(-1)
         final_cs.append(np.nan)
 
-valid_epochs = [e for e in law_epochs if e >= 0]
-median_epoch = float(np.median(valid_epochs)) if len(valid_epochs) > 0 else None
-mean_epoch   = float(np.mean(valid_epochs))   if len(valid_epochs) > 0 else None
+# --- lock-in stats (guard empty) ---
+valid_epochs = [e for e in law_epochs if e is not None and e >= 0]
+median_epoch = float(np.median(valid_epochs)) if valid_epochs else None
+mean_epoch   = float(np.mean(valid_epochs))   if valid_epochs else None
 
 print(f"\n🔒 Universes with lock-in: {len(valid_epochs)} / {NUM_UNIVERSES}")
 
-# Save per-universe seeds for reproducibility
-pd.DataFrame({"universe_id": np.arange(NUM_UNIVERSES), "seed": sub_seeds}).to_csv(
-    os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
-)
+# --- Save per-universe seeds for reproducibility ---
+pd.DataFrame(
+    {"universe_id": np.arange(NUM_UNIVERSES), "seed": sub_seeds}
+).to_csv(os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False)
 
 # ======================================================
 # 5) Master DataFrame and saves
