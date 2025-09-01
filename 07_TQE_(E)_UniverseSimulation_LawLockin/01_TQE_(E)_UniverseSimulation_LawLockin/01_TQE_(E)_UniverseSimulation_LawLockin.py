@@ -466,9 +466,9 @@ def simulate_entropy_universe(E, I=0.0,
         if step > 0:
             prev, cur = global_entropy[-2], global_entropy[-1]
             delta = abs(cur - prev) / max(prev, 1e-9)
-            if delta < 0.001:
+            if delta < 0.005:
                 consecutive_calm += 1
-                if consecutive_calm >= 10 and lock_in_step is None:
+                if consecutive_calm >= 5 and lock_in_step is None:
                     lock_in_step = step
             else:
                 consecutive_calm = 0
