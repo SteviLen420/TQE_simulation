@@ -25,35 +25,33 @@
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-# -- (optional) Exact versions for publication (single-pass) --
-PINNED = {
-    "numpy": "1.26.4",
-    "scipy": "1.11.4",
-    "qutip": "5.0.3",
-    "scikit-learn": "1.3.2",
-    "shap": "0.43.0",
-    "lime": "0.2.0.1",
-    "pandas": "2.2.2"
-}
+# --- Clean base imports (standard library only) ---
+import os, time, json, sys, subprocess, warnings
 
-def ensure_exact(pkgs):
-    # local imports to avoid relying on later global imports
-    import importlib
-    import pkg_resources
-    import sys
-    import subprocess
-    for name, ver in pkgs.items():
+# ======================================================
+# Auto-install required packages (only if missing)
+# ======================================================
+def install_if_missing(packages):
+    for pkg in packages:
         try:
-            have = pkg_resources.get_distribution(name).version
-            if have != ver:
-                raise Exception(f"{name} {have} != {ver}")
-        except Exception:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", f"{name}=={ver}", "-q"])
+            __import__(pkg)
+        except ImportError:
+            print(f"[INSTALL] Missing package: {pkg} → installing...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
 
-ensure_exact(PINNED)
+# List of required packages
+required_packages = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "qutip",
+    "scikit-learn",
+    "shap",
+    "lime"
+]
+install_if_missing(required_packages)
 
-# ---- Now import libraries (guaranteed pinned) ----
-import os, time, json, warnings
+# --- Imports after ensuring install (third-party) ---
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -64,12 +62,23 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import r2_score, accuracy_score
 
+# (optional: nicer plots)
 warnings.filterwarnings("ignore")
 plt.rcParams.update({
     "figure.dpi": 120,
     "savefig.dpi": 180,
     "axes.unicode_minus": False
 })
+
+# --- Directories ---
+GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E,I)_law_lockin"
+run_id = time.strftime("TQE_(E,I)_law_lockin_%Y%m%d_%H%M%S")
+SAVE_DIR = os.path.join(GOOGLE_BASE, run_id); os.makedirs(SAVE_DIR, exist_ok=True)
+FIG_DIR  = os.path.join(SAVE_DIR, "figs"); os.makedirs(FIG_DIR, exist_ok=True)
+
+def savefig(p):
+    plt.savefig(p, dpi=150, bbox_inches="tight")
+    plt.close()
 
 # ======================================================
 # 1) MASTER CONTROLLER – central parameters
