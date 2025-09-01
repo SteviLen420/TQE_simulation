@@ -574,6 +574,8 @@ else:
     best_idx = int(np.argmax(f_vals))
     reason = "no lock-ins → picked max f(E,I)"
 
+from scipy.stats import entropy as _entropy
+
 E_best, I_best = E_vals[best_idx], I_vals[best_idx]
 print(f"[BEST] Universe index={best_idx} chosen by {reason}; E*={E_best:.3f}, I*={I_best:.3f}")
 
@@ -622,15 +624,16 @@ def simulate_entropy_universe(E, I,
 best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(E_best, I_best)
 
 # Save CSVs
+pd.DataFrame(
+    {"time": np.arange(len(best_global_entropy)),
+     "global_entropy": best_global_entropy}
+).to_csv(os.path.join(SAVE_DIR, "best_universe_global_entropy.csv"), index=False)
+
+best_re_mat = np.array(best_region_entropies)
+re_cols = [f"region_{i}_entropy" for i in range(best_re_mat.shape[1])]
 best_re_df = pd.DataFrame(best_re_mat, columns=re_cols)
 best_re_df.insert(0, "time", np.arange(best_re_mat.shape[0]))
 best_re_df.to_csv(os.path.join(SAVE_DIR, "best_universe_region_entropies.csv"), index=False)
-)
-best_re_mat = np.array(best_region_entropies)
-re_cols = [f"region_{i}_entropy" for i in range(best_re_mat.shape[1])]
-pd.DataFrame(best_re_mat, columns=re_cols).assign(time=np.arange(best_re_mat.shape[0])).to_csv(
-    os.path.join(SAVE_DIR, "best_universe_region_entropies.csv"), index=False
-)
 
 # Plot
 plt.figure(figsize=(12, 6))
@@ -814,15 +817,16 @@ xai_summary = {
     "did_regression":     bool(RUN_XAI and ('rf_reg' in locals()) and (rf_reg is not None)),
     "cls_accuracy":       None if cls_acc is None else float(cls_acc),
     "reg_r2":             None if reg_r2  is None else float(reg_r2),
-},
+}
+
 summary = {
     "seeds": {"master_seed": master_seed, "universe_seeds_csv": "universe_seeds.csv"},
     "simulation": {
         "total_universes": NUM_UNIVERSES,
         "stable_fraction": float(np.mean(stables)),
         "unstable_fraction": 1.0 - float(np.mean(stables))
-        "xai": xai_summary
     },
+    "xai": xai_summary,
     "superposition": {
         "mean_entropy": float(np.mean(S)),
         "mean_purity": float(np.mean(P))
