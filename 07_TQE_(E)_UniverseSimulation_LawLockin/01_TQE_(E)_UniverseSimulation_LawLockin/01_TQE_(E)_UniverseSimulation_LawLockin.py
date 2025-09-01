@@ -68,6 +68,8 @@ MASTER_CTRL = {
     "LOCKIN_EPOCHS":     500,
     "EXPANSION_EPOCHS":  800,
     "BEST_STEPS":        800,
+    "BEST_NUM_REGIONS":  10,      
+    "BEST_NUM_STATES":   500, 
     "STABILITY_THRESHOLD": 3.5,
 
     # Energy distribution
