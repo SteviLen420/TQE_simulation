@@ -402,17 +402,20 @@ print(f"[BEST] Universe index={best_idx} chosen by {reason}; E*={E_best:.3f}")
 
 # ----- Single-universe entropy simulator (same style as your screenshot) -----
 
-def simulate_entropy_universe(E, I, steps=BEST_STEPS,
-                              num_regions=BEST_NUM_REGIONS, num_states=BEST_NUM_STATES):
+def simulate_entropy_universe(E, I=0.0,
+                              steps=None,
+                              num_regions=None,
+                              num_states=None):
     """
     Runs a single-universe entropy evolution with f(E,I) modulation.
     Returns: (region_entropies_list, global_entropy_list, lock_in_step)
-    - region_entropies_list: list over time, each item is length `num_regions`
-    - global_entropy_list: list over time (scalar entropy per step)
-    - lock_in_step: first step where calmness criterion is satisfied (or None)
     """
-    def f_EI_local(E, I, E_c=E_C, sigma=SIGMA, alpha=ALPHA):
-        return np.exp(-(E - E_c)**2 / (2 * sigma**2)) * (1 + alpha * I)
+    if steps is None: steps = MASTER_CTRL["BEST_STEPS"]
+    if num_regions is None: num_regions = MASTER_CTRL["BEST_NUM_REGIONS"]
+    if num_states is None: num_states = MASTER_CTRL["BEST_NUM_STATES"]
+
+    def f_EI_local(E, I, E_c=MASTER_CTRL["E_CENTER"], sigma=MASTER_CTRL["E_WIDTH"]):
+        return np.exp(-(E - E_c)**2 / (2 * sigma**2)) * (1 + I)
 
     from scipy.stats import entropy
 
@@ -429,20 +432,16 @@ def simulate_entropy_universe(E, I, steps=BEST_STEPS,
     E_run = float(E)
 
     for step in range(steps):
-        # cooling schedule for noise
         noise_scale = max(0.02, 1.0 - step / steps)
 
-        # amplitude + orientation drift
         if step > 0:
             A = A * 1.01 + np.random.normal(0, 0.02)
             orient += (0.5 - orient) * 0.10 + np.random.normal(0, 0.02)
             orient = np.clip(orient, 0, 1)
 
-        # energy random walk + recompute f
         E_run += np.random.normal(0, 0.05)
         f_step_base = f_EI_local(E_run, I)
 
-        # update regions with noise and occasional shocks
         for r in range(num_regions):
             noise = np.random.normal(0, noise_scale * 5.0, num_states)
             if np.random.rand() < 0.05:
@@ -451,14 +450,11 @@ def simulate_entropy_universe(E, I, steps=BEST_STEPS,
             states[r] += f_step * noise
             states[r] = np.clip(states[r], 0, 1)
 
-        # entropies
         region_entropies.append([entropy(states[r]) for r in range(num_regions)])
         global_entropy.append(entropy(states.flatten()))
 
-        # lock-in detection: calm relative change of global entropy
         if step > 0:
-            prev = global_entropy[-2]
-            cur  = global_entropy[-1]
+            prev, cur = global_entropy[-2], global_entropy[-1]
             delta = abs(cur - prev) / max(prev, 1e-9)
             if delta < 0.001:
                 consecutive_calm += 1
