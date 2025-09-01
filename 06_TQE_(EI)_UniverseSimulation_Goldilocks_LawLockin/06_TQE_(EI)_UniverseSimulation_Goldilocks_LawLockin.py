@@ -71,26 +71,26 @@ def savefig(path):
 MASTER_CTRL = {
     # ---- Core sizes ----
     "NUM_UNIVERSES":        5000,
-    "TIME_STEPS":           1000,   # used by stability() loop length
+    "TIME_STEPS":           800,   # used by stability() loop length
     "LOCKIN_EPOCHS":        500,    # used by law_lock_in()
-    "EXPANSION_EPOCHS":     1000,   # used by evolve()
+    "EXPANSION_EPOCHS":     800,   # used by evolve()
 
     # ---- Energy distribution (log-space) ----
     "E_LOG_MU":             2.5,
     "E_LOG_SIGMA":          0.8,
 
     # ---- Goldilocks window & info coupling (linear E) ----
-    "E_CENTER":             2.0,
-    "E_WIDTH":              0.5,
+    "E_CENTER":             6.0,
+    "E_WIDTH":              2.5,
     "ALPHA_I":              0.8,
 
     # ---- Stability / lock-in thresholds ----
-    "F_GATE_STABLE":        0.20,
-    "F_GATE_LOCKIN":        0.10,
+    "F_GATE_STABLE":        0.15,
+    "F_GATE_LOCKIN":        0.12,
     "CALM_STEPS_STABLE":    5,
     "CALM_STEPS_LOCKIN":    5,
-    "REL_EPS_STABLE":       0.05,   # relative step threshold for stability()
-    "REL_EPS_LOCKIN":       1e-3,   # relative step threshold for law_lock_in()
+    "REL_EPS_STABLE":       0.04,   # relative step threshold for stability()
+    "REL_EPS_LOCKIN":       5e-4,   # relative step threshold for law_lock_in()
 
     # ---- Expansion dynamics ----
     "EXP_GROWTH_BASE":      1.005,
