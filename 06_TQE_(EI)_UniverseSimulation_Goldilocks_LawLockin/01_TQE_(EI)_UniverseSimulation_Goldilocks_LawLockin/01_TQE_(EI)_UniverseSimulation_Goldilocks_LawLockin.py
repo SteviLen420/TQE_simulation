@@ -677,15 +677,15 @@ best_re_df.insert(0, "time", np.arange(best_re_mat.shape[0]))
 best_re_df.to_csv(os.path.join(SAVE_DIR, "best_universe_region_entropies.csv"), index=False)
 
 # --- Plot ---
-plt.figure(figsize=(16, 8))  # larger figure
+plt.figure(figsize=(16, 8))  # bigger figure
 
 time_axis = np.arange(len(best_global_entropy))
 
-# Plot fewer region curves, thinner and semi-transparent
+# Plot fewer region lines, lighter and thinner so they don’t clutter
 for r in range(min(5, best_re_mat.shape[1])):  
     plt.plot(time_axis, best_re_mat[:, r], lw=0.7, alpha=0.6, label=f"Region {r} entropy")
 
-# Emphasize global entropy
+# Strong global entropy line
 plt.plot(time_axis, best_global_entropy, color="black", linewidth=2.5, label="Global entropy")
 
 thr = MASTER_CTRL["ENTROPY_STAB_THRESH"]
@@ -694,7 +694,7 @@ plt.axhline(y=thr, color="red", linestyle="--", label="Stability threshold")
 plt.text(0.01, 0.02,
          f"calmness: eps={MASTER_CTRL['ENTROPY_CALM_EPS']}, "
          f"consec={MASTER_CTRL['ENTROPY_CALM_CONSEC']}",
-         transform=plt.gca().transAxes, fontsize=9, alpha=0.8)
+         transform=plt.gca().transAxes, fontsize=10, alpha=0.8)
 
 if best_lock is not None:
     plt.axvline(x=best_lock, color="purple", linestyle="--", linewidth=2, label=f"Lock-in step = {best_lock}")
