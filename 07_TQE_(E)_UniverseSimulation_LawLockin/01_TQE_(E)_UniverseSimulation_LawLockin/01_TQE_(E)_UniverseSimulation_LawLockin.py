@@ -132,8 +132,9 @@ pd.DataFrame({"time": tlist, "Entropy": S, "Purity": P}).to_csv(
 # ======================================================
 # 2) t = 0 : Collapse snapshot (E only)
 # ======================================================
-def sample_energy(mu=2.5, sigma=0.8):
-    """Log-normal energy sampler used across the experiment."""
+def sample_energy(mu=None, sigma=None):
+    if mu is None: mu = MASTER_CTRL["E_LOG_MU"]
+    if sigma is None: sigma = MASTER_CTRL["E_LOG_SIGMA"]
     return float(np.random.lognormal(mean=mu, sigma=sigma))
 
 E0 = sample_energy()
@@ -177,13 +178,13 @@ def is_stable(E, n_epoch=200):
 # ======================================================
 # 4) Law lock-in dynamics (E only)
 # ======================================================
-def law_lock_in(E, n_epoch=LOCKIN_EPOCHS):
-    """
-    Stochastic c(t) dynamics. Lock-in is declared when the relative change
-    stays below 1e-3 for 5 consecutive steps. A simple 'Goldilocks' factor
-    depends on E alone (centered at Ec=2.0, width sigma=0.3).
-    """
-    f = np.exp(-(E - 2.0)**2 / (2 * 0.3**2))  # one-dimensional Goldilocks (no I)
+def law_lock_in(E, n_epoch=None):
+    if n_epoch is None:
+        n_epoch = MASTER_CTRL["LOCKIN_EPOCHS"]
+    Ec = MASTER_CTRL["E_CENTER"]
+    sigma = MASTER_CTRL["E_WIDTH"]
+
+    f = np.exp(-(E - Ec)**2 / (2 * sigma**2))  # one-dimensional Goldilocks (no I)
     if f < 0.2:
         return -1, []  # too far from Goldilocks → no lock-in at all
 
@@ -213,7 +214,7 @@ def law_lock_in(E, n_epoch=LOCKIN_EPOCHS):
 E_vals, X_vals = [], []
 stables, law_epochs, final_cs, all_histories = [], [], [], []
 
-for _ in range(NUM_UNIVERSES):
+for _ in range(MASTER_CTRL["NUM_UNIVERSES"]):
     Ei = sample_energy()
     E_vals.append(Ei)
     X_vals.append(Ei)  # E-only: X == E
@@ -264,8 +265,8 @@ df[["E","X","stable","lock_epoch","final_c"]].to_csv(
 # ======================================================
 # 6) Stability summary bar chart  — with lock-in split
 # ======================================================
-num_unstable = NUM_UNIVERSES - num_stable
-num_locked   = int(np.sum([e >= 0 for e in law_epochs]))          # universes with lock-in
+num_unstable = MASTER_CTRL["NUM_UNIVERSES"] - num_stable
+pct_stable_no_lock = 100.0 * num_stable_no_lock / MASTER_CTRL["NUM_UNIVERSES"]          # universes with lock-in
 num_stable_no_lock = max(num_stable - num_locked, 0)               # stable but no lock-in
 
 # percentages for labels
@@ -315,15 +316,16 @@ if len(all_histories) > 0:
 # ======================================================
 # 8) t > 0 : Expansion dynamics (E only)
 # ======================================================
-def evolve(E, n_epoch=EXPANSION_EPOCHS):
-    """Toy expansion: amplitude A drifts upward with noise."""
+def evolve(E, n_epoch=None):
+    if n_epoch is None:
+        n_epoch = MASTER_CTRL["EXPANSION_EPOCHS"]
     A_series, A = [], 20.0
     for _ in range(n_epoch):
         A = A*1.005 + np.random.normal(0, 1.0)
         A_series.append(A)
     return A_series
 
-A_series = evolve(E0, n_epoch=EXPANSION_EPOCHS)
+A_series = evolve(E0)
 plt.figure()
 plt.plot(A_series, label="Amplitude A")
 plt.axhline(np.mean(A_series), color="gray", ls="--", alpha=0.6, label="Equilibrium A")
@@ -472,7 +474,7 @@ def simulate_entropy_universe(E, I, steps=BEST_STEPS,
 
 # ----- Run the deep-dive sim on the chosen (E*, I*) -----
 best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(
-    E_best, I=0.0, steps=BEST_STEPS
+    E_best, I=0.0, steps=MASTER_CTRL["BEST_STEPS"]
 )
 
 # ----- Save CSVs -----
