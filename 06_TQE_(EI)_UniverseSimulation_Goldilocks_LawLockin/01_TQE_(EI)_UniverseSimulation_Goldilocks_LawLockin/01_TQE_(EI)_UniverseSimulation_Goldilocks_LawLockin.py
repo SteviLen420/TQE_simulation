@@ -125,7 +125,7 @@ MASTER_CTRL = {
     "ENTROPY_SMOOTH_WIN": 10,        # moving average window size (increase to smooth global entropy line) 
 
     # ---- Best-universe deep dive ----
-    "BEST_STEPS":           500,
+    "BEST_STEPS":           1000,
     "BEST_NUM_REGIONS":     10,
     "BEST_NUM_STATES":      50,
     "ENTROPY_STAB_THRESH":  3.5,
