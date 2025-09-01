@@ -686,33 +686,32 @@ time_axis = np.arange(len(best_global_entropy))
 
 # --- region entropies (left y-axis) ---
 for r in range(min(10, best_re_mat.shape[1])):
-    ax1.plot(time_axis, best_re_mat[:, r], lw=1, alpha=0.6, label=f"Region {r} entropy")
+    plt.plot(time_axis, best_re_mat[:, r], lw=1, alpha=0.6, label=f"Region {r} entropy")
+
+plt.plot(time_axis, best_global_entropy, color="black", linewidth=2.5, label="Global entropy")
 
 thr = MASTER_CTRL["ENTROPY_STAB_THRESH"]
-ax1.axhline(y=thr, color="red", linestyle="--", label="Stability threshold")
-ax1.set_ylabel("Region entropy")
-ax1.set_xlabel("Time step")
-ax1.grid(True, alpha=0.3)
+plt.axhline(y=thr, color="red", linestyle="--", label="Stability threshold")
 
-# --- global entropy (right y-axis) ---
-ax2 = ax1.twinx()
-ax2.plot(time_axis, best_global_entropy, color="black", linewidth=3, label="Global entropy")
-ax2.set_ylabel("Global entropy")
-
-# --- lock-in step ---
 if best_lock is not None:
-    ax1.axvline(x=best_lock, color="purple", linestyle="--", linewidth=2, label=f"Lock-in step = {best_lock}")
+    plt.axvline(
+        x=best_lock, color="purple", linestyle="--", linewidth=2,
+        label=f"Lock-in step = {best_lock}"
+    )
+    plt.text(
+        best_lock, plt.ylim()[1]*0.95, 
+        f"Lock-in @ {best_lock}", 
+        color="purple", fontsize=12, rotation=90, ha="right", va="top"
+    )
 
-# --- calmness info ---
-ax1.text(0.01, 0.02,
-         f"calmness: eps={MASTER_CTRL['ENTROPY_CALM_EPS']}, "
-         f"consec={MASTER_CTRL['ENTROPY_CALM_CONSEC']}",
-         transform=ax1.transAxes, fontsize=12, alpha=0.8)
+plt.title("Best-universe entropy evolution (E,I)", fontsize=16)
+plt.xlabel("Time step", fontsize=14)
+plt.ylabel("Entropy", fontsize=14)
+plt.grid(True, alpha=0.3)
 
-# --- legend handling ---
-fig.suptitle("Best-universe entropy evolution (E,I)", fontsize=18, weight="bold")
-fig.legend(loc="upper right", fontsize=12)
-fig.tight_layout()
+plt.legend(
+    loc="lower right", fontsize=12, frameon=True, framealpha=0.9
+)
 
 savefig(os.path.join(FIG_DIR, "best_universe_entropy_evolution.png"))
 
