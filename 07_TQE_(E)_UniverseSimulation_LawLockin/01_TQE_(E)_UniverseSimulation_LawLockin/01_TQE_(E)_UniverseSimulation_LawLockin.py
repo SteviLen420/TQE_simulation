@@ -102,10 +102,10 @@ MASTER_CTRL = {
     "COLLAPSE_NOISE_POST":0.05,
 
     # Best-universe entropy controls
-    "ENTROPY_NOISE_SCALE": 5.0,    # base fluctuation size
-    "ENTROPY_NOISE_SPIKE": 8.0,    # occasional spike size
-    "ENTROPY_SPIKE_PROB": 0.02,    # spike probability per step
-    "ENTROPY_SMOOTH_WIN": 5,       # smoothing window (moving avg for global entropy)
+    "ENTROPY_NOISE_SCALE": 0.5,    # base fluctuation size
+    "ENTROPY_NOISE_SPIKE": 1.0,    # occasional spike size
+    "ENTROPY_SPIKE_PROB": 0.005,    # spike probability per step
+    "ENTROPY_SMOOTH_WIN": 20,       # smoothing window (moving avg for global entropy)
 
     # Best-universe deep dive
     "BEST_STEPS":        1000,
