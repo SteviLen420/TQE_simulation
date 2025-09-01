@@ -677,13 +677,13 @@ best_re_df.insert(0, "time", np.arange(best_re_mat.shape[0]))
 best_re_df.to_csv(os.path.join(SAVE_DIR, "best_universe_region_entropies.csv"), index=False)
 
 # --- Plot ---
-plt.figure(figsize=(16, 8))  # bigger figure
+plt.figure(figsize=(14, 7))  # bigger figure
 
 time_axis = np.arange(len(best_global_entropy))
 
 # Plot fewer region lines, lighter and thinner so they don’t clutter
-for r in range(min(5, best_re_mat.shape[1])):  
-    plt.plot(time_axis, best_re_mat[:, r], lw=0.7, alpha=0.6, label=f"Region {r} entropy")
+for r in range(min(10, best_re_mat.shape[1])):  
+    plt.plot(time_axis, best_re_mat[:, r], lw=0.7, alpha=0.4, label=f"Region {r} entropy")
 
 # Strong global entropy line
 plt.plot(time_axis, best_global_entropy, color="black", linewidth=2.5, label="Global entropy")
