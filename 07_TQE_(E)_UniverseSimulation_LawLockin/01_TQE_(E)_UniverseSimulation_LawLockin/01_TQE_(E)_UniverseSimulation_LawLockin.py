@@ -615,17 +615,25 @@ if len(X_reg) >= 30:
 else:
     print("[XAI] Not enough lock-in samples for regression (need ≥ 30).")
 
-# LIME (classification) — one example explanation
-lime_explainer = LimeTabularExplainer(
-    training_data=Xtr_c.values,
-    feature_names=X_feat.columns.tolist(),
-    discretize_continuous=True,
-    mode='classification'
-)
-exp = lime_explainer.explain_instance(Xte_c.iloc[0].values, rf_cls.predict_proba, num_features=5)
-pd.DataFrame(exp.as_list(label=1), columns=["feature","weight"]).to_csv(
-    os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
-)
+# LIME (classification) — only if at least 2 classes exist
+if len(np.unique(y_cls)) > 1:
+    lime_explainer = LimeTabularExplainer(
+        training_data=Xtr_c.values,
+        feature_names=X_feat.columns.tolist(),
+        discretize_continuous=True,
+        mode='classification'
+    )
+    exp = lime_explainer.explain_instance(
+        Xte_c.iloc[0].values,
+        rf_cls.predict_proba,
+        num_features=5
+    )
+    label_index = 1 if rf_cls.n_classes_ > 1 else 0
+    pd.DataFrame(exp.as_list(label=label_index), columns=["feature", "weight"]).to_csv(
+        os.path.join(FIG_DIR, "lime_example_classification.csv"), index=False
+    )
+else:
+    print("[XAI] Skipping LIME: only one class present in y_cls.")
 
 print("\n✅ DONE.")
 print(f"☁️ All results saved to Google Drive: {SAVE_DIR}")
