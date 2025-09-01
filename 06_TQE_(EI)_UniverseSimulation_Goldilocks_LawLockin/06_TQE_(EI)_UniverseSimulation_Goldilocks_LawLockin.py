@@ -58,9 +58,9 @@ RUN_XAI          = True    # SHAP + LIME
 MASTER_CTRL = {
     # --- Core sizes ---
     "NUM_UNIVERSES": 5000,
-    "TIME_STEPS": 500,
+    "TIME_STEPS": 1000,
     "LOCKIN_EPOCHS": 500,
-    "EXPANSION_EPOCHS": 500,
+    "EXPANSION_EPOCHS": 1000,
 
     # --- Energy distribution (lognormal in log-space) ---
     "E_LOG_MU": 2.5,
