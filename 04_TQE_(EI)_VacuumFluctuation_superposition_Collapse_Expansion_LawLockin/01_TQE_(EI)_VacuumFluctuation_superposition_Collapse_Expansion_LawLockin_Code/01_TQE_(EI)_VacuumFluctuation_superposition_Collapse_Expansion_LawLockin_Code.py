@@ -4,8 +4,21 @@
 # ===========================================================================
 # Author: Stefan Len
 # Description: Full model simulation of energy-information (E,I) dynamics
-# Improvements: MASTER_CTRL, reproducible seeds, eps sweep, XAI guards,
-#               unified summary, robust Drive copy
+# 
+# Introduction
+# This notebook presents a reproducible simulation of the 
+# Theory of the Question of Existence (TQE).
+# Energy–information dynamics (E,I) drive sequential phases:
+# vacuum fluctuation → superposition → Collapse → Expansion → Law lock-in.
+# The framework integrates QuTiP quantum stages, Monte Carlo universes,
+# adaptive stability/lock-in criteria, and XAI (SHAP/LIME) diagnostics.
+# A single MASTER_CTRL governs parameters, reproducibility, and outputs,
+# producing unified CSV/JSON summaries and publication-ready figures.
+# ---------------------------------------------------------------------------
+# Keywords: Theory of the Question of Existence, TQE, Energy-Information (E,I),
+# Quantum superposition, Collapse, Expansion, Law lock-in, 
+# Monte Carlo simulation, Goldilocks principle, Shannon entropy, 
+# Kullback–Leibler divergence, Reproducibility, XAI (SHAP, LIME)
 # ===========================================================================
 
 # ---- Mount Google Drive ----
