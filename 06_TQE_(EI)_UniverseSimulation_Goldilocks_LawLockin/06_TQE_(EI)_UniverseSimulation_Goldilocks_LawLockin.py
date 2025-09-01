@@ -53,55 +53,93 @@ PLOT_LOCKIN_HIST = False   # histogram of lock-in epochs plot toggle
 RUN_XAI          = True    # SHAP + LIME
 
 # ======================================================
-# MASTER CONTROLLER – single source of truth
+# MASTER CONTROLLER – everything in one place
 # ======================================================
 MASTER_CTRL = {
-    # --- Core sizes ---
-    "NUM_UNIVERSES": 5000,
-    "TIME_STEPS": 1000,
-    "LOCKIN_EPOCHS": 500,
-    "EXPANSION_EPOCHS": 1000,
+    # ---- Core sizes ----
+    "NUM_UNIVERSES":        5000,
+    "TIME_STEPS":           1000,   # used by stability() loop length
+    "LOCKIN_EPOCHS":        500,    # used by law_lock_in()
+    "EXPANSION_EPOCHS":     1000,   # used by evolve()
 
-    # --- Energy distribution (lognormal in log-space) ---
-    "E_LOG_MU": 2.5,
-    "E_LOG_SIGMA": 0.8,
+    # ---- Energy distribution (log-space) ----
+    "E_LOG_MU":             2.5,
+    "E_LOG_SIGMA":          0.8,
 
-    # --- Goldilocks window (linear E) + information weight ---
-    "E_CENTER": 2.0,   # center in linear E
-    "E_WIDTH": 0.5,    # width (sigma) in linear E
-    "ALPHA_I": 0.8,    # weight on I inside f(E,I)
+    # ---- Goldilocks window & info coupling (linear E) ----
+    "E_CENTER":             2.0,
+    "E_WIDTH":              0.5,
+    "ALPHA_I":              0.8,
 
-    # --- Stability / lock-in thresholds ---
-    "F_GATE_STABLE": 0.20,
-    "F_GATE_LOCKIN": 0.10,
-    "CALM_STEPS_STABLE": 5,
-    "CALM_STEPS_LOCKIN": 5,
-    "REL_EPS_STABLE": 0.05,   # amplitude calm threshold
-    "REL_EPS_LOCKIN": 1e-3,   # c(t) calm threshold
+    # ---- Stability / lock-in thresholds ----
+    "F_GATE_STABLE":        0.20,
+    "F_GATE_LOCKIN":        0.10,
+    "CALM_STEPS_STABLE":    5,
+    "CALM_STEPS_LOCKIN":    5,
+    "REL_EPS_STABLE":       0.05,   # relative step threshold for stability()
+    "REL_EPS_LOCKIN":       1e-3,   # relative step threshold for law_lock_in()
 
-    # --- Expansion dynamics coupling (post-lock era) ---
-    "EXP_GROWTH_BASE": 1.005,
-    "EXP_NOISE_BASE": 1.0,
+    # ---- Expansion dynamics ----
+    "EXP_GROWTH_BASE":      1.005,
+    "EXP_NOISE_BASE":       1.0,
+
+    # ---- Quantum (superposition) block ----
+    "Q_NLEV":               12,     # Hilbert-space size
+    "Q_TMAX":               10.0,   # time max for plotting S/P
+    "Q_NT":                 200,    # number of time samples
+    "Q_GAMMA_BASE":         0.02,
+    "Q_GAMMA_SIN":          0.01,
+    "Q_GAMMA_NOISE":        0.005,
+    "Q_SMALL_NOISE":        0.05,   # H0 perturbation scale
+    "Q_WINDOW":             0.5,    # short mesolve window
+    "Q_WINDOW_STEPS":       5,
+
+    # ---- Collapse block ----
+    "COLLAPSE_TMIN":        -0.2,
+    "COLLAPSE_TMAX":        0.2,
+    "COLLAPSE_N":           200,
+    "COLLAPSE_NOISE_PRE":   0.5,
+    "COLLAPSE_NOISE_POST":  0.05,
+
+    # ---- Law lock-in shaping ----
+    "LL_TARGET_X":          5.0,
+    "LL_BASE_NOISE":        1e6,
+
+    # ---- Best-universe deep dive ----
+    "BEST_STEPS":           300,
+    "BEST_NUM_REGIONS":     10,
+    "BEST_NUM_STATES":      500,
+    "ENTROPY_STAB_THRESH":  3.5,
+    "ENTROPY_CALM_EPS":     1e-3,
+    "ENTROPY_CALM_CONSEC":  10,
+
+    # ---- Feature flags ----
+    "RUN_XAI":              True,
+    "PLOT_AVG_LOCKIN":      False,
+    "PLOT_LOCKIN_HIST":     False,
 }
 
-# --- Master RNG (reproducibility) ---
-master_seed = int(np.random.SeedSequence().generate_state(1)[0])
-master_rng  = np.random.default_rng(master_seed)
-print(f"[SEED] master_seed = {master_seed}")
+# ----- Aliases (read once) -----
+NUM_UNIVERSES        = MASTER_CTRL["NUM_UNIVERSES"]
+LOCKIN_EPOCHS        = MASTER_CTRL["LOCKIN_EPOCHS"]
+EXPANSION_EPOCHS     = MASTER_CTRL["EXPANSION_EPOCHS"]
 
-# --- Aliases from MASTER_CTRL (for readability) ---
-NUM_UNIVERSES    = MASTER_CTRL["NUM_UNIVERSES"]
-LOCKIN_EPOCHS    = MASTER_CTRL["LOCKIN_EPOCHS"]
-EXPANSION_EPOCHS = MASTER_CTRL["EXPANSION_EPOCHS"]
+E_LOG_MU             = MASTER_CTRL["E_LOG_MU"]
+E_LOG_SIGMA          = MASTER_CTRL["E_LOG_SIGMA"]
+E_CENTER             = MASTER_CTRL["E_CENTER"]
+E_WIDTH              = MASTER_CTRL["E_WIDTH"]
+ALPHA_I              = MASTER_CTRL["ALPHA_I"]
 
-E_LOG_MU, E_LOG_SIGMA = MASTER_CTRL["E_LOG_MU"], MASTER_CTRL["E_LOG_SIGMA"]
-E_CENTER, E_WIDTH     = MASTER_CTRL["E_CENTER"], MASTER_CTRL["E_WIDTH"]
-ALPHA_I               = MASTER_CTRL["ALPHA_I"]
+F_GATE_STABLE        = MASTER_CTRL["F_GATE_STABLE"]
+F_GATE_LOCKIN        = MASTER_CTRL["F_GATE_LOCKIN"]
+REL_EPS_STABLE       = MASTER_CTRL["REL_EPS_STABLE"]
+REL_EPS_LOCKIN       = MASTER_CTRL["REL_EPS_LOCKIN"]
+CALM_STEPS_STABLE    = MASTER_CTRL["CALM_STEPS_STABLE"]
+CALM_STEPS_LOCKIN    = MASTER_CTRL["CALM_STEPS_LOCKIN"]
 
-F_GATE_STABLE = MASTER_CTRL["F_GATE_STABLE"]
-F_GATE_LOCKIN = MASTER_CTRL["F_GATE_LOCKIN"]
-REL_EPS_STABLE, REL_EPS_LOCKIN   = MASTER_CTRL["REL_EPS_STABLE"], MASTER_CTRL["REL_EPS_LOCKIN"]
-CALM_STEPS_STABLE, CALM_STEPS_LOCKIN = MASTER_CTRL["CALM_STEPS_STABLE"], MASTER_CTRL["CALM_STEPS_LOCKIN"]
+RUN_XAI              = MASTER_CTRL["RUN_XAI"]
+PLOT_AVG_LOCKIN      = MASTER_CTRL["PLOT_AVG_LOCKIN"]
+PLOT_LOCKIN_HIST     = MASTER_CTRL["PLOT_LOCKIN_HIST"]
 
 # ======================================================
 # Shared helpers (E,I,f)
@@ -146,28 +184,32 @@ def f_EI(E, I, E_c=E_CENTER, sigma=E_WIDTH, alpha=ALPHA_I):
 # 1) t < 0 : Quantum superposition (vacuum fluctuation)
 # ======================================================
 
-# Per-block RNG (sync NumPy global for QuTiP reproducibility)
+# --- Per-block RNG & QuTiP sync ---
 sub_seed_super = int(master_rng.integers(0, 2**32 - 1))
 rng_super = np.random.default_rng(sub_seed_super)
 np.random.seed(sub_seed_super)
 
-Nlev = 12
+Nlev = MASTER_CTRL["Q_NLEV"]
 a = qt.destroy(Nlev)
 
-# Perturbed Hamiltonian with small noise (use local Generator)
-H0 = a.dag()*a + 0.05 * (rng_super.normal() * a + rng_super.normal() * a.dag())
+# Perturbed Hamiltonian with small random noise
+H0 = a.dag()*a + MASTER_CTRL["Q_SMALL_NOISE"] * (rng_super.normal() * a + rng_super.normal() * a.dag())
 
-# Initial superposition state
+# Initial state
 psi0 = qt.rand_ket(Nlev)
 rho0 = psi0 * psi0.dag()
 
-# Time grid + time-varying dissipation
-tlist  = np.linspace(0, 10, 200)
-gammas = 0.02 + 0.01*np.sin(0.5*tlist) + 0.005*rng_super.normal(size=len(tlist))
+# Time grid & gamma(t)
+tlist  = np.linspace(0, MASTER_CTRL["Q_TMAX"], MASTER_CTRL["Q_NT"])
+gammas = (MASTER_CTRL["Q_GAMMA_BASE"]
+          + MASTER_CTRL["Q_GAMMA_SIN"] * np.sin(0.5 * tlist)
+          + MASTER_CTRL["Q_GAMMA_NOISE"] * rng_super.normal(size=len(tlist)))
 
 states = []
 for g in gammas:
-    res = qt.mesolve(H0, rho0, np.linspace(0,0.5,5), [np.sqrt(abs(g))*a], [], progress_bar=None)
+    res = qt.mesolve(H0, rho0,
+                     np.linspace(0, MASTER_CTRL["Q_WINDOW"], MASTER_CTRL["Q_WINDOW_STEPS"]),
+                     [np.sqrt(abs(g))*a], [], progress_bar=None)
     states.append(res.states[-1])
 
 def purity(r):
@@ -203,11 +245,14 @@ I0 = info_param()
 f0 = f_EI(E0, I0)
 X0 = E0 * I0 * f0
 
+tmin, tmax = MASTER_CTRL["COLLAPSE_TMIN"], MASTER_CTRL["COLLAPSE_TMAX"]
+Npts       = MASTER_CTRL["COLLAPSE_N"]
+collapse_t = np.linspace(tmin, tmax, Npts)
+
 # Build collapse trace (pre: noisy, post: calm)
-collapse_t = np.linspace(-0.2, 0.2, 200)
-X_series   = X0 + 0.5 * rng_collapse.normal(size=len(collapse_t))
-post_mask  = (collapse_t >= 0)
-X_series[post_mask] = X0 + 0.05 * rng_collapse.normal(size=post_mask.sum())
+X_series = X0 + MASTER_CTRL["COLLAPSE_NOISE_PRE"] * rng_collapse.normal(size=Npts)
+post_mask = (collapse_t >= 0)
+X_series[post_mask] = X0 + MASTER_CTRL["COLLAPSE_NOISE_POST"] * rng_collapse.normal(size=post_mask.sum())
 
 plt.figure()
 plt.plot(collapse_t, X_series, "k-", alpha=0.6, label="fluctuation → lock-in")
@@ -226,12 +271,17 @@ pd.DataFrame({"time": collapse_t, "X_vals": X_series}).to_csv(
 # ======================================================
 
 def law_lock_in(E, I, n_epoch=None, rng=None,
-                f_min=F_GATE_LOCKIN, target_X=5.0, base_noise=1e6, lock_eps_base=REL_EPS_LOCKIN):
-    """Simulate law lock-in for a proxy c(t); returns (epoch or -1, history)."""
+                f_min=F_GATE_LOCKIN, target_X=None, base_noise=None, lock_eps_base=REL_EPS_LOCKIN):
+    """Simulate law lock-in for a proxy c(t); return (locked_epoch or -1, history list)."""
     if n_epoch is None:
         n_epoch = LOCKIN_EPOCHS
     if rng is None:
         rng = np.random.default_rng()
+
+    if target_X is None:
+        target_X = MASTER_CTRL["LL_TARGET_X"]
+    if base_noise is None:
+        base_noise = MASTER_CTRL["LL_BASE_NOISE"]
 
     f = f_EI(E, I)
     if f < f_min:
@@ -243,6 +293,7 @@ def law_lock_in(E, I, n_epoch=None, rng=None,
     c_mean, c_sigma = 3e8, 1e7 * (1.1 - 0.3 * f)
     c_val = float(rng.normal(c_mean, c_sigma))
 
+    history = [c_val]  # <-- start collecting history
     calm = 0
     locked_at = None
     lock_eps   = lock_eps_base * (1.1 - 0.5 * f)
@@ -255,6 +306,8 @@ def law_lock_in(E, I, n_epoch=None, rng=None,
         noise = base_noise * shape * damp * float(rng.uniform(0.8, 1.2))
         c_val = c_val + float(rng.normal(0.0, noise))
 
+        history.append(c_val)  # <-- keep it
+
         delta = abs(c_val - prev) / max(abs(prev), 1e-9)
         if delta < lock_eps:
             calm += 1
@@ -263,7 +316,7 @@ def law_lock_in(E, I, n_epoch=None, rng=None,
         else:
             calm = 0
 
-    return locked_at if locked_at is not None else -1, [c_mean] if n_epoch == 0 else []
+    return locked_at if locked_at is not None else -1, history
 
 def is_stable(E, I, n_epoch=None, rel_eps=None, lock_consec=None, rng=None):
     """Return 1 if amplitude dynamics stabilize; else 0."""
@@ -549,39 +602,33 @@ print(f"[BEST] Universe index={best_idx} chosen by {reason}; E*={E_best:.3f}, I*
 
 from scipy.stats import entropy as _entropy
 
-def simulate_entropy_universe(E, I, steps=300, num_regions=10, num_states=500):
+def simulate_entropy_universe(E, I,
+                              steps=MASTER_CTRL["BEST_STEPS"],
+                              num_regions=MASTER_CTRL["BEST_NUM_REGIONS"],
+                              num_states=MASTER_CTRL["BEST_NUM_STATES"]):
     """Entropy evolution with f(E,I) modulation; returns (regions, global, lock_step)."""
-    def f_EI_local(E, I):  # reuse global f_EI
-        return f_EI(E, I)
-
-    states = np.zeros((num_regions, num_states))
-    states[0, :] = 1.0  # symmetry break
-
+    from scipy.stats import entropy as _entropy
+    states = np.zeros((num_regions, num_states)); states[0, :] = 1.0
     region_entropies, global_entropy = [], []
     lock_in_step, consecutive_calm = None, 0
-
-    A = 1.0
-    orient = float(I)
-    E_run  = float(E)
+    A, orient, E_run = 1.0, float(I), float(E)
 
     for step in range(steps):
         noise_scale = max(0.02, 1.0 - step / steps)
-
         if step > 0:
             A = A * 1.01 + np.random.normal(0, 0.02)
             orient += (0.5 - orient) * 0.10 + np.random.normal(0, 0.02)
             orient = np.clip(orient, 0, 1)
 
         E_run += np.random.normal(0, 0.05)
-        f_step_base = f_EI_local(E_run, I)
+        f_step_base = f_EI(E_run, I)
 
         for r in range(num_regions):
             noise = np.random.normal(0, noise_scale * 5.0, num_states)
             if np.random.rand() < 0.05:
                 noise += np.random.normal(0, 8.0, num_states)
             f_step = f_step_base * (1 + np.random.normal(0, 0.1))
-            states[r] += f_step * noise
-            states[r] = np.clip(states[r], 0, 1)
+            states[r] = np.clip(states[r] + f_step * noise, 0, 1)
 
         region_entropies.append([_entropy(states[r]) for r in range(num_regions)])
         global_entropy.append(_entropy(states.flatten()))
@@ -589,9 +636,9 @@ def simulate_entropy_universe(E, I, steps=300, num_regions=10, num_states=500):
         if step > 0:
             prev, cur = global_entropy[-2], global_entropy[-1]
             delta = abs(cur - prev) / max(prev, 1e-9)
-            if delta < 0.001:
+            if delta < MASTER_CTRL["ENTROPY_CALM_EPS"]:
                 consecutive_calm += 1
-                if consecutive_calm >= 10 and lock_in_step is None:
+                if consecutive_calm >= MASTER_CTRL["ENTROPY_CALM_CONSEC"] and lock_in_step is None:
                     lock_in_step = step
             else:
                 consecutive_calm = 0
