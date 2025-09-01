@@ -66,7 +66,7 @@ MASTER_CTRL = {
     "NUM_UNIVERSES":     5000,
     "TIME_STEPS":        800,
     "LOCKIN_EPOCHS":     500,
-    "EXPANSION_EPOCHS":  800,
+    "EXPANSION_EPOCHS":  500,
     "BEST_STEPS":        800,
     "BEST_NUM_REGIONS":  10,      
     "BEST_NUM_STATES":   500, 
@@ -76,7 +76,7 @@ MASTER_CTRL = {
     "E_LOG_MU":          2.5,
     "E_LOG_SIGMA":       0.8,
     "E_CENTER":          2.0,   # Goldilocks center
-    "E_WIDTH":           0.3,   # Goldilocks width
+    "E_WIDTH":           6,   # Goldilocks width
 
     # Stability thresholds
     "REL_EPS_STABLE":    0.05,
