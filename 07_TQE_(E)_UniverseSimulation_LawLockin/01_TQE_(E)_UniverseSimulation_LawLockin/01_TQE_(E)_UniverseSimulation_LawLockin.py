@@ -89,7 +89,7 @@ MASTER_CTRL = {
     # Plot / XAI flags
     "PLOT_AVG_LOCKIN":   True,
     "PLOT_LOCKIN_HIST":  True,
-    "RUN_XAI":           True,
+    "RUN_XAI":           False,
 }
 
 # ======================================================
