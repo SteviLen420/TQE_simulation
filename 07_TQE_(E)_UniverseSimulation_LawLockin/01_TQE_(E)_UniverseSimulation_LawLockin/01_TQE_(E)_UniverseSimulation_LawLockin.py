@@ -426,8 +426,7 @@ def simulate_entropy_universe(E, I=0.0,
     from scipy.stats import entropy
 
     # init states: break symmetry
-    states = np.zeros((num_regions, num_states))
-    states[0, :] = 1.0
+    states = np.random.rand(num_regions, num_states) * 0.01
 
     region_entropies, global_entropy = [], []
     lock_in_step, consecutive_calm = None, 0
@@ -449,15 +448,20 @@ def simulate_entropy_universe(E, I=0.0,
         f_step_base = f_EI_local(E_run, I)
 
         for r in range(num_regions):
-            noise = np.random.normal(0, noise_scale * 5.0, num_states)
+            noise = np.random.normal(0, noise_scale * 10.0, num_states)
             if np.random.rand() < 0.05:
                 noise += np.random.normal(0, 8.0, num_states)
             f_step = f_step_base * (1 + np.random.normal(0, 0.1))
             states[r] += f_step * noise
             states[r] = np.clip(states[r], 0, 1)
 
-        region_entropies.append([entropy(states[r]) for r in range(num_regions)])
-        global_entropy.append(entropy(states.flatten()))
+        def safe_entropy(vec):
+            p = np.abs(vec) + 1e-12   
+            p = p / np.sum(p)         
+            return entropy(p)
+
+        region_entropies.append([safe_entropy(states[r]) for r in range(num_regions)])
+        global_entropy.append(safe_entropy(states.flatten()))
 
         if step > 0:
             prev, cur = global_entropy[-2], global_entropy[-1]
@@ -497,6 +501,10 @@ time_axis = np.arange(len(best_global_entropy))
 for r in range(min(MASTER_CTRL["BEST_NUM_REGIONS"], best_re_mat.shape[1])):
     plt.plot(time_axis, best_re_mat[:, r], lw=1, label=f"Region {r} entropy")
 
+# global entropy (vastag fekete vonal)
+plt.plot(time_axis, best_global_entropy, color="black", linewidth=2, label="Global entropy")
+
+# stability threshold
 plt.axhline(y=MASTER_CTRL["STABILITY_THRESHOLD"], color="red", linestyle="--", label="Stability threshold")
 
 # lock-in indicator
