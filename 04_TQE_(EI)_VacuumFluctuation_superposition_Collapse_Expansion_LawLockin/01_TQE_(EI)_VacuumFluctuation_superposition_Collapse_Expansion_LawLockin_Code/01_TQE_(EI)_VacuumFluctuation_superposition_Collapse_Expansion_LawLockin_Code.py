@@ -100,16 +100,17 @@ MASTER_CTRL = {
     # --- Plot controls ---
     "PLOT_AVG_LOCKIN": True,
     "PLOT_LOCKIN_HIST": True,
-
     "PLOT_STABILITY_BASIC": False,
+}
 
-    # --- Quick demo preset (optional) ---
+# --- Demo mode (optional fast run) ---
 DEMO_MODE = False  # Set to True for fast run
 if DEMO_MODE:
-    MASTER_CTRL["N_universes"] = 800
-    MASTER_CTRL["N_epoch"] = 200
-    MASTER_CTRL["expansion_epochs"] = 200
-}
+    MASTER_CTRL.update({
+        "N_universes": 800,
+        "N_epoch": 200,
+        "expansion_epochs": 200
+    })
 
 # --- Energy distribution & Goldilocks (linear scale) ---
 E_LOG_MU    = 2.5
