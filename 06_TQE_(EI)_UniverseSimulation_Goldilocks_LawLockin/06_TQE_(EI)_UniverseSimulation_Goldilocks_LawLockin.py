@@ -3,10 +3,28 @@
 # (E, I) Vacuum fluctuation → Superposition → Collapse → Expansion → Law lock-in
 # ===========================================================================
 # Author: Stefan Len
-# Description: Full Monte Carlo pipeline with Energy–Information (E,I) dynamics.
-# Includes: QuTiP quantum stage, MC universes, stability & law lock-in,
-#           averaged c(t), expansion, best-universe entropy deep-dive,
-#           CSV/PNG artifacts, summary.json, SHAP/LIME diagnostics.
+# Description: Monte Carlo universe simulation of Energy–Information (E,I) dynamics
+#
+# Introduction (English)
+# This notebook implements a reproducible pipeline for simulating universes
+# according to the Theory of the Question of Existence (TQE). 
+# The model tracks energy–information (E,I) dynamics across sequential phases:
+#   vacuum fluctuation → superposition → collapse → expansion → law lock-in.
+# 
+# The simulation integrates:
+#   • QuTiP-based quantum superposition
+#   • Monte Carlo sampling of universes
+#   • Stability and law lock-in criteria
+#   • Expansion dynamics with Goldilocks constraints
+#   • Best-universe entropy analysis
+#   • Explainable AI (SHAP, LIME) diagnostics
+#
+# A single MASTER_CTRL dictionary governs reproducibility, parameters, and outputs.
+# Results are exported in CSV/JSON/PNG for post-analysis and publication.
+# ---------------------------------------------------------------------------
+# Keywords: TQE, Energy–Information dynamics, universes, Monte Carlo, 
+# Quantum superposition, Collapse, Expansion, Law lock-in, Goldilocks principle, 
+# Shannon entropy, KL divergence, Explainable AI, SHAP, LIME
 # ===========================================================================
 
 # ---- Mount Google Drive (Colab) ----
