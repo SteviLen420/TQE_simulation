@@ -164,10 +164,10 @@ pd.DataFrame({"time": collapse_t, "X_vals": X_series}).to_csv(
 def is_stable(E, n_epoch=None):
     if n_epoch is None:
         n_epoch = MASTER_CTRL["TIME_STEPS"]
-    A, calm = 20.0, 0
+    A, calm = E, 0  
     for _ in range(n_epoch):
         A_prev = A
-        A = A*1.02 + np.random.normal(0, 2.0)
+        A = A*1.01 + np.random.normal(0, E*0.1)  
         delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
         calm = calm + 1 if delta < MASTER_CTRL["REL_EPS_STABLE"] else 0
         if calm >= MASTER_CTRL["CALM_STEPS"]:
