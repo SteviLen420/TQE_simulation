@@ -3,6 +3,7 @@
 # Energy-only Simulation — Vacuum fluctuation → Collapse → Expansion → Law lock-in
 # ===========================================================================
 # Author: Stefan Len
+# Description: Full model simulation of only-energy (E) dynamics
 #
 # SUMMARY
 # Monte Carlo framework modeling cosmogenesis from energy (E) alone, without 
@@ -19,12 +20,11 @@
 # Monte Carlo universes, Goldilocks principle, Stability, Reproducibility
 # ===========================================================================
 
-
 # ---- Mount Google Drive ----
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-# Clean base imports (no third-party here yet)
+# --- Clean base imports (standard library only) ---
 import os, time, json, sys, subprocess
 
 # ======================================================
@@ -42,20 +42,23 @@ def install_if_missing(packages):
 required_packages = ["numpy", "pandas", "matplotlib", "qutip"]
 install_if_missing(required_packages)
 
-# --- Imports after ensuring install ---
+# --- Imports after ensuring install (third-party) ---
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import qutip as qt
 
+# (opcionális, szebb ábrák)
+plt.rcParams.update({"figure.dpi": 120, "savefig.dpi": 180, "axes.unicode_minus": False})
+
 # --- Directories ---
 GOOGLE_BASE = "/content/drive/MyDrive/TQE_(E)_law_lockin"
-run_id = time.strftime("TQE_(E)law_lockin_%Y%m%d_%H%M%S")
+run_id = time.strftime("TQE_(E)_law_lockin_%Y%m%d_%H%M%S")
 SAVE_DIR = os.path.join(GOOGLE_BASE, run_id); os.makedirs(SAVE_DIR, exist_ok=True)
 FIG_DIR  = os.path.join(SAVE_DIR, "figs"); os.makedirs(FIG_DIR, exist_ok=True)
 
-def savefig(p): 
-    plt.savefig(p,dpi=150,bbox_inches="tight")
+def savefig(p):
+    plt.savefig(p, dpi=150, bbox_inches="tight")
     plt.close()
 
 # ======================================================
