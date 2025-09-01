@@ -20,7 +20,7 @@
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
-import os, time, json, numpy as np, matplotlib.pyplot as plt, shutil
+import os, time, json, numpy as np, matplotlib.pyplot as plt,
 import sys, subprocess
 
 # ======================================================
@@ -88,6 +88,14 @@ NUM_UNIVERSES = MASTER_CTRL["N_universes"]
 # Create master RNG
 master_rng = np.random.default_rng(MASTER_CTRL["seed"])
 
+# --- Master seed (reproducibility) ---
+if MASTER_CTRL["seed"] is None:
+    MASTER_CTRL["seed"] = int(np.random.SeedSequence().generate_state(1)[0])
+master_seed = MASTER_CTRL["seed"]
+master_rng = np.random.default_rng(master_seed)
+np.random.seed(master_seed)  # keep legacy np.random in sync for QuTiP
+print(f"🎲 Using master seed: {master_seed}")
+
 # ======================================================
 # 1) t < 0 : Quantum superposition (vacuum fluctuation)
 # ======================================================
@@ -127,89 +135,80 @@ pd.DataFrame({"time": tlist, "Entropy": S, "Purity": P}).to_csv(
 E = float(np.random.lognormal(mean=E_MU, sigma=E_SIGMA))
 X = E
 
+# Collapse trace around t=0 (pre-lock fluctuation, post-lock calm)
 collapse_t = np.linspace(-0.2, 0.2, 200)
-X_vals = X + 0.5 * np.random.randn(len(collapse_t))
-X_vals[collapse_t >= 0] = X + 0.05 * np.random.randn(np.sum(collapse_t >= 0))
+X_curve = X + 0.5 * np.random.randn(len(collapse_t))
+X_curve[collapse_t >= 0] = X + 0.05 * np.random.randn(np.sum(collapse_t >= 0))
 
-plt.plot(collapse_t, X_vals, "k-", alpha=0.6, label="fluctuation → lock-in")
+plt.plot(collapse_t, X_curve, "k-", alpha=0.6, label="fluctuation → lock-in")
 plt.axhline(X, color="r", ls="--", label=f"Lock-in X={X:.2f}")
 plt.axvline(0, color="r", lw=2)
 plt.title("t = 0 : Collapse (E only)")
 plt.xlabel("time (collapse)"); plt.ylabel("X = E"); plt.legend()
 savefig(os.path.join(FIG_DIR, "collapse.png"))
 
-pd.DataFrame({"time": collapse_t,"X_vals": X_vals}).to_csv(
+pd.DataFrame({"time": collapse_t, "X_vals": X_curve}).to_csv(
     os.path.join(SAVE_DIR, "collapse.csv"), index=False)
     
 # ======================================================
 # 3) Stability check (Energy-dependent)
 # ======================================================
-def is_stable(E, n_epoch=30, E_center=E_CENTER, E_width=E_WIDTH):
+def is_stable(E, n_epoch=30, E_center=E_CENTER, E_width=E_WIDTH,
+              rel_eps=None, lock_consec=None):
     """
-    Check if a universe is stable based on:
-    1. Energy Goldilocks window (E dependence)
-    2. Internal noise dynamics scaling with distance from E_center
+    Energy-only stability check controlled by MASTER_CTRL thresholds.
+    1) Quick Goldilocks cutoff by |E - E_center|
+    2) Internal dynamics with E-dependent noise; stability = consecutive small steps
     """
+    if rel_eps is None:
+        rel_eps = MASTER_CTRL["rel_eps"]
+    if lock_consec is None:
+        lock_consec = MASTER_CTRL["lock_consecutive"]
 
-    # --- 1) Quick cutoff: if energy too far, unstable right away ---
-    if abs(E - E_center) > 3 * E_width:   # 3-sigma cutoff in linear space
+    # 1) Quick cutoff: too far from Goldilocks → unstable
+    if abs(E - E_center) > 3 * E_width:
         return 0
 
-    # --- 2) Internal dynamics with E-dependent noise ---
-    A = 20
-    calm = 0
-    for n in range(n_epoch):
+    # 2) Dynamics with E-dependent noise
+    A, calm = 20.0, 0
+    for _ in range(n_epoch):
         A_prev = A
-
-        # Noise grows with distance from Goldilocks center
         dist = abs(E - E_center) / max(E_width, 1e-12)
-        noise_scale = 2.0 * (1.0 + 0.5 * dist**2)   # tweak factor 0.5 if needed
-
+        noise_scale = 2.0 * (1.0 + 0.5 * dist**2)  # more noise further from center
         A = A * 1.02 + np.random.normal(0, noise_scale)
+
         delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
-
-        if delta < 0.05:
-            calm += 1
-        else:
-            calm = 0
-
-        if calm >= 5:
-            return 1   # stable universe
-
-    return 0   # unstable
+        calm = calm + 1 if delta < rel_eps else 0
+        if calm >= lock_consec:
+            return 1
+    return 0
 
 # ======================================================
 # 4) Law lock-in (E only, energy-dependent noise)
 # ======================================================
 def law_lock_in(E, n_epoch=None):
+    """Simulate law lock-in using Energy E only; returns (locked_epoch or -1, history)."""
     if n_epoch is None:
         n_epoch = MASTER_CTRL["N_epoch"]
-    """Simulates the law lock-in process based only on Energy E."""
 
-    # --- Goldilocks alignment with E distribution (Gaussian window around E_CENTER) ---
+    # Goldilocks alignment around E_CENTER
     f = np.exp(-((E - E_CENTER)**2) / (2.0 * (E_WIDTH**2)))
-
-    # If energy is too far from Goldilocks → no lock-in possible
     if f < 0.2:
-        return -1, []
+        return -1, []  # too far from the window → no lock-in
 
-    # Initial "c" value (speed of light candidate)
+    # Initial 'c' candidate value (e.g., speed of light proxy)
     c_val = np.random.normal(3e8, 1e7)
     calm, locked_at = 0, None
     history = []
 
     for n in range(n_epoch):
         prev = c_val
-
-        # --- Noise grows with distance from E_CENTER ---
         dist = abs(E - E_CENTER) / max(E_WIDTH, 1e-12)
         noise = 1e6 * (1.0 + 0.4 * dist) * np.random.uniform(0.8, 1.2)
 
-        # Update c with stochastic noise
         c_val += np.random.normal(0, noise)
         history.append(c_val)
 
-        # Detect calm/lock-in
         delta = abs(c_val - prev) / max(abs(prev), 1e-9)
         if delta < 1e-3:
             calm += 1
@@ -301,6 +300,10 @@ summary = {
         "unstable_universes": unstable_count,
         "stable_percent": float(stable_count/NUM_UNIVERSES*100),
         "unstable_percent": float(unstable_count/NUM_UNIVERSES*100)
+    },
+    "seeds": {
+        "master_seed": master_seed,
+        "universe_seeds_csv": "universe_seeds.csv"
     }
 }
 with open(os.path.join(SAVE_DIR,"summary.json"),"w") as f:
