@@ -265,31 +265,36 @@ df[["E","X","stable","lock_epoch","final_c"]].to_csv(
 )
 
 # ======================================================
-# 6) Stability summary bar chart  — with lock-in split
+# 6) Stability summary bar chart — 3 separate columns
 # ======================================================
 num_unstable = MASTER_CTRL["NUM_UNIVERSES"] - num_stable
 num_locked   = int(np.sum([e >= 0 for e in law_epochs]))
-num_stable_no_lock = max(num_stable - num_locked, 0)               # stable but no lock-in
+num_stable_no_lock = max(num_stable - num_locked, 0)
 
-# percentages for labels
+# percentages
 pct_stable_no_lock = 100.0 * num_stable_no_lock / MASTER_CTRL["NUM_UNIVERSES"]
 pct_locked         = 100.0 * num_locked / MASTER_CTRL["NUM_UNIVERSES"]
 pct_unstable       = 100.0 * num_unstable / MASTER_CTRL["NUM_UNIVERSES"]
 
-# --- plot (stacked bar for Stable) ---
-plt.figure()
+# data + labels
+categories = ["Stable (lock-in)", "Stable (no lock-in)", "Unstable"]
+values     = [num_locked, num_stable_no_lock, num_unstable]
+percents   = [pct_locked, pct_stable_no_lock, pct_unstable]
+colors     = ["#1f77b4", "#2ca02c", "#d62728"]  
 
-# x positions: 0 = Stable (stacked), 1 = Unstable
-plt.bar(0, num_stable_no_lock, color="#1f77b4", label=f"Stable (no lock-in) [{num_stable_no_lock}, {pct_stable_no_lock:.1f}%]")
-plt.bar(0, num_locked, bottom=num_stable_no_lock, color="#9467bd", label=f"Stable (lock-in) [{num_locked}, {pct_locked:.1f}%]")
-plt.bar(1, num_unstable, color="#d62728", label=f"Unstable [{num_unstable}, {pct_unstable:.1f}%]")
+plt.figure(figsize=(8,6))
+bars = plt.bar(categories, values, color=colors)
 
-plt.xticks([0, 1], ["Stable (split by lock-in)", "Unstable"])
+# add counts + percentages under each column
+for i, bar in enumerate(bars):
+    plt.text(bar.get_x() + bar.get_width()/2, -max(values)*0.02,
+             f"{values[i]} ({percents[i]:.1f}%)",
+             ha='center', va='top', fontsize=10)
+
 plt.ylabel("Number of Universes")
-plt.title("Universe Stability Distribution (E-only) — with Lock-in")
-plt.legend(loc="upper right", frameon=False)
+plt.title("Universe Stability Distribution (E-only) — 3 categories")
 plt.tight_layout()
-savefig(os.path.join(FIG_DIR, "stability_summary_with_lockin.png"))
+savefig(os.path.join(FIG_DIR, "stability_summary_three_columns.png"))
 
 # ======================================================
 # 7) Average law lock-in dynamics across all universes
