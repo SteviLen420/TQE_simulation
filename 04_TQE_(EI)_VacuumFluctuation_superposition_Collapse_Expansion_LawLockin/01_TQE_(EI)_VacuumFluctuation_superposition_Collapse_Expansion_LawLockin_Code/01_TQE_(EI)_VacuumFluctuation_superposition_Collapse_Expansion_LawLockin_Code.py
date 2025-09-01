@@ -22,10 +22,8 @@
 # ===========================================================================
 
 # ---- Mount Google Drive ----
-IN_COLAB = "google.colab" in sys.modules
-if IN_COLAB:
-    from google.colab import drive
-    drive.mount('/content/drive', force_remount=True)
+from google.colab import drive
+drive.mount('/content/drive', force_remount=True)
 
 # -- (optional) Exact versions for publication (single-pass) --
 PINNED = {
