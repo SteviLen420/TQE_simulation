@@ -31,25 +31,6 @@ def _ensure(pkg):
 for pkg in ["qutip", "pandas", "scikit-learn", "shap", "lime"]:
     _ensure(pkg)
 
-# -- (optional) Pin versions for publication --
-PINNED = {
-    "numpy": "1.26.4",
-    "scipy": "1.11.4",
-    "qutip": "5.0.3",
-    "scikit-learn": "1.3.2",
-    "shap": "0.43.0",
-    "lime": "0.2.0.1"
-}
-def _pin(pkg, ver):
-    try:
-        import importlib
-        importlib.import_module(pkg)
-    except Exception:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", f"{pkg}=={ver}", "-q"])
-
-for _p, _v in PINNED.items():
-    _pin(_p, _v)
-
 import qutip as qt
 import shap
 from lime.lime_tabular import LimeTabularExplainer
@@ -57,13 +38,35 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import r2_score, accuracy_score
 
+# -- (optional) Exact versions for publication (single-pass) --
+PINNED = {
+    "numpy": "1.26.4",
+    "scipy": "1.11.4",
+    "qutip": "5.0.3",
+    "scikit-learn": "1.3.2",
+    "shap": "0.43.0",
+    "lime": "0.2.0.1",
+    "pandas": "2.2.2"
+}
+
+def ensure_exact(pkgs):
+    import importlib, pkg_resources
+    for name, ver in pkgs.items():
+        try:
+            mod = importlib.import_module(name)
+            have = pkg_resources.get_distribution(name).version
+            if have != ver:
+                raise Exception(f"Version mismatch: {name} {have} != {ver}")
+        except Exception:
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", f"{name}=={ver}", "-q"]
+            )
+
+ensure_exact(PINNED)
+
 # ======================================================
 # 1) MASTER CONTROLLER – central parameters
 # ======================================================
-DEMO_MODE = False  # Set to True for fast run
-if DEMO_MODE:
-    MASTER_CTRL.update({"N_universes": 800, "N_epoch": 200, "expansion_epochs": 200})
-
 MASTER_CTRL = {
     # --- Simulation core ---
     "N_universes": 5000,
@@ -99,6 +102,13 @@ MASTER_CTRL = {
     "PLOT_LOCKIN_HIST": True,
 
     "PLOT_STABILITY_BASIC": False,
+
+    # --- Quick demo preset (optional) ---
+DEMO_MODE = False  # Set to True for fast run
+if DEMO_MODE:
+    MASTER_CTRL["N_universes"] = 800
+    MASTER_CTRL["N_epoch"] = 200
+    MASTER_CTRL["expansion_epochs"] = 200
 }
 
 # --- Energy distribution & Goldilocks (linear scale) ---
@@ -368,10 +378,11 @@ for _ in range(N):
 
     law_epochs.append(lock_epoch)
     if c_hist:
-        final_cs.append(c_hist[-1])
+    final_cs.append(c_hist[-1])
+    if MASTER_CTRL.get("PLOT_AVG_LOCKIN", False):
         all_histories.append(c_hist)
-    else:
-        final_cs.append(np.nan)
+else:
+    final_cs.append(np.nan)
 
 # central statistics
 valid_epochs = [e for e in law_epochs if e >= 0]
