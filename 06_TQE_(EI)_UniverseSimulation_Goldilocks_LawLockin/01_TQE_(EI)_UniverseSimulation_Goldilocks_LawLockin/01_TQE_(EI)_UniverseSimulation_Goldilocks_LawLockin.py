@@ -668,7 +668,7 @@ plt.text(0.01, 0.02,
          transform=plt.gca().transAxes, fontsize=9, alpha=0.8)
 if best_lock is not None:
     plt.axvline(x=best_lock, color="purple", linestyle="--", linewidth=2, label=f"Lock-in step = {best_lock}")
-plt.title("Best-universe entropy evolution (chosen from MC)")
+plt.title("Best-universe entropy evolution/Energy–Information (E,I)")
 plt.xlabel("Time step"); plt.ylabel("Entropy"); plt.legend(ncol=2)
 plt.grid(True, alpha=0.3)
 savefig(os.path.join(FIG_DIR, "best_universe_entropy_evolution.png"))
