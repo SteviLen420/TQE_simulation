@@ -106,8 +106,8 @@ MASTER_CTRL = {
     "BEST_NUM_REGIONS":  10,
     "BEST_NUM_STATES":   500,
     "ENTROPY_STAB_THRESH": 3.5,
-    "ENTROPY_CALM_EPS":  1e-3,
-    "ENTROPY_CALM_CONSEC": 10,
+    "ENTROPY_CALM_EPS":  0.01,
+    "ENTROPY_CALM_CONSEC": 5,
 }
 
 # ---- Master seed ----
