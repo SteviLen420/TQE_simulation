@@ -119,10 +119,10 @@ MASTER_CTRL = {
     "LL_BASE_NOISE":        1e6,
 
     # ---- Best-universe entropy tuning ----
-    "ENTROPY_NOISE_SCALE": 1.0,     # base fluctuation strength (smaller → smoother)
-    "ENTROPY_NOISE_SPIKE": 1.0,     # occasional spike magnitude (set lower to avoid big jumps)
+    "ENTROPY_NOISE_SCALE": 0.5,     # base fluctuation strength (smaller → smoother)
+    "ENTROPY_NOISE_SPIKE": 0.5,     # occasional spike magnitude (set lower to avoid big jumps)
     "ENTROPY_SPIKE_PROB": 0.005,     # probability of a spike at each step (reduce for smoother curves)
-    "ENTROPY_SMOOTH_WIN": 50,        # moving average window size (increase to smooth global entropy line) 
+    "ENTROPY_SMOOTH_WIN": 100,        # moving average window size (increase to smooth global entropy line) 
 
     # ---- Best-universe deep dive ----
     "BEST_STEPS":           1000,
@@ -677,11 +677,16 @@ best_re_df.insert(0, "time", np.arange(best_re_mat.shape[0]))
 best_re_df.to_csv(os.path.join(SAVE_DIR, "best_universe_region_entropies.csv"), index=False)
 
 # --- Plot ---
-plt.figure(figsize=(12, 6))
+plt.figure(figsize=(16, 8))  # larger figure
+
 time_axis = np.arange(len(best_global_entropy))
-for r in range(min(10, best_re_mat.shape[1])):
-    plt.plot(time_axis, best_re_mat[:, r], lw=1, label=f"Region {r} entropy")
-plt.plot(time_axis, best_global_entropy, color="black", linewidth=2, label="Global entropy")
+
+# Plot fewer region curves, thinner and semi-transparent
+for r in range(min(5, best_re_mat.shape[1])):  
+    plt.plot(time_axis, best_re_mat[:, r], lw=0.7, alpha=0.6, label=f"Region {r} entropy")
+
+# Emphasize global entropy
+plt.plot(time_axis, best_global_entropy, color="black", linewidth=2.5, label="Global entropy")
 
 thr = MASTER_CTRL["ENTROPY_STAB_THRESH"]
 plt.axhline(y=thr, color="red", linestyle="--", label="Stability threshold")
