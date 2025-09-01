@@ -86,9 +86,9 @@ def savefig(p):
 MASTER_CTRL = {
     # --- Simulation core ---
     "N_universes": 5000,         # number of universes in the Monte Carlo run
-    "N_epoch": 700,              # epochs per universe (between 500 and 1000)
-    "expansion_epochs": 700,     # epochs for expansion dynamics
-    "rel_eps": 0.03,             # relative threshold for stability (between 0.05 and 0.001)
+    "N_epoch": 800,              # epochs per universe (between 500 and 1000)
+    "expansion_epochs": 800,     # epochs for expansion dynamics
+    "rel_eps": 0.04,             # relative threshold for stability (between 0.05 and 0.001)
     "seed": None,                # master seed (generated if None)
 
     # --- Law lock-in ---
