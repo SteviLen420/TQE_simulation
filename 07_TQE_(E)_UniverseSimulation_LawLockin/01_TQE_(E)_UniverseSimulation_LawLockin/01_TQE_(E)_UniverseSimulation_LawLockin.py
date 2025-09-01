@@ -281,18 +281,25 @@ values     = [num_locked, num_stable_no_lock, num_unstable]
 percents   = [pct_locked, pct_stable_no_lock, pct_unstable]
 colors     = ["#1f77b4", "#2ca02c", "#d62728"]  
 
-plt.figure(figsize=(8,6))
-bars = plt.bar(categories, values, color=colors)
+# --- plot  ---
+plt.figure()
 
-# add counts + percentages under each column
-for i, bar in enumerate(bars):
-    plt.text(bar.get_x() + bar.get_width()/2, -max(values)*0.02,
-             f"{values[i]} ({percents[i]:.1f}%)",
-             ha='center', va='top', fontsize=10)
+bars = plt.bar(
+    [0, 1, 2],
+    [num_locked, num_stable_no_lock, num_unstable],
+    color=["blue", "green", "red"]
+)
+
+plt.xticks([0, 1, 2], [
+    f"Stable (lock-in)\n[{num_locked}, {pct_locked:.1f}%]",
+    f"Stable (no lock-in)\n[{num_stable_no_lock}, {pct_stable_no_lock:.1f}%]",
+    f"Unstable\n[{num_unstable}, {pct_unstable:.1f}%]"
+])
 
 plt.ylabel("Number of Universes")
 plt.title("Universe Stability Distribution (E-only) — 3 categories")
 plt.tight_layout()
+savefig(os.path.join(FIG_DIR, "stability_summary_with_lockin.png"))
 savefig(os.path.join(FIG_DIR, "stability_summary_three_columns.png"))
 
 # ======================================================
