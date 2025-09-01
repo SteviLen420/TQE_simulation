@@ -81,42 +81,42 @@ def savefig(p):
     plt.close()
 
 # ======================================================
-# 1) MASTER CONTROLLER – central parameters
+# 1) MASTER CONTROLLER – balanced parameters (midpoint settings)
 # ======================================================
 MASTER_CTRL = {
     # --- Simulation core ---
-    "N_universes": 5000,
-    "N_epoch": 500,
-    "expansion_epochs": 500,
-    "rel_eps": 0.05,
-    "seed": None,   # master seed (generated if None)
+    "N_universes": 5000,         # number of universes in the Monte Carlo run
+    "N_epoch": 700,              # epochs per universe (between 500 and 1000)
+    "expansion_epochs": 700,     # epochs for expansion dynamics
+    "rel_eps": 0.03,             # relative threshold for stability (between 0.05 and 0.001)
+    "seed": None,                # master seed (generated if None)
 
     # --- Law lock-in ---
-    "lock_consecutive": 5,
-    "regression_min": 30,
+    "lock_consecutive": 5,       # consecutive calm steps required for lock-in
+    "regression_min": 30,        # minimum lock-in samples for regression analysis
 
     # --- Train/test split ---
-    "test_size": 0.25,
-    "rf_n_estimators": 400,
+    "test_size": 0.25,           # fraction of test data for ML
+    "rf_n_estimators": 400,      # number of trees in Random Forest models
 
     # --- XAI controls ---
-    "enable_SHAP": True,
-    "enable_LIME": True,
+    "enable_SHAP": True,         # enable SHAP explanations
+    "enable_LIME": True,         # enable LIME explanations
 
-    # --- Seed search ---
-    "enable_seed_search": False,
+    # --- Seed search (optional) ---
+    "enable_seed_search": False, # whether to scan seeds for reproducibility tests
     "seed_search_num": 100,
     "seed_search_universes": 500,
 
     # --- Outputs ---
-    "save_drive_copy": True,
-    "save_figs": True,
-    "save_json": True,
+    "save_drive_copy": True,     # save results to Google Drive
+    "save_figs": True,           # save plots
+    "save_json": True,           # save summary JSON
 
     # --- Plot controls ---
-    "PLOT_AVG_LOCKIN": True,
-    "PLOT_LOCKIN_HIST": True,
-    "PLOT_STABILITY_BASIC": False,
+    "PLOT_AVG_LOCKIN": True,     # plot average law lock-in curve
+    "PLOT_LOCKIN_HIST": True,    # plot histogram of lock-in epochs
+    "PLOT_STABILITY_BASIC": False # plot simple stability checks
 }
 
 # --- Demo mode (optional fast run) ---
@@ -129,11 +129,11 @@ if DEMO_MODE:
     })
 
 # --- Energy distribution & Goldilocks (linear scale) ---
-E_LOG_MU    = 2.5
-E_LOG_SIGMA = 0.8
-E_CENTER    = float(np.exp(E_LOG_MU))   # ~12.18 (median of lognormal)
-E_WIDTH     = 6.0                       # try 6–8 for a reasonable window
-ALPHA_I     = 0.8
+E_LOG_MU    = 2.5                # lognormal mean for energy distribution
+E_LOG_SIGMA = 0.8                # lognormal sigma for energy distribution
+E_CENTER    = 6.0                # Goldilocks center (midpoint between ~12 and ~2)
+E_WIDTH     = 3.0                # Goldilocks window width (between 6.0 and 0.5)
+ALPHA_I     = 0.8                # coupling strength between energy and information
 
 # --- Master RNG + sync qutip/np.random (for reproducibility) ---
 if MASTER_CTRL["seed"] is None:
