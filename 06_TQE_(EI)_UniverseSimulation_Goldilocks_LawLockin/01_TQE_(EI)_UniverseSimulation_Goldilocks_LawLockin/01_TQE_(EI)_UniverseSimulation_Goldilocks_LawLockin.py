@@ -607,8 +607,12 @@ print(f"[BEST] Universe index={best_idx} chosen by {reason}; E*={E_best:.3f}, I*
 def simulate_entropy_universe(E, I,
                               steps=MASTER_CTRL["BEST_STEPS"],
                               num_regions=MASTER_CTRL["BEST_NUM_REGIONS"],
-                              num_states=MASTER_CTRL["BEST_NUM_STATES"]):
-    """Entropy evolution with f(E,I) modulation; returns (regions, global, lock_step)."""
+                              num_states=MASTER_CTRL["BEST_NUM_STATES"],
+                              rng=None):
+    """Entropy evolution with f(E,I) modulation and smoothed noise."""
+    if rng is None:
+        rng = np.random.default_rng()
+
     states = np.zeros((num_regions, num_states)); states[0, :] = 1.0
     region_entropies, global_entropy = [], []
     lock_in_step, consecutive_calm = None, 0
@@ -619,21 +623,24 @@ def simulate_entropy_universe(E, I,
 
         # --- small dynamics ---
         if step > 0:
-            A = A * 1.01 + rng_entropy.normal(0, 0.02)
-            orient += (0.5 - orient) * 0.10 + rng_entropy.normal(0, 0.02)
+            A = A * 1.01 + rng.normal(0, 0.02)
+            orient += (0.5 - orient) * 0.10 + rng.normal(0, 0.02)
             orient = np.clip(orient, 0, 1)
 
         # --- drifting energy ---
-        E_run += rng_entropy.normal(0, 0.05)
+        E_run += rng.normal(0, 0.05)
         f_step_base = f_EI(E_run, I)
 
         # --- update each region ---
         for r in range(num_regions):
-            noise = rng_entropy.normal(0, noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
-            if rng_entropy.random() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
-                noise += rng_entropy.normal(0, MASTER_CTRL["ENTROPY_NOISE_SPIKE"], num_states)
+            raw_noise = rng.normal(0, noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
+            noise = np.convolve(raw_noise, np.ones(3)/3, mode="same")  # smoothed noise
 
-            f_step = f_step_base * (1 + rng_entropy.normal(0, 0.05))  # reduced random factor
+            if rng.random() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
+                spike = rng.normal(0, MASTER_CTRL["ENTROPY_NOISE_SPIKE"], num_states)
+                noise += np.convolve(spike, np.ones(3)/3, mode="same")
+
+            f_step = f_step_base * (1 + rng.normal(0, 0.05))
             states[r] = np.clip(states[r] + f_step * noise, 0, 1)
 
         # --- compute entropies ---
