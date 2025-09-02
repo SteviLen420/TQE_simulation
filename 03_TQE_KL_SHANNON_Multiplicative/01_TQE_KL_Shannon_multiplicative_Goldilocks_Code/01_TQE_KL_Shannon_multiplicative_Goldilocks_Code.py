@@ -130,7 +130,7 @@ def save_json(path, obj):
 print(f"💾 Results saved in: {SAVE_DIR}")
 
 # ======================================================
-# 2) Information parameter I = g(KL, Shannon) (multiplicative fusion)
+# 1) Information parameter I = g(KL, Shannon) (multiplicative fusion)
 # ======================================================
 def sample_information_param(dim=8):
     # Two random kets for KL, one reused for Shannon
@@ -154,13 +154,13 @@ def sample_information_param(dim=8):
     return float(I)
 
 # ======================================================
-# 3) Energy sampling
+# 2) Energy sampling
 # ======================================================
 def sample_energy_lognormal(mu=2.5, sigma=0.9):
     return float(rng.lognormal(mean=mu, sigma=sigma))
 
 # ======================================================
-# 4) Goldilocks noise function
+# 3) Goldilocks noise function
 # ======================================================
 def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
     if E_c_low is None or E_c_high is None:
@@ -173,7 +173,7 @@ def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
     return sigma0 * (1 + alpha * dist**2)
 
 # ======================================================
-# 5) Lock-in simulation
+# 4) Lock-in simulation
 # ======================================================
 def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=None, E_c_high=None):
     A, ns, H = rng.normal(50, 5), rng.normal(0.8, 0.05), rng.normal(0.7, 0.08)
@@ -197,7 +197,7 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
     return stable, (locked_at if locked_at is not None else -1)
 
 # ======================================================
-# Monte Carlo universes — KL × Shannon version
+# 5) Monte Carlo universes — KL × Shannon version
 # ======================================================
 rows = []
 universe_seeds = []
@@ -246,7 +246,7 @@ pd.DataFrame({"universe_id": np.arange(len(df)), "seed": universe_seeds}).to_csv
 )
 
 # ======================================================
-# 7) Stability curve (binned) + dynamic Goldilocks window
+# 6) Stability curve (binned) + dynamic Goldilocks window
 # ======================================================
 bins = np.linspace(df["X"].min(), df["X"].max(), 40)
 df["bin"] = np.digitize(df["X"], bins)
@@ -288,7 +288,7 @@ plt.legend()
 savefig(os.path.join(FIG_DIR, "stability_curve.png"))
 
 # ======================================================
-# 8) Scatter E vs I
+# 7) Scatter E vs I
 # ======================================================
 plt.figure(figsize=(7,6))
 sc = plt.scatter(df["E"], df["I"], c=df["stable"], cmap="coolwarm", s=10, alpha=0.5)
@@ -298,7 +298,7 @@ plt.colorbar(sc, label="Stable=1 / Unstable=0")
 savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
 
 # ======================================================
-# Save stability summary
+# 8) Save stability summary
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = len(df) - stable_count
@@ -331,7 +331,7 @@ print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # ======================================================
-# 10) PATCH: Stability by I (exact zero vs eps sweep)
+# 9) PATCH: Stability by I (exact zero vs eps sweep)
 # ======================================================
 def _stability_stats(mask: pd.Series, label: str):
     total = int(mask.sum())
@@ -368,7 +368,7 @@ print(eps_df.head(12).to_string(index=False))
 print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
 
 # ======================================================
-# 11) Save summary (PATCH: more fields)
+# 10) Save summary (PATCH: more fields)
 # ======================================================
 summary = {
     "params": MASTER_CTRL,
@@ -398,7 +398,7 @@ print(f"Goldilocks zone: {E_c_low:.2f} – {E_c_high:.2f}")
 print(f"📂 Directory: {SAVE_DIR}")
 
 # ======================================================
-# 12) XAI (SHAP + LIME) — stratify guard + CSV saves
+# 11) XAI (SHAP + LIME) — stratify guard + CSV saves
 # ======================================================
 def _savefig_safe(path):
     plt.savefig(path, dpi=220, bbox_inches="tight")
@@ -560,7 +560,7 @@ if MASTER_CTRL["enable_LIME"] and len(np.unique(y_cls)) > 1:
         print(f"[ERR] LIME failed: {e}")
 
 # ======================================================
-# 13) PATCH: Robust copy to Google Drive (counts + .txt allowed)
+# 12) PATCH: Robust copy to Google Drive (counts + .txt allowed)
 # ======================================================
 if MASTER_CTRL["save_drive_copy"]:
     print("\n[INFO] Files in FIG_DIR before Drive copy:")
