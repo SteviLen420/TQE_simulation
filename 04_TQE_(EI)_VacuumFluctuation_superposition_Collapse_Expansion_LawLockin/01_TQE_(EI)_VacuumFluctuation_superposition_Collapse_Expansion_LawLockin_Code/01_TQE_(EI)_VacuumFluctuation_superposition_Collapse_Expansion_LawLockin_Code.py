@@ -183,7 +183,7 @@ def save_json(path, obj):
         json.dump(obj, f, indent=2)
 
 # ======================================================
-# 2) t < 0 : Quantum superposition (vacuum fluctuation)
+# 1) t < 0 : Quantum superposition (vacuum fluctuation)
 # ======================================================
 Nlev = 12
 a = qt.destroy(Nlev)
@@ -230,7 +230,7 @@ superposition_df = pd.DataFrame({
 superposition_df.to_csv(os.path.join(SAVE_DIR, "superposition.csv"), index=False)
 
 # ======================================================
-# 3) t = 0 : Collapse (E·I coupling + Goldilocks factor)
+# 2) t = 0 : Collapse (E·I coupling + Goldilocks factor)
 # ======================================================
 
 # Kullback–Leibler divergence
@@ -302,7 +302,7 @@ collapse_df = pd.DataFrame({
 collapse_df.to_csv(os.path.join(SAVE_DIR, "collapse.csv"), index=False)
     
 # ======================================================
-# 5) Monte Carlo Simulation: Stability + Law lock-in for many universes
+# 3) Monte Carlo Simulation: Stability + Law lock-in for many universes
 # ======================================================
 
 def sample_information_param_KLxShannon(dim=8):
@@ -474,7 +474,7 @@ median_epoch = float(np.median(valid_epochs)) if valid_epochs else None
 np.random.seed(master_seed)
 
 # ======================================================
-# 6) Build master DataFrame and save
+# 4) Build master DataFrame and save
 # ======================================================
 
 df = pd.DataFrame({
@@ -510,7 +510,7 @@ summary["runs"] = {
 }
 
 # ======================================================
-# 7) [DIAG] Stability vs Law lock-in (extra check)
+# 5) [DIAG] Stability vs Law lock-in (extra check)
 # ======================================================
 stable_total = int(df["stable"].sum())
 valid_lockins = int(np.sum(df["lock_epoch"] >= 0))
@@ -534,7 +534,7 @@ summary["diagnostics"] = {
 }
         
 # ======================================================
-# 8) Stability summary (counts + percentages)
+# 6) Stability summary (counts + percentages)
 # ======================================================
 total_universes = len(df)
 stable_count = int(df["stable"].sum())
@@ -556,7 +556,7 @@ summary["stability_counts"] = {
 save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
 
 # ======================================================
-# 9) Average law lock-in dynamics across all universes
+# 7) Average law lock-in dynamics across all universes
 # ======================================================
 if all_histories:
     min_len = min(len(h) for h in all_histories)
@@ -594,7 +594,7 @@ if all_histories:
         savefig(os.path.join(FIG_DIR, "law_lockin_avg.png"))
 
 # ======================================================
-# 10) t > 0 : Expansion dynamics (reference universe E,I)
+# 8) t > 0 : Expansion dynamics (reference universe E,I)
 # ======================================================
 def evolve(E, I, n_epoch=None):   
     """Simulate expansion dynamics after law lock-in."""
@@ -659,7 +659,7 @@ plt.legend()
 savefig(os.path.join(FIG_DIR, "expansion.png"))
 
 # ======================================================
-# 11) Histogram of lock-in epochs 
+# 9) Histogram of lock-in epochs 
 # ======================================================
 
 if len(valid_epochs) > 0:
@@ -696,7 +696,7 @@ else:
     print("[INFO] No valid lock-in epochs to save or plot.")
     
 # ======================================================
-# 12) Stability summary (counts + percentages)
+# 10) Stability summary (counts + percentages)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -745,7 +745,7 @@ plt.xticks([0, 1, 2], labels)
 savefig(os.path.join(FIG_DIR, "stability_summary.png"))
 
 # ======================================================
-# 13) Save results (JSON + CSV + Figures)
+# 11) Save results (JSON + CSV + Figures)
 # ======================================================
 
 # Save stability outcomes to CSV (redundant but simplified)
@@ -783,7 +783,7 @@ summary.update({
 save_json(os.path.join(SAVE_DIR,"summary.json"), summary)
 
 # ======================================================
-# 14) XAI (SHAP + LIME) 
+# 12) XAI (SHAP + LIME) 
 # ======================================================
 
 # Reset NumPy RNG for SHAP/LIME reproducibility
