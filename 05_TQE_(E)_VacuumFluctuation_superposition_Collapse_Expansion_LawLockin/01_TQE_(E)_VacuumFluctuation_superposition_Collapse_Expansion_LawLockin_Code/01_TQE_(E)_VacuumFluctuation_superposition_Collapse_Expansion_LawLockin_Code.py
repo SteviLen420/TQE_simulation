@@ -62,42 +62,63 @@ def savefig(p):
     plt.close()
 
 # ======================================================
-# 0) MASTER CONTROLLER – central parameters (E-only)
+# MASTER CONTROLLER — central parameters (E-only version)
 # ======================================================
 MASTER_CTRL = {
-    "N_universes": 5000,      # number of universes to simulate
-    "N_epoch": 500,           # number of epochs for law lock-in
-    "expansion_epochs": 500,  # number of epochs for expansion
-    "rel_eps": 0.05,          # stability tolerance
-    "lock_consecutive": 5,    # consecutive calm epochs required
-    "seed": None,             # master RNG seed
+    # --- Core simulation settings ---
+    "NUM_UNIVERSES":     5000,   # number of universes in the Monte Carlo run
+    "LOCKIN_EPOCHS":     500,    # epochs for law lock-in dynamics
+    "EXPANSION_EPOCHS":  500,    # epochs for expansion dynamics
+    "TIME_STEPS":        800,    # epochs for stability checks (not heavily used in E-only)
+    "SEED":              None,   # master RNG seed (auto-generated if None)
 
-    # Output controls
-    "save_drive_copy": True,
-    "save_figs": True,
-    "save_json": True,
+    # --- Stability thresholds ---
+    "REL_EPS_STABLE":    0.05,   # relative calmness threshold for stability
+    "CALM_STEPS_STABLE": 5,      # consecutive calm steps required for stability
+    "REL_EPS_LOCKIN":    1e-3,   # calmness threshold for law lock-in
+    "CALM_STEPS_LOCKIN": 5,      # consecutive calm steps required for lock-in
 
-    # Plot controls
-    "PLOT_AVG_LOCKIN": True,
-    "PLOT_LOCKIN_HIST": True,   
+    # --- Law lock-in shaping ---
+    "LL_BASE_NOISE":     1e6,    # baseline noise level for law lock-in
+
+    # --- Expansion dynamics ---
+    "EXP_GROWTH_BASE":   1.005,  # baseline exponential growth rate
+    "EXP_NOISE_BASE":    1.0,    # baseline noise for expansion amplitude
+
+    # --- Outputs ---
+    "SAVE_FIGS":         True,   # save plots to disk
+    "SAVE_JSON":         True,   # save summary JSON
+    "SAVE_DRIVE_COPY":   True,   # copy results to Google Drive
+
+    # --- Plot toggles ---
+    "PLOT_AVG_LOCKIN":   True,   # plot average law lock-in curve
+    "PLOT_LOCKIN_HIST":  True,   # plot histogram of lock-in epochs
+    "PLOT_STABILITY_BASIC": False  # plot simple stability diagnostics
 }
 
-# --- Goldilocks window tuned to the E distribution ---
-# These are GLOBAL constants, not inside MASTER_CTRL.
-E_MU = 2.5           # lognormal parameter (mean in log-space)
-E_SIGMA = 0.8        # lognormal sigma
-E_CENTER = float(np.exp(E_MU))   # ~12.18, median in linear space
-E_WIDTH  = 6.0       # try 6–8 for ~40%+ stability; smaller = stricter
+# ======================================================
+# Global constants for Energy distribution (E-only)
+# ======================================================
+E_LOG_MU    = 2.5                       # lognormal mean parameter
+E_LOG_SIGMA = 0.8                       # lognormal sigma parameter
+E_CENTER    = float(np.exp(E_LOG_MU))   # Goldilocks center (~12.18 in linear space)
+E_WIDTH     = 6.0                       # Goldilocks width; larger = more tolerant
 
 # Alias for readability
-NUM_UNIVERSES = MASTER_CTRL["N_universes"]
+NUM_UNIVERSES = MASTER_CTRL["NUM_UNIVERSES"]
 
-# --- Master seed (reproducibility) ---
-if MASTER_CTRL["seed"] is None:
-    MASTER_CTRL["seed"] = int(np.random.SeedSequence().generate_state(1)[0])
-master_seed = MASTER_CTRL["seed"]
+# ======================================================
+# Master seed initialization (reproducibility)
+# ======================================================
+if MASTER_CTRL["SEED"] is None:
+    MASTER_CTRL["SEED"] = int(np.random.SeedSequence().generate_state(1)[0])
+
+master_seed = MASTER_CTRL["SEED"]
+
+# Create both modern (rng) and legacy (np.random) RNG streams
 master_rng = np.random.default_rng(master_seed)
-np.random.seed(master_seed)  # keep legacy np.random in sync for QuTiP
+np.random.seed(master_seed)  # sync legacy RNG for QuTiP calls
+
 print(f"🎲 Using master seed: {master_seed}")
 
 # ======================================================
