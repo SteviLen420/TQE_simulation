@@ -330,9 +330,8 @@ df = pd.DataFrame({
 df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
 
 # ======================================================
-# 6) Stability summary — 3-bar chart
+# 6) Stability summary — 3-bar chart (E-only)
 # ======================================================
-
 total = MASTER_CTRL["NUM_UNIVERSES"]
 stable_count   = int(np.sum(np.asarray(stables, dtype=int)))
 unstable_count = max(0, total - stable_count)
@@ -343,20 +342,21 @@ p_stable   = 100.0 * stable_count   / total
 p_unstable = 100.0 * unstable_count / total
 
 xtick_labels = [
-    f"Lock-in ({lockin_count}, {p_lockin:.1f}%)",
-    f"Stable ({stable_count}, {p_stable:.1f}%)",
-    f"Unstable ({unstable_count}, {p_unstable:.1f}%)",
+    f"Lock-in\n({lockin_count}, {p_lockin:.1f}%)",
+    f"Stable\n({stable_count}, {p_stable:.1f}%)",
+    f"Unstable\n({unstable_count}, {p_unstable:.1f}%)",
 ]
 
 yvals = [lockin_count, stable_count, unstable_count]
 
-plt.figure()
+plt.figure(figsize=(8,6))
 plt.bar([0, 1, 2], yvals, color=["#6baed6", "#2ca02c", "#d62728"])
-plt.xticks([0, 1, 2], xtick_labels, rotation=0)
-plt.ylabel("Number of Universes")
-plt.title("Universe Stability Distribution (E-only) — three categories")
+plt.xticks([0, 1, 2], xtick_labels, rotation=0, fontsize=11)
+plt.ylabel("Number of Universes", fontsize=12)
+plt.title("Universe Stability Distribution (E-only) — three categories", fontsize=14)
 plt.grid(axis="y", alpha=0.2)
 plt.ylim(bottom=0)
+
 savefig(os.path.join(FIG_DIR, "stability_three_bars.png"))
 
 pd.DataFrame(
