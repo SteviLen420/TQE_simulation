@@ -259,7 +259,7 @@ for i in range(NUM_UNIVERSES):
     np.random.seed(int(sub_seed))
 
     # Sample Energy E using universe-specific RNG
-    Ei = float(rng.lognormal(E_MU, E_SIGMA))
+    Ei = float(rng.lognormal(E_LOG_MU, E_LOG_SIGMA))
     E_vals.append(Ei)
     X_vals.append(Ei)
 
