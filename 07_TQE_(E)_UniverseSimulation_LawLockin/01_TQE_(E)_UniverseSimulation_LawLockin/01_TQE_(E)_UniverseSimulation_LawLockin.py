@@ -102,10 +102,10 @@ MASTER_CTRL = {
     "COLLAPSE_NOISE_POST":0.05,
 
     # Best-universe entropy controls
-    "ENTROPY_NOISE_SCALE": 0.5,    # base fluctuation size
-    "ENTROPY_NOISE_SPIKE": 1.0,    # occasional spike size
-    "ENTROPY_SPIKE_PROB": 0.005,    # spike probability per step
-    "ENTROPY_SMOOTH_WIN": 100,       # smoothing window (moving avg for global entropy)
+    "ENTROPY_NOISE_SCALE": 0.05,    # base fluctuation size
+    "ENTROPY_NOISE_SPIKE": 0.1,    # occasional spike size
+    "ENTROPY_SPIKE_PROB": 0.0001,    # spike probability per step
+    "ENTROPY_SMOOTH_WIN": 25,       # smoothing window (moving avg for global entropy)
 
     # Best-universe deep dive
     "BEST_STEPS":        1000,
@@ -455,56 +455,40 @@ E_best = E_vals[best_idx]
 print(f"[BEST] Universe index={best_idx} chosen by {reason}; E*={E_best:.3f}")
 
 # --- entropy simulator for a single universe ---
-def simulate_entropy_universe(E,
+def simulate_entropy_universe(E, 
                               steps=MASTER_CTRL["BEST_STEPS"],
                               num_regions=MASTER_CTRL["BEST_NUM_REGIONS"],
-                              num_states=MASTER_CTRL["BEST_NUM_STATES"]):
-    """
-    Runs entropy evolution for the chosen "best" universe.
-    Includes tunable noise, rare spikes, and optional smoothing of global entropy.
-    Returns:
-        region_entropies : list of per-region entropy trajectories
-        global_entropy   : list of global entropy values
-        lock_in_step     : step index where calmness criterion triggers lock-in
-    """
-    # --- initialize region states ---
-    states = np.zeros((num_regions, num_states))
-    states[0, :] = 1.0  # break symmetry
-    region_entropies, global_entropy = [], []
-    lock_in_step, consecutive_calm = None, 0
+                              num_states=MASTER_CTRL["BEST_NUM_STATES"],
+                              rng=None):
+    if rng is None:
+        rng = np.random.default_rng()
+    ...
     A, E_run = 1.0, float(E)
 
     for step in range(steps):
-        # noise amplitude decreases over time
         noise_scale = max(0.02, 1.0 - step / steps)
 
-        # update amplitude A
         if step > 0:
-            A = A * 1.01 + np.random.normal(0, 0.02)
+            A = A * 1.01 + rng.normal(0, 0.02)
 
-        # update energy value
-        E_run += np.random.normal(0, 0.05)
+        E_run += rng.normal(0, 0.05)
         f_step_base = f_E(E_run)
 
-        # --- update each region ---
+        # --- common + individual noise ---
+        base_raw = rng.normal(0, noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
+        base_noise = np.convolve(base_raw, np.ones(25)/25, mode="same")
+
         for r in range(num_regions):
-            # base noise
-            noise = np.random.normal(
-                0,
-                noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"],
-                num_states
-            )
+            indiv_raw = rng.normal(0, 0.3 * noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
+            indiv_noise = np.convolve(indiv_raw, np.ones(25)/25, mode="same")
 
-            # rare spike noise (added, not replacing)
-            if np.random.rand() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
-                noise += np.random.normal(
-                    0,
-                    MASTER_CTRL["ENTROPY_NOISE_SPIKE"],
-                    num_states
-                )
+            noise = base_noise + indiv_noise
 
-            # Goldilocks modulation
-            f_step = f_step_base * (1 + np.random.normal(0, 0.1))
+            if rng.random() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
+                spike = rng.normal(0, MASTER_CTRL["ENTROPY_NOISE_SPIKE"], num_states)
+                noise += np.convolve(spike, np.ones(25)/25, mode="same")
+
+            f_step = f_step_base * (1 + rng.normal(0, 0.05))
             states[r] = np.clip(states[r] + f_step * noise, 0, 1)
 
         # --- compute entropies ---
