@@ -480,7 +480,7 @@ else:
     print("[XAI] Not enough locked samples for regression (need ~30+).")
 
 # ---------- SHAP classification ----------
-if MASTER_CTRL["enable_SHAP"]:
+if MASTER_CTRL["ENABLE_SHAP"]:
     try:
         X_plot = Xte_c.copy()
         try:
