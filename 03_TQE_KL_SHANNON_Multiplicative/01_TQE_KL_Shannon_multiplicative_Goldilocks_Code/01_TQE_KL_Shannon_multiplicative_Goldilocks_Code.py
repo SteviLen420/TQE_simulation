@@ -419,7 +419,6 @@ def _save_df_safe(df_in, path):
 # Features & targets
 X_feat = df[["E", "I", "X"]].copy()
 y_cls  = df["stable"].astype(int).values
-reg_mask = df["lock_at"] >= 0
 reg_mask = df["lock_epoch"] >= 0
 X_reg = X_feat[reg_mask]
 y_reg = df.loc[reg_mask, "lock_epoch"].values
