@@ -633,18 +633,18 @@ def simulate_entropy_universe(E, I,
 
         # --- update each region ---
         base_raw_noise = rng.normal(0, noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
-        base_noise = np.convolve(base_raw_noise, np.ones(41)/41, mode="same")
+        base_noise = np.convolve(base_raw_noise, np.ones(25)/25, mode="same")
 
         for r in range(num_regions):
             # smaller individual noise component (30% strength)
             indiv_raw = rng.normal(0, 0.3 * noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
-            indiv_noise = np.convolve(indiv_raw, np.ones(41)/41, mode="same")
+            indiv_noise = np.convolve(indiv_raw, np.ones(25)/25, mode="same")
 
             noise = base_noise + indiv_noise
 
             if rng.random() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
                 spike = rng.normal(0, MASTER_CTRL["ENTROPY_NOISE_SPIKE"], num_states)
-                noise += np.convolve(spike, np.ones(41)/41, mode="same")
+                noise += np.convolve(spike, np.ones(25)/25, mode="same")
 
             f_step = f_step_base * (1 + rng.normal(0, 0.05))
             states[r] = np.clip(states[r] + f_step * noise, 0, 1)
