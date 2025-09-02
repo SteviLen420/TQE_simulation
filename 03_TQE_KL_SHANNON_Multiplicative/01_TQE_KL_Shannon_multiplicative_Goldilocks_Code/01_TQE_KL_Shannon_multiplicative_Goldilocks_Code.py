@@ -178,30 +178,52 @@ def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
 # ======================================================
 # 4) Lock-in simulation (patched: use rng passed in)
 # ======================================================
-def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0,
+def simulate_lock_in(X, N_epoch,
+                     rel_eps_stable=MASTER_CTRL["REL_EPS_STABLE"],
+                     rel_eps_lockin=MASTER_CTRL["REL_EPS_LOCKIN"],
+                     sigma0=0.2, alpha=1.0,
                      E_c_low=None, E_c_high=None, rng=None):
     if rng is None:
         rng = np.random.default_rng()
 
     A, ns, H = rng.normal(50, 5), rng.normal(0.8, 0.05), rng.normal(0.7, 0.08)
-    locked_at, consecutive = None, 0
+
+    # tracking states
+    stable_at, lockin_at = None, None
+    consec_stable, consec_lockin = 0, 0
+
     for n in range(1, N_epoch + 1):
         sigma = sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high)
         A_prev, ns_prev, H_prev = A, ns, H
         A  += rng.normal(0, sigma)
         ns += rng.normal(0, sigma/10)
         H  += rng.normal(0, sigma/5)
+
         delta_rel = (abs(A - A_prev)/abs(A_prev) +
                      abs(ns - ns_prev)/abs(ns_prev) +
                      abs(H - H_prev)/abs(H_prev)) / 3.0
-        if delta_rel < rel_eps:
-            consecutive += 1
-            if consecutive >= MASTER_CTRL["CALM_STEPS_STABLE"] and locked_at is None:
-                locked_at = n
+
+        # --- stable check ---
+        if delta_rel < rel_eps_stable:
+            consec_stable += 1
+            if consec_stable >= MASTER_CTRL["CALM_STEPS_STABLE"] and stable_at is None:
+                stable_at = n
         else:
-            consecutive = 0
-    stable = 1 if (locked_at is not None and locked_at <= N_epoch) else 0
-    return stable, (locked_at if locked_at is not None else -1)
+            consec_stable = 0
+
+        # --- lock-in check ---
+        if delta_rel < rel_eps_lockin:
+            consec_lockin += 1
+            if consec_lockin >= MASTER_CTRL["CALM_STEPS_LOCKIN"] and lockin_at is None:
+                lockin_at = n
+        else:
+            consec_lockin = 0
+
+    # outcomes
+    is_stable = 1 if stable_at is not None else 0
+    is_lockin = 1 if lockin_at is not None else 0
+
+    return is_stable, is_lockin, (stable_at if stable_at else -1), (lockin_at if lockin_at else -1)
 
 # ======================================================
 # 5) Monte Carlo universes — KL × Shannon version
@@ -224,15 +246,14 @@ for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
     X = E * I
 
     # --- simulate stability / lock-in ---
-    stable, lock_epoch = simulate_lock_in(
+    stable, lockin, stable_epoch, lock_epoch = simulate_lock_in(
         X,
         MASTER_CTRL["LOCKIN_EPOCHS"],
-        rel_eps=MASTER_CTRL["REL_EPS_STABLE"],
         sigma0=MASTER_CTRL["EXP_NOISE_BASE"],
         alpha=1.0,
         E_c_low=None,
         E_c_high=None,
-        rng=rng_uni   # 🔧 pass per-universe rng
+        rng=rng_uni
     )
 
     rows.append({
@@ -242,6 +263,8 @@ for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
         "I": I,
         "X": X,
         "stable": stable,
+        "lockin": lockin,
+        "stable_epoch": stable_epoch,
         "lock_epoch": lock_epoch
     })
 
