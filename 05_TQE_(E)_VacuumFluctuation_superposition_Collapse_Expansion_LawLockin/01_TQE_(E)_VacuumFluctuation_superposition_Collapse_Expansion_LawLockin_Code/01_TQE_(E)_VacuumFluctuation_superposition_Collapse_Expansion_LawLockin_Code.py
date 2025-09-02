@@ -73,9 +73,9 @@ MASTER_CTRL = {
     "SEED":              None,   # master RNG seed (auto-generated if None)
 
     # --- Stability thresholds ---
-    "REL_EPS_STABLE":    0.05,   # relative calmness threshold for stability
+    "REL_EPS_STABLE":    0.04,   # relative calmness threshold for stability
     "CALM_STEPS_STABLE": 5,      # consecutive calm steps required for stability
-    "REL_EPS_LOCKIN":    1e-3,   # calmness threshold for law lock-in
+    "REL_EPS_LOCKIN":    5e-4,   # calmness threshold for law lock-in
     "CALM_STEPS_LOCKIN": 5,      # consecutive calm steps required for lock-in
 
     # --- Law lock-in shaping ---
