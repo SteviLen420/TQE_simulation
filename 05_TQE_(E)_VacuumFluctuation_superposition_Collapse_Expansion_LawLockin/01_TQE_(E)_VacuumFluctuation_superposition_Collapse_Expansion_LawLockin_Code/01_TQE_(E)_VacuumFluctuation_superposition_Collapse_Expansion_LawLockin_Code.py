@@ -264,7 +264,7 @@ for i in range(NUM_UNIVERSES):
     X_vals.append(Ei)
 
     # Stability check uses rng too if you want reproducibility
-   s = is_stable(Ei, rng=rng)
+    s = is_stable(Ei, rng=rng)
     stables.append(s)
 
     if s == 1:
