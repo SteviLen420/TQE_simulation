@@ -540,7 +540,7 @@ if MASTER_CTRL["RUN_XAI"] and rf_reg is not None:
         print(f"[ERR] SHAP regression failed: {e}")
 
 # ---------- LIME ----------
-if MASTER_CTRL["enable_LIME"] and len(np.unique(y_cls)) > 1:
+if MASTER_CTRL["RUN_XAI"] and len(np.unique(y_cls)) > 1:
     try:
         lime_explainer = LimeTabularExplainer(
             training_data=Xtr_c.values,
@@ -567,7 +567,7 @@ if MASTER_CTRL["enable_LIME"] and len(np.unique(y_cls)) > 1:
 # ======================================================
 # 12) PATCH: Robust copy to Google Drive (counts + .txt allowed)
 # ======================================================
-if MASTER_CTRL["save_drive_copy"]:
+if MASTER_CTRL["SAVE_DRIVE_COPY"]:
     print("\n[INFO] Files in FIG_DIR before Drive copy:")
     for fn in sorted(os.listdir(FIG_DIR)):
         print("   -", fn)
