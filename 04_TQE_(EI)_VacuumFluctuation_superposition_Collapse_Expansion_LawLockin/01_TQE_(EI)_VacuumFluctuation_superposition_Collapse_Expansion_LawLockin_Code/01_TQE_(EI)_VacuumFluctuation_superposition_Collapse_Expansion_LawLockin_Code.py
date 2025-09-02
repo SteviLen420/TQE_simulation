@@ -115,19 +115,6 @@ MASTER_CTRL = {
     "EXP_GROWTH_BASE":      1.005,  # baseline exponential growth rate
     "EXP_NOISE_BASE":       1.0,    # baseline noise for expansion amplitude
 
-    # --- Entropy analysis (best-universe deep dive) ---
-    "ENTROPY_NOISE_SCALE":  0.05,   # baseline fluctuation size
-    "ENTROPY_NOISE_SPIKE":  0.1,    # occasional spike size
-    "ENTROPY_SPIKE_PROB":   0.0001, # probability of a spike per step
-    "ENTROPY_SMOOTH_WIN":   25,     # smoothing window for global entropy
-
-    "BEST_STEPS":           1000,   # steps for best-universe analysis
-    "BEST_NUM_REGIONS":     10,     # number of entropy regions
-    "BEST_NUM_STATES":      500,    # number of states per region
-    "ENTROPY_STAB_THRESH":  3.5,    # entropy stability threshold
-    "ENTROPY_CALM_EPS":     0.01,   # relative calmness threshold for entropy
-    "ENTROPY_CALM_CONSEC":  5,      # consecutive calm steps (entropy lock-in)
-
     # --- Machine Learning / XAI ---
     "TEST_SIZE":            0.25,   # test split ratio
     "RF_N_ESTIMATORS":      400,    # number of trees in random forest
