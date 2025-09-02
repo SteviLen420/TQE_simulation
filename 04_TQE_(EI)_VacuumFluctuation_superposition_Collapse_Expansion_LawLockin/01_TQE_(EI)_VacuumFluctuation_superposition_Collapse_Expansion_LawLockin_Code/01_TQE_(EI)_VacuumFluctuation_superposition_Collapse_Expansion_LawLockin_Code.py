@@ -272,7 +272,7 @@ I_raw = I_kl * I_shannon
 I = I_raw / (1.0 + I_raw)
 
 # Energy fluctuation (lognormal from master rng)
-E = float(rng.lognormal(mean=2.5, sigma=0.8))
+E = float(rng.lognormal(MASTER_CTRL["E_LOG_MU"], MASTER_CTRL["E_LOG_SIGMA"]))
 
 # Apply Goldilocks filter
 f = f_EI(E, I)
@@ -601,16 +601,13 @@ def evolve(E, I, n_epoch=None):
     if n_epoch is None:
         n_epoch = MASTER_CTRL["EXPANSION_EPOCHS"]
 
-    A = A * MASTER_CTRL["EXP_GROWTH_BASE"] + rng.normal(0, MASTER_CTRL["EXP_NOISE_BASE"])
-
     A_series = []
     I_series = []
     A = 20
     orient = I
     for n in range(n_epoch):
         # Amplitude growth with noise
-        A = A * 1.005 + rng.normal(0, 1.0)
-
+        A = A * MASTER_CTRL["EXP_GROWTH_BASE"] + rng.normal(0, MASTER_CTRL["EXP_NOISE_BASE"])
         # Orientation dynamics with convergence + noise
         noise = 0.25 * (1 + 1.5 * abs(orient - 0.5))
         orient += (0.5 - orient) * 0.35 + rng.normal(0, noise)
@@ -788,6 +785,9 @@ save_json(os.path.join(SAVE_DIR,"summary.json"), summary)
 # ======================================================
 # 14) XAI (SHAP + LIME) 
 # ======================================================
+
+# Reset NumPy RNG for SHAP/LIME reproducibility
+np.random.seed(master_seed)
 
 # ---------- Features and targets ----------
 X_feat = df[["E", "I", "X"]].copy()
