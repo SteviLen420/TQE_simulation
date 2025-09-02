@@ -442,7 +442,7 @@ if not can_stratify:
 # Classification split
 Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
     X_feat, y_cls,
-    test_size=MASTER_CTRL["test_size"],
+    test_size=MASTER_CTRL["TEST_SIZE"],
     random_state=42,
     stratify=stratify_arg
 )
