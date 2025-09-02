@@ -119,10 +119,10 @@ MASTER_CTRL = {
     "LL_BASE_NOISE":        1e6,
 
     # ---- Best-universe entropy tuning ----
-    "ENTROPY_NOISE_SCALE": 0.5,     # base fluctuation strength (smaller → smoother)
-    "ENTROPY_NOISE_SPIKE": 0.5,     # occasional spike magnitude (set lower to avoid big jumps)
-    "ENTROPY_SPIKE_PROB": 0.001,     # probability of a spike at each step (reduce for smoother curves)
-    "ENTROPY_SMOOTH_WIN": 10,        # moving average window size (increase to smooth global entropy line) 
+    "ENTROPY_NOISE_SCALE": 0.05,     # base fluctuation strength (smaller → smoother)
+    "ENTROPY_NOISE_SPIKE": 0.1,     # occasional spike magnitude (set lower to avoid big jumps)
+    "ENTROPY_SPIKE_PROB": 0.0001,     # probability of a spike at each step (reduce for smoother curves)
+    "ENTROPY_SMOOTH_WIN": 25,        # moving average window size (increase to smooth global entropy line) 
 
     # ---- Best-universe deep dive ----
     "BEST_STEPS":           1000,
