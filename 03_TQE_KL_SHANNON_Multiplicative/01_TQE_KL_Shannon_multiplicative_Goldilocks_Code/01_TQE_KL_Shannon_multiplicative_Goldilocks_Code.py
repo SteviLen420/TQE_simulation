@@ -173,9 +173,13 @@ def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
     return sigma0 * (1 + alpha * dist**2)
 
 # ======================================================
-# 4) Lock-in simulation
+# 4) Lock-in simulation (patched: use rng passed in)
 # ======================================================
-def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=None, E_c_high=None):
+def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0,
+                     E_c_low=None, E_c_high=None, rng=None):
+    if rng is None:
+        rng = np.random.default_rng()
+
     A, ns, H = rng.normal(50, 5), rng.normal(0.8, 0.05), rng.normal(0.7, 0.08)
     locked_at, consecutive = None, 0
     for n in range(1, N_epoch + 1):
@@ -189,7 +193,7 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
                      abs(H - H_prev)/abs(H_prev)) / 3.0
         if delta_rel < rel_eps:
             consecutive += 1
-            if consecutive >= MASTER_CTRL["lock_consecutive"] and locked_at is None:
+            if consecutive >= MASTER_CTRL["CALM_STEPS_STABLE"] and locked_at is None:
                 locked_at = n
         else:
             consecutive = 0
@@ -224,7 +228,8 @@ for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
         sigma0=MASTER_CTRL["EXP_NOISE_BASE"],
         alpha=1.0,
         E_c_low=None,
-        E_c_high=None
+        E_c_high=None,
+        rng=rng_uni   # 🔧 pass per-universe rng
     )
 
     rows.append({
@@ -415,8 +420,9 @@ def _save_df_safe(df_in, path):
 X_feat = df[["E", "I", "X"]].copy()
 y_cls  = df["stable"].astype(int).values
 reg_mask = df["lock_at"] >= 0
+reg_mask = df["lock_epoch"] >= 0
 X_reg = X_feat[reg_mask]
-y_reg = df.loc[reg_mask, "lock_at"].values
+y_reg = df.loc[reg_mask, "lock_epoch"].values
 
 # Sanity checks
 assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
