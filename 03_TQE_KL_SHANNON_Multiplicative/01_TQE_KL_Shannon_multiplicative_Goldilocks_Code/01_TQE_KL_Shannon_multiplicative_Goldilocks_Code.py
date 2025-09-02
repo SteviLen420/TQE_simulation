@@ -452,13 +452,13 @@ have_reg = len(X_reg) >= MASTER_CTRL["REGRESSION_MIN"]
 if have_reg:
     Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
         X_reg, y_reg,
-        test_size=MASTER_CTRL["test_size"],
+        test_size=MASTER_CTRL["TEST_SIZE"],
         random_state=42
     )
 
 # ---------- Train models ----------
 rf_cls = RandomForestClassifier(
-    n_estimators=MASTER_CTRL["rf_n_estimators"],
+    n_estimators=MASTER_CTRL["RF_N_ESTIMATORS"],
     random_state=42,
     n_jobs=-1
 )
@@ -469,7 +469,7 @@ print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
 rf_reg, reg_r2 = None, None
 if have_reg:
     rf_reg = RandomForestRegressor(
-        n_estimators=MASTER_CTRL["rf_n_estimators"],
+        n_estimators=MASTER_CTRL["RF_N_ESTIMATORS"],
         random_state=42,
         n_jobs=-1
     )
