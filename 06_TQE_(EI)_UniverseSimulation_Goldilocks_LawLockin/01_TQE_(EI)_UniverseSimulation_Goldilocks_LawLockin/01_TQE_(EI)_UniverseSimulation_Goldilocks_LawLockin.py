@@ -619,21 +619,21 @@ def simulate_entropy_universe(E, I,
 
         # --- small dynamics ---
         if step > 0:
-            A = A * 1.01 + np.random.normal(0, 0.02)
-            orient += (0.5 - orient) * 0.10 + np.random.normal(0, 0.02)
+            A = A * 1.01 + rng_entropy.normal(0, 0.02)
+            orient += (0.5 - orient) * 0.10 + rng_entropy.normal(0, 0.02)
             orient = np.clip(orient, 0, 1)
 
         # --- drifting energy ---
-        E_run += np.random.normal(0, 0.05)
+        E_run += rng_entropy.normal(0, 0.05)
         f_step_base = f_EI(E_run, I)
 
         # --- update each region ---
         for r in range(num_regions):
-            noise = np.random.normal(0, noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
-            if np.random.rand() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
-                noise += np.random.normal(0, MASTER_CTRL["ENTROPY_NOISE_SPIKE"], num_states)
+            noise = rng_entropy.normal(0, noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
+            if rng_entropy.random() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
+                noise += rng_entropy.normal(0, MASTER_CTRL["ENTROPY_NOISE_SPIKE"], num_states)
 
-            f_step = f_step_base * (1 + np.random.normal(0, 0.05))  # reduced random factor
+            f_step = f_step_base * (1 + rng_entropy.normal(0, 0.05))  # reduced random factor
             states[r] = np.clip(states[r] + f_step * noise, 0, 1)
 
         # --- compute entropies ---
