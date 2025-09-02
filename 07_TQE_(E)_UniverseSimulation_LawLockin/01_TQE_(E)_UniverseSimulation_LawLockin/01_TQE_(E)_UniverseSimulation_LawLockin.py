@@ -462,7 +462,11 @@ def simulate_entropy_universe(E,
                               rng=None):
     if rng is None:
         rng = np.random.default_rng()
-    ...
+
+    states = np.zeros((num_regions, num_states))
+    states[0, :] = 1.0  # break symmetry
+    region_entropies, global_entropy = [], []
+    lock_in_step, consecutive_calm = None, 0
     A, E_run = 1.0, float(E)
 
     for step in range(steps):
@@ -476,17 +480,19 @@ def simulate_entropy_universe(E,
 
         # --- common + individual noise ---
         base_raw = rng.normal(0, noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
-        base_noise = np.convolve(base_raw, np.ones(25)/25, mode="same")
+        base_noise = np.convolve(base_raw, np.ones(21)/21, mode="same")
 
         for r in range(num_regions):
+            # smaller individual noise component (30% strength)
             indiv_raw = rng.normal(0, 0.3 * noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
-            indiv_noise = np.convolve(indiv_raw, np.ones(25)/25, mode="same")
+            indiv_noise = np.convolve(indiv_raw, np.ones(21)/21, mode="same")
 
             noise = base_noise + indiv_noise
 
+            # occasional spike
             if rng.random() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
                 spike = rng.normal(0, MASTER_CTRL["ENTROPY_NOISE_SPIKE"], num_states)
-                noise += np.convolve(spike, np.ones(25)/25, mode="same")
+                noise += np.convolve(spike, np.ones(21)/21, mode="same")
 
             f_step = f_step_base * (1 + rng.normal(0, 0.05))
             states[r] = np.clip(states[r] + f_step * noise, 0, 1)
@@ -514,7 +520,7 @@ def simulate_entropy_universe(E,
     return region_entropies, global_entropy, lock_in_step
 
 # --- run simulation for best universe ---
-best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(E_best)
+best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(E_best, rng=master_rng)
 
 # --- save CSVs ---
 pd.DataFrame({"time": np.arange(len(best_global_entropy)), "global_entropy": best_global_entropy}).to_csv(
@@ -530,7 +536,7 @@ pd.DataFrame(best_re_mat, columns=re_cols).assign(time=np.arange(best_re_mat.sha
 plt.figure(figsize=(12, 6))
 time_axis = np.arange(len(best_global_entropy))
 for r in range(min(MASTER_CTRL["BEST_NUM_REGIONS"], best_re_mat.shape[1])):
-    plt.plot(time_axis, best_re_mat[:, r], lw=1, label=f"Region {r} entropy")
+    plt.plot(time_axis, best_re_mat[:, r], lw=1, alpha=0.6, label=f"Region {r} entropy")
 
 plt.plot(time_axis, best_global_entropy, color="black", linewidth=2, label="Global entropy")
 plt.axhline(y=MASTER_CTRL["ENTROPY_STAB_THRESH"], color="red", linestyle="--", label="Stability threshold")
