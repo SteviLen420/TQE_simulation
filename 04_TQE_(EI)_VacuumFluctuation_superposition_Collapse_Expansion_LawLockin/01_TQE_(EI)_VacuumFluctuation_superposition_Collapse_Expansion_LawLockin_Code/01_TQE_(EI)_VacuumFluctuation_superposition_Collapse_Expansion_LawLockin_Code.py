@@ -81,71 +81,72 @@ def savefig(p):
     plt.close()
 
 # ======================================================
-# MASTER SIMULATION CONTROLS — unified across (E) and (E,I)
+# MASTER SIMULATION CONTROLS — unified for (E,I) pipeline
 # ======================================================
-MASTER_CTRL = {
-    # --- Simulation core ---
-    "NUM_UNIVERSES":        5000,   # total universes in Monte Carlo
-    "TIME_STEPS":           800,    # epochs per stability run
-    "LOCKIN_EPOCHS":        500,    # epochs for law lock-in
-    "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
-    "SEED":                 None,   # master seed (generated if None)
 
-    # --- Energy distribution ---
+MASTER_CTRL = {
+    # --- Core simulation ---
+    "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
+    "TIME_STEPS":           800,    # epochs per stability run
+    "LOCKIN_EPOCHS":        500,    # epochs for law lock-in dynamics
+    "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
+    "SEED":                 None,   # master RNG seed (auto-generated if None)
+
+    # --- Energy distribution (lognormal + Goldilocks) ---
     "E_LOG_MU":             2.5,    # lognormal mean for initial energy
     "E_LOG_SIGMA":          0.8,    # lognormal sigma for initial energy
-    "E_CENTER":             6.0,    # Goldilocks center (energy window)
-    "E_WIDTH":              6.0,    # Goldilocks width
-    "ALPHA_I":              0.8,    # coupling strength (E·I)
+    "E_CENTER":             6.0,    # Goldilocks center (energy sweet spot)
+    "E_WIDTH":              6.0,    # Goldilocks width (spread of stable energy)
+    "ALPHA_I":              0.8,    # coupling factor: strength of I in E·I
 
     # --- Stability thresholds ---
-    "F_GATE_STABLE":        0.15,   # minimum f(E,I) for stability
-    "F_GATE_LOCKIN":        0.12,   # minimum f(E,I) for lock-in
-    "REL_EPS_STABLE":       0.04,   # relative threshold for stability calmness
-    "REL_EPS_LOCKIN":       5e-4,   # relative threshold for lock-in calmness
-    "CALM_STEPS_STABLE":    5,      # consecutive calm steps to call stable
-    "CALM_STEPS_LOCKIN":    5,      # consecutive calm steps to call lock-in
+    "F_GATE_STABLE":        0.15,   # min f(E,I) for stability acceptance
+    "F_GATE_LOCKIN":        0.12,   # min f(E,I) for lock-in eligibility
+    "REL_EPS_STABLE":       0.04,   # relative calmness threshold for stability
+    "REL_EPS_LOCKIN":       5e-4,   # relative calmness threshold for lock-in
+    "CALM_STEPS_STABLE":    5,      # consecutive calm steps required (stable)
+    "CALM_STEPS_LOCKIN":    5,      # consecutive calm steps required (lock-in)
 
     # --- Law lock-in shaping ---
-    "LL_TARGET_X":          5.0,    # reference target X for shaping
-    "LL_BASE_NOISE":        1e6,    # baseline noise scale
+    "LL_TARGET_X":          5.0,    # target X reference point
+    "LL_BASE_NOISE":        1e6,    # baseline noise level for law lock-in
 
     # --- Expansion dynamics ---
-    "EXP_GROWTH_BASE":      1.005,  # baseline growth factor
-    "EXP_NOISE_BASE":       1.0,    # baseline expansion noise
+    "EXP_GROWTH_BASE":      1.005,  # baseline exponential growth rate
+    "EXP_NOISE_BASE":       1.0,    # baseline noise for expansion amplitude
 
-    # --- Entropy simulation (deep-dive) ---
-    "ENTROPY_NOISE_SCALE":  0.05,   # base fluctuation size
+    # --- Entropy analysis (best-universe deep dive) ---
+    "ENTROPY_NOISE_SCALE":  0.05,   # baseline fluctuation size
     "ENTROPY_NOISE_SPIKE":  0.1,    # occasional spike size
     "ENTROPY_SPIKE_PROB":   0.0001, # probability of a spike per step
     "ENTROPY_SMOOTH_WIN":   25,     # smoothing window for global entropy
 
-    "BEST_STEPS":           1000,   # steps in best-universe deep dive
-    "BEST_NUM_REGIONS":     10,     # number of regions (local entropies)
+    "BEST_STEPS":           1000,   # steps for best-universe analysis
+    "BEST_NUM_REGIONS":     10,     # number of entropy regions
     "BEST_NUM_STATES":      500,    # number of states per region
-    "ENTROPY_STAB_THRESH":  3.5,    # stability threshold (entropy level)
-    "ENTROPY_CALM_EPS":     0.01,   # calmness threshold (relative change)
-    "ENTROPY_CALM_CONSEC":  5,      # consecutive calm steps for lock-in
+    "ENTROPY_STAB_THRESH":  3.5,    # entropy stability threshold
+    "ENTROPY_CALM_EPS":     0.01,   # relative calmness threshold for entropy
+    "ENTROPY_CALM_CONSEC":  5,      # consecutive calm steps (entropy lock-in)
 
-    # --- ML / XAI ---
-    "TEST_SIZE":            0.25,   # fraction of test data
-    "RF_N_ESTIMATORS":      400,    # trees in random forest
-    "RUN_XAI":              True,   # run SHAP + LIME explainability
+    # --- Machine Learning / XAI ---
+    "TEST_SIZE":            0.25,   # test split ratio
+    "RF_N_ESTIMATORS":      400,    # number of trees in random forest
+    "RUN_XAI":              True,   # run both SHAP + LIME explainability
     "REGRESSION_MIN":       30,     # min lock-in samples for regression
 
     # --- Outputs ---
-    "SAVE_FIGS":            True,   # save plots
+    "SAVE_FIGS":            True,   # save plots to disk
     "SAVE_JSON":            True,   # save summary JSON
     "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
 
-    # --- Plot controls ---
-    "PLOT_AVG_LOCKIN":      True,   # plot average law lock-in curve
+    # --- Plot toggles ---
+    "PLOT_AVG_LOCKIN":      True,   # plot average lock-in curve
     "PLOT_LOCKIN_HIST":     True,   # plot histogram of lock-in epochs
     "PLOT_STABILITY_BASIC": False   # simple stability diagnostic plot
 }
 
-# --- Demo mode (optional fast run) ---
-DEMO_MODE = False  # Set to True for a lightweight test run
+# --- Demo mode (optional lightweight test) ---
+DEMO_MODE = False
 if DEMO_MODE:
     MASTER_CTRL.update({
         "NUM_UNIVERSES": 800,
