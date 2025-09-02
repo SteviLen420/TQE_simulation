@@ -384,8 +384,7 @@ summary = {
     "unstable_ratio": float(1.0 - df["stable"].mean()),
     "E_c_low": E_c_low,
     "E_c_high": E_c_high,
-    "seed": MASTER_CTRL["SEED"],
-    "master_seed": MASTER_CTRL["SEED"],
+    "master_seed": master_seed,
     "figures": {
         "stability_curve": os.path.join(FIG_DIR, "stability_curve.png"),
         "scatter_EI": os.path.join(FIG_DIR, "scatter_EI.png"),
