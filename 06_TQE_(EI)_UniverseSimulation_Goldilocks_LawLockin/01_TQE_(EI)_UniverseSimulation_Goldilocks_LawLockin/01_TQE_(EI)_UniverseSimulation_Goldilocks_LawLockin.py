@@ -477,24 +477,23 @@ p_unstable = 100.0 * unstable_count / den
 
 # Labels shown *under* the bars
 xtick_labels = [
-    f"Lock-in ({lockin_count}, {p_lockin:.1f}%)",
-    f"Stable ({stable_count}, {p_stable:.1f}%)",
-    f"Unstable ({unstable_count}, {p_unstable:.1f}%)",
+    f"Lock-in\n({lockin_count}, {p_lockin:.1f}%)",
+    f"Stable\n({stable_count}, {p_stable:.1f}%)",
+    f"Unstable\n({unstable_count}, {p_unstable:.1f}%)",
 ]
 
-# Values in the same order
 yvals = [lockin_count, stable_count, unstable_count]
 
 # --- Plot ---
-plt.figure()
+plt.figure(figsize=(8,6))
 plt.bar([0, 1, 2], yvals, color=["#6baed6", "#2ca02c", "#d62728"])
-plt.xticks([0, 1, 2], xtick_labels, rotation=0)
-plt.ylabel("Number of Universes")
-plt.title("Universe Stability Distribution (E,I) — three categories")
+plt.xticks([0, 1, 2], xtick_labels, rotation=0, fontsize=11)
+plt.ylabel("Number of Universes", fontsize=12)
+plt.title("Universe Stability Distribution (E,I) — three categories", fontsize=14)
 
-# Optional: light grid for readability
+# Optional: light grid
 plt.grid(axis="y", alpha=0.2)
-plt.ylim(bottom=0)  # always start from zero
+plt.ylim(bottom=0)
 
 savefig(os.path.join(FIG_DIR, "stability_three_bars.png"))
 
