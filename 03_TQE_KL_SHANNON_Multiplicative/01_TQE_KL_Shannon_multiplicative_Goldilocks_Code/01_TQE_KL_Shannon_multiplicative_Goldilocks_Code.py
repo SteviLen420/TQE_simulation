@@ -448,7 +448,7 @@ Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
 )
 
 # Regression split
-have_reg = len(X_reg) >= MASTER_CTRL["regression_min"]
+have_reg = len(X_reg) >= MASTER_CTRL["REGRESSION_MIN"]
 if have_reg:
     Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
         X_reg, y_reg,
