@@ -157,13 +157,13 @@ pd.DataFrame({"time": tlist, "Entropy": S, "Purity": P}).to_csv(
 # 2) t = 0 : Collapse (E only)
 # ======================================================
 # Use the same lognormal parameters as the global E distribution
-E = float(np.random.lognormal(mean=E_MU, sigma=E_SIGMA))
+E = float(master_rng.lognormal(mean=E_LOG_MU, sigma=E_LOG_SIGMA))
 X = E
 
 # Collapse trace around t=0 (pre-lock fluctuation, post-lock calm)
 collapse_t = np.linspace(-0.2, 0.2, 200)
-X_curve = X + 0.5 * np.random.randn(len(collapse_t))
-X_curve[collapse_t >= 0] = X + 0.05 * np.random.randn(np.sum(collapse_t >= 0))
+X_curve = X + 0.5 * master_rng.normal(size=len(collapse_t))
+X_curve[collapse_t >= 0] = X + 0.05 * master_rng.normal(size=np.sum(collapse_t >= 0))
 
 plt.plot(collapse_t, X_curve, "k-", alpha=0.6, label="fluctuation → lock-in")
 plt.axhline(X, color="r", ls="--", label=f"Lock-in X={X:.2f}")
@@ -179,16 +179,15 @@ pd.DataFrame({"time": collapse_t, "X_curve": X_curve}).to_csv(
 # 3) Stability check (Energy-dependent)
 # ======================================================
 def is_stable(E, n_epoch=30, E_center=E_CENTER, E_width=E_WIDTH,
-              rel_eps=None, lock_consec=None):
-    """
-    Energy-only stability check controlled by MASTER_CTRL thresholds.
-    1) Quick Goldilocks cutoff by |E - E_center|
-    2) Internal dynamics with E-dependent noise; stability = consecutive small steps
-    """
+              rel_eps=None, lock_consec=None, rng=None):
+    """Energy-only stability check using Goldilocks cutoff and RNG-driven dynamics."""
+    if rng is None:
+        rng = np.random.default_rng()
+
     if rel_eps is None:
-        rel_eps = MASTER_CTRL["rel_eps"]
+        rel_eps = MASTER_CTRL["REL_EPS_STABLE"]
     if lock_consec is None:
-        lock_consec = MASTER_CTRL["lock_consecutive"]
+        lock_consec = MASTER_CTRL["CALM_STEPS_STABLE"]
 
     # 1) Quick cutoff: too far from Goldilocks → unstable
     if abs(E - E_center) > 3 * E_width:
@@ -200,7 +199,7 @@ def is_stable(E, n_epoch=30, E_center=E_CENTER, E_width=E_WIDTH,
         A_prev = A
         dist = abs(E - E_center) / max(E_width, 1e-12)
         noise_scale = 2.0 * (1.0 + 0.5 * dist**2)  # more noise further from center
-        A = A * 1.02 + np.random.normal(0, noise_scale)
+        A = A * 1.02 + rng.normal(0, noise_scale)
 
         delta = abs(A - A_prev) / max(abs(A_prev), 1e-6)
         calm = calm + 1 if delta < rel_eps else 0
@@ -211,27 +210,24 @@ def is_stable(E, n_epoch=30, E_center=E_CENTER, E_width=E_WIDTH,
 # ======================================================
 # 4) Law lock-in (E only, energy-dependent noise)
 # ======================================================
-def law_lock_in(E, n_epoch=None):
+def law_lock_in(E, n_epoch=None, rng=None):
     """Simulate law lock-in using Energy E only; returns (locked_epoch or -1, history)."""
     if n_epoch is None:
-        n_epoch = MASTER_CTRL["N_epoch"]
+        n_epoch = MASTER_CTRL["LOCKIN_EPOCHS"]
+    if rng is None:
+        rng = np.random.default_rng()
 
-    # Goldilocks alignment around E_CENTER
-    f = np.exp(-((E - E_CENTER)**2) / (2.0 * (E_WIDTH**2)))
-    if f < 0.2:
-        return -1, []  # too far from the window → no lock-in
-
-    # Initial 'c' candidate value (e.g., speed of light proxy)
-    c_val = np.random.normal(3e8, 1e7)
+    # Initial candidate value
+    c_val = rng.normal(3e8, 1e7)
     calm, locked_at = 0, None
     history = []
 
     for n in range(n_epoch):
         prev = c_val
         dist = abs(E - E_CENTER) / max(E_WIDTH, 1e-12)
-        noise = 1e6 * (1.0 + 0.4 * dist) * np.random.uniform(0.8, 1.2)
+        noise = 1e6 * (1.0 + 0.4 * dist) * rng.uniform(0.8, 1.2)
 
-        c_val += np.random.normal(0, noise)
+        c_val += rng.normal(0, noise)
         history.append(c_val)
 
         delta = abs(c_val - prev) / max(abs(prev), 1e-9)
@@ -268,11 +264,11 @@ for i in range(NUM_UNIVERSES):
     X_vals.append(Ei)
 
     # Stability check uses rng too if you want reproducibility
-    s = is_stable(Ei)
+   s = is_stable(Ei, rng=rng)
     stables.append(s)
 
     if s == 1:
-        lock_epoch, c_hist = law_lock_in(Ei, n_epoch=MASTER_CTRL["N_epoch"])
+        lock_epoch, c_hist = law_lock_in(Ei, n_epoch=MASTER_CTRL["LOCKIN_EPOCHS"], rng=rng)
         law_epochs.append(lock_epoch)
 
         if len(c_hist) > 0:
@@ -396,7 +392,7 @@ def evolve(E, n_epoch=None):
     A_series = []
     A = 20
     for n in range(n_epoch):
-        A = A * 1.005 + np.random.normal(0, 1.0)
+        A = A * MASTER_CTRL["EXP_GROWTH_BASE"] + master_rng.normal(0, MASTER_CTRL["EXP_NOISE_BASE"])
         A_series.append(A)
     return A_series
 
