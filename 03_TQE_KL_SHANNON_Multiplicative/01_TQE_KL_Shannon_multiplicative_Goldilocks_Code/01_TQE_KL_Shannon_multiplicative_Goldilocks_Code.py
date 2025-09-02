@@ -52,41 +52,66 @@ except Exception:
     from lime.lime_tabular import LimeTabularExplainer
 
 # ======================================================
-# 1) MASTER CONTROLLER – All key settings in one place
+# MASTER CONTROLLER — unified parameters (KL × Shannon)
 # ======================================================
 MASTER_CTRL = {
-    # --- Simulation core ---
-    "N_samples": 5000,
-    "N_epoch": 100,
-    "rel_eps": 0.05,
-    "sigma0": 0.5,
-    "alpha": 1.5,
-    "seed": None,  # master RNG seed
-    
+    # --- Core simulation ---
+    "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
+    "TIME_STEPS":           800,    # epochs per stability run
+    "LOCKIN_EPOCHS":        500,    # epochs for law lock-in dynamics
+    "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
+    "SEED":                 None,   # master RNG seed (auto-generated if None)
 
-    # --- Stability detection ---
-    "lock_consecutive": 20,    # consecutive calm steps to lock
-    "regression_min": 30,      # min. locked samples for regression
+    # --- Energy distribution (lognormal + Goldilocks) ---
+    "E_LOG_MU":             2.5,    # lognormal mean for initial energy
+    "E_LOG_SIGMA":          0.8,    # lognormal sigma for initial energy
+    "E_CENTER":             6.0,    # Goldilocks center (energy sweet spot)
+    "E_WIDTH":              6.0,    # Goldilocks width (spread of stable energy)
+    "ALPHA_I":              0.8,    # coupling factor: strength of I in E·I
 
-    # --- Train/test split ---
-    "test_size": 0.25,
-    "rf_n_estimators": 400,
+    # --- Stability thresholds ---
+    "REL_EPS_STABLE":       0.04,   # relative calmness threshold for stability
+    "REL_EPS_LOCKIN":       1e-4,   # relative calmness threshold for lock-in
+    "CALM_STEPS_STABLE":    5,      # consecutive calm steps required (stable)
+    "CALM_STEPS_LOCKIN":    10,     # consecutive calm steps required (lock-in)
 
-    # --- XAI controls ---
-    "enable_SHAP": True,
-    "enable_LIME": True,
+    # --- Law lock-in shaping ---
+    "LL_BASE_NOISE":        1e6,    # baseline noise level for law lock-in
+
+    # --- Expansion dynamics ---
+    "EXP_GROWTH_BASE":      1.005,  # baseline exponential growth rate
+    "EXP_NOISE_BASE":       1.0,    # baseline noise for expansion amplitude
+
+    # --- Machine Learning / XAI ---
+    "TEST_SIZE":            0.25,   # test split ratio
+    "RF_N_ESTIMATORS":      400,    # number of trees in random forest
+    "RUN_XAI":              True,   # run SHAP + LIME explainability
+    "REGRESSION_MIN":       30,     # min lock-in samples for regression
 
     # --- Outputs ---
-    "save_figs": True,
-    "save_json": True,
-    "save_drive_copy": True
+    "SAVE_FIGS":            True,   # save plots to disk
+    "SAVE_JSON":            True,   # save summary JSON
+    "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
+
+    # --- Plot toggles ---
+    "PLOT_AVG_LOCKIN":      True,   # plot average lock-in curve
+    "PLOT_LOCKIN_HIST":     True,   # plot histogram of lock-in epochs
+    "PLOT_STABILITY_BASIC": False   # simple stability diagnostic plot
 }
 
-# --------- PATCH: master seed generation + rng ----------
-if MASTER_CTRL["seed"] is None:
-    MASTER_CTRL["seed"] = int(np.random.randint(0, 2**32 - 1))
-rng = np.random.default_rng(seed=MASTER_CTRL["seed"])
-print(f"🎲 Using random seed: {MASTER_CTRL['seed']}")
+# ======================================================
+# Master seed initialization (reproducibility)
+# ======================================================
+if MASTER_CTRL["SEED"] is None:
+    MASTER_CTRL["SEED"] = int(np.random.SeedSequence().generate_state(1)[0])
+
+master_seed = MASTER_CTRL["SEED"]
+
+# Create both modern (rng) and legacy (np.random) RNG streams
+rng = np.random.default_rng(master_seed)
+np.random.seed(master_seed)  # sync legacy RNG for QuTiP calls
+
+print(f"🎲 Using master seed: {master_seed}")
 
 # Output dirs
 run_id  = time.strftime("TQE_(E,I)_KL_SHANNON_%Y%m%d_%H%M%S")
@@ -172,42 +197,51 @@ def simulate_lock_in(X, N_epoch, rel_eps=0.02, sigma0=0.2, alpha=1.0, E_c_low=No
     return stable, (locked_at if locked_at is not None else -1)
 
 # ======================================================
-# 6) Monte Carlo universes
+# Monte Carlo universes — KL × Shannon version
 # ======================================================
 rows = []
+universe_seeds = []
 
-# reset RNG to master seed (deterministic universes)
-rng = np.random.default_rng(seed=MASTER_CTRL["seed"])
+for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
+    # --- derive per-universe seed from master rng ---
+    uni_seed = int(rng.integers(0, 2**32 - 1))
+    universe_seeds.append(uni_seed)
 
-for i in range(MASTER_CTRL["N_samples"]):
-    # per-universe seed derived deterministically from master seed
-    seed_val = rng.integers(0, 2**32 - 1)
-    np.random.seed(seed_val)  # for libs that rely on np.random
+    # --- build per-universe RNG ---
+    rng_uni = np.random.default_rng(uni_seed)
+    np.random.seed(uni_seed)  # for libraries using np.random (QuTiP, etc.)
 
-    E = sample_energy_lognormal()
+    # --- sample energy and information ---
+    E = float(rng_uni.lognormal(MASTER_CTRL["E_LOG_MU"], MASTER_CTRL["E_LOG_SIGMA"]))
     I = sample_information_param(dim=8)
     X = E * I
-    stable, lock_at = simulate_lock_in(
+
+    # --- simulate stability / lock-in ---
+    stable, lock_epoch = simulate_lock_in(
         X,
-        MASTER_CTRL["N_epoch"],
-        MASTER_CTRL["rel_eps"],
-        MASTER_CTRL["sigma0"],
-        MASTER_CTRL["alpha"]
+        MASTER_CTRL["LOCKIN_EPOCHS"],
+        rel_eps=MASTER_CTRL["REL_EPS_STABLE"],
+        sigma0=MASTER_CTRL["EXP_NOISE_BASE"],
+        alpha=1.0,
+        E_c_low=None,
+        E_c_high=None
     )
+
     rows.append({
-        "E": E, "I": I, "X": X,
-        "stable": stable, "lock_at": lock_at,
-        "seed": int(seed_val)
+        "universe_id": i,
+        "seed": uni_seed,
+        "E": E,
+        "I": I,
+        "X": X,
+        "stable": stable,
+        "lock_epoch": lock_epoch
     })
 
 df = pd.DataFrame(rows)
-df.to_csv(os.path.join(SAVE_DIR, "samples.csv"), index=False)
+df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
 
-# save master + per-universe seeds
-with open(os.path.join(SAVE_DIR, "master_seed.json"), "w") as f:
-    json.dump({"master_seed": MASTER_CTRL["seed"]}, f, indent=2)
-
-pd.DataFrame({"universe_id": range(len(df)), "seed": df["seed"]}).to_csv(
+# Save per-universe seeds
+pd.DataFrame({"universe_id": np.arange(len(df)), "seed": universe_seeds}).to_csv(
     os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
 )
 
@@ -264,25 +298,37 @@ plt.colorbar(sc, label="Stable=1 / Unstable=0")
 savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
 
 # ======================================================
-# 9) Stability summary (counts + percentages)
+# Save stability summary
 # ======================================================
 stable_count = int(df["stable"].sum())
-unstable_count = int(len(df) - stable_count)
+unstable_count = len(df) - stable_count
+lockin_count = int((df["lock_epoch"] >= 0).sum())
 
-print("\n🌌 Universe Stability Summary")
-print(f"Total universes simulated: {len(df)}")
-print(f"Stable universes:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
-print(f"Unstable universes: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
+summary = {
+    "params": MASTER_CTRL,
+    "master_seed": master_seed,
+    "seeds": {
+        "universe_seeds_csv": "universe_seeds.csv"
+    },
+    "stability_summary": {
+        "total_universes": len(df),
+        "stable_universes": stable_count,
+        "unstable_universes": unstable_count,
+        "lockin_universes": lockin_count,
+        "stable_percent": float(stable_count/len(df)*100),
+        "unstable_percent": float(unstable_count/len(df)*100),
+        "lockin_percent": float(lockin_count/len(df)*100)
+    }
+}
 
-plt.figure()
-plt.bar(["Stable", "Unstable"], [stable_count, unstable_count], color=["green", "red"])
-plt.title("Universe Stability Distribution")
-plt.ylabel("Number of Universes"); plt.xlabel("Category")
-plt.xticks([0, 1], [
-    f"Stable ({stable_count}, {stable_count/len(df)*100:.1f}%)",
-    f"Unstable ({unstable_count}, {unstable_count/len(df)*100:.1f}%)"
-])
-savefig(os.path.join(FIG_DIR, "stability_summary.png"))
+with open(os.path.join(SAVE_DIR, "summary.json"), "w") as f:
+    json.dump(summary, f, indent=2)
+
+print("\n🌌 Universe Stability Summary (KL × Shannon)")
+print(f"Total universes: {len(df)}")
+print(f"Stable:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
+print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
+print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # ======================================================
 # 10) PATCH: Stability by I (exact zero vs eps sweep)
