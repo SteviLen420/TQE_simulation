@@ -492,7 +492,7 @@ def simulate_entropy_universe(E,
             # occasional spike
             if rng.random() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
                 spike = rng.normal(0, MASTER_CTRL["ENTROPY_NOISE_SPIKE"], num_states)
-                noise += np.convolve(spike, np.ones(25/25, mode="same")
+                noise += np.convolve(spike, np.ones(25)/25, mode="same")
 
             f_step = f_step_base * (1 + rng.normal(0, 0.05))
             states[r] = np.clip(states[r] + f_step * noise, 0, 1)
