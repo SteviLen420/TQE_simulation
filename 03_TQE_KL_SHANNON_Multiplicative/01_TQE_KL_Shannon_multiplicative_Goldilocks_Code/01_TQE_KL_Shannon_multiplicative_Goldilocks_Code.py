@@ -71,9 +71,9 @@ MASTER_CTRL = {
 
     # --- Stability thresholds ---
     "REL_EPS_STABLE":       0.04,   # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       5e-4,   # relative calmness threshold for lock-in
+    "REL_EPS_LOCKIN":       5e-3,   # relative calmness threshold for lock-in
     "CALM_STEPS_STABLE":    5,      # consecutive calm steps required (stable)
-    "CALM_STEPS_LOCKIN":    5,     # consecutive calm steps required (lock-in)
+    "CALM_STEPS_LOCKIN":    20,     # consecutive calm steps required (lock-in)
 
     # --- Goldilocks tuning ---
     "GOLDILOCKS_THRESHOLD": 0.8,   # fraction of max stability used for zone width
@@ -245,14 +245,20 @@ for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
     I = sample_information_param(dim=8)
     X = E * I
 
+    # --- Goldilocks X-window (heuristic based on E_CENTER / E_WIDTH / ALPHA_I) ---
+    X_center    = MASTER_CTRL["E_CENTER"] * MASTER_CTRL["ALPHA_I"]
+    X_halfwidth = 0.5 * MASTER_CTRL["E_WIDTH"] * max(1e-12, MASTER_CTRL["ALPHA_I"])
+    E_c_low     = max(1e-12, X_center - X_halfwidth)
+    E_c_high    = X_center + X_halfwidth
+
     # --- simulate stability / lock-in ---
     stable, lockin, stable_epoch, lock_epoch = simulate_lock_in(
         X,
         MASTER_CTRL["LOCKIN_EPOCHS"],
         sigma0=MASTER_CTRL["EXP_NOISE_BASE"],
         alpha=1.0,
-        E_c_low=None,
-        E_c_high=None,
+        E_c_low=E_c_low,
+        E_c_high=E_c_high,
         rng=rng_uni
     )
 
@@ -446,7 +452,7 @@ summary = {
     "figures": {
         "stability_curve": os.path.join(FIG_DIR, "stability_curve.png"),
         "scatter_EI": os.path.join(FIG_DIR, "scatter_EI.png"),
-        "stability_summary": os.path.join(FIG_DIR, "stability_summary.png")
+        "stability_distribution": os.path.join(FIG_DIR, "stability_distribution.png")
     }
 }
 save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
