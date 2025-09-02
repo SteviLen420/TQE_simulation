@@ -75,6 +75,9 @@ MASTER_CTRL = {
     "CALM_STEPS_STABLE":    5,      # consecutive calm steps required (stable)
     "CALM_STEPS_LOCKIN":    10,     # consecutive calm steps required (lock-in)
 
+    # --- Goldilocks tuning ---
+    "GOLDILOCKS_THRESHOLD": 0.8,   # fraction of max stability used for zone width
+
     # --- Law lock-in shaping ---
     "LL_BASE_NOISE":        1e6,    # baseline noise level for law lock-in
 
@@ -279,7 +282,10 @@ else:
 # --- PATCH: Use a relative threshold (half-maximum) to define the Goldilocks zone ---
 peak_index = int(np.argmax(ys))
 peak_value = float(ys[peak_index])
-half_max = 0.5 * peak_value  # relative threshold
+
+# Use threshold from MASTER_CTRL (default 0.5 if not set)
+threshold = MASTER_CTRL.get("GOLDILOCKS_THRESHOLD", 0.5)
+half_max = threshold * peak_value
 
 # Select the region around the peak where stability >= half of maximum
 valid_region = xs[ys >= half_max]
