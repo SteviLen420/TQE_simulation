@@ -253,9 +253,12 @@ pd.DataFrame({"universe_id": np.arange(len(df)), "seed": universe_seeds}).to_csv
 # ======================================================
 # 6) Stability curve (binned) + dynamic Goldilocks window
 # ======================================================
+
+# Bin X values into intervals for averaging
 bins = np.linspace(df["X"].min(), df["X"].max(), 40)
 df["bin"] = np.digitize(df["X"], bins)
 
+# Aggregate mean X and stability rate per bin
 bin_stats = df.groupby("bin").agg(
     mean_X=("X", "mean"),
     stable_rate=("stable", "mean"),
@@ -265,6 +268,7 @@ bin_stats = df.groupby("bin").agg(
 xx = bin_stats["mean_X"].values
 yy = bin_stats["stable_rate"].values
 
+# Smooth the stability curve using spline interpolation
 if len(xx) > 3:
     spline = make_interp_spline(xx, yy, k=3)
     xs = np.linspace(xx.min(), xx.max(), 300)
@@ -272,22 +276,29 @@ if len(xx) > 3:
 else:
     xs, ys = xx, yy
 
+# --- PATCH: Use a relative threshold (half-maximum) to define the Goldilocks zone ---
 peak_index = int(np.argmax(ys))
-peak_x = float(xs[peak_index])
-half_max = float(ys[peak_index] * 0.5)
-valid_peak = xs[ys >= half_max]
-if len(valid_peak) > 0:
-    E_c_low, E_c_high = float(valid_peak.min()), float(valid_peak.max())
-else:
-    E_c_low, E_c_high = peak_x, peak_x
-    print("⚠️ No clear peak zone found, defaulting to peak only.")
+peak_value = float(ys[peak_index])
+half_max = 0.5 * peak_value  # relative threshold
 
+# Select the region around the peak where stability >= half of maximum
+valid_region = xs[ys >= half_max]
+if len(valid_region) > 0:
+    E_c_low, E_c_high = float(valid_region.min()), float(valid_region.max())
+else:
+    # fallback: narrow window around the peak
+    peak_x = float(xs[peak_index])
+    E_c_low, E_c_high = peak_x * 0.9, peak_x * 1.1
+    print("⚠️ No wide peak region found, using ±10% around the peak.")
+
+# --- Plot Goldilocks stabilization curve ---
 plt.figure(figsize=(8,5))
 plt.scatter(xx, yy, s=30, c="blue", alpha=0.7, label="bin means")
 plt.plot(xs, ys, "r-", lw=2, label="spline fit")
 plt.axvline(E_c_low,  color='g', ls='--', label=f"E_c_low = {E_c_low:.2f}")
 plt.axvline(E_c_high, color='m', ls='--', label=f"E_c_high = {E_c_high:.2f}")
-plt.xlabel("X = E·I"); plt.ylabel("P(stable)")
+plt.xlabel("X = E·I")
+plt.ylabel("P(stable)")
 plt.title("Goldilocks zone: stabilization curve (KL × Shannon)")
 plt.legend()
 savefig(os.path.join(FIG_DIR, "stability_curve.png"))
