@@ -81,64 +81,83 @@ def savefig(p):
     plt.close()
 
 # ======================================================
-# 1) MASTER CONTROLLER – balanced parameters (midpoint settings)
+# MASTER SIMULATION CONTROLS — unified across (E) and (E,I)
 # ======================================================
 MASTER_CTRL = {
     # --- Simulation core ---
-    "N_universes": 5000,         # number of universes in the Monte Carlo run
-    "N_epoch": 800,              # epochs per universe (between 500 and 1000)
-    "expansion_epochs": 800,     # epochs for expansion dynamics
-    "rel_eps": 0.04,             # relative threshold for stability (between 0.05 and 0.001)
-    "seed": None,                # master seed (generated if None)
+    "NUM_UNIVERSES":        5000,   # total universes in Monte Carlo
+    "TIME_STEPS":           800,    # epochs per stability run
+    "LOCKIN_EPOCHS":        500,    # epochs for law lock-in
+    "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
+    "SEED":                 None,   # master seed (generated if None)
 
-    # --- Law lock-in ---
-    "lock_consecutive": 5,       # consecutive calm steps required for lock-in
-    "regression_min": 30,        # minimum lock-in samples for regression analysis
+    # --- Energy distribution ---
+    "E_LOG_MU":             2.5,    # lognormal mean for initial energy
+    "E_LOG_SIGMA":          0.8,    # lognormal sigma for initial energy
+    "E_CENTER":             6.0,    # Goldilocks center (energy window)
+    "E_WIDTH":              6.0,    # Goldilocks width
+    "ALPHA_I":              0.8,    # coupling strength (E·I)
 
-    # --- Train/test split ---
-    "test_size": 0.25,           # fraction of test data for ML
-    "rf_n_estimators": 400,      # number of trees in Random Forest models
+    # --- Stability thresholds ---
+    "F_GATE_STABLE":        0.15,   # minimum f(E,I) for stability
+    "F_GATE_LOCKIN":        0.12,   # minimum f(E,I) for lock-in
+    "REL_EPS_STABLE":       0.04,   # relative threshold for stability calmness
+    "REL_EPS_LOCKIN":       5e-4,   # relative threshold for lock-in calmness
+    "CALM_STEPS_STABLE":    5,      # consecutive calm steps to call stable
+    "CALM_STEPS_LOCKIN":    5,      # consecutive calm steps to call lock-in
 
-    # --- XAI controls ---
-    "enable_SHAP": True,         # enable SHAP explanations
-    "enable_LIME": True,         # enable LIME explanations
+    # --- Law lock-in shaping ---
+    "LL_TARGET_X":          5.0,    # reference target X for shaping
+    "LL_BASE_NOISE":        1e6,    # baseline noise scale
 
-    # --- Seed search (optional) ---
-    "enable_seed_search": False, # whether to scan seeds for reproducibility tests
-    "seed_search_num": 100,
-    "seed_search_universes": 500,
+    # --- Expansion dynamics ---
+    "EXP_GROWTH_BASE":      1.005,  # baseline growth factor
+    "EXP_NOISE_BASE":       1.0,    # baseline expansion noise
+
+    # --- Entropy simulation (deep-dive) ---
+    "ENTROPY_NOISE_SCALE":  0.05,   # base fluctuation size
+    "ENTROPY_NOISE_SPIKE":  0.1,    # occasional spike size
+    "ENTROPY_SPIKE_PROB":   0.0001, # probability of a spike per step
+    "ENTROPY_SMOOTH_WIN":   25,     # smoothing window for global entropy
+
+    "BEST_STEPS":           1000,   # steps in best-universe deep dive
+    "BEST_NUM_REGIONS":     10,     # number of regions (local entropies)
+    "BEST_NUM_STATES":      500,    # number of states per region
+    "ENTROPY_STAB_THRESH":  3.5,    # stability threshold (entropy level)
+    "ENTROPY_CALM_EPS":     0.01,   # calmness threshold (relative change)
+    "ENTROPY_CALM_CONSEC":  5,      # consecutive calm steps for lock-in
+
+    # --- ML / XAI ---
+    "TEST_SIZE":            0.25,   # fraction of test data
+    "RF_N_ESTIMATORS":      400,    # trees in random forest
+    "RUN_XAI":              True,   # run SHAP + LIME explainability
+    "REGRESSION_MIN":       30,     # min lock-in samples for regression
 
     # --- Outputs ---
-    "save_drive_copy": True,     # save results to Google Drive
-    "save_figs": True,           # save plots
-    "save_json": True,           # save summary JSON
+    "SAVE_FIGS":            True,   # save plots
+    "SAVE_JSON":            True,   # save summary JSON
+    "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
 
     # --- Plot controls ---
-    "PLOT_AVG_LOCKIN": True,     # plot average law lock-in curve
-    "PLOT_LOCKIN_HIST": True,    # plot histogram of lock-in epochs
-    "PLOT_STABILITY_BASIC": False # plot simple stability checks
+    "PLOT_AVG_LOCKIN":      True,   # plot average law lock-in curve
+    "PLOT_LOCKIN_HIST":     True,   # plot histogram of lock-in epochs
+    "PLOT_STABILITY_BASIC": False   # simple stability diagnostic plot
 }
 
 # --- Demo mode (optional fast run) ---
-DEMO_MODE = False  # Set to True for fast run
+DEMO_MODE = False  # Set to True for a lightweight test run
 if DEMO_MODE:
     MASTER_CTRL.update({
-        "N_universes": 800,
-        "N_epoch": 200,
-        "expansion_epochs": 200
+        "NUM_UNIVERSES": 800,
+        "TIME_STEPS": 200,
+        "LOCKIN_EPOCHS": 200,
+        "EXPANSION_EPOCHS": 200
     })
 
-# --- Energy distribution & Goldilocks (linear scale) ---
-E_LOG_MU    = 2.5                # lognormal mean for energy distribution
-E_LOG_SIGMA = 0.8                # lognormal sigma for energy distribution
-E_CENTER    = 6.0                # Goldilocks center (midpoint between ~12 and ~2)
-E_WIDTH     = 3.0                # Goldilocks window width (between 6.0 and 0.5)
-ALPHA_I     = 0.8                # coupling strength between energy and information
-
 # --- Master RNG + sync qutip/np.random (for reproducibility) ---
-if MASTER_CTRL["seed"] is None:
-    MASTER_CTRL["seed"] = int(np.random.SeedSequence().generate_state(1)[0])
-master_seed = MASTER_CTRL["seed"]
+if MASTER_CTRL["SEED"] is None:
+    MASTER_CTRL["SEED"] = int(np.random.SeedSequence().generate_state(1)[0])
+master_seed = MASTER_CTRL["SEED"]
 rng = np.random.default_rng(master_seed)
 np.random.seed(master_seed)  # sync for qutip.rand_ket()
 print(f"🎲 Using master seed: {master_seed}")
@@ -151,17 +170,16 @@ FIG_DIR = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
 
 def savefig(p):
-    if not MASTER_CTRL["save_figs"]: 
+    if not MASTER_CTRL["SAVE_FIGS"]: 
         return
     plt.savefig(p, dpi=180, bbox_inches="tight")
     plt.close()
 
 def save_json(path, obj):
-    if not MASTER_CTRL["save_json"]:
+    if not MASTER_CTRL["SAVE_JSON"]:
         return
     with open(path, "w") as f:
         json.dump(obj, f, indent=2)
-
 
 # ======================================================
 # 2) t < 0 : Quantum superposition (vacuum fluctuation)
