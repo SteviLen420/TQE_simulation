@@ -71,7 +71,7 @@ MASTER_CTRL = {
 
     # --- Stability thresholds ---
     "REL_EPS_STABLE":       0.04,   # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       5e-3,   # relative calmness threshold for lock-in
+    "REL_EPS_LOCKIN":       1e-2,   # relative calmness threshold for lock-in
     "CALM_STEPS_STABLE":    5,      # consecutive calm steps required (stable)
     "CALM_STEPS_LOCKIN":    20,     # consecutive calm steps required (lock-in)
 
@@ -83,7 +83,7 @@ MASTER_CTRL = {
 
     # --- Expansion dynamics ---
     "EXP_GROWTH_BASE":      1.005,  # baseline exponential growth rate
-    "EXP_NOISE_BASE":       1.0,    # baseline noise for expansion amplitude
+    "EXP_NOISE_BASE":       0.02,    # baseline noise for expansion amplitude
 
     # --- Machine Learning / XAI ---
     "TEST_SIZE":            0.25,   # test split ratio
