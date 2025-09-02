@@ -100,12 +100,12 @@ MASTER_CTRL = {
     "ALPHA_I":              0.8,    # coupling factor: strength of I in E·I
 
     # --- Stability thresholds ---
-    "F_GATE_STABLE":        0.15,   # min f(E,I) for stability acceptance
+    "F_GATE_STABLE":        0.25,   # min f(E,I) for stability acceptance
     "F_GATE_LOCKIN":        0.12,   # min f(E,I) for lock-in eligibility
     "REL_EPS_STABLE":       0.04,   # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       5e-4,   # relative calmness threshold for lock-in
+    "REL_EPS_LOCKIN":       1e-4,   # relative calmness threshold for lock-in
     "CALM_STEPS_STABLE":    5,      # consecutive calm steps required (stable)
-    "CALM_STEPS_LOCKIN":    5,      # consecutive calm steps required (lock-in)
+    "CALM_STEPS_LOCKIN":    10,      # consecutive calm steps required (lock-in)
 
     # --- Law lock-in shaping ---
     "LL_TARGET_X":          5.0,    # target X reference point
