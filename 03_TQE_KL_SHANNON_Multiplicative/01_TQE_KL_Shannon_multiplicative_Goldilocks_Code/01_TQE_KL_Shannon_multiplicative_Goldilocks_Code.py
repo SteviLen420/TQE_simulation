@@ -347,6 +347,24 @@ print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # ======================================================
+# 8b) Universe Stability Distribution (bar chart)
+# ======================================================
+labels = [
+    f"Lock-in ({lockin_count}, {lockin_count/len(df)*100:.1f}%)",
+    f"Stable ({stable_count}, {stable_count/len(df)*100:.1f}%)",
+    f"Unstable ({unstable_count}, {unstable_count/len(df)*100:.1f}%)"
+]
+values = [lockin_count, stable_count, unstable_count]
+colors = ["blue", "green", "red"]  # fixed colors for categories
+
+plt.figure(figsize=(7,6))
+plt.bar(labels, values, color=colors, edgecolor="black")
+plt.ylabel("Number of Universes")
+plt.title("Universe Stability Distribution")
+plt.tight_layout()
+savefig(os.path.join(FIG_DIR, "stability_distribution.png"))
+
+# ======================================================
 # 9) PATCH: Stability by I (exact zero vs eps sweep)
 # ======================================================
 def _stability_stats(mask: pd.Series, label: str):
@@ -565,9 +583,14 @@ if MASTER_CTRL["RUN_XAI"] and len(np.unique(y_cls)) > 1:
         lime_df = pd.DataFrame(lime_list, columns=["feature", "weight"])
         _save_df_safe(lime_df, os.path.join(FIG_DIR, "lime_example_classification.csv"))
 
+        # --- PATCH: add distinct colors for each feature ---
+        colors = plt.cm.Set2(np.linspace(0, 1, len(lime_df)))
+
         plt.figure(figsize=(6,4))
-        plt.barh(lime_df["feature"], lime_df["weight"])
-        plt.xlabel("LIME weight"); plt.ylabel("Feature"); plt.title("LIME explanation (stable=1)")
+        plt.barh(lime_df["feature"], lime_df["weight"], color=colors, edgecolor="black")
+        plt.xlabel("LIME weight")
+        plt.ylabel("Feature")
+        plt.title("LIME explanation (stable=1)")
         plt.tight_layout()
         _savefig_safe(os.path.join(FIG_DIR, "lime_example_classification.png"))
 
