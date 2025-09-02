@@ -634,7 +634,7 @@ def simulate_entropy_universe(E, I,
         # --- update each region ---
         for r in range(num_regions):
             raw_noise = rng.normal(0, noise_scale * MASTER_CTRL["ENTROPY_NOISE_SCALE"], num_states)
-            noise = np.convolve(raw_noise, np.ones(3)/3, mode="same")  # smoothed noise
+            noise = np.convolve(raw_noise, np.ones(11)/11, mode="same")  # smoothed noise
 
             if rng.random() < MASTER_CTRL["ENTROPY_SPIKE_PROB"]:
                 spike = rng.normal(0, MASTER_CTRL["ENTROPY_NOISE_SPIKE"], num_states)
