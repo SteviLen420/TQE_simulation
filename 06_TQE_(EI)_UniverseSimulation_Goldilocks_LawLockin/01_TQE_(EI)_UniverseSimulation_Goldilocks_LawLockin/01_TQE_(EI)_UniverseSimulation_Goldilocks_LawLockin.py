@@ -666,7 +666,7 @@ def simulate_entropy_universe(E, I,
     return region_entropies, global_entropy, lock_in_step
 
 # --- Run sim ---
-best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(E_best, I_best)
+best_region_entropies, best_global_entropy, best_lock = simulate_entropy_universe(E_best, I_best, rng=master_rng)
 
 # --- Save CSVs ---
 pd.DataFrame({"time": np.arange(len(best_global_entropy)),
