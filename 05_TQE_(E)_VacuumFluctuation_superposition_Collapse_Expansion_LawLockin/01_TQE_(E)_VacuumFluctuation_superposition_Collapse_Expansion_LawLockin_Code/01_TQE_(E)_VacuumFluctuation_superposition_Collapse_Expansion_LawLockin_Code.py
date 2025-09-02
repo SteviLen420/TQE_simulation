@@ -225,15 +225,15 @@ def law_lock_in(E, n_epoch=None, rng=None):
     for n in range(n_epoch):
         prev = c_val
         dist = abs(E - E_CENTER) / max(E_WIDTH, 1e-12)
-        noise = 1e6 * (1.0 + 0.4 * dist) * rng.uniform(0.8, 1.2)
+        noise = MASTER_CTRL["LL_BASE_NOISE"] * (1.0 + 0.4 * dist) * rng.uniform(0.8, 1.2)
 
         c_val += rng.normal(0, noise)
         history.append(c_val)
 
         delta = abs(c_val - prev) / max(abs(prev), 1e-9)
-        if delta < 1e-3:
+        if delta < MASTER_CTRL["REL_EPS_LOCKIN"]:
             calm += 1
-            if calm >= 5 and locked_at is None:
+            if calm >= MASTER_CTRL["CALM_STEPS_LOCKIN"] and locked_at is None:
                 locked_at = n
         else:
             calm = 0
@@ -386,17 +386,18 @@ if len(all_histories) > 0:
 # ======================================================
 # 8) Expansion dynamics (E only)
 # ======================================================
-def evolve(E, n_epoch=None):
+def evolve(E, n_epoch=None, rng=None):
     if n_epoch is None:
-        n_epoch = MASTER_CTRL["expansion_epochs"]
-    A_series = []
-    A = 20
+        n_epoch = MASTER_CTRL["EXPANSION_EPOCHS"]
+    if rng is None:
+        rng = np.random.default_rng()
+    A_series, A = [], 20
     for n in range(n_epoch):
-        A = A * MASTER_CTRL["EXP_GROWTH_BASE"] + master_rng.normal(0, MASTER_CTRL["EXP_NOISE_BASE"])
+        A = A * MASTER_CTRL["EXP_GROWTH_BASE"] + rng.normal(0, MASTER_CTRL["EXP_NOISE_BASE"])
         A_series.append(A)
     return A_series
 
-A_series = evolve(E, n_epoch=MASTER_CTRL["expansion_epochs"])
+A_series = evolve(E, n_epoch=MASTER_CTRL["EXPANSION_EPOCHS"], rng=master_rng)
 plt.figure()
 plt.plot(A_series, label="Amplitude A")
 plt.axhline(np.mean(A_series), color="gray", ls="--", alpha=0.5, label="Equilibrium A")
@@ -456,7 +457,7 @@ summary.update({
         "std_final_c": float(np.nanstd(final_cs)) if len(final_cs) > 0 else None
     },
     "seeds": {
-        "master_seed": MASTER_CTRL["seed"],
+        "master_seed": MASTER_CTRL["SEED"],
         "sub_seeds": sub_seeds
     }
 })
