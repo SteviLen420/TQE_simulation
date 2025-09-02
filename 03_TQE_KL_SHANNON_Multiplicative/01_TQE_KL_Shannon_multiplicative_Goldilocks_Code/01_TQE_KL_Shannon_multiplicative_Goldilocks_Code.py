@@ -57,51 +57,98 @@ except Exception:
 MASTER_CTRL = {
     # --- Core simulation ---
     "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
-    "TIME_STEPS":           800,    # epochs per stability run
+    "TIME_STEPS":           800,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        500,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
     "SEED":                 None,   # master RNG seed (auto-generated if None)
 
-    # --- Energy distribution (lognormal + Goldilocks) ---
+    # --- Energy distribution ---
+    "E_DISTR":              "lognormal",  # energy sampling mode (future-proof)
     "E_LOG_MU":             2.5,    # lognormal mean for initial energy
     "E_LOG_SIGMA":          0.8,    # lognormal sigma for initial energy
-    "E_CENTER":             6.0,    # Goldilocks center (energy sweet spot)
-    "E_WIDTH":              6.0,    # Goldilocks width (spread of stable energy)
-    "ALPHA_I":              0.8,    # coupling factor: strength of I in E·I
+    "E_TRUNC_LOW":          None,   # optional post-sample clamp (low)
+    "E_TRUNC_HIGH":         None,   # optional post-sample clamp (high)
+
+    # --- Information parameter I controls ---
+    "I_DIM":                8,         # Hilbert space dimension for random kets
+    "KL_EPS":               1e-12,     # numerical epsilon for KL/entropy
+    "INFO_FUSION_MODE":     "product", # "product" | "weighted"
+    "INFO_WEIGHT_KL":       0.5,       # used if INFO_FUSION_MODE == "weighted"
+    "INFO_WEIGHT_SHANNON":  0.5,       # used if INFO_FUSION_MODE == "weighted"
+    "I_EXPONENT":           1.0,       # optional nonlinearity: I <- I**I_EXPONENT
+    "I_MIN_EPS":            0.0,       # clamp floor for I (avoid exact zeros)
+
+    # --- E–I coupling (X definition) ---
+    "X_MODE":               "product",  # "product" | "E_plus_I" | "E_times_I_pow"
+    "X_I_POWER":            1.0,        # if "E_times_I_pow": X = E * (I ** X_I_POWER)
+    "X_SCALE":              1.0,        # global X scaling prior to Goldilocks
+    "ALPHA_I":              0.8,        # coupling factor: strength of I in E·I (heuristics)
 
     # --- Stability thresholds ---
     "REL_EPS_STABLE":       0.04,   # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       2e-3,   # relative calmness threshold for lock-in
+    "REL_EPS_LOCKIN":       2e-3,   # relative calmness threshold for lock-in (0.2%)
     "CALM_STEPS_STABLE":    5,      # consecutive calm steps required (stable)
-    "CALM_STEPS_LOCKIN":    20,     # consecutive calm steps required (lock-in)
+    "CALM_STEPS_LOCKIN":    25,     # consecutive calm steps required (lock-in)
     "MIN_LOCKIN_EPOCH":     300,    # lock-in can only occur after this epoch
     "LOCKIN_WINDOW":        15,     # rolling window size for averaging delta_rel
+    "LOCKIN_ROLL_METRIC":   "mean", # "mean" | "median" | "max" — aggregator over window
+    "LOCKIN_REQUIRES_STABLE": True, # require stable_at before checking lock-in
+    "LOCKIN_MIN_STABLE_EPOCH": 0,   # require n - stable_at >= this many epochs
 
-    # --- Goldilocks tuning ---
-    "GOLDILOCKS_THRESHOLD": 0.8,   # fraction of max stability used for zone width
+    # --- Goldilocks zone controls ---
+    "GOLDILOCKS_MODE":      "heuristic", # "heuristic" | "dynamic"
+    "E_CENTER":             6.0,    # heuristic: energy sweet-spot center (used for X window)
+    "E_WIDTH":              6.0,    # heuristic: energy sweet-spot width (used for X window)
+    "GOLDILOCKS_THRESHOLD": 0.8,    # dynamic: fraction of max stability to define zone
+    "GOLDILOCKS_MARGIN":    0.10,   # dynamic fallback margin around peak (±10%)
+    "SIGMA_ALPHA":          1.0,    # curvature inside Goldilocks (sigma shaping)
+    "OUTSIDE_PENALTY":      2.5,    # sigma multiplier outside Goldilocks zone
+    "STAB_BINS":            40,     # number of bins in stability curve
+    "SPLINE_K":             3,      # spline order for smoothing (3=cubic)
 
-    # --- Law lock-in shaping ---
-    "LL_BASE_NOISE":        1e6,    # baseline noise level for law lock-in
+    # --- Noise shaping (lock-in loop) ---
+    "EXP_NOISE_BASE":       0.10,   # baseline noise for updates (sigma0)
+    "LL_BASE_NOISE":        5e-4,   # absolute noise floor (never go below this)
+    "NOISE_DECAY_TAU":      300,    # e-folding time for noise decay (epochs)
+    "NOISE_FLOOR_FRAC":     0.2,    # fraction of initial sigma preserved by decay
+    "NOISE_COEFF_A":        1.0,    # per-variable noise multiplier (A)
+    "NOISE_COEFF_NS":       0.10,   # per-variable noise multiplier (ns)
+    "NOISE_COEFF_H":        0.20,   # per-variable noise multiplier (H)
 
-    # --- Expansion dynamics ---
+    # --- Expansion dynamics (if/when used) ---
     "EXP_GROWTH_BASE":      1.005,  # baseline exponential growth rate
-    "EXP_NOISE_BASE":       0.4,    # baseline noise for expansion amplitude
+    # (EXP_NOISE_BASE above is reused as expansion amplitude baseline)
 
     # --- Machine Learning / XAI ---
+    "RUN_XAI":              True,   # master switch for XAI section
+    "RUN_SHAP":             True,   # SHAP on/off
+    "RUN_LIME":             True,   # LIME on/off
+    "LIME_NUM_FEATURES":    5,      # number of features in LIME plot
     "TEST_SIZE":            0.25,   # test split ratio
+    "TEST_RANDOM_STATE":    42,     # split reproducibility
     "RF_N_ESTIMATORS":      400,    # number of trees in random forest
-    "RUN_XAI":              True,   # run SHAP + LIME explainability
-    "REGRESSION_MIN":       30,     # min lock-in samples for regression
+    "RF_CLASS_WEIGHT":      None,   # e.g., "balanced" for skewed classes
+    "SKLEARN_N_JOBS":       -1,     # parallelism for RF
 
-    # --- Outputs ---
+    # --- Outputs / IO ---
     "SAVE_FIGS":            True,   # save plots to disk
     "SAVE_JSON":            True,   # save summary JSON
     "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
+    "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_(E,I)_KL_Shannon",
+    "RUN_ID_PREFIX":        "TQE_(E,I)_KL_SHANNON_",   # prefix for run_id
+    "RUN_ID_FORMAT":        "%Y%m%d_%H%M%S",          # time format for run_id
+    "ALLOW_FILE_EXTS":      [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
+    "MAX_FIGS_TO_SAVE":     None,   # limit number of figs (None = no limit)
+    "VERBOSE":              True,   # extra prints/logs
 
     # --- Plot toggles ---
     "PLOT_AVG_LOCKIN":      True,   # plot average lock-in curve
     "PLOT_LOCKIN_HIST":     True,   # plot histogram of lock-in epochs
-    "PLOT_STABILITY_BASIC": False   # simple stability diagnostic plot
+    "PLOT_STABILITY_BASIC": False,  # simple stability diagnostic plot
+
+    # --- Reproducibility knobs ---
+    "USE_STRICT_SEED":      True,   # optionally seed other libs/system for strict reproducibility
+    "PER_UNIVERSE_SEED_MODE": "rng" # "rng" | "np_random" — how per-universe seeds are derived
 }
 
 # ======================================================
@@ -119,7 +166,7 @@ np.random.seed(master_seed)  # sync legacy RNG for QuTiP calls
 print(f"🎲 Using master seed: {master_seed}")
 
 # Output dirs
-run_id  = time.strftime("TQE_(E,I)_KL_SHANNON_%Y%m%d_%H%M%S")
+run_id = MASTER_CTRL["RUN_ID_PREFIX"] + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
 SAVE_DIR = os.path.join(os.getcwd(), run_id)
 FIG_DIR  = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
