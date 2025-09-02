@@ -71,9 +71,9 @@ MASTER_CTRL = {
 
     # --- Stability thresholds ---
     "REL_EPS_STABLE":       0.04,   # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       1e-4,   # relative calmness threshold for lock-in
-    "CALM_STEPS_STABLE":    20,      # consecutive calm steps required (stable)
-    "CALM_STEPS_LOCKIN":    10,     # consecutive calm steps required (lock-in)
+    "REL_EPS_LOCKIN":       5e-4,   # relative calmness threshold for lock-in
+    "CALM_STEPS_STABLE":    5,      # consecutive calm steps required (stable)
+    "CALM_STEPS_LOCKIN":    5,     # consecutive calm steps required (lock-in)
 
     # --- Goldilocks tuning ---
     "GOLDILOCKS_THRESHOLD": 0.8,   # fraction of max stability used for zone width
