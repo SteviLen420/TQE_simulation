@@ -240,7 +240,10 @@ def KL(p, q, eps=1e-12):
     return np.sum(p * np.log(p / q))
 
 # Goldilocks modulation factor
-def f_EI(E, I, E_c=E_CENTER, sigma=E_WIDTH, alpha=ALPHA_I):
+def f_EI(E, I,
+         E_c=MASTER_CTRL["E_CENTER"],
+         sigma=MASTER_CTRL["E_WIDTH"],
+         alpha=MASTER_CTRL["ALPHA_I"]):
     """
     Gaussian Goldilocks window around E_c (LINEAR E), with information coupling.
     """
@@ -326,14 +329,12 @@ def is_stable(E, I, n_epoch=None, rel_eps=None, lock_consec=None, rng=None):
     Now the dynamics (growth, noise, lock threshold) are modulated by f(E,I) and X.
     """
     # -- defaults and RNG wiring --
-    if rng is None:
-        rng = np.random.default_rng()
     if n_epoch is None:
-        n_epoch = MASTER_CTRL["N_epoch"]
+        n_epoch = MASTER_CTRL["TIME_STEPS"]
     if rel_eps is None:
-        rel_eps = MASTER_CTRL["rel_eps"]
+        rel_eps = MASTER_CTRL["REL_EPS_STABLE"]
     if lock_consec is None:
-        lock_consec = MASTER_CTRL["lock_consecutive"]
+        lock_consec = MASTER_CTRL["CALM_STEPS_STABLE"]
 
     # -- Goldilocks gate --
     f = f_EI(E, I)
@@ -367,7 +368,9 @@ def is_stable(E, I, n_epoch=None, rel_eps=None, lock_consec=None, rng=None):
     return 0
 
 # 5/B — Law lock-in dynamics with adaptive noise and threshold
-def law_lock_in(E, I, n_epoch=500, rng=None):
+def law_lock_in(E, I, n_epoch=None, rng=None):
+    if n_epoch is None:
+        n_epoch = MASTER_CTRL["LOCKIN_EPOCHS"]
     """
     Simulates law lock-in, but noise and threshold now adapt to f(E,I) and X.
     Where f and X are favorable (closer to Goldilocks), lock-in happens faster and easier.
@@ -420,7 +423,7 @@ def law_lock_in(E, I, n_epoch=500, rng=None):
 
 
 # --------- MAIN MC LOOP (per-universe RNG) ---------
-N = MASTER_CTRL["N_universes"]
+N = MASTER_CTRL["NUM_UNIVERSES"]
 
 X_vals, I_vals, E_vals, f_vals = [], [], [], []
 stables, law_epochs, final_cs, all_histories = [], [], [], []
@@ -436,7 +439,8 @@ for _ in range(N):
     np.random.seed(uni_seed)   # ensures qt.rand_ket() etc. are reproducible
 
     # 3) sample everything using the per-universe rng
-    Ei = float(rng_uni.lognormal(E_LOG_MU, E_LOG_SIGMA))
+    Ei = float(rng_uni.lognormal(MASTER_CTRL["E_LOG_MU"],
+                             MASTER_CTRL["E_LOG_SIGMA"]))
     Ii = sample_information_param_KLxShannon(dim=8)   # uses qutip + np.random (already seeded)
     fi = f_EI(Ei, Ii)
     Xi = Ei * Ii * fi
@@ -448,7 +452,9 @@ for _ in range(N):
     stables.append(stable)
 
     if stable == 1:
-        lock_epoch, c_hist = law_lock_in(Ei, Ii, n_epoch=MASTER_CTRL["N_epoch"], rng=rng_uni)
+        lock_epoch, c_hist = law_lock_in(Ei, Ii,
+                                         n_epoch=MASTER_CTRL["LOCKIN_EPOCHS"],
+                                         rng=rng_uni)
     else:
         lock_epoch, c_hist = -1, []
 
@@ -593,7 +599,9 @@ if all_histories:
 def evolve(E, I, n_epoch=None):   
     """Simulate expansion dynamics after law lock-in."""
     if n_epoch is None:
-        n_epoch = MASTER_CTRL["expansion_epochs"]
+        n_epoch = MASTER_CTRL["EXPANSION_EPOCHS"]
+
+    A = A * MASTER_CTRL["EXP_GROWTH_BASE"] + rng.normal(0, MASTER_CTRL["EXP_NOISE_BASE"])
 
     A_series = []
     I_series = []
@@ -617,7 +625,7 @@ def evolve(E, I, n_epoch=None):
 
 # --- Pick reference universe for expansion (any stable one)
 if df["stable"].sum() > 0:
-    ref_universe = df[df["stable"] == 1].sample(1, random_state=MASTER_CTRL["seed"])
+    ref_universe = df[df["stable"] == 1].sample(1, random_state=MASTER_CTRL["SEED"])
     E_ref, I_ref = ref_universe["E"].values[0], ref_universe["I"].values[0]
 else:
     E_ref, I_ref = E, I   # fallback: collapse values
@@ -803,13 +811,13 @@ if not can_stratify:
 # --- Classification split ---
 Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
     X_feat, y_cls,
-    test_size=MASTER_CTRL["test_size"],
+    test_size=MASTER_CTRL["TEST_SIZE"],
     random_state=42,
     stratify=stratify_arg
 )
 
 # --- Regression split (only if enough samples) ---
-have_reg = len(X_reg) >= MASTER_CTRL["regression_min"]
+have_reg = len(X_reg) >= MASTER_CTRL["REGRESSION_MIN"]
 if have_reg:
     Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
         X_reg, y_reg,
@@ -818,7 +826,7 @@ if have_reg:
     )
 
 # ---------- Train models ----------
-rf_cls = RandomForestClassifier(n_estimators=MASTER_CTRL["rf_n_estimators"],
+rf_cls = RandomForestClassifier(n_estimators=MASTER_CTRL["RF_N_ESTIMATORS"],
                                 random_state=42, n_jobs=-1)
 rf_cls.fit(Xtr_c, ytr_c)
 cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
@@ -835,7 +843,7 @@ else:
     print("[XAI] Not enough lock-in samples for regression.")
 
 # ---------- SHAP ----------
-if MASTER_CTRL["enable_SHAP"]:
+if MASTER_CTRL["RUN_XAI"]:
     # Classification
     try:
         X_plot = Xte_c.copy()
@@ -908,7 +916,7 @@ if MASTER_CTRL["enable_SHAP"]:
             print(f"[ERR] SHAP regression failed: {e}")
 
 # ---------- LIME ----------
-if MASTER_CTRL["enable_LIME"] and (len(np.unique(y_cls)) > 1):
+if MASTER_CTRL["RUN_XAI"] and (len(np.unique(y_cls)) > 1):
     try:
         lime_explainer = LimeTabularExplainer(
             training_data=Xtr_c.values,
