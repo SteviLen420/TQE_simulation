@@ -576,14 +576,18 @@ elif MASTER_CTRL["GOLDILOCKS_MODE"] == "dynamic":
     print("[MC] Dynamic mode: estimating Goldilocks window...")
     df_pre = run_mc(E_c_low=None, E_c_high=None)
     E_c_low, E_c_high, _, _, _, _, _ = compute_dynamic_goldilocks(df_pre)
-    print(f"[MC] Estimated Goldilocks (X) window: {E_c_low:.4f} .. {E_c_high:.4f}")
 
-    # Pass 2: final run with window shaping
-    df = run_mc(E_c_low=E_c_low, E_c_high=E_c_high)
+    def _fmt(x):
+        return f"{x:.4f}" if isinstance(x, (int, float)) and np.isfinite(x) else "N/A"
 
-else:
-    print(f"[MC][WARN] Unknown GOLDILOCKS_MODE={MASTER_CTRL['GOLDILOCKS_MODE']!r}; running without shaping.")
-    df = run_mc(E_c_low=None, E_c_high=None)
+    print(f"[MC] Estimated Goldilocks (X) window: {_fmt(E_c_low)} .. {_fmt(E_c_high)}")
+
+    # Pass 2: final run with window shaping (ha nincs érvényes ablak, fusson formázás nélkül)
+    if E_c_low is not None and E_c_high is not None:
+        df = run_mc(E_c_low=E_c_low, E_c_high=E_c_high)
+    else:
+        print("[MC][WARN] No valid Goldilocks window estimated; running without shaping.")
+        df = run_mc(E_c_low=None, E_c_high=None)
 
 # Save main run
 df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
@@ -597,22 +601,21 @@ plt.figure(figsize=(8,5))
 plt.scatter(xx, yy, s=30, alpha=0.7, label="bin means")
 if len(xs):
     plt.plot(xs, ys, "r-", lw=2, label="spline fit")
+def _lbl(v, name):
+    return f"{name} = {v:.2f}" if isinstance(v, (int, float)) and np.isfinite(v) else f"{name} = N/A"
+
 if E_c_low is not None and E_c_high is not None:
-    plt.axvline(E_c_low,  color='g', ls='--', label=f"E_c_low = {E_c_low:.2f}")
-    plt.axvline(E_c_high, color='m', ls='--', label=f"E_c_high = {E_c_high:.2f}")
-else:
-    # fallback to curve-derived window if runtime window wasn't set
-    plt.axvline(E_c_low_plot,  color='g', ls='--', label=f"E_c_low(curve) = {E_c_low_plot:.2f}")
-    plt.axvline(E_c_high_plot, color='m', ls='--', label=f"E_c_high(curve) = {E_c_high_plot:.2f}")
+    plt.axvline(E_c_low,  color='g', ls='--', label=_lbl(E_c_low,  "E_c_low"))
+    plt.axvline(E_c_high, color='m', ls='--', label=_lbl(E_c_high, "E_c_high"))
+elif E_c_low_plot is not None and E_c_high_plot is not None:
+    plt.axvline(E_c_low_plot,  color='g', ls='--', label=_lbl(E_c_low_plot,  "E_c_low(curve)"))
+    plt.axvline(E_c_high_plot, color='m', ls='--', label=_lbl(E_c_high_plot, "E_c_high(curve)"))
 
 plt.xlabel("X = E·I (or configured)")
 plt.ylabel("P(stable)")
 plt.title("Goldilocks zone: stability curve")
 plt.legend()
 savefig(os.path.join(FIG_DIR, "stability_curve.png"))
-
-if MASTER_CTRL.get("SAVE_FIGS", True):
-    savefig(os.path.join(FIG_DIR, "stability_curve.png"))
 
 # ======================================================
 # 10) Scatter E vs I
@@ -624,9 +627,6 @@ plt.title("Universe outcomes in (E, I) space")
 cb = plt.colorbar(sc, ticks=[0, 1])
 cb.set_label("Stable (0/1)")
 savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
-
-if MASTER_CTRL.get("SAVE_FIGS", True):
-    savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
 
 # ======================================================
 # 11) Save consolidated summary (single write)
@@ -669,6 +669,7 @@ summary = {
         "python": sys.version.split()[0]
     }
 }
+if MASTER_CTRL.get("SAVE_JSON", True):
 save_json(os.path.join(SAVE_DIR, "summary_full.json"), summary)
 
 print("\n🌌 Universe Stability Summary (final run)")
@@ -676,9 +677,6 @@ print(f"Total universes: {len(df)}")
 print(f"Stable:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
 print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
-
-if MASTER_CTRL.get("SAVE_JSON", True):
-    save_json(os.path.join(SAVE_DIR, "summary_full.json"), summary)
 
 # ======================================================
 # 12) Universe Stability Distribution (bar chart)
