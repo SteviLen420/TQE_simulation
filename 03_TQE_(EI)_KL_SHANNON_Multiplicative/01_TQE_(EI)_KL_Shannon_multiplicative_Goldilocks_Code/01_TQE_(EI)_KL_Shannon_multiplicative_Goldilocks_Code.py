@@ -669,7 +669,6 @@ summary = {
         "python": sys.version.split()[0]
     }
 }
-if MASTER_CTRL.get("SAVE_JSON", True):
 save_json(os.path.join(SAVE_DIR, "summary_full.json"), summary)
 
 print("\n🌌 Universe Stability Summary (final run)")
