@@ -118,11 +118,21 @@ def _couple_X(E: np.ndarray, I: np.ndarray, x_cfg: dict) -> np.ndarray:
             X = E * (alphaI * I)
     return scale * X
 
-def _save_with_mirrors(src_path: str, mirrors: list):
-    """Copy a freshly written file to mirror directories (preserving filename)."""
+def _save_with_mirrors(src_path: str, mirrors: list, put_in_figs: bool = False):
+    """
+    Copy a freshly written file to mirror directories.
+    If put_in_figs=True, copy into <mirror>/<fig_subdir>/basename.
+    Otherwise copy into <mirror>/basename.
+    """
+    fig_sub = ACTIVE["OUTPUTS"]["local"].get("fig_subdir", "figs")
     for m in mirrors:
         try:
-            dst = os.path.join(m, os.path.basename(src_path))
+            if put_in_figs:
+                dst_dir = os.path.join(m, fig_sub)
+                os.makedirs(dst_dir, exist_ok=True)
+                dst = os.path.join(dst_dir, os.path.basename(src_path))
+            else:
+                dst = os.path.join(m, os.path.basename(src_path))
             shutil.copy2(src_path, dst)
         except Exception as e:
             print(f"[WARN] Mirror copy failed → {m}: {e}")
@@ -312,7 +322,7 @@ def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
         },
         "files": {
             "csv": os.path.relpath(csv_path, start=primary),
-            "figs": [p for p in [f1, f2, f3, f4] if p],
+            "figs": [os.path.relpath(p, start=primary) for p in [f1, f2, f3, f4] if p],
         },
     }
     json_path = os.path.join(primary, f"{prefix}fluctuation_summary.json")
