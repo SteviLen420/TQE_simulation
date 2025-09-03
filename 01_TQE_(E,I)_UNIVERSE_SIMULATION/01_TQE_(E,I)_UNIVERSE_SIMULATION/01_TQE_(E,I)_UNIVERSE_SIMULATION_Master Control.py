@@ -192,36 +192,59 @@ MASTER_CTRL = {
         "max_shap_samples": 1000,
         "shap_background_size": 200,
     },
+    
+    # ---------------------------
+    # Outputs 
+    # ---------------------------
+    "ENV": {
+        "auto_detect": True,               # automatically try to detect Colab / Desktop / Cloud
+        "force_environment": None,         # manually force environment ("colab", "desktop", "cloud")
+        "colab_markers": ["COLAB_RELEASE_TAG", "COLAB_BACKEND_VERSION"]  
+        # typical environment variables that exist in Colab
+    },
 
-    # ---------------------------
-    # Outputs / IO
-    # ---------------------------
     "OUTPUTS": {
-        "save_figs": True,
-        "save_json": True,
-        "save_csv": True,
-        "max_figs_to_save": None,  # None => no cap
+        "save_figs": True,                 # save generated figures
+        "save_json": True,                 # save JSON summaries
+        "save_csv": True,                  # save CSV outputs
+        "max_figs_to_save": None,          # None => no limit on saved figures
 
-        # Paths (the runner should create these)
+        # Local file system outputs (Desktop or local project folder)
         "local": {
-            "base_dir": "./",
-            "fig_subdir": "figs",
+            "base_dir": "./",              # default path (will be auto-adjusted if Desktop is available)
+            "fig_subdir": "figs",          # subdirectory for figures
             "allow_exts": [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
+
+            # Desktop-specific overrides
+            "prefer_desktop": True,        # if Desktop exists, always use it as priority
+            "desktop_subdir": "TQE_Output",# subfolder created on Desktop
+            "desktop_env_var": "TQE_DESKTOP_DIR"  # env var to override Desktop location
         },
+
+        # Google Colab Drive outputs
         "colab_drive": {
             "enabled": True,
             "base_dir": "/content/drive/MyDrive/TQE_(E,I)_KL_Shannon",
         },
+
+        # Cloud bucket outputs (e.g. Google Cloud Storage, AWS S3)
         "cloud": {
             "enabled": False,
-            "bucket_url": None,   # e.g. "gs://my-bucket/tqe/"
+            "bucket_url": None,            # e.g. "gs://my-bucket/tqe/"
         },
 
-        # Plot toggles
-        "plot_avg_lockin": True,
-        "plot_lockin_hist": True,
-        "plot_stability_basic": False,
-        "verbose": True,
+        # Mirroring settings (allow saving to multiple targets at once)
+        "mirroring": {
+            "enabled": True,
+            "targets": ["local", "colab_drive"]  
+            # saves to Desktop/local + Colab by default (add "cloud" if needed)
+        },
+
+        # Plot controls
+        "plot_avg_lockin": True,           # plot average law lock-in curve
+        "plot_lockin_hist": True,          # plot histogram of lock-in epochs
+        "plot_stability_basic": False,     # simple stability diagnostic plot
+        "verbose": True,                   # print extra logs
     },
 
     # ---------------------------
@@ -317,3 +340,40 @@ def resolve_profile(profile_name: str):
     return active
 
 ACTIVE = resolve_profile(SELECTED_PROFILE)
+
+import os, platform
+
+def get_desktop_dir():
+    # 1) manual override via env var
+    env = os.environ.get(ACTIVE["OUTPUTS"]["local"].get("desktop_env_var", "TQE_DESKTOP_DIR"))
+    if env:
+        return os.path.expanduser(env)
+
+    # 2) OS-specific defaults
+    home = os.path.expanduser("~")
+    if platform.system() == "Windows":
+        for p in [os.path.join(home, "Desktop"),
+                  os.path.join(home, "OneDrive", "Desktop")]:
+            if os.path.isdir(p): return p
+    else:
+        p = os.path.join(home, "Desktop")
+        if os.path.isdir(p): return p
+
+    # 3) fallback: current working directory
+    return os.getcwd()
+
+# --- Adjust local outputs to Desktop ---
+if ACTIVE["OUTPUTS"]["local"].get("prefer_desktop", True):
+    desktop = get_desktop_dir()
+    ACTIVE["OUTPUTS"]["local"]["base_dir"] = os.path.join(
+        desktop, ACTIVE["OUTPUTS"]["local"].get("desktop_subdir", "TQE_Output")
+    )
+
+# --- Enable Colab drive if in Colab ---
+IN_COLAB = any(k in os.environ for k in ACTIVE["ENV"]["colab_markers"])
+if IN_COLAB:
+    ACTIVE["OUTPUTS"]["colab_drive"]["enabled"] = True
+
+# --- Enable Cloud if bucket is defined ---
+if ACTIVE["OUTPUTS"]["cloud"].get("bucket_url"):
+    ACTIVE["OUTPUTS"]["cloud"]["enabled"] = True
