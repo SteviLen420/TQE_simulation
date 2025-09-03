@@ -1,39 +1,37 @@
 # fluctuation.py
 # ===================================================================================
 # Fluctuation stage for the TQE universe simulation.
-# Samples Energy (E) for Monte Carlo universes, optionally computes Information (I)
-# via KL divergence to uniform and Shannon entropy over a random quantum-like
-# probability vector (superposition proxy). Supports E-only and E×I modes.
+# Samples Energy (E) and, if enabled, computes Information (I) from random
+# "quantum-like" probability vectors (KL to uniform + 1 - normalized Shannon).
+# Couples into X = f(E, I). Saves CSV, PNGs and JSON. Supports E-only and E×I.
 #
-# Outputs:
-#   - CSV with all sampled fields
-#   - PNG figures (E histograms; plus E–I scatter and X distribution for EI mode)
-#   - JSON summary (basic stats)
-#
-# Routing:
-#   Uses io_paths.resolve_output_paths(ACTIVE) to decide primary folder (Colab Drive
-#   if in Colab, otherwise Desktop), and mirrors if configured.
+# IO routing:
+#   Uses io_paths.resolve_output_paths(ACTIVE) for primary dirs and mirrors.
+#   PNGs are mirrored into <mirror>/figs/, CSV/JSON into <mirror>/.
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
 
-from config import ACTIVE                      # active config resolved from profiles
-from imports import *                          # common libs (np, pd, plt, scipy, etc.)
+from typing import Dict, Tuple, Optional
+import os, json, shutil
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.stats import entropy
+
+from config import ACTIVE
 from io_paths import resolve_output_paths, ensure_colab_drive_mounted
 
-import json
-import shutil
-from typing import Dict, Tuple
 
 # ---------------------------
-# Small helpers
+# Helpers
 # ---------------------------
 
-def _rng(seed):
-    """Create a reproducible RNG; if seed is None, derive one."""
+def _rng(seed: Optional[int]):
+    """Create a reproducible RNG (falls back to fresh SeedSequence if seed is None)."""
     if seed is None:
-        ss = np.random.SeedSequence()
-        return np.random.default_rng(ss)
+        return np.random.default_rng(np.random.SeedSequence())
     return np.random.default_rng(int(seed))
 
 def _apply_truncation(E: np.ndarray, low, high) -> np.ndarray:
@@ -46,7 +44,6 @@ def _apply_truncation(E: np.ndarray, low, high) -> np.ndarray:
 
 def _random_prob_vec(dim: int, rng) -> np.ndarray:
     """Draw a random probability vector by normalizing complex amplitudes."""
-    # Complex gaussian amplitudes -> squared magnitudes -> normalize to 1
     a = rng.normal(size=dim) + 1j * rng.normal(size=dim)
     p = np.abs(a) ** 2
     p /= p.sum()
@@ -54,29 +51,28 @@ def _random_prob_vec(dim: int, rng) -> np.ndarray:
 
 def _info_components(p: np.ndarray, kl_eps: float) -> Tuple[float, float, float]:
     """
-    Compute KL to uniform (normalized), Shannon entropy (normalized),
-    and a fused I in [0,1] (fusion applied by caller).
-    Returns (I_kl_norm, H_norm, one_minus_H_norm)
+    Compute components:
+      - KL(p || u) normalized by log(dim)  in [0,1]
+      - H_norm = H(p)/log(dim)             in [0,1]
+      - (1 - H_norm)                       as Shannon-derived "information"
+    Returns: (I_kl_norm, H_norm, one_minus_H_norm)
     """
     dim = p.size
     u = np.full(dim, 1.0 / dim)
-    # KL(p||u) = sum p * log(p/u) ; normalize by log(dim) to get [0, 1]
+
     with np.errstate(divide="ignore", invalid="ignore"):
         kl = np.sum(p * (np.log(p + kl_eps) - np.log(u + kl_eps)))
     kl_norm = float(kl / np.log(dim)) if dim > 1 else 0.0
     kl_norm = float(np.clip(kl_norm, 0.0, 1.0))
 
-    # Shannon entropy normalized: H_norm = H / log(dim) ∈ [0,1]
     H = entropy(p, base=np.e)
     H_norm = float(H / np.log(dim)) if dim > 1 else 0.0
     H_norm = float(np.clip(H_norm, 0.0, 1.0))
 
-    # For an "information-content-like" score from Shannon, use (1 - H_norm)
-    one_minus_H_norm = 1.0 - H_norm
-    return kl_norm, H_norm, one_minus_H_norm
+    return kl_norm, H_norm, 1.0 - H_norm
 
 def _fuse_I(kl_norm: float, shannon_info: float, info_cfg: dict) -> float:
-    """Fuse KL- and Shannon-based components into a single I ∈ [0,1]."""
+    """Fuse KL and Shannon components into I ∈ [0,1] according to config."""
     mode = info_cfg.get("fusion", "product")
     if mode == "product":
         val = kl_norm * shannon_info
@@ -84,13 +80,10 @@ def _fuse_I(kl_norm: float, shannon_info: float, info_cfg: dict) -> float:
         w_kl = float(info_cfg.get("weight_kl", 0.5))
         w_sh = float(info_cfg.get("weight_shannon", 0.5))
         s = (w_kl + w_sh) or 1.0
-        w_kl /= s
-        w_sh /= s
-        val = w_kl * kl_norm + w_sh * shannon_info
+        val = (w_kl / s) * kl_norm + (w_sh / s) * shannon_info
     else:
         val = kl_norm * shannon_info
 
-    # post-processing
     exp_ = float(info_cfg.get("exponent", 1.0))
     floor = float(info_cfg.get("floor_eps", 0.0))
     val = max(val, floor)
@@ -98,15 +91,14 @@ def _fuse_I(kl_norm: float, shannon_info: float, info_cfg: dict) -> float:
         val = val ** exp_
     return float(np.clip(val, 0.0, 1.0))
 
-def _couple_X(E: np.ndarray, I: np.ndarray, x_cfg: dict) -> np.ndarray:
-    """Compute X = f(E, I) according to COUPLING_X settings."""
+def _couple_X(E: np.ndarray, I: Optional[np.ndarray], x_cfg: dict) -> np.ndarray:
+    """Compute X = f(E, I) (or X=E if I is None)."""
     mode   = x_cfg.get("mode", "product")
     alphaI = float(x_cfg.get("alpha_I", 0.8))
     powI   = float(x_cfg.get("I_power", 1.0))
     scale  = float(x_cfg.get("scale", 1.0))
 
     if I is None:
-        # E-only mode: define X ≡ E (so downstream code can still run)
         X = E.astype(float)
     else:
         if mode == "E_plus_I":
@@ -114,15 +106,14 @@ def _couple_X(E: np.ndarray, I: np.ndarray, x_cfg: dict) -> np.ndarray:
         elif mode == "E_times_I_pow":
             X = E * (alphaI * I) ** powI
         else:
-            # default "product"
             X = E * (alphaI * I)
     return scale * X
 
 def _save_with_mirrors(src_path: str, mirrors: list, put_in_figs: bool = False):
     """
-    Copy a freshly written file to mirror directories.
-    If put_in_figs=True, copy into <mirror>/<fig_subdir>/basename.
-    Otherwise copy into <mirror>/basename.
+    Copy freshly written file to mirrors.
+    - CSV/JSON: put_in_figs=False  → <mirror>/<file>
+    - PNG:      put_in_figs=True   → <mirror>/figs/<file>
     """
     fig_sub = ACTIVE["OUTPUTS"]["local"].get("fig_subdir", "figs")
     for m in mirrors:
@@ -137,42 +128,44 @@ def _save_with_mirrors(src_path: str, mirrors: list, put_in_figs: bool = False):
         except Exception as e:
             print(f"[WARN] Mirror copy failed → {m}: {e}")
 
+
 # ---------------------------
 # Main stage
 # ---------------------------
 
-def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
+def run_fluctuation(active_cfg: Dict = ACTIVE, seed: Optional[int] = None) -> Dict:
     """
-    Run the fluctuation stage.
-    - Samples E from lognormal with optional truncation
-    - If PIPELINE.use_information=True, also computes I and coupled X
-    - Saves CSV/JSON/PNGs to the resolved output folders
-    Returns a dict with basic handles and in-memory arrays.
+    Run fluctuation stage:
+      1) Sample E (lognormal with optional truncation)
+      2) If info channel on: compute I_kl, I_shannon(=1-H_norm), fuse to I
+      3) Couple into X = f(E, I) (or X=E)
+      4) Save CSV/PNGs/JSON and mirror to configured targets
+    Returns a dict with arrays, dataframe, summary and path info.
     """
-    # Resolve I/O paths and mount Drive if needed
-    paths = resolve_output_paths(active_cfg)
+    # Ensure Drive (if Colab) and resolve paths
     ensure_colab_drive_mounted(active_cfg)
+    paths   = resolve_output_paths(active_cfg)
     primary = paths["primary_run_dir"]
     figdir  = paths["fig_dir"]
     mirrors = paths["mirrors"]
-    allow   = set(active_cfg["OUTPUTS"]["local"]["allow_exts"])
 
-    # Prefix for filenames (E__ vs EI__)
-    use_I = bool(active_cfg["PIPELINE"].get("use_information", True))
-    prefix = "EI__" if use_I else "E__"
+    # EI/E filename prefix (keeps consistency with other stages)
+    ei_tag_enabled = active_cfg["OUTPUTS"].get("tag_ei_in_filenames", True)
+    use_I          = bool(active_cfg["PIPELINE"].get("use_information", True))
+    prefix         = ("EI__" if use_I else "E__") if ei_tag_enabled else ""
 
-    # RNG
-    seed = active_cfg["ENERGY"].get("seed")
-    rng  = _rng(seed)
+    # RNG seed: explicit arg > config seed
+    seed_eff = active_cfg["ENERGY"].get("seed") if seed is None else seed
+    rng      = _rng(seed_eff)
 
     # ---------------------------
     # 1) Sample Energy (E)
     # ---------------------------
-    N       = int(active_cfg["ENERGY"]["num_universes"])
-    mu      = float(active_cfg["ENERGY"]["log_mu"])
-    sigma   = float(active_cfg["ENERGY"]["log_sigma"])
-    t_low   = active_cfg["ENERGY"].get("trunc_low", None)
-    t_high  = active_cfg["ENERGY"].get("trunc_high", None)
+    N      = int(active_cfg["ENERGY"]["num_universes"])
+    mu     = float(active_cfg["ENERGY"]["log_mu"])
+    sigma  = float(active_cfg["ENERGY"]["log_sigma"])
+    t_low  = active_cfg["ENERGY"].get("trunc_low", None)
+    t_high = active_cfg["ENERGY"].get("trunc_high", None)
 
     # lognormal: draw log(E) ~ N(mu, sigma^2) → E = exp(logE)
     logE0 = rng.normal(loc=mu, scale=sigma, size=N).astype(float)
@@ -180,23 +173,20 @@ def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
     E0    = _apply_truncation(E0, t_low, t_high)
 
     # ---------------------------
-    # 2) Optional Information (I) over random prob. vectors
+    # 2) Optional Information (I) from random prob. vectors
     # ---------------------------
     I_kl = I_shannon = I_fused = None
-    p_store = None  # optional: store a few sample probability vectors
 
     if use_I:
         info_cfg = active_cfg["INFORMATION"]
         dim      = int(info_cfg["hilbert_dim"])
         eps      = float(info_cfg["kl_eps"])
 
-        # Prepare arrays
         I_kl      = np.zeros(N, dtype=float)
-        H_norm    = np.zeros(N, dtype=float)
-        I_shannon = np.zeros(N, dtype=float)
+        H_norm    = np.zeros(N, dtype=float)   # kept for debugging/plots if needed
+        I_shannon = np.zeros(N, dtype=float)   # this is (1 - H_norm)
         I_fused   = np.zeros(N, dtype=float)
 
-        # Generate per-universe probability vectors and compute I components
         for i in range(N):
             p = _random_prob_vec(dim, rng)
             kl_norm, h_norm, sh_info = _info_components(p, eps)
@@ -206,24 +196,23 @@ def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
             I_fused[i]   = _fuse_I(kl_norm, sh_info, info_cfg)
 
     # ---------------------------
-    # 3) Coupling X = f(E, I) (or X=E in E-only mode)
+    # 3) Coupling X = f(E, I) (or X=E)
     # ---------------------------
     X = _couple_X(E0, I_fused if use_I else None, active_cfg["COUPLING_X"])
 
     # ---------------------------
-    # 4) Goldilocks (heuristic flag on E; X-diagnostics are plotted)
+    # 4) Goldilocks heuristics (flag on E)
     # ---------------------------
     gcfg = active_cfg["GOLDILOCKS"]
     if gcfg.get("mode", "dynamic") == "heuristic":
         c = float(gcfg.get("E_center", 4.0))
         w = float(gcfg.get("E_width",  4.0))
     else:
-        # still provide a coarse heuristic window for early diagnostics
         c, w = float(mu + sigma), float(2.0 * sigma)
     in_goldilocks_E = (np.abs(E0 - c) <= (w / 2.0)).astype(int)
 
     # ---------------------------
-    # 5) Build DataFrame & save CSV
+    # 5) DataFrame + CSV
     # ---------------------------
     data = {
         "universe_id": np.arange(N, dtype=int),
@@ -240,13 +229,12 @@ def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
         })
 
     df = pd.DataFrame(data)
-
     csv_path = os.path.join(primary, f"{prefix}fluctuation_samples.csv")
     df.to_csv(csv_path, index=False)
-    _save_with_mirrors(csv_path, mirrors)
+    _save_with_mirrors(csv_path, mirrors, put_in_figs=False)
 
     # ---------------------------
-    # 6) Figures
+    # 6) Figures (mirror into <mirror>/figs/)
     # ---------------------------
     # E hist (linear)
     plt.figure()
@@ -257,7 +245,7 @@ def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
     f1 = os.path.join(figdir, f"{prefix}E_hist_linear.png")
     plt.savefig(f1, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180), bbox_inches="tight")
     plt.close()
-    _save_with_mirrors(f1, mirrors)
+    _save_with_mirrors(f1, mirrors, put_in_figs=True)
 
     # E hist (log10)
     plt.figure()
@@ -268,7 +256,7 @@ def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
     f2 = os.path.join(figdir, f"{prefix}E_hist_log.png")
     plt.savefig(f2, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180), bbox_inches="tight")
     plt.close()
-    _save_with_mirrors(f2, mirrors)
+    _save_with_mirrors(f2, mirrors, put_in_figs=True)
 
     # EI-only plots
     f3 = f4 = None
@@ -279,10 +267,10 @@ def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
         plt.xlabel("E0")
         plt.ylabel("I_fused")
         plt.title("E vs I_fused")
-        f3 = os.path.join(figdir, "EI__E_vs_I_scatter.png")
+        f3 = os.path.join(figdir, f"{prefix}E_vs_I_scatter.png")
         plt.savefig(f3, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180), bbox_inches="tight")
         plt.close()
-        _save_with_mirrors(f3, mirrors)
+        _save_with_mirrors(f3, mirrors, put_in_figs=True)
 
         # X distribution
         plt.figure()
@@ -290,10 +278,10 @@ def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
         plt.xlabel("X")
         plt.ylabel("Count")
         plt.title("X distribution (from E and I)")
-        f4 = os.path.join(figdir, "EI__X_distribution.png")
+        f4 = os.path.join(figdir, f"{prefix}X_distribution.png")
         plt.savefig(f4, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180), bbox_inches="tight")
         plt.close()
-        _save_with_mirrors(f4, mirrors)
+        _save_with_mirrors(f4, mirrors, put_in_figs=True)
 
     # ---------------------------
     # 7) JSON summary
@@ -304,7 +292,7 @@ def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
         "mode": "EI" if use_I else "E",
         "counts": {
             "num_universes": int(N),
-            "in_goldilocks_E": int(int(in_goldilocks_E.sum())),
+            "in_goldilocks_E": int(in_goldilocks_E.sum()),
         },
         "stats": {
             "E0": {
@@ -328,9 +316,9 @@ def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
     json_path = os.path.join(primary, f"{prefix}fluctuation_summary.json")
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
-    _save_with_mirrors(json_path, mirrors)
+    _save_with_mirrors(json_path, mirrors, put_in_figs=False)
 
-    print(f"[FLUCT] mode={summary['mode']} → saved CSV/JSON/PNGs under:\n  {primary}")
+    print(f"[FLUCT] mode={summary['mode']} → saved under:\n  {primary}")
     if mirrors:
         print(f"[FLUCT] mirrored to:\n  " + "\n  ".join(mirrors))
 
@@ -340,15 +328,15 @@ def run_fluctuation(active_cfg: Dict = ACTIVE) -> Dict:
         "arrays": {
             "E0": E0,
             "logE0": logE0,
-            "I_kl": I_kl,
-            "I_shannon": I_shannon,
-            "I_fused": I_fused,
+            "I_kl": I_kl if use_I else None,
+            "I_shannon": I_shannon if use_I else None,
+            "I_fused": I_fused if use_I else None,
             "X": X,
             "in_goldilocks_E": in_goldilocks_E,
         },
         "dataframe": df,
     }
 
-# Optional: allow running this stage directly
+
 if __name__ == "__main__":
     run_fluctuation(ACTIVE)
