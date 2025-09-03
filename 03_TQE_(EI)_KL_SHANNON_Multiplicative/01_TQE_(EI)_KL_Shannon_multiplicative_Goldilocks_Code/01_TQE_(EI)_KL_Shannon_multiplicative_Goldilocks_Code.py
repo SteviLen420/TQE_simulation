@@ -370,70 +370,69 @@ def simulate_lock_in(
 # 7) Helpers for MC runs and dynamic Goldilocks estimation
 # ======================================================
 def run_mc(E_c_low=None, E_c_high=None):
-    prev_state = np.random.get_state()   # <-- ELŐTTE mentsd
-    try:
     """
     Single-pass Monte Carlo run. If E_c_low/high are provided, they are used
     to shape noise via sigma_goldilocks; otherwise, no Goldilocks shaping.
     Returns a DataFrame with per-universe results.
     """
+    prev_state = np.random.get_state()   # mentsd a legacy RNG állapotát
+    try:
         rows = []
         universe_seeds = []
 
-    for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
-        # derive per-universe seed from master rng
-        uni_seed = int(rng.integers(0, 2**32 - 1))
-        universe_seeds.append(uni_seed)
+        for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
+            # derive per-universe seed from master rng (Generator)
+            uni_seed = int(rng.integers(0, 2**32 - 1))
+            universe_seeds.append(uni_seed)
 
-        # build per-universe RNG
-        rng_uni = np.random.default_rng(uni_seed)
-        np.random.seed(uni_seed)  # for libs using np.random (QuTiP, etc.)
+            # per-universe RNG-k
+            rng_uni = np.random.default_rng(uni_seed)
+            np.random.seed(uni_seed)  # libs, pl. QuTiP, a legacy RNG-t használják
 
-        # sample energy and information
-        E = sample_energy(rng_local=rng_uni)
-        I = sample_information_param()
+            # sample energy & information
+            E = sample_energy(rng_local=rng_uni)
+            I = sample_information_param()
 
-        # X definition (MASTER_CTRL-driven)
-        mode = MASTER_CTRL["X_MODE"]
-        if mode == "E_plus_I":
-            X = (E + I) * MASTER_CTRL["X_SCALE"]
-        elif mode == "E_times_I_pow":
-            X = E * (I ** MASTER_CTRL["X_I_POWER"]) * MASTER_CTRL["X_SCALE"]
-        else:
-            X = (E * I) * MASTER_CTRL["X_SCALE"]
+            # X definetion
+            mode = MASTER_CTRL["X_MODE"]
+            if mode == "E_plus_I":
+                X = (E + I) * MASTER_CTRL["X_SCALE"]
+            elif mode == "E_times_I_pow":
+                X = E * (I ** MASTER_CTRL["X_I_POWER"]) * MASTER_CTRL["X_SCALE"]
+            else:
+                X = (E * I) * MASTER_CTRL["X_SCALE"]
 
-        # simulate
-        stable, lockin, stable_epoch, lock_epoch = simulate_lock_in(
-            X,
-            MASTER_CTRL["LOCKIN_EPOCHS"],
-            sigma0=MASTER_CTRL["EXP_NOISE_BASE"],
-            alpha=MASTER_CTRL.get("SIGMA_ALPHA", 1.0),  # pass alpha from MASTER_CTRL
-            E_c_low=E_c_low,
-            E_c_high=E_c_high,
-            rng=rng_uni
+            # Simulation
+            stable, lockin, stable_epoch, lock_epoch = simulate_lock_in(
+                X,
+                MASTER_CTRL["LOCKIN_EPOCHS"],
+                sigma0=MASTER_CTRL["EXP_NOISE_BASE"],
+                alpha=MASTER_CTRL.get("SIGMA_ALPHA", 1.0),
+                E_c_low=E_c_low,
+                E_c_high=E_c_high,
+                rng=rng_uni
+            )
+
+            rows.append({
+                "universe_id": i,
+                "seed": uni_seed,
+                "E": E,
+                "I": I,
+                "X": X,
+                "stable": stable,
+                "lockin": lockin,
+                "stable_epoch": stable_epoch,
+                "lock_epoch": lock_epoch
+            })
+
+        df_out = pd.DataFrame(rows)
+        # persist per-universe seeds
+        pd.DataFrame({"universe_id": np.arange(len(df_out)), "seed": universe_seeds}).to_csv(
+            os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
         )
-
-        rows.append({
-            "universe_id": i,
-            "seed": uni_seed,
-            "E": E,
-            "I": I,
-            "X": X,
-            "stable": stable,
-            "lockin": lockin,
-            "stable_epoch": stable_epoch,
-            "lock_epoch": lock_epoch
-        })
-
-    df_out = pd.DataFrame(rows)
-    # persist per-universe seeds alongside
-    pd.DataFrame({"universe_id": np.arange(len(df_out)), "seed": universe_seeds}).to_csv(
-        os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
-    )
-    return df_out
-finally:
-    np.random.set_state(prev_state)
-
+        return df_out
+    finally:
+        np.random.set_state(prev_state) 
 
 def compute_dynamic_goldilocks(df_in):
     """
@@ -582,16 +581,20 @@ elif MASTER_CTRL["GOLDILOCKS_MODE"] == "dynamic":
     E_c_low, E_c_high, _, _, _, _, _ = compute_dynamic_goldilocks(df_pre)
 
     def _fmt(x):
-        return f"{x:.4f}" if isinstance(x, (int, float)) and np.isfinite(x) else "N/A"
+        return f"{float(x):.4f}" if (x is not None and np.isfinite(x)) else "N/A"
 
     print(f"[MC] Estimated Goldilocks (X) window: {_fmt(E_c_low)} .. {_fmt(E_c_high)}")
 
-    # Pass 2: final run with window shaping (ha nincs érvényes ablak, fusson formázás nélkül)
-    if E_c_low is not None and E_c_high is not None:
+    # Pass 2: final run with window shaping (ha nincs érvényes ablak, fusson shaping nélkül)
+    if (E_c_low is not None) and (E_c_high is not None):
         df = run_mc(E_c_low=E_c_low, E_c_high=E_c_high)
     else:
-        print(f"[MC][WARN] Unknown GOLDILOCKS_MODE={MASTER_CTRL['GOLDILOCKS_MODE']!r}; running without shaping.")
+        print("[MC][WARN] No valid Goldilocks window estimated; running without shaping.")
         df = run_mc(E_c_low=None, E_c_high=None)
+
+else:
+    print(f"[MC][WARN] Unknown GOLDILOCKS_MODE={MASTER_CTRL['GOLDILOCKS_MODE']!r}; running without shaping.")
+    df = run_mc(E_c_low=None, E_c_high=None)
 
 # Save main run
 df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
