@@ -345,123 +345,175 @@ def simulate_lock_in(
     return is_stable, is_lockin, (stable_at if stable_at else -1), (lockin_at if lockin_at else -1)
 
 # ======================================================
-# 5) Monte Carlo universes — KL × Shannon version
+# Helpers for MC runs and dynamic Goldilocks estimation
 # ======================================================
-rows = []
-universe_seeds = []
+def run_mc(E_c_low=None, E_c_high=None):
+    """
+    Single-pass Monte Carlo run. If E_c_low/high are provided, they are used
+    to shape noise via sigma_goldilocks; otherwise, no Goldilocks shaping.
+    Returns a DataFrame with per-universe results.
+    """
+    rows = []
+    universe_seeds = []
 
-for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
-    # --- derive per-universe seed from master rng ---
-    uni_seed = int(rng.integers(0, 2**32 - 1))
-    universe_seeds.append(uni_seed)
+    for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
+        # derive per-universe seed from master rng
+        uni_seed = int(rng.integers(0, 2**32 - 1))
+        universe_seeds.append(uni_seed)
 
-    # --- build per-universe RNG ---
-    rng_uni = np.random.default_rng(uni_seed)
-    np.random.seed(uni_seed)  # for libraries using np.random (QuTiP, etc.)
+        # build per-universe RNG
+        rng_uni = np.random.default_rng(uni_seed)
+        np.random.seed(uni_seed)  # for libs using np.random (QuTiP, etc.)
 
-    # --- sample energy and information ---
-    E = float(rng_uni.lognormal(MASTER_CTRL["E_LOG_MU"], MASTER_CTRL["E_LOG_SIGMA"]))
-    I = sample_information_param(dim=8)
-    mode = MASTER_CTRL["X_MODE"]
-    if mode == "E_plus_I":
-        X = (E + I) * MASTER_CTRL["X_SCALE"]
-    elif mode == "E_times_I_pow":
-        X = E * (I ** MASTER_CTRL["X_I_POWER"]) * MASTER_CTRL["X_SCALE"]
-    else:  # "product"
-        X = (E * I) * MASTER_CTRL["X_SCALE"]
+        # sample energy and information
+        E = sample_energy()
+        I = sample_information_param()
 
-    # --- Goldilocks X-window (heuristic based on E_CENTER / E_WIDTH / ALPHA_I) ---
-    if MASTER_CTRL["GOLDILOCKS_MODE"] == "heuristic":
-        X_center    = MASTER_CTRL["E_CENTER"] * MASTER_CTRL["ALPHA_I"]
-        X_halfwidth = 0.35 * MASTER_CTRL["E_WIDTH"] * max(1e-12, MASTER_CTRL["ALPHA_I"])
-        E_c_low     = max(1e-12, X_center - X_halfwidth)
-        E_c_high    = X_center + X_halfwidth
+        # X definition (MASTER_CTRL-driven)
+        mode = MASTER_CTRL["X_MODE"]
+        if mode == "E_plus_I":
+            X = (E + I) * MASTER_CTRL["X_SCALE"]
+        elif mode == "E_times_I_pow":
+            X = E * (I ** MASTER_CTRL["X_I_POWER"]) * MASTER_CTRL["X_SCALE"]
+        else:
+            X = (E * I) * MASTER_CTRL["X_SCALE"]
 
-    # --- simulate stability / lock-in ---
-    stable, lockin, stable_epoch, lock_epoch = simulate_lock_in(
-        X,
-        MASTER_CTRL["LOCKIN_EPOCHS"],
-        sigma0=MASTER_CTRL["EXP_NOISE_BASE"],
-        alpha=1.0,
-        E_c_low=E_c_low,
-        E_c_high=E_c_high,
-        rng=rng_uni
+        # simulate
+        stable, lockin, stable_epoch, lock_epoch = simulate_lock_in(
+            X,
+            MASTER_CTRL["LOCKIN_EPOCHS"],
+            sigma0=MASTER_CTRL["EXP_NOISE_BASE"],
+            alpha=MASTER_CTRL.get("SIGMA_ALPHA", 1.0),
+            E_c_low=E_c_low,
+            E_c_high=E_c_high,
+            rng=rng_uni
+        )
+
+        rows.append({
+            "universe_id": i,
+            "seed": uni_seed,
+            "E": E,
+            "I": I,
+            "X": X,
+            "stable": stable,
+            "lockin": lockin,
+            "stable_epoch": stable_epoch,
+            "lock_epoch": lock_epoch
+        })
+
+    df_out = pd.DataFrame(rows)
+    # persist per-universe seeds alongside
+    pd.DataFrame({"universe_id": np.arange(len(df_out)), "seed": universe_seeds}).to_csv(
+        os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
     )
+    return df_out
 
-    rows.append({
-        "universe_id": i,
-        "seed": uni_seed,
-        "E": E,
-        "I": I,
-        "X": X,
-        "stable": stable,
-        "lockin": lockin,
-        "stable_epoch": stable_epoch,
-        "lock_epoch": lock_epoch
-    })
 
-df = pd.DataFrame(rows)
+def compute_dynamic_goldilocks(df_in):
+    """
+    Estimate Goldilocks window dynamically from stability curve P(stable|X).
+    Returns: (E_c_low, E_c_high, xs, ys, xx, yy) and cleansed df with bin column.
+    """
+    # Bin X values into intervals for averaging (guard bin==0)
+    bins = np.linspace(df_in["X"].min(), df_in["X"].max(), MASTER_CTRL["STAB_BINS"])
+    df_tmp = df_in.copy()
+    df_tmp["bin"] = np.digitize(df_tmp["X"], bins)
+    df_tmp = df_tmp[df_tmp["bin"] > 0]
+
+    # Aggregate mean X and stability rate per bin
+    bin_stats = df_tmp.groupby("bin").agg(
+        mean_X=("X", "mean"),
+        stable_rate=("stable", "mean"),
+        count=("stable", "size")
+    ).dropna()
+
+    xx = bin_stats["mean_X"].values
+    yy = bin_stats["stable_rate"].values
+
+    # Smooth the stability curve using spline interpolation
+    if len(xx) > MASTER_CTRL["SPLINE_K"]:
+        spline = make_interp_spline(xx, yy, k=MASTER_CTRL["SPLINE_K"])
+        xs = np.linspace(xx.min(), xx.max(), 300)
+        ys = spline(xs)
+    else:
+        xs, ys = xx, yy
+
+    # clip probabilities to [0,1]
+    ys = np.clip(ys, 0.0, 1.0)
+
+    # Threshold-based window around max
+    peak_index = int(np.argmax(ys)) if len(ys) else 0
+    peak_value = float(ys[peak_index]) if len(ys) else 0.0
+
+    threshold = MASTER_CTRL.get("GOLDILOCKS_THRESHOLD", 0.5)
+    half_max = threshold * peak_value
+
+    valid_region = xs[ys >= half_max] if len(ys) else np.array([])
+    if len(valid_region) > 0:
+        E_c_low, E_c_high = float(valid_region.min()), float(valid_region.max())
+    else:
+        # fallback: ± margin around peak
+        peak_x = float(xs[peak_index]) if len(xs) else float(df_in["X"].median())
+        margin = MASTER_CTRL.get("GOLDILOCKS_MARGIN", 0.10)
+        E_c_low, E_c_high = peak_x * (1 - margin), peak_x * (1 + margin)
+        print("⚠️ No wide peak region found, using ±margin around peak.")
+
+    return E_c_low, E_c_high, xs, ys, xx, yy, df_tmp
+
+# ======================================================
+# 5) Monte Carlo universes — single or two-phase run
+# ======================================================
+# Phase selection based on GOLDILOCKS_MODE:
+# - "heuristic": build window from E_CENTER/E_WIDTH, run once with shaping
+# - "dynamic":   run once w/o shaping to estimate window, then run again with shaping
+
+E_c_low, E_c_high = (None, None)
+df_pre = None
+
+if MASTER_CTRL["GOLDILOCKS_MODE"] == "heuristic":
+    X_center    = MASTER_CTRL["E_CENTER"] * MASTER_CTRL["ALPHA_I"]
+    X_halfwidth = 0.35 * MASTER_CTRL["E_WIDTH"] * max(1e-12, MASTER_CTRL["ALPHA_I"])
+    E_c_low     = max(1e-12, X_center - X_halfwidth)
+    E_c_high    = X_center + X_halfwidth
+    df = run_mc(E_c_low=E_c_low, E_c_high=E_c_high)
+
+elif MASTER_CTRL["GOLDILOCKS_MODE"] == "dynamic":
+    # Pass 1: estimate window from unshaped run
+    print("[MC] Dynamic mode: estimating Goldilocks window...")
+    df_pre = run_mc(E_c_low=None, E_c_high=None)
+    E_c_low, E_c_high, _, _, _, _, _ = compute_dynamic_goldilocks(df_pre)
+    print(f"[MC] Estimated Goldilocks (X) window: {E_c_low:.4f} .. {E_c_high:.4f}")
+
+    # Pass 2: final run with window shaping
+    df = run_mc(E_c_low=E_c_low, E_c_high=E_c_high)
+
+else:
+    print(f"[MC][WARN] Unknown GOLDILOCKS_MODE={MASTER_CTRL['GOLDILOCKS_MODE']!r}; running without shaping.")
+    df = run_mc(E_c_low=None, E_c_high=None)
+
+# Save main run
 df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
 
-# Save per-universe seeds
-pd.DataFrame({"universe_id": np.arange(len(df)), "seed": universe_seeds}).to_csv(
-    os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
-)
-
 # ======================================================
-# 6) Stability curve (binned) + dynamic Goldilocks window
+# 6) Stability curve (binned) + Goldilocks window plot
 # ======================================================
+E_c_low_plot, E_c_high_plot, xs, ys, xx, yy, df_binned = compute_dynamic_goldilocks(df)
 
-# Bin X values into intervals for averaging
-bins = np.linspace(df["X"].min(), df["X"].max(), MASTER_CTRL["STAB_BINS"])
-df["bin"] = np.digitize(df["X"], bins)
-
-# Aggregate mean X and stability rate per bin
-bin_stats = df.groupby("bin").agg(
-    mean_X=("X", "mean"),
-    stable_rate=("stable", "mean"),
-    count=("stable", "size")
-).dropna()
-
-xx = bin_stats["mean_X"].values
-yy = bin_stats["stable_rate"].values
-
-# Smooth the stability curve using spline interpolation
-if len(xx) > MASTER_CTRL["SPLINE_K"]:
-    spline = make_interp_spline(xx, yy, k=MASTER_CTRL["SPLINE_K"])
-    xs = np.linspace(xx.min(), xx.max(), 300)
-    ys = spline(xs)
-else:
-    xs, ys = xx, yy
-
-# --- PATCH: Use a relative threshold (half-maximum) to define the Goldilocks zone ---
-peak_index = int(np.argmax(ys))
-peak_value = float(ys[peak_index])
-
-# Use threshold from MASTER_CTRL (default 0.5 if not set)
-threshold = MASTER_CTRL.get("GOLDILOCKS_THRESHOLD", 0.5)
-half_max = threshold * peak_value
-
-# Select the region around the peak where stability >= half of maximum
-valid_region = xs[ys >= half_max]
-if len(valid_region) > 0:
-    E_c_low, E_c_high = float(valid_region.min()), float(valid_region.max())
-else:
-    # fallback: narrow window around the peak
-    peak_x = float(xs[peak_index])
-    margin = MASTER_CTRL.get("GOLDILOCKS_MARGIN", 0.10)
-    E_c_low, E_c_high = peak_x * (1 - margin), peak_x * (1 + margin)
-    print("⚠️ No wide peak region found, using ±10% around the peak.")
-
-# --- Plot Goldilocks stabilization curve ---
 plt.figure(figsize=(8,5))
-plt.scatter(xx, yy, s=30, c="blue", alpha=0.7, label="bin means")
-plt.plot(xs, ys, "r-", lw=2, label="spline fit")
-plt.axvline(E_c_low,  color='g', ls='--', label=f"E_c_low = {E_c_low:.2f}")
-plt.axvline(E_c_high, color='m', ls='--', label=f"E_c_high = {E_c_high:.2f}")
-plt.xlabel("X = E·I")
+plt.scatter(xx, yy, s=30, alpha=0.7, label="bin means")
+if len(xs):
+    plt.plot(xs, ys, "r-", lw=2, label="spline fit")
+if E_c_low is not None and E_c_high is not None:
+    plt.axvline(E_c_low,  color='g', ls='--', label=f"E_c_low = {E_c_low:.2f}")
+    plt.axvline(E_c_high, color='m', ls='--', label=f"E_c_high = {E_c_high:.2f}")
+else:
+    # fallback to curve-derived window if runtime window wasn't set
+    plt.axvline(E_c_low_plot,  color='g', ls='--', label=f"E_c_low(curve) = {E_c_low_plot:.2f}")
+    plt.axvline(E_c_high_plot, color='m', ls='--', label=f"E_c_high(curve) = {E_c_high_plot:.2f}")
+
+plt.xlabel("X = E·I (or configured)")
 plt.ylabel("P(stable)")
-plt.title("Goldilocks zone: stabilization curve (KL × Shannon)")
+plt.title("Goldilocks zone: stability curve")
 plt.legend()
 savefig(os.path.join(FIG_DIR, "stability_curve.png"))
 
@@ -476,18 +528,17 @@ plt.colorbar(sc, label="Stable=1 / Unstable=0")
 savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
 
 # ======================================================
-# 8) Save stability summary
+# 8+10) Save consolidated summary (single write)
 # ======================================================
 stable_count = int(df["stable"].sum())
-unstable_count = len(df) - stable_count
+unstable_count = int(len(df) - stable_count)
 lockin_count = int((df["lock_epoch"] >= 0).sum())
 
 summary = {
     "params": MASTER_CTRL,
     "master_seed": master_seed,
-    "seeds": {
-        "universe_seeds_csv": "universe_seeds.csv"
-    },
+    "run_id": run_id,
+    "N_samples": int(len(df)),
     "stability_summary": {
         "total_universes": len(df),
         "stable_universes": stable_count,
@@ -496,13 +547,25 @@ summary = {
         "stable_percent": float(stable_count/len(df)*100),
         "unstable_percent": float(unstable_count/len(df)*100),
         "lockin_percent": float(lockin_count/len(df)*100)
+    },
+    "goldilocks_window_used": {
+        "mode": MASTER_CTRL["GOLDILOCKS_MODE"],
+        "X_low": E_c_low if E_c_low is not None else E_c_low_plot,
+        "X_high": E_c_high if E_c_high is not None else E_c_high_plot
+    },
+    "figures": {
+        "stability_curve": os.path.join(FIG_DIR, "stability_curve.png"),
+        "scatter_EI": os.path.join(FIG_DIR, "scatter_EI.png"),
+        "stability_distribution": os.path.join(FIG_DIR, "stability_distribution.png")
+    },
+    "artifacts": {
+        "tqe_runs_csv": os.path.join(SAVE_DIR, "tqe_runs.csv"),
+        "universe_seeds_csv": os.path.join(SAVE_DIR, "universe_seeds.csv")
     }
 }
+save_json(os.path.join(SAVE_DIR, "summary_full.json"), summary)
 
-with open(os.path.join(SAVE_DIR, "summary.json"), "w") as f:
-    json.dump(summary, f, indent=2)
-
-print("\n🌌 Universe Stability Summary (KL × Shannon)")
+print("\n🌌 Universe Stability Summary (final run)")
 print(f"Total universes: {len(df)}")
 print(f"Stable:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
 print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
@@ -527,13 +590,20 @@ plt.tight_layout()
 savefig(os.path.join(FIG_DIR, "stability_distribution.png"))
 
 # ======================================================
-# 9) PATCH: Stability by I (exact zero vs eps sweep)
+# 9) Stability by I (exact zero vs eps sweep) — extended
 # ======================================================
 def _stability_stats(mask: pd.Series, label: str):
     total = int(mask.sum())
     stables = int(df.loc[mask, "stable"].sum())
-    ratio = (stables / total) if total > 0 else float("nan")
-    return {"group": label, "n": total, "stable_n": stables, "stable_ratio": ratio}
+    lockins = int((df.loc[mask, "lock_epoch"] >= 0).sum())
+    return {
+        "group": label,
+        "n": total,
+        "stable_n": stables,
+        "stable_ratio": (stables / total) if total > 0 else float("nan"),
+        "lockin_n": lockins,
+        "lockin_ratio": (lockins / total) if total > 0 else float("nan")
+    }
 
 # Exact split
 mask_I_eq0 = (df["I"] == 0.0)
@@ -562,35 +632,6 @@ eps_df.to_csv(eps_path, index=False)
 print("\n📈 Epsilon sweep (near-zero thresholds, preview):")
 print(eps_df.head(12).to_string(index=False))
 print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
-
-# ======================================================
-# 10) Save summary (PATCH: more fields)
-# ======================================================
-summary = {
-    "params": MASTER_CTRL,
-    "N_samples": int(len(df)),
-    "stable_count": stable_count,
-    "unstable_count": unstable_count,
-    "stable_ratio": float(df["stable"].mean()),
-    "unstable_ratio": float(1.0 - df["stable"].mean()),
-    "E_c_low": E_c_low,
-    "E_c_high": E_c_high,
-    "master_seed": master_seed,
-    "figures": {
-        "stability_curve": os.path.join(FIG_DIR, "stability_curve.png"),
-        "scatter_EI": os.path.join(FIG_DIR, "scatter_EI.png"),
-        "stability_distribution": os.path.join(FIG_DIR, "stability_distribution.png")
-    }
-}
-save_json(os.path.join(SAVE_DIR, "summary.json"), summary)
-
-print("\n✅ DONE (core).")
-print(f"Runs: {len(df)}")
-print(f"Stable universes: {summary['stable_count']}")
-print(f"Unstable universes: {summary['unstable_count']}")
-print(f"Stability ratio: {summary['stable_ratio']:.3f}")
-print(f"Goldilocks zone: {E_c_low:.2f} – {E_c_high:.2f}")
-print(f"📂 Directory: {SAVE_DIR}")
 
 # ======================================================
 # 11) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
