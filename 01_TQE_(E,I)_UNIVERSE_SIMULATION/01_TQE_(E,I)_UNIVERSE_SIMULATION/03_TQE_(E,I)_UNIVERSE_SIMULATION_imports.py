@@ -6,6 +6,9 @@
 # Author: Stefan Len
 # ===================================================================================
 
+from config import ACTIVE        # load the active master controller settings
+from imports import *            # common imports (numpy, matplotlib, qutip, etc.)
+
 # ---------------------------
 # Standard Python libraries
 # ---------------------------
