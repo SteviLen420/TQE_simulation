@@ -199,33 +199,57 @@ def save_json(path, obj):
 print(f"💾 Results saved in: {SAVE_DIR}")
 
 # ======================================================
-# 3) Information parameter I = g(KL, Shannon) (multiplicative fusion)
+# 3) Information parameter I = g(KL, Shannon) (fusion)
 # ======================================================
 def sample_information_param(dim=None):
+    """
+    Sample the composite information parameter I by fusing:
+      - KL divergence (between two random quantum states)
+      - Normalized Shannon entropy
+    The fusion can be multiplicative ("product") or weighted linear.
+    """
     dim = dim or MASTER_CTRL["I_DIM"]
     eps = MASTER_CTRL["KL_EPS"]
 
+    # --- Generate two random quantum states (kets) ---
     psi1, psi2 = qt.rand_ket(dim), qt.rand_ket(dim)
-    p1 = np.abs(psi1.full().flatten())**2; p1 /= p1.sum()
-    p2 = np.abs(psi2.full().flatten())**2; p2 /= p2.sum()
 
+    # --- Convert them to probability distributions ---
+    p1 = np.abs(psi1.full().flatten())**2
+    p1 /= p1.sum()  # normalize
+    p2 = np.abs(psi2.full().flatten())**2
+    p2 /= p2.sum()  # normalize
+
+    # --- KL divergence (asymmetry in distributions) ---
     KL = np.sum(p1 * np.log((p1 + eps) / (p2 + eps)))
-    I_kl = KL / (1.0 + KL)
+    I_kl = KL / (1.0 + KL)  # squashing to [0,1]
 
+    # --- Shannon entropy (normalized) ---
     H = -np.sum(p1 * np.log(p1 + eps))
-    I_shannon = H / np.log(len(p1))
+    I_shannon = H / np.log(len(p1))  # normalized by log(dim)
 
+    # --- Fusion of KL and Shannon into a single I ---
     mode = MASTER_CTRL["INFO_FUSION_MODE"]
     if mode == "weighted":
-        w_kl = MASTER_CTRL["INFO_WEIGHT_KL"]
-        w_sh = MASTER_CTRL["INFO_WEIGHT_SHANNON"]
-        I_raw = max(0.0, w_kl)*I_kl + max(0.0, w_sh)*I_shannon
-    else:  # "product"
+        # Weighted linear fusion (normalized weights)
+        w_kl = max(0.0, MASTER_CTRL["INFO_WEIGHT_KL"])
+        w_sh = max(0.0, MASTER_CTRL["INFO_WEIGHT_SHANNON"])
+        s = w_kl + w_sh
+        if s == 0.0:
+            # Safe fallback: equal weights if both are zero
+            w_kl = w_sh = 0.5
+            s = 1.0
+        w_kl /= s
+        w_sh /= s
+        I_raw = w_kl * I_kl + w_sh * I_shannon
+    else:  # "product" mode
+        # Multiplicative fusion (naturally bounded in [0,1])
         I_raw = I_kl * I_shannon
 
-    I = np.clip(I_raw, 0.0, 1.0) 
-    I = I ** MASTER_CTRL["I_EXPONENT"]
-    I = max(I, MASTER_CTRL["I_MIN_EPS"])
+    # --- Post-processing: exponent & floor ---
+    I = I_raw ** MASTER_CTRL["I_EXPONENT"]    # optional nonlinearity
+    I = max(I, MASTER_CTRL["I_MIN_EPS"])      # enforce minimum > 0 if configured
+
     return float(I)
 
 # ======================================================
@@ -395,6 +419,7 @@ def run_mc(E_c_low=None, E_c_high=None):
 
             # X definetion
             mode = MASTER_CTRL["X_MODE"]
+            aI = MASTER_CTRL["ALPHA_I"]
             if mode == "E_plus_I":
                 X = (E + I) * MASTER_CTRL["X_SCALE"]
             elif mode == "E_times_I_pow":
@@ -609,7 +634,11 @@ plt.scatter(xx, yy, s=30, alpha=0.7, label="bin means")
 if len(xs):
     plt.plot(xs, ys, "r-", lw=2, label="spline fit")
 def _lbl(v, name):
-    return f"{name} = {v:.2f}" if isinstance(v, (int, float)) and np.isfinite(v) else f"{name} = N/A"
+    try:
+        fv = float(v)
+        return f"{name} = {fv:.2f}" if np.isfinite(fv) else f"{name} = N/A"
+    except Exception:
+        return f"{name} = N/A"
 
 if E_c_low is not None and E_c_high is not None:
     plt.axvline(E_c_low,  color='g', ls='--', label=_lbl(E_c_low,  "E_c_low"))
