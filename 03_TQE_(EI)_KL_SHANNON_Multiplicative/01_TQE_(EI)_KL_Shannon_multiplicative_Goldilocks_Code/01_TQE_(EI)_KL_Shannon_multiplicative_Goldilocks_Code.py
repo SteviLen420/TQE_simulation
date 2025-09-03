@@ -185,9 +185,13 @@ FIG_DIR  = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
 
 def savefig(path):
+    """Save a figure only if SAVE_FIGS is True."""
+    if not MASTER_CTRL.get("SAVE_FIGS", True):
+        plt.close()
+        return
     plt.savefig(path, dpi=180, bbox_inches="tight")
     plt.close()
-
+    
 def save_json(path, obj):
     with open(path, "w") as f:
         json.dump(obj, f, indent=2)
@@ -625,7 +629,7 @@ if MASTER_CTRL.get("SAVE_FIGS", True):
     savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
 
 # ======================================================
-# 8+10) Save consolidated summary (single write)
+# 11) Save consolidated summary (single write)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -677,7 +681,7 @@ if MASTER_CTRL.get("SAVE_JSON", True):
     save_json(os.path.join(SAVE_DIR, "summary_full.json"), summary)
 
 # ======================================================
-# 11) Universe Stability Distribution (bar chart)
+# 12) Universe Stability Distribution (bar chart)
 # ======================================================
 labels = [
     f"Lock-in ({lockin_count}, {lockin_count/len(df)*100:.1f}%)",
@@ -694,11 +698,8 @@ plt.title("Universe Stability Distribution")
 plt.tight_layout()
 savefig(os.path.join(FIG_DIR, "stability_distribution.png"))
 
-if MASTER_CTRL.get("SAVE_FIGS", True):
-    savefig(os.path.join(FIG_DIR, "stability_distribution.png"))
-
 # ======================================================
-# 12) Stability by I (exact zero vs eps sweep) — extended
+# 13) Stability by I (exact zero vs eps sweep) — extended
 # ======================================================
 def _stability_stats(mask: pd.Series, label: str):
     total = int(mask.sum())
@@ -742,13 +743,15 @@ print(eps_df.head(12).to_string(index=False))
 print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
 
 # ======================================================
-# 13) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
+# 14) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
 # ======================================================
 def _savefig_safe(path):
+    """Helper: safe figure saving with tight bounding box."""
     plt.savefig(path, dpi=220, bbox_inches="tight")
     plt.close()
 
 def _save_df_safe(df_in, path):
+    """Helper: safe DataFrame saving with error handling."""
     try:
         df_in.to_csv(path, index=False)
         print(f"[SAVE] CSV: {path}")
@@ -763,7 +766,7 @@ if MASTER_CTRL.get("RUN_XAI", True):
     X_reg = X_feat[reg_mask]
     y_reg = df.loc[reg_mask, "lock_epoch"].values
 
-    # Sanity checks
+    # --- Sanity checks ---
     assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
     if len(X_reg) > 0:
         assert not np.isnan(X_reg.values).any(), "NaN in X_reg!"
@@ -828,7 +831,7 @@ if MASTER_CTRL.get("RUN_XAI", True):
     if MASTER_CTRL.get("RUN_SHAP", True) and rf_cls is not None:
         try:
             X_plot = Xte_c.copy()
-            # Prefer TreeExplainer; fall back to model-agnostic Explainer if needed
+            # Prefer TreeExplainer; fallback to model-agnostic Explainer
             try:
                 expl_cls = shap.TreeExplainer(rf_cls, feature_perturbation="interventional", model_output="raw")
                 sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
@@ -837,14 +840,11 @@ if MASTER_CTRL.get("RUN_XAI", True):
                 shap_res = expl_cls(X_plot)
                 sv_cls = getattr(shap_res, "values", shap_res)
 
-            # Normalize output shape (sklearn RF often returns list [neg, pos])
+            # Normalize shape
             if isinstance(sv_cls, list) and len(sv_cls) > 1:
-                sv_cls = sv_cls[1]  # positive class contributions
+                sv_cls = sv_cls[1]  # positive class
             sv_cls = np.asarray(sv_cls)
-
-            # A few SHAP versions return (n, features) directly; guard shape
             if sv_cls.ndim == 3:
-                # Try to pick the feature axis
                 if sv_cls.shape[0] == X_plot.shape[0]:
                     sv_cls = sv_cls[:, :, 1 if sv_cls.shape[2] > 1 else 0]
                 elif sv_cls.shape[-1] == X_plot.shape[1]:
@@ -863,70 +863,51 @@ if MASTER_CTRL.get("RUN_XAI", True):
             print(f"[XAI][ERR] SHAP classification failed: {e}")
 
     # -------------------- SHAP: regression (robust) --------------------
-if MASTER_CTRL.get("RUN_SHAP", True) and rf_reg is not None and have_reg:
-    try:
-        # --- Config (caps to keep SHAP fast on large datasets) ---
-        MAX_SHAP_SAMPLES   = int(MASTER_CTRL.get("MAX_SHAP_SAMPLES", 1000))
-        SHAP_BG_SIZE       = int(MASTER_CTRL.get("SHAP_BACKGROUND_SIZE", 200))
-        RNG_STATE          = MASTER_CTRL.get("TEST_RANDOM_STATE", 42)
-
-        # --- Select evaluation slice (cap to MAX_SHAP_SAMPLES) ---
-        X_plot_r = Xte_r.copy()
-        if len(X_plot_r) > MAX_SHAP_SAMPLES:
-            X_plot_r = X_plot_r.sample(MAX_SHAP_SAMPLES, random_state=RNG_STATE)
-
-        # --- Prefer TreeExplainer; if it fails, fall back to model-agnostic Explainer ---
-        sv_reg = None
+    if MASTER_CTRL.get("RUN_SHAP", True) and rf_reg is not None and have_reg:
         try:
-            # TreeExplainer is usually fastest/most accurate for tree ensembles
-            expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional", model_output="raw")
-            sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
-        except Exception:
-            # Build a compact background dataset for model-agnostic Explainer
-            if len(Xtr_r) > SHAP_BG_SIZE:
-                background = Xtr_r.sample(SHAP_BG_SIZE, random_state=RNG_STATE)
-            else:
-                background = Xtr_r
-            expl_reg = shap.Explainer(rf_reg, background)
-            shap_res_r = expl_reg(X_plot_r)
-            sv_reg = getattr(shap_res_r, "values", shap_res_r)
+            MAX_SHAP_SAMPLES = int(MASTER_CTRL.get("MAX_SHAP_SAMPLES", 1000))
+            SHAP_BG_SIZE     = int(MASTER_CTRL.get("SHAP_BACKGROUND_SIZE", 200))
+            RNG_STATE        = MASTER_CTRL.get("TEST_RANDOM_STATE", 42)
 
-        # --- Normalize to ndarray and fix common shape variants ---
-        sv_reg = np.asarray(sv_reg)
+            X_plot_r = Xte_r.copy()
+            if len(X_plot_r) > MAX_SHAP_SAMPLES:
+                X_plot_r = X_plot_r.sample(MAX_SHAP_SAMPLES, random_state=RNG_STATE)
 
-        # Expected shape is (n_samples, n_features) for single-output regression.
-        # Some SHAP versions may return (n_samples, n_features, 1) or (1, n_samples, n_features).
-        if sv_reg.ndim == 3:
-            # (n, d, 1) -> (n, d)
-            if sv_reg.shape[2] == 1 and sv_reg.shape[0] == len(X_plot_r):
-                sv_reg = sv_reg[:, :, 0]
-            # (1, n, d) -> (n, d)
-            elif sv_reg.shape[0] == 1 and sv_reg.shape[1] == len(X_plot_r):
-                sv_reg = sv_reg[0, :, :]
-            # If still 3D, try to pick the feature axis matching d
-            elif sv_reg.shape[-1] == X_plot_r.shape[1]:
-                # assume (k, n, d) -> take first output (k=1) if applicable
-                sv_reg = sv_reg[0, :, :]
+            sv_reg = None
+            try:
+                expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional", model_output="raw")
+                sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
+            except Exception:
+                background = Xtr_r.sample(SHAP_BG_SIZE, random_state=RNG_STATE) if len(Xtr_r) > SHAP_BG_SIZE else Xtr_r
+                expl_reg = shap.Explainer(rf_reg, background)
+                shap_res_r = expl_reg(X_plot_r)
+                sv_reg = getattr(shap_res_r, "values", shap_res_r)
 
-        # Final sanity check on shape
-        assert sv_reg.ndim == 2 and sv_reg.shape[1] == X_plot_r.shape[1], \
-            f"SHAP shape mismatch: {sv_reg.shape} vs {X_plot_r.shape}"
+            sv_reg = np.asarray(sv_reg)
+            if sv_reg.ndim == 3:
+                if sv_reg.shape[2] == 1 and sv_reg.shape[0] == len(X_plot_r):
+                    sv_reg = sv_reg[:, :, 0]
+                elif sv_reg.shape[0] == 1 and sv_reg.shape[1] == len(X_plot_r):
+                    sv_reg = sv_reg[0, :, :]
+                elif sv_reg.shape[-1] == X_plot_r.shape[1]:
+                    sv_reg = sv_reg[0, :, :]
 
-        # --- Plot summary (only if saving figures is enabled) ---
-        if MASTER_CTRL.get("SAVE_FIGS", True):
-            plt.figure()
-            shap.summary_plot(sv_reg, X_plot_r.values,
-                              feature_names=X_plot_r.columns.tolist(),
-                              show=False)
-            _savefig_safe(os.path.join(FIG_DIR, "shap_summary_reg_lock_epoch.png"))
+            assert sv_reg.ndim == 2 and sv_reg.shape[1] == X_plot_r.shape[1], \
+                f"SHAP shape mismatch: {sv_reg.shape} vs {X_plot_r.shape}"
 
-        # --- Persist values (CSV + NPY) ---
-        _save_df_safe(pd.DataFrame(sv_reg, columns=X_plot_r.columns),
-                      os.path.join(FIG_DIR, "shap_values_regression.csv"))
-        np.save(os.path.join(FIG_DIR, "shap_values_reg.npy"), sv_reg)
+            if MASTER_CTRL.get("SAVE_FIGS", True):
+                plt.figure()
+                shap.summary_plot(sv_reg, X_plot_r.values,
+                                  feature_names=X_plot_r.columns.tolist(),
+                                  show=False)
+                _savefig_safe(os.path.join(FIG_DIR, "shap_summary_reg_lock_epoch.png"))
 
-    except Exception as e:
-        print(f"[XAI][ERR] SHAP regression failed: {e}")
+            _save_df_safe(pd.DataFrame(sv_reg, columns=X_plot_r.columns),
+                          os.path.join(FIG_DIR, "shap_values_regression.csv"))
+            np.save(os.path.join(FIG_DIR, "shap_values_reg.npy"), sv_reg)
+
+        except Exception as e:
+            print(f"[XAI][ERR] SHAP regression failed: {e}")
 
     # -------------------- LIME: classification --------------------
     if (MASTER_CTRL.get("RUN_LIME", True)
@@ -949,7 +930,6 @@ if MASTER_CTRL.get("RUN_SHAP", True) and rf_reg is not None and have_reg:
             lime_df = pd.DataFrame(lime_list, columns=["feature", "weight"])
             _save_df_safe(lime_df, os.path.join(FIG_DIR, "lime_example_classification.csv"))
 
-            # Simple barh plot (distinct colors for readability)
             colors = plt.cm.Set2(np.linspace(0, 1, len(lime_df)))
             plt.figure(figsize=(6, 4))
             plt.barh(lime_df["feature"], lime_df["weight"], color=colors, edgecolor="black")
@@ -962,7 +942,7 @@ if MASTER_CTRL.get("RUN_SHAP", True) and rf_reg is not None and have_reg:
             print(f"[XAI][ERR] LIME classification failed: {e}")
             
 # ======================================================
-# 14) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
+# 15) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
 # ======================================================
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     try:
