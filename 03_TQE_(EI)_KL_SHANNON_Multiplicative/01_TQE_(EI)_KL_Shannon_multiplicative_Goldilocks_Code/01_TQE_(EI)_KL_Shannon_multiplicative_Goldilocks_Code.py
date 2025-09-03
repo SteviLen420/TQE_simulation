@@ -88,9 +88,9 @@ MASTER_CTRL = {
     "ALPHA_I":              0.8,        # coupling factor: strength of I in E·I (heuristics)
 
     # --- Stability thresholds ---
-    "REL_EPS_STABLE":       0.020,   # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       2e-3,   # relative calmness threshold for lock-in (0.2%)
-    "CALM_STEPS_STABLE":    8,      # consecutive calm steps required (stable)
+    "REL_EPS_STABLE":       0.010,   # relative calmness threshold for stability
+    "REL_EPS_LOCKIN":       5e-3,   # relative calmness threshold for lock-in (0.2%)
+    "CALM_STEPS_STABLE":    10,      # consecutive calm steps required (stable)
     "CALM_STEPS_LOCKIN":    12,     # consecutive calm steps required (lock-in)
     "MIN_LOCKIN_EPOCH":     200,    # lock-in can only occur after this epoch
     "LOCKIN_WINDOW":        10,     # rolling window size for averaging delta_rel
@@ -100,9 +100,9 @@ MASTER_CTRL = {
 
     # --- Goldilocks zone controls ---
     "GOLDILOCKS_MODE":      "dynamic", # "heuristic" | "dynamic"
-    "E_CENTER":             6.0,    # heuristic: energy sweet-spot center (used for X window)
-    "E_WIDTH":              5.0,    # heuristic: energy sweet-spot width (used for X window)
-    "GOLDILOCKS_THRESHOLD": 0.8,    # dynamic: fraction of max stability to define zone
+    "E_CENTER":             4.0,    # heuristic: energy sweet-spot center (used for X window)
+    "E_WIDTH":              4.0,    # heuristic: energy sweet-spot width (used for X window)
+    "GOLDILOCKS_THRESHOLD": 0.85,    # dynamic: fraction of max stability to define zone
     "GOLDILOCKS_MARGIN":    0.10,   # dynamic fallback margin around peak (±10%)
     "SIGMA_ALPHA":          1.5,    # curvature inside Goldilocks (sigma shaping)
     "OUTSIDE_PENALTY":      5,    # sigma multiplier outside Goldilocks zone
