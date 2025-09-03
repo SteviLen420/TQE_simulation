@@ -1,55 +1,58 @@
 # superposition.py
 # ===================================================================================
 # Superposition (Information channel) for TQE universe simulation
-# - Computes I_shannon (from eigenvalue entropy) and I_kl (KL to uniform of diag)
+# - Computes I_shannon (from eigenvalue entropy) and I_kl (KL vs uniform of diag)
 # - Fuses to scalar I according to cfg (product/weighted + exponent + floor)
 # - Couples with Energy E to form X via COUPLING_X (product / E_plus_I / E_times_I_pow)
-# - Saves CSV with per-universe metrics, JSON summary, and PNG plots (hist, scatters)
+# - Honors MASTER CONTROLLER output switches (save_csv/json/figs, per-stage gating)
+# - Saves CSV/JSON/PNGs and mirrors them to configured targets
 #
 # Author: Stefan Len
 # ===================================================================================
 
 from config import ACTIVE
 from io_paths import resolve_output_paths, ensure_colab_drive_mounted
-# NOTE: If you keep a centralized imports.py, you may use it — otherwise we import locally.
-import os, json, time, pathlib, math
-from typing import Optional, Tuple, Dict
+
+import os, json, math, pathlib
+from typing import Optional, Tuple, Dict, List
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from shutil import copy2
 
-# Optional quantum deps
+# Optional quantum dependency (graceful fallback to NumPy)
 try:
     import qutip as qt
 except Exception:
     qt = None
 
-from shutil import copy2
-
-def _mirror_file(src: pathlib.Path, mirrors: list, put_in_figs: bool = False, cfg: dict = ACTIVE):
+# -----------------------------------------------------------------------------------
+# Small I/O helper: mirror a freshly written file to all mirror directories.
+# If put_in_figs=True, file will be placed inside each mirror's <fig_subdir>/.
+# -----------------------------------------------------------------------------------
+def _mirror_file(src: pathlib.Path, mirrors: List[str], put_in_figs: bool, cfg: dict) -> None:
     fig_sub = cfg["OUTPUTS"]["local"].get("fig_subdir", "figs")
-    for m in mirrors:
-        m = pathlib.Path(m)
+    for m in mirrors or []:
+        mpath = pathlib.Path(m)
+        mpath.mkdir(parents=True, exist_ok=True)
         if put_in_figs:
-            dst_dir = m / fig_sub
-            dst_dir.mkdir(parents=True, exist_ok=True)
-            copy2(src, dst_dir / src.name)
+            (mpath / fig_sub).mkdir(parents=True, exist_ok=True)
+            copy2(src, mpath / fig_sub / src.name)
         else:
-            copy2(src, m / src.name)
+            copy2(src, mpath / src.name)
 
-# ---------------------------
-# Helpers
-# ---------------------------
-def _rng(seed: Optional[int] = None):
-    """Create a fresh Generator (reproducible if seed given)."""
-    return np.random.default_rng(seed if seed is not None else np.random.SeedSequence().generate_state(1)[0])
+# -----------------------------------------------------------------------------------
+# RNG and quantum helpers
+# -----------------------------------------------------------------------------------
+def _rng(seed: Optional[int] = None) -> np.random.Generator:
+    """Create a reproducible Generator if seed is given, else fresh entropy."""
+    return np.random.default_rng(int(seed) if seed is not None else np.random.SeedSequence())
 
 def _random_pure_state(d: int, rng: np.random.Generator) -> np.ndarray:
     """Haar-like random ket via complex normal + normalization."""
     psi = rng.normal(size=d) + 1j * rng.normal(size=d)
-    psi = psi / np.linalg.norm(psi)
-    return psi
+    return psi / np.linalg.norm(psi)
 
 def _depolarize_rho(rho: np.ndarray, lam: float) -> np.ndarray:
     """ρ' = (1-λ)ρ + λ I/d  (keeps PSD and trace=1)."""
@@ -57,13 +60,13 @@ def _depolarize_rho(rho: np.ndarray, lam: float) -> np.ndarray:
     return (1.0 - lam) * rho + (lam / d) * np.eye(d, dtype=complex)
 
 def _von_neumann_entropy_eigs(eigs: np.ndarray, base: float = 2.0) -> float:
-    """S(ρ) = -Tr(ρ log ρ). Input: eigenvalues (>=0, sum=1)."""
+    """S(ρ) = -Σ λ log_base λ . Input: eigenvalues (>=0, sum=1)."""
     eps = 1e-15
     x = np.clip(eigs.real, eps, 1.0)
     return float(-(x * (np.log(x) / np.log(base))).sum())
 
 def _kl_to_uniform(prob: np.ndarray, base: float = 2.0) -> float:
-    """D_KL(p || u) where u is uniform on d outcomes. Returns in 'base' units, e.g. bits."""
+    """D_KL(p || u) where u is uniform on d outcomes. Returns in 'base' units (bits)."""
     d = prob.size
     u = 1.0 / d
     eps = 1e-15
@@ -72,64 +75,62 @@ def _kl_to_uniform(prob: np.ndarray, base: float = 2.0) -> float:
 
 def _fuse_I(I_kl: float, I_sh: float, cfg: dict) -> float:
     """Fuse information components to scalar I in [0,1] per config."""
-    mode = cfg["INFORMATION"]["fusion"]
+    info_cfg = cfg["INFORMATION"]
+    mode = info_cfg.get("fusion", "product")
+
     if mode == "product":
         I = I_kl * I_sh
     elif mode == "weighted":
-        w_kl = cfg["INFORMATION"].get("weight_kl", 0.5)
-        w_sh = cfg["INFORMATION"].get("weight_shannon", 0.5)
+        w_kl = float(info_cfg.get("weight_kl", 0.5))
+        w_sh = float(info_cfg.get("weight_shannon", 0.5))
         s = max(w_kl + w_sh, 1e-12)
         I = (w_kl * I_kl + w_sh * I_sh) / s
     else:
         I = 0.5 * (I_kl + I_sh)
 
-    # post-processing
-    expn = cfg["INFORMATION"].get("exponent", 1.0)
-    floor = cfg["INFORMATION"].get("floor_eps", 0.0)
+    # Post-processing
+    expn  = float(info_cfg.get("exponent", 1.0))
+    floor = float(info_cfg.get("floor_eps", 0.0))
     I = max(I, floor)
     if expn != 1.0:
         I = I ** expn
-    # clamp to [0,1]
     return float(np.clip(I, 0.0, 1.0))
 
 def _couple_X(E: float, I: Optional[float], cfg: dict) -> float:
-    """X = f(E,I) according to COUPLING_X; if I is None (E-only), degrade to pure E."""
-    mode   = cfg["COUPLING_X"]["mode"]
-    alpha  = cfg["COUPLING_X"]["alpha_I"]
-    scale  = cfg["COUPLING_X"]["scale"]
-    if I is None:
+    """X = f(E,I) according to COUPLING_X; if I is None, degrade to pure E."""
+    xcfg  = cfg["COUPLING_X"]
+    mode  = xcfg.get("mode", "product")
+    alpha = float(xcfg.get("alpha_I", 0.8))
+    scale = float(xcfg.get("scale", 1.0))
+
+    if I is None or not np.isfinite(I):
         return float(scale * E)
 
-    if mode == "product":
-        X = E * (alpha * I)
-    elif mode == "E_plus_I":
+    if mode == "E_plus_I":
         X = E + alpha * I
     elif mode == "E_times_I_pow":
-        p = cfg["COUPLING_X"].get("I_power", 1.0)
+        p = float(xcfg.get("I_power", 1.0))
         X = E * ((alpha * I) ** p)
-    else:
+    else:  # "product" default
         X = E * (alpha * I)
     return float(scale * X)
 
-# ---------------------------
-# Core: compute information (I) for N universes
-# ---------------------------
+# -----------------------------------------------------------------------------------
+# Core: compute information (I) arrays for N universes (NumPy or QuTiP path)
+# -----------------------------------------------------------------------------------
 def _compute_information_for_population(N: int, cfg: dict, seed: Optional[int]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Returns arrays (I_shannon, I_kl, I_fused) of length N in [0,1].
-    Strategy:
-      - Build (mixed) states: ρ' = (1-λ)|ψ⟩⟨ψ| + λ I/d, with λ ~ U[0, λ_max]
-      - I_shannon: 1 - S(ρ') / log_d          (global mixedness; von Neumann entropy)
-      - I_kl:      KL(diag(ρ') || uniform)/log_d  (basis-population surprise vs uniform)
-    These two differ because I_kl discards coherence (basis diag), I_shannon uses spectrum.
+      - Build (mixed) states: ρ' = (1-λ)|ψ⟩⟨ψ| + λ I/d with λ ~ U[0, λ_max]
+      - I_shannon: 1 - S(ρ') / log_d            (spectral mixedness)
+      - I_kl:      KL(diag(ρ') || uniform)/log_d (basis-population surprise)
     """
-    d        = cfg["INFORMATION"]["hilbert_dim"]
-    kl_eps   = cfg["INFORMATION"]["kl_eps"]
-    rng      = _rng(seed)
-    lam_max  = 0.35  # mild depolarization range to generate variety
+    d       = int(cfg["INFORMATION"]["hilbert_dim"])
+    kl_eps  = float(cfg["INFORMATION"]["kl_eps"])
+    rng     = _rng(seed)
+    lam_max = 0.35  # small depolarization for diversity
 
     I_sh_list, I_kl_list, I_list = [], [], []
-
     use_qutip = (qt is not None)
 
     for _ in range(N):
@@ -138,102 +139,104 @@ def _compute_information_for_population(N: int, cfg: dict, seed: Optional[int]) 
 
         if use_qutip:
             ket = qt.Qobj(psi.reshape((d, 1)))
-            rho = ket * ket.dag()  # |ψ⟩⟨ψ|
-            # depolarize
+            rho = ket * ket.dag()  # |ψ><ψ|
             lam = rng.uniform(0.0, lam_max)
             rho = (1.0 - lam) * rho + lam * (qt.qeye(d) / d)
-            # eigenvalues for von Neumann entropy
-            eigs = np.sort(np.maximum(rho.eigenenergies().real, 0.0))[::-1]
-            eigs = eigs / eigs.sum()
-            S = _von_neumann_entropy_eigs(eigs, base=2.0)  # bits
-            # diagonal probabilities in computational basis
-            diag = np.real(np.clip(rho.diag().full().ravel(), 0.0, 1.0))
+            # eigenvalues and diagonal probabilities
+            eigs = np.clip(np.real(np.sort(rho.eigenenergies())[::-1]), 0.0, 1.0)
+            eigs /= eigs.sum() if eigs.sum() > 0 else 1.0
+            S = _von_neumann_entropy_eigs(eigs, base=2.0)
+            diag = np.clip(np.array(rho.diag()).astype(float).ravel(), 0.0, 1.0)
         else:
-            # NumPy proxy
             rho = np.outer(psi, np.conjugate(psi))
             lam = rng.uniform(0.0, lam_max)
             rho = _depolarize_rho(rho, lam)
-            # eigenvalues
-            eigs = np.linalg.eigvalsh(rho)
-            eigs = np.clip(eigs.real, 0.0, 1.0)
-            s = eigs.sum()
-            eigs = eigs / (s if s > 0 else 1.0)
+            eigs = np.clip(np.linalg.eigvalsh(rho).real, 0.0, 1.0)
+            eigs /= eigs.sum() if eigs.sum() > 0 else 1.0
             S = _von_neumann_entropy_eigs(eigs, base=2.0)
-            # diagonal (computational basis)
-            diag = np.clip(np.real(np.diag(rho)), 0.0, 1.0)
+            diag = np.clip(np.diag(rho).real, 0.0, 1.0)
 
-        # normalize by log d
         logd = math.log(d, 2)
-        I_sh = float(np.clip(1.0 - S / logd, 0.0, 1.0))
-
-        # KL vs uniform (basis-population)
-        Dkl = _kl_to_uniform(diag, base=2.0)
-        I_kl = float(np.clip(Dkl / (logd + kl_eps), 0.0, 1.0))
-
-        I = _fuse_I(I_kl, I_sh, cfg)
+        I_sh  = float(np.clip(1.0 - S / logd, 0.0, 1.0))
+        Dkl   = _kl_to_uniform(diag, base=2.0)
+        Ikl_n = float(np.clip(Dkl / (logd + kl_eps), 0.0, 1.0))
+        Ifuse = _fuse_I(Ikl_n, I_sh, cfg)
 
         I_sh_list.append(I_sh)
-        I_kl_list.append(I_kl)
-        I_list.append(I)
+        I_kl_list.append(Ikl_n)
+        I_list.append(Ifuse)
 
-    return np.array(I_sh_list), np.array(I_kl_list), np.array(I_list)
+    return np.asarray(I_sh_list), np.asarray(I_kl_list), np.asarray(I_list)
 
-# ---------------------------
+# -----------------------------------------------------------------------------------
 # Public API
-# ---------------------------
+# -----------------------------------------------------------------------------------
 def run_superposition(E: Optional[np.ndarray] = None, cfg: dict = ACTIVE, seed: Optional[int] = None) -> Dict[str, str]:
     """
-    Compute superposition/information metrics for a population and couple to energy E.
-    If E is None, this function does not sample energy; it only computes I arrays.
-    Returns dict with paths (primary_run_dir, fig_dir) to integrate with later blocks.
-
-    CSV columns: ['universe_id', 'E', 'I_shannon', 'I_kl', 'I', 'X']
-    JSON summary: means/stds + environment info.
-    PNG: histogram of I, scatter E-vs-I, scatter E-vs-X (if E is given).
+    Compute superposition/information metrics and couple to energy E if provided.
+    Respects config output/mirroring switches and file tagging (EI/E).
     """
-    # Resolve output destinations
+    # Early exit if the whole stage is disabled
+    if not cfg["PIPELINE"].get("run_superposition", True):
+        return {}
+
+    # Auto-mount Drive on Colab (if enabled)
     ensure_colab_drive_mounted(cfg)
-    paths = resolve_output_paths(cfg)
+
+    # Resolve output destinations (primary + mirrors)
+    paths   = resolve_output_paths(cfg)
     run_dir = pathlib.Path(paths["primary_run_dir"])
     fig_dir = pathlib.Path(paths["fig_dir"])
+    mirrors = paths.get("mirrors", [])
 
-    # Determine population size N
-    if E is None:
-        N = cfg["ENERGY"]["num_universes"]
-    else:
-        N = int(len(E))
+    # Filename tag prefix (EI__/E__) if requested
+    ei_tag_enabled = cfg["OUTPUTS"].get("tag_ei_in_filenames", True)
+    use_info       = cfg["PIPELINE"].get("use_information", True)
+    tag_prefix     = ("EI__" if use_info else "E__") if ei_tag_enabled else ""
 
-    # If information channel is disabled, short-circuit (E-only)
-    use_info = cfg["PIPELINE"].get("use_information", True)
+    # Stage-level save switches
+    per_stage = cfg["OUTPUTS"].get("save_per_stage", {})
+    save_stage = bool(per_stage.get("superposition", True))
+    save_csv   = save_stage and bool(cfg["OUTPUTS"].get("save_csv", True))
+    save_figs  = save_stage and bool(cfg["OUTPUTS"].get("save_figs", True))
+    save_json  = save_stage and bool(cfg["OUTPUTS"].get("save_json", True))
+
+    # Population size and seed
+    N = int(cfg["ENERGY"]["num_universes"] if E is None else len(E))
+    seed_eff = cfg["ENERGY"].get("seed") if seed is None else seed
+
+    # If information channel is OFF → E-only short-circuit
     if not use_info:
-        # Create a minimal CSV with NaN info and X=E (pure-E coupling)
+        E_arr = np.asarray(E) if E is not None else np.full(N, np.nan)
+        X_arr = E_arr.copy()
         df = pd.DataFrame({
             "universe_id": np.arange(N, dtype=int),
-            "E": np.asarray(E) if E is not None else np.nan,
+            "E": E_arr,
             "I_shannon": np.nan,
             "I_kl": np.nan,
             "I": np.nan,
-            "X": np.asarray(E) if E is not None else np.nan,
+            "X": X_arr,
         })
-        csv_path = run_dir / "superposition_E_only.csv"
-        df.to_csv(csv_path, index=False)
-
-        # Summary JSON
-        summary = {
-            "env": paths["env"],
-            "run_id": paths["run_id"],
-            "N": N,
-            "mode": "E-only",
-            "has_energy_input": E is not None,
-        }
-        with open(run_dir / "superposition_summary.json", "w") as f:
-            json.dump(summary, f, indent=2)
-
-        # No plots (no I available); still return directories
+        if save_csv:
+            csv_path = run_dir / f"{tag_prefix}superposition_E_only.csv"
+            df.to_csv(csv_path, index=False)
+            _mirror_file(csv_path, mirrors, put_in_figs=False, cfg=cfg)
+        if save_json:
+            summary = {
+                "env": paths["env"],
+                "run_id": paths["run_id"],
+                "N": N,
+                "mode": "E-only",
+                "has_energy_input": E is not None,
+            }
+            jpath = run_dir / f"{tag_prefix}superposition_summary.json"
+            with open(jpath, "w", encoding="utf-8") as f:
+                json.dump(summary, f, indent=2)
+            _mirror_file(jpath, mirrors, put_in_figs=False, cfg=cfg)
         return {"primary_run_dir": str(run_dir), "fig_dir": str(fig_dir)}
 
-    # Otherwise: compute information channel
-    I_sh, I_kl, I = _compute_information_for_population(N, cfg, seed)
+    # Compute information channel
+    I_sh, I_kl, I = _compute_information_for_population(N, cfg, seed_eff)
 
     # Couple with energy if provided
     if E is None:
@@ -241,9 +244,9 @@ def run_superposition(E: Optional[np.ndarray] = None, cfg: dict = ACTIVE, seed: 
         X_arr = np.full(N, np.nan)
     else:
         E_arr = np.asarray(E, dtype=float)
-        X_arr = np.array([_couple_X(float(e), float(i), cfg) for e, i in zip(E_arr, I)])
+        X_arr = np.array([_couple_X(float(e), float(i), cfg) for e, i in zip(E_arr, I)], dtype=float)
 
-    # Assemble DataFrame
+    # Build DataFrame
     df = pd.DataFrame({
         "universe_id": np.arange(N, dtype=int),
         "E": E_arr,
@@ -252,75 +255,91 @@ def run_superposition(E: Optional[np.ndarray] = None, cfg: dict = ACTIVE, seed: 
         "I": I,
         "X": X_arr,
     })
-    csv_path = run_dir / "superposition.csv"
-    df.to_csv(csv_path, index=False)
+
+    # Save CSV
+    if save_csv:
+        csv_path = run_dir / f"{tag_prefix}superposition.csv"
+        df.to_csv(csv_path, index=False)
+        _mirror_file(csv_path, mirrors, put_in_figs=False, cfg=cfg)
 
     # Summary JSON
-    def _safe_stats(x):
-        x = x[np.isfinite(x)]
-        return {"mean": float(np.mean(x)) if x.size else None,
-                "std":  float(np.std(x))  if x.size else None,
-                "min":  float(np.min(x))  if x.size else None,
-                "max":  float(np.max(x))  if x.size else None,
-                "n":    int(x.size)}
+    if save_json:
+        def _stats(x: np.ndarray):
+            x = x[np.isfinite(x)]
+            if x.size == 0:
+                return {"n": 0, "min": None, "max": None, "mean": None, "std": None}
+            return {
+                "n": int(x.size),
+                "min": float(np.min(x)),
+                "max": float(np.max(x)),
+                "mean": float(np.mean(x)),
+                "std": float(np.std(x)),
+            }
 
-    summary = {
-        "env": paths["env"],
-        "run_id": paths["run_id"],
-        "N": N,
-        "mode": "E×I",
-        "I_shannon": _safe_stats(I_sh),
-        "I_kl": _safe_stats(I_kl),
-        "I": _safe_stats(I),
-        "E": _safe_stats(E_arr) if np.isfinite(E_arr).any() else None,
-        "X": _safe_stats(X_arr) if np.isfinite(X_arr).any() else None,
-        "cfg": {
-            "hilbert_dim": cfg["INFORMATION"]["hilbert_dim"],
-            "fusion": cfg["INFORMATION"]["fusion"],
-            "alpha_I": cfg["COUPLING_X"]["alpha_I"],
-            "mode": cfg["COUPLING_X"]["mode"],
+        summary = {
+            "env": paths["env"],
+            "run_id": paths["run_id"],
+            "N": N,
+            "mode": "E×I",
+            "stats": {
+                "I_shannon": _stats(I_sh),
+                "I_kl": _stats(I_kl),
+                "I": _stats(I),
+                "E": _stats(E_arr) if np.isfinite(E_arr).any() else None,
+                "X": _stats(X_arr) if np.isfinite(X_arr).any() else None,
+            },
+            "cfg": {
+                "hilbert_dim": cfg["INFORMATION"]["hilbert_dim"],
+                "fusion": cfg["INFORMATION"]["fusion"],
+                "coupling_mode": cfg["COUPLING_X"]["mode"],
+                "alpha_I": cfg["COUPLING_X"]["alpha_I"],
+            }
         }
-    }
-    with open(run_dir / "superposition_summary.json", "w") as f:
-        json.dump(summary, f, indent=2)
+        jpath = run_dir / f"{tag_prefix}superposition_summary.json"
+        with open(jpath, "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2)
+        _mirror_file(jpath, mirrors, put_in_figs=False, cfg=cfg)
 
-    # ---------------------------
     # Plots
-    # ---------------------------
-    # 1) Histogram of fused I
-    plt.figure()
-    plt.hist(I, bins=40)
-    plt.xlabel("I (fused)")
-    plt.ylabel("count")
-    plt.title("Superposition — I distribution")
-    plt.tight_layout()
-    fig_path1 = fig_dir / "superposition_I_hist.png"
-    plt.savefig(fig_path1, dpi=cfg["RUNTIME"].get("matplotlib_dpi", 180))
-    plt.close()
+    if save_figs:
+        dpi = int(cfg["RUNTIME"].get("matplotlib_dpi", 180))
 
-    # 2) Scatter E vs I (if E provided)
-    if np.isfinite(E_arr).any():
+        # 1) Histogram of fused I
         plt.figure()
-        plt.scatter(E_arr, I, s=6, alpha=0.6)
-        plt.xlabel("E (energy)")
-        plt.ylabel("I (fused)")
-        plt.title("E vs I")
+        plt.hist(I, bins=40)
+        plt.xlabel("I (fused)")
+        plt.ylabel("Count")
+        plt.title("Superposition — I distribution")
         plt.tight_layout()
-        fig_path2 = fig_dir / "superposition_E_vs_I.png"
-        plt.savefig(fig_path2, dpi=cfg["RUNTIME"].get("matplotlib_dpi", 180))
+        f1 = fig_dir / f"{tag_prefix}superposition_I_hist.png"
+        plt.savefig(f1, dpi=dpi)
         plt.close()
+        _mirror_file(f1, mirrors, put_in_figs=True, cfg=cfg)
 
-        # 3) Scatter E vs X
-        if np.isfinite(X_arr).any():
+        # 2) Scatter E vs I (if E provided)
+        if np.isfinite(E_arr).any():
             plt.figure()
-            plt.scatter(E_arr, X_arr, s=6, alpha=0.6)
+            plt.scatter(E_arr, I, s=6, alpha=0.6)
             plt.xlabel("E (energy)")
-            plt.ylabel("X = f(E,I)")
-            plt.title("E vs X")
+            plt.ylabel("I (fused)")
+            plt.title("E vs I")
             plt.tight_layout()
-            fig_path3 = fig_dir / "superposition_E_vs_X.png"
-            plt.savefig(fig_path3, dpi=cfg["RUNTIME"].get("matplotlib_dpi", 180))
+            f2 = fig_dir / f"{tag_prefix}superposition_E_vs_I.png"
+            plt.savefig(f2, dpi=dpi)
             plt.close()
+            _mirror_file(f2, mirrors, put_in_figs=True, cfg=cfg)
 
-    # Done
+            # 3) Scatter E vs X (if X is finite)
+            if np.isfinite(X_arr).any():
+                plt.figure()
+                plt.scatter(E_arr, X_arr, s=6, alpha=0.6)
+                plt.xlabel("E (energy)")
+                plt.ylabel("X = f(E,I)")
+                plt.title("E vs X")
+                plt.tight_layout()
+                f3 = fig_dir / f"{tag_prefix}superposition_E_vs_X.png"
+                plt.savefig(f3, dpi=dpi)
+                plt.close()
+                _mirror_file(f3, mirrors, put_in_figs=True, cfg=cfg)
+
     return {"primary_run_dir": str(run_dir), "fig_dir": str(fig_dir)}
