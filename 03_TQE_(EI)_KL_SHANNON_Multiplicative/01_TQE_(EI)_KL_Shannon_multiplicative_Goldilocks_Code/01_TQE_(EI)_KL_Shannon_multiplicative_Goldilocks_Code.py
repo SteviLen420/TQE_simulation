@@ -88,32 +88,32 @@ MASTER_CTRL = {
     "ALPHA_I":              0.8,        # coupling factor: strength of I in E·I (heuristics)
 
     # --- Stability thresholds ---
-    "REL_EPS_STABLE":       0.03,   # relative calmness threshold for stability
+    "REL_EPS_STABLE":       0.020,   # relative calmness threshold for stability
     "REL_EPS_LOCKIN":       2e-3,   # relative calmness threshold for lock-in (0.2%)
-    "CALM_STEPS_STABLE":    10,      # consecutive calm steps required (stable)
+    "CALM_STEPS_STABLE":    8,      # consecutive calm steps required (stable)
     "CALM_STEPS_LOCKIN":    12,     # consecutive calm steps required (lock-in)
     "MIN_LOCKIN_EPOCH":     200,    # lock-in can only occur after this epoch
     "LOCKIN_WINDOW":        10,     # rolling window size for averaging delta_rel
-    "LOCKIN_ROLL_METRIC":   "mean", # "mean" | "median" | "max" — aggregator over window
+    "LOCKIN_ROLL_METRIC":   "median", # "mean" | "median" | "max" — aggregator over window
     "LOCKIN_REQUIRES_STABLE": True, # require stable_at before checking lock-in
     "LOCKIN_MIN_STABLE_EPOCH": 0,   # require n - stable_at >= this many epochs
 
     # --- Goldilocks zone controls ---
     "GOLDILOCKS_MODE":      "dynamic", # "heuristic" | "dynamic"
     "E_CENTER":             6.0,    # heuristic: energy sweet-spot center (used for X window)
-    "E_WIDTH":              6.0,    # heuristic: energy sweet-spot width (used for X window)
+    "E_WIDTH":              5.0,    # heuristic: energy sweet-spot width (used for X window)
     "GOLDILOCKS_THRESHOLD": 0.8,    # dynamic: fraction of max stability to define zone
     "GOLDILOCKS_MARGIN":    0.10,   # dynamic fallback margin around peak (±10%)
-    "SIGMA_ALPHA":          1.0,    # curvature inside Goldilocks (sigma shaping)
+    "SIGMA_ALPHA":          1.5,    # curvature inside Goldilocks (sigma shaping)
     "OUTSIDE_PENALTY":      5,    # sigma multiplier outside Goldilocks zone
     "STAB_BINS":            40,     # number of bins in stability curve
     "SPLINE_K":             3,      # spline order for smoothing (3=cubic)
 
     # --- Noise shaping (lock-in loop) ---
-    "EXP_NOISE_BASE":       0.13,   # baseline noise for updates (sigma0)
-    "LL_BASE_NOISE":        5e-4,   # absolute noise floor (never go below this)
+    "EXP_NOISE_BASE":       0.12,   # baseline noise for updates (sigma0)
+    "LL_BASE_NOISE":        8e-4,   # absolute noise floor (never go below this)
     "NOISE_DECAY_TAU":      500,    # e-folding time for noise decay (epochs)
-    "NOISE_FLOOR_FRAC":     0.2,    # fraction of initial sigma preserved by decay
+    "NOISE_FLOOR_FRAC":     0.25,    # fraction of initial sigma preserved by decay
     "NOISE_COEFF_A":        1.0,    # per-variable noise multiplier (A)
     "NOISE_COEFF_NS":       0.10,   # per-variable noise multiplier (ns)
     "NOISE_COEFF_H":        0.20,   # per-variable noise multiplier (H)
