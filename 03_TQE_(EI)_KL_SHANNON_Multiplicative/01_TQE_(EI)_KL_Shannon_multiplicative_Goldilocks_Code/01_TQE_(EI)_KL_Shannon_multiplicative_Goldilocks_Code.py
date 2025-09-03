@@ -55,7 +55,7 @@ except Exception:
     from lime.lime_tabular import LimeTabularExplainer
     
 # ======================================================
-# MASTER CONTROLLER — unified parameters (KL × Shannon)
+# 1) MASTER CONTROLLER — unified parameters (KL × Shannon)
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
@@ -165,7 +165,7 @@ if MASTER_CTRL.get("USE_STRICT_SEED", True):
     os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 # ======================================================
-# Master seed initialization (reproducibility)
+# 2) Master seed initialization (reproducibility)
 # ======================================================
 if MASTER_CTRL["SEED"] is None:
     MASTER_CTRL["SEED"] = int(np.random.SeedSequence().generate_state(1)[0])
@@ -195,7 +195,7 @@ def save_json(path, obj):
 print(f"💾 Results saved in: {SAVE_DIR}")
 
 # ======================================================
-# 1) Information parameter I = g(KL, Shannon) (multiplicative fusion)
+# 3) Information parameter I = g(KL, Shannon) (multiplicative fusion)
 # ======================================================
 def sample_information_param(dim=None):
     dim = dim or MASTER_CTRL["I_DIM"]
@@ -225,7 +225,7 @@ def sample_information_param(dim=None):
     return float(I)
 
 # ======================================================
-# 2) Energy sampling
+# 4) Energy sampling
 # ======================================================
 def sample_energy(rng_local=None):
     """Sample energy using the provided RNG (per-universe) for reproducibility."""
@@ -243,7 +243,7 @@ def sample_energy(rng_local=None):
     return E
     
 # ======================================================
-# 3) Goldilocks noise function
+# 5) Goldilocks noise function
 # ======================================================
 def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
     """Goldilocks-shaped noise: outside penalty + quadratic curvature inside."""
@@ -257,7 +257,7 @@ def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
     return sigma0 * (1 + alpha * dist**2)  # <-- use the passed-in alpha
 
 # ======================================================
-# 4) Lock-in simulation (drop-in: MASTER_CTRL-driven)
+# 6) Lock-in simulation (drop-in: MASTER_CTRL-driven)
 # ======================================================
 def simulate_lock_in(
     X, N_epoch,
@@ -363,7 +363,7 @@ def simulate_lock_in(
     return is_stable, is_lockin, (stable_at if stable_at else -1), (lockin_at if lockin_at else -1)
 
 # ======================================================
-# Helpers for MC runs and dynamic Goldilocks estimation
+# 7) Helpers for MC runs and dynamic Goldilocks estimation
 # ======================================================
 def run_mc(E_c_low=None, E_c_high=None):
     """
@@ -551,7 +551,7 @@ def compute_dynamic_goldilocks(df_in):
     return E_c_low, E_c_high, xs, ys, xx, yy, df_tmp
 
 # ======================================================
-# 5) Monte Carlo universes — single or two-phase run
+# 8) Monte Carlo universes — single or two-phase run
 # ======================================================
 # Phase selection based on GOLDILOCKS_MODE:
 # - "heuristic": build window from E_CENTER/E_WIDTH, run once with shaping
@@ -585,7 +585,7 @@ else:
 df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
 
 # ======================================================
-# 6) Stability curve (binned) + Goldilocks window plot
+# 9) Stability curve (binned) + Goldilocks window plot
 # ======================================================
 E_c_low_plot, E_c_high_plot, xs, ys, xx, yy, df_binned = compute_dynamic_goldilocks(df)
 
@@ -611,7 +611,7 @@ if MASTER_CTRL.get("SAVE_FIGS", True):
     savefig(os.path.join(FIG_DIR, "stability_curve.png"))
 
 # ======================================================
-# 7) Scatter E vs I
+# 10) Scatter E vs I
 # ======================================================
 plt.figure(figsize=(7,6))
 sc = plt.scatter(df["E"], df["I"], c=df["stable"], cmap="coolwarm", s=10, alpha=0.5)
@@ -677,7 +677,7 @@ if MASTER_CTRL.get("SAVE_JSON", True):
     save_json(os.path.join(SAVE_DIR, "summary_full.json"), summary)
 
 # ======================================================
-# 8b) Universe Stability Distribution (bar chart)
+# 11) Universe Stability Distribution (bar chart)
 # ======================================================
 labels = [
     f"Lock-in ({lockin_count}, {lockin_count/len(df)*100:.1f}%)",
@@ -698,7 +698,7 @@ if MASTER_CTRL.get("SAVE_FIGS", True):
     savefig(os.path.join(FIG_DIR, "stability_distribution.png"))
 
 # ======================================================
-# 9) Stability by I (exact zero vs eps sweep) — extended
+# 12) Stability by I (exact zero vs eps sweep) — extended
 # ======================================================
 def _stability_stats(mask: pd.Series, label: str):
     total = int(mask.sum())
@@ -742,7 +742,7 @@ print(eps_df.head(12).to_string(index=False))
 print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
 
 # ======================================================
-# 11) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
+# 13) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
 # ======================================================
 def _savefig_safe(path):
     plt.savefig(path, dpi=220, bbox_inches="tight")
@@ -962,7 +962,7 @@ if MASTER_CTRL.get("RUN_SHAP", True) and rf_reg is not None and have_reg:
             print(f"[XAI][ERR] LIME classification failed: {e}")
             
 # ======================================================
-# 12) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
+# 14) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
 # ======================================================
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     try:
