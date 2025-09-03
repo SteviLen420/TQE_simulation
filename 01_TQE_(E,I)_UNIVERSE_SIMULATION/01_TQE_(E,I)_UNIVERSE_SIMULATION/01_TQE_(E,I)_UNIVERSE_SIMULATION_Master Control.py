@@ -15,7 +15,7 @@ MASTER_CTRL = {
     "META": {
         # Run labeling
         "RUN_ID_PREFIX": "TQE_(E,I)_UNIVERSE_SIMULATION",
-        "RUN_ID_FORMAT": "TQE_(E,I)_UNIVERSE_SIMULATION_%Y%m%d_%H%M%S",
+        "RUN_ID_FORMAT": "%Y%m%d_%H%M%S",
         "CODE_VERSION": "2025-09-03a",
         "DESCRIPTION": "Monte Carlo universes with Energy–Information coupling; KL × Shannon configurable.",
     },
@@ -341,39 +341,126 @@ def resolve_profile(profile_name: str):
 
 ACTIVE = resolve_profile(SELECTED_PROFILE)
 
-import os, platform
+# --- Drop-in: environment + output path resolution (Colab -> Drive, Cloud -> Desktop) ---
+import os, platform, time, pathlib
+from typing import Dict, List
 
-def get_desktop_dir():
-    # 1) manual override via env var
-    env = os.environ.get(ACTIVE["OUTPUTS"]["local"].get("desktop_env_var", "TQE_DESKTOP_DIR"))
-    if env:
-        return os.path.expanduser(env)
+def _is_colab(active_cfg: dict) -> bool:
+    """Detect Google Colab by presence of known environment variables."""
+    markers = active_cfg["ENV"].get("colab_markers", [])
+    return any(k in os.environ for k in markers)
 
-    # 2) OS-specific defaults
+def _desktop_dir(active_cfg: dict) -> str:
+    """Find Desktop folder (env override -> OS default -> CWD fallback)."""
+    env_key = active_cfg["OUTPUTS"]["local"].get("desktop_env_var", "TQE_DESKTOP_DIR")
+    if os.environ.get(env_key):
+        return os.path.expanduser(os.environ[env_key])
+
     home = os.path.expanduser("~")
     if platform.system() == "Windows":
         for p in [os.path.join(home, "Desktop"),
                   os.path.join(home, "OneDrive", "Desktop")]:
-            if os.path.isdir(p): return p
+            if os.path.isdir(p):
+                return p
     else:
         p = os.path.join(home, "Desktop")
-        if os.path.isdir(p): return p
-
-    # 3) fallback: current working directory
+        if os.path.isdir(p):
+            return p
     return os.getcwd()
 
-# --- Adjust local outputs to Desktop ---
-if ACTIVE["OUTPUTS"]["local"].get("prefer_desktop", True):
-    desktop = get_desktop_dir()
-    ACTIVE["OUTPUTS"]["local"]["base_dir"] = os.path.join(
-        desktop, ACTIVE["OUTPUTS"]["local"].get("desktop_subdir", "TQE_Output")
-    )
+def _run_id(meta_cfg: dict) -> str:
+    """Build a run_id using prefix + time format (normalized to avoid double names)."""
+    prefix = meta_cfg.get("RUN_ID_PREFIX", "")
+    fmt = meta_cfg.get("RUN_ID_FORMAT", "%Y%m%d_%H%M%S")
+    # normalize: if format already contains the long name, strip it and keep prefix separate
+    if fmt.startswith("TQE_"):
+        prefix = "TQE_(E,I)_UNIVERSE_SIMULATION_"
+        fmt = "%Y%m%d_%H%M%S"
+    return prefix + time.strftime(fmt)
 
-# --- Enable Colab drive if in Colab ---
-IN_COLAB = any(k in os.environ for k in ACTIVE["ENV"]["colab_markers"])
-if IN_COLAB:
-    ACTIVE["OUTPUTS"]["colab_drive"]["enabled"] = True
+def _resolve_environment(active_cfg: dict) -> str:
+    """
+    Decide primary environment string: 'colab' | 'cloud' | 'desktop'.
+    Priority:
+      1) ENV.force_environment if set
+      2) auto-detect Colab
+      3) if cloud.enabled+bucket_url -> 'cloud'
+      4) else 'desktop'
+    """
+    forced = active_cfg["ENV"].get("force_environment")
+    if forced in {"colab", "cloud", "desktop"}:
+        return forced
 
-# --- Enable Cloud if bucket is defined ---
-if ACTIVE["OUTPUTS"]["cloud"].get("bucket_url"):
-    ACTIVE["OUTPUTS"]["cloud"]["enabled"] = True
+    if active_cfg["ENV"].get("auto_detect", True):
+        if _is_colab(active_cfg):
+            return "colab"
+        if active_cfg["OUTPUTS"]["cloud"].get("enabled") and active_cfg["OUTPUTS"]["cloud"].get("bucket_url"):
+            return "cloud"
+    return "desktop"
+
+def resolve_output_paths(active_cfg: dict) -> Dict[str, str]:
+    """
+    Honor user's rule:
+      - if 'colab'  => PRIMARY = Colab Drive
+      - if 'cloud'  => PRIMARY = Desktop
+      - if 'desktop'=> PRIMARY = Desktop
+    Also create mirror dirs as configured.
+    Returns keys:
+      env, run_id, primary_run_dir, fig_dir, mirrors, cloud_bucket
+    """
+    env = _resolve_environment(active_cfg)
+    outputs = active_cfg["OUTPUTS"]
+    meta    = active_cfg["META"]
+    run_id  = _run_id(meta)
+
+    # Decide primary dir by env:
+    if env == "colab":
+        primary_base = outputs["colab_drive"]["base_dir"]  # Google Drive
+    else:
+        # 'cloud' and 'desktop' both go to Desktop as primary
+        primary_base = os.path.join(_desktop_dir(active_cfg),
+                                    outputs["local"].get("desktop_subdir", "TQE_Output"))
+
+    primary_run_dir = os.path.join(primary_base, run_id)
+
+    # Figures subdir
+    fig_sub = outputs["local"].get("fig_subdir", "figs")
+    fig_dir = os.path.join(primary_run_dir, fig_sub)
+
+    # Ensure primary dirs exist
+    pathlib.Path(fig_dir).mkdir(parents=True, exist_ok=True)
+
+    # Mirrors (optional)
+    mirrors: List[str] = []
+    if outputs.get("mirroring", {}).get("enabled", True):
+        targets = outputs["mirroring"].get("targets", ["local", "colab_drive"])
+        for tgt in targets:
+            if tgt == "local":
+                # local mirror = project folder ./RUN_ID (not Desktop), useful for commits
+                local_base = outputs["local"].get("base_dir", "./")
+                mdir = os.path.join(local_base, run_id)
+            elif tgt == "colab_drive" and outputs["colab_drive"]["enabled"]:
+                mdir = os.path.join(outputs["colab_drive"]["base_dir"], run_id)
+            elif tgt == "cloud" and outputs["cloud"].get("enabled") and outputs["cloud"].get("bucket_url"):
+                # cloud handled by uploader step; do not mkdir here
+                continue
+            else:
+                continue
+            pathlib.Path(os.path.join(mdir, fig_sub)).mkdir(parents=True, exist_ok=True)
+            if os.path.abspath(mdir) != os.path.abspath(primary_run_dir):
+                mirrors.append(mdir)
+
+    # Cloud bucket URL (for later sync, if any)
+    cloud_bucket = None
+    if outputs["cloud"].get("enabled") and outputs["cloud"].get("bucket_url"):
+        cloud_bucket = outputs["cloud"]["bucket_url"].rstrip("/") + "/" + run_id
+
+    return {
+        "env": env,
+        "run_id": run_id,
+        "primary_run_dir": primary_run_dir,
+        "fig_dir": fig_dir,
+        "mirrors": mirrors,
+        "cloud_bucket": cloud_bucket,
+    }
+
