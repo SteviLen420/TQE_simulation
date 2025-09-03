@@ -116,7 +116,6 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
     # Mirror to additional targets (if any)
     for mdir in mirrors:
         m_csv = os.path.join(mdir, os.path.basename(csv_path))
-        m_png = os.path.join(os.path.dirname(mdir), os.path.basename(os.path.dirname(png_path)), os.path.basename(png_path))
         # ensure mirror fig subdir exists (same subdir name as primary 'figs')
         fig_sub = ACTIVE["OUTPUTS"]["local"].get("fig_subdir", "figs")
         mirror_fig_dir = os.path.join(mdir, fig_sub)
