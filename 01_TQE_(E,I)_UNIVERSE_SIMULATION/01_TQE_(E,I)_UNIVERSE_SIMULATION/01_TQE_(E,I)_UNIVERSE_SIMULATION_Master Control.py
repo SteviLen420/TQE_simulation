@@ -1,8 +1,9 @@
 # config.py
-# ======================================================
-# Unified MASTER CONTROLLER for TQE (Energy–Information)
-# English comments inside; Hungarian usage explained outside.
-# ======================================================
+# ===================================================================================
+# MASTER CONTROLLER for TQE universe simulation of Energy–Information (E,I) dynamics
+# ===================================================================================
+# Author: Stefan Len
+# ===================================================================================
 
 from copy import deepcopy
 import os
