@@ -19,23 +19,15 @@
 # reproducibility; epsilon sweep
 # =============================================================================
 
+import os, time, json, warnings, sys, subprocess, shutil
+import numpy as np
+import matplotlib.pyplot as plt
+
 # --- Colab detection + optional Drive mount ---
 IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
 if IN_COLAB:
     from google.colab import drive
     drive.mount('/content/drive', force_remount=True)
-
-# --- Strict determinism knobs (optional but recommended) ---
-if MASTER_CTRL.get("USE_STRICT_SEED", True):
-    os.environ["PYTHONHASHSEED"] = "0"
-    os.environ["OMP_NUM_THREADS"] = "1"
-    os.environ["MKL_NUM_THREADS"] = "1"
-    os.environ["OPENBLAS_NUM_THREADS"] = "1"
-    os.environ["NUMEXPR_NUM_THREADS"] = "1"
-
-import os, time, json, warnings, sys, subprocess, shutil
-import numpy as np
-import matplotlib.pyplot as plt
 
 # --- Core deps: ensure (no heavy extras) ---
 def _ensure(pkg):
@@ -61,7 +53,7 @@ except Exception:
                            "shap==0.45.0", "lime==0.2.0.1", "scikit-learn==1.5.2", "-q"])
     import shap
     from lime.lime_tabular import LimeTabularExplainer
-
+    
 # ======================================================
 # MASTER CONTROLLER — unified parameters (KL × Shannon)
 # ======================================================
@@ -161,6 +153,16 @@ MASTER_CTRL = {
     "USE_STRICT_SEED":      True,   # optionally seed other libs/system for strict reproducibility
     "PER_UNIVERSE_SEED_MODE": "rng" # "rng" | "np_random" — how per-universe seeds are derived
 }
+
+# --- Strict determinism knobs (optional but recommended) ---
+if MASTER_CTRL.get("USE_STRICT_SEED", True):
+    # Set before importing heavy numeric libs would be ideal,
+    # but applying here is still helpful for thread pools.
+    os.environ["PYTHONHASHSEED"] = "0"
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["OPENBLAS_NUM_THREADS"] = "1"
+    os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 # ======================================================
 # Master seed initialization (reproducibility)
@@ -656,8 +658,8 @@ summary = {
     "artifacts": {
         "tqe_runs_csv": os.path.join(SAVE_DIR, "tqe_runs.csv"),
         "universe_seeds_csv": os.path.join(SAVE_DIR, "universe_seeds.csv")
-    }
-    summary["meta"] = {
+    },
+    "meta": {
         "code_version": "2025-09-03a",
         "platform": sys.platform,
         "python": sys.version.split()[0]
