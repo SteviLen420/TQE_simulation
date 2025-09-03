@@ -223,7 +223,7 @@ def sample_information_param(dim=None):
     else:  # "product"
         I_raw = I_kl * I_shannon
 
-    I = I_raw / (1.0 + I_raw)
+    I = np.clip(I_raw, 0.0, 1.0) 
     I = I ** MASTER_CTRL["I_EXPONENT"]
     I = max(I, MASTER_CTRL["I_MIN_EPS"])
     return float(I)
@@ -370,13 +370,15 @@ def simulate_lock_in(
 # 7) Helpers for MC runs and dynamic Goldilocks estimation
 # ======================================================
 def run_mc(E_c_low=None, E_c_high=None):
+    prev_state = np.random.get_state()   # <-- ELŐTTE mentsd
+    try:
     """
     Single-pass Monte Carlo run. If E_c_low/high are provided, they are used
     to shape noise via sigma_goldilocks; otherwise, no Goldilocks shaping.
     Returns a DataFrame with per-universe results.
     """
-    rows = []
-    universe_seeds = []
+        rows = []
+        universe_seeds = []
 
     for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
         # derive per-universe seed from master rng
@@ -429,6 +431,8 @@ def run_mc(E_c_low=None, E_c_high=None):
         os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
     )
     return df_out
+finally:
+    np.random.set_state(prev_state)
 
 
 def compute_dynamic_goldilocks(df_in):
@@ -586,7 +590,7 @@ elif MASTER_CTRL["GOLDILOCKS_MODE"] == "dynamic":
     if E_c_low is not None and E_c_high is not None:
         df = run_mc(E_c_low=E_c_low, E_c_high=E_c_high)
     else:
-        print("[MC][WARN] No valid Goldilocks window estimated; running without shaping.")
+        print(f"[MC][WARN] Unknown GOLDILOCKS_MODE={MASTER_CTRL['GOLDILOCKS_MODE']!r}; running without shaping.")
         df = run_mc(E_c_low=None, E_c_high=None)
 
 # Save main run
@@ -669,7 +673,8 @@ summary = {
         "python": sys.version.split()[0]
     }
 }
-save_json(os.path.join(SAVE_DIR, "summary_full.json"), summary)
+if MASTER_CTRL.get("SAVE_JSON", True):
+    save_json(os.path.join(SAVE_DIR, "summary_full.json"), summary)
 
 print("\n🌌 Universe Stability Summary (final run)")
 print(f"Total universes: {len(df)}")
@@ -905,6 +910,9 @@ if MASTER_CTRL.get("RUN_XAI", True):
 
         except Exception as e:
             print(f"[XAI][ERR] SHAP regression failed: {e}")
+
+    if MASTER_CTRL.get("RUN_SHAP", True) and rf_reg is None:
+        print("[XAI] Regression SHAP skipped (no regressor).")
 
     # -------------------- LIME: classification --------------------
     if (MASTER_CTRL.get("RUN_LIME", True)
