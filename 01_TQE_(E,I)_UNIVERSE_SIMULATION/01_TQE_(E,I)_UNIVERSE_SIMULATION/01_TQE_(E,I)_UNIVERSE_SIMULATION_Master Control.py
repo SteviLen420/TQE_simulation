@@ -400,57 +400,74 @@ def _resolve_environment(active_cfg: dict) -> str:
 
 def resolve_output_paths(active_cfg: dict) -> Dict[str, str]:
     """
-    Honor user's rule:
-      - if 'colab'  => PRIMARY = Colab Drive
-      - if 'cloud'  => PRIMARY = Desktop
-      - if 'desktop'=> PRIMARY = Desktop
-    Also create mirror dirs as configured.
-    Returns keys:
-      env, run_id, primary_run_dir, fig_dir, mirrors, cloud_bucket
+    Apply the user's routing rule:
+      - if env == 'colab'   => PRIMARY = Colab Drive
+      - if env == 'cloud'   => PRIMARY = Desktop
+      - if env == 'desktop' => PRIMARY = Desktop
+
+    Also prepares optional mirror targets (local project folder and/or Colab Drive),
+    and returns a cloud bucket path (no directories are created for cloud).
+    Keys returned:
+      { env, run_id, primary_run_dir, fig_dir, mirrors, cloud_bucket }
     """
-    env = _resolve_environment(active_cfg)
+    # --- Decide active environment first ---
+    env     = _resolve_environment(active_cfg)
     outputs = active_cfg["OUTPUTS"]
     meta    = active_cfg["META"]
     run_id  = _run_id(meta)
 
-    # Decide primary dir by env:
+    # Safety: never try to use Colab Drive when not actually in Colab
+    if env != "colab":
+        outputs["colab_drive"]["enabled"] = False
+
+    # If a bucket URL is configured, ensure cloud is marked enabled
+    if outputs["cloud"].get("bucket_url") and not outputs["cloud"].get("enabled"):
+        outputs["cloud"]["enabled"] = True
+
+    # --- Primary base directory by environment ---
     if env == "colab":
-        primary_base = outputs["colab_drive"]["base_dir"]  # Google Drive
+        # Primary goes to Google Drive in Colab
+        primary_base = outputs["colab_drive"]["base_dir"]
     else:
-        # 'cloud' and 'desktop' both go to Desktop as primary
-        primary_base = os.path.join(_desktop_dir(active_cfg),
-                                    outputs["local"].get("desktop_subdir", "TQE_Output"))
+        # Both 'cloud' and 'desktop' write primarily to the user's Desktop
+        primary_base = os.path.join(
+            _desktop_dir(active_cfg),
+            outputs["local"].get("desktop_subdir", "TQE_Output")
+        )
 
+    # Build primary run and figure directories, and make sure they exist
     primary_run_dir = os.path.join(primary_base, run_id)
-
-    # Figures subdir
-    fig_sub = outputs["local"].get("fig_subdir", "figs")
-    fig_dir = os.path.join(primary_run_dir, fig_sub)
-
-    # Ensure primary dirs exist
+    fig_sub         = outputs["local"].get("fig_subdir", "figs")
+    fig_dir         = os.path.join(primary_run_dir, fig_sub)
     pathlib.Path(fig_dir).mkdir(parents=True, exist_ok=True)
 
-    # Mirrors (optional)
+    # --- Mirrors (optional): create local/colab mirrors if enabled and valid ---
     mirrors: List[str] = []
     if outputs.get("mirroring", {}).get("enabled", True):
         targets = outputs["mirroring"].get("targets", ["local", "colab_drive"])
         for tgt in targets:
             if tgt == "local":
-                # local mirror = project folder ./RUN_ID (not Desktop), useful for commits
+                # Mirror to the project folder (not Desktop), handy for commits
                 local_base = outputs["local"].get("base_dir", "./")
                 mdir = os.path.join(local_base, run_id)
-            elif tgt == "colab_drive" and outputs["colab_drive"]["enabled"]:
+            elif tgt == "colab_drive" and outputs["colab_drive"].get("enabled", False):
                 mdir = os.path.join(outputs["colab_drive"]["base_dir"], run_id)
             elif tgt == "cloud" and outputs["cloud"].get("enabled") and outputs["cloud"].get("bucket_url"):
-                # cloud handled by uploader step; do not mkdir here
+                # Cloud is handled by an uploader step; do not mkdir here
                 continue
             else:
+                # Unknown or disabled target
                 continue
-            pathlib.Path(os.path.join(mdir, fig_sub)).mkdir(parents=True, exist_ok=True)
-            if os.path.abspath(mdir) != os.path.abspath(primary_run_dir):
-                mirrors.append(mdir)
 
-    # Cloud bucket URL (for later sync, if any)
+            # Avoid duplicating the primary target
+            if os.path.abspath(mdir) == os.path.abspath(primary_run_dir):
+                continue
+
+            # Create the mirror directory on disk
+            pathlib.Path(os.path.join(mdir, fig_sub)).mkdir(parents=True, exist_ok=True)
+            mirrors.append(mdir)
+
+    # --- Cloud bucket path (no local directories created here) ---
     cloud_bucket = None
     if outputs["cloud"].get("enabled") and outputs["cloud"].get("bucket_url"):
         cloud_bucket = outputs["cloud"]["bucket_url"].rstrip("/") + "/" + run_id
