@@ -949,37 +949,77 @@ if MASTER_CTRL.get("RUN_XAI", True):
     if MASTER_CTRL.get("RUN_SHAP", True) and rf_reg is None:
         print("[XAI] Regression SHAP skipped (no regressor).")
 
-    # -------------------- LIME: classification --------------------
-    if (MASTER_CTRL.get("RUN_LIME", True)
-        and rf_cls is not None
-        and len(np.unique(y_cls)) > 1
-        and len(Xte_c) > 0):
-        try:
+# -------------------- LIME: classification (restricted to law-lockin universes) --------------------
+if (MASTER_CTRL.get("RUN_LIME", True)
+    and rf_cls is not None
+    and len(np.unique(y_cls)) > 1
+    and len(Xte_c) > 0):
+
+    try:
+        # --- Restrict to only universes that experienced lock-in ---
+        df_lock = df[df["lockin"] == 1].copy()
+        if len(df_lock) == 0:
+            print("[LIME] Skipped: no lock-in universes available.")
+        else:
+            # Features and labels restricted to lock-in set
+            X_lock = df_lock[["E", "I", "X"]].copy()
+            y_lock = df_lock["stable"].astype(int).values
+
+            # Train/test split on lock-in subset
+            from sklearn.model_selection import train_test_split
+            Xtr_l, Xte_l, ytr_l, yte_l = train_test_split(
+                X_lock, y_lock,
+                test_size=MASTER_CTRL["TEST_SIZE"],
+                random_state=MASTER_CTRL.get("TEST_RANDOM_STATE", 42),
+                stratify=y_lock if len(np.unique(y_lock)) > 1 else None
+            )
+
+            # Re-train classifier only on lock-in universes
+            rf_lock = RandomForestClassifier(
+                n_estimators=MASTER_CTRL["RF_N_ESTIMATORS"],
+                random_state=MASTER_CTRL.get("TEST_RANDOM_STATE", 42),
+                n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS", -1),
+                class_weight=MASTER_CTRL.get("RF_CLASS_WEIGHT", None)
+            )
+            rf_lock.fit(Xtr_l, ytr_l)
+
+            # Classification accuracy on lock-in set
+            from sklearn.metrics import accuracy_score
+            acc_lock = accuracy_score(yte_l, rf_lock.predict(Xte_l))
+            print(f"[LIME] Classifier accuracy on lock-in universes: {acc_lock:.3f}")
+
+            # --- Build LIME explainer restricted to lock-in universes ---
             lime_explainer = LimeTabularExplainer(
-                training_data=Xtr_c.values,
-                feature_names=X_feat.columns.tolist(),
+                training_data=Xtr_l.values,
+                feature_names=X_lock.columns.tolist(),
                 discretize_continuous=True,
                 mode='classification'
             )
-            exp = lime_explainer.explain_instance(
-                Xte_c.iloc[0].values,
-                rf_cls.predict_proba,
-                num_features=min(MASTER_CTRL.get("LIME_NUM_FEATURES", 5), X_feat.shape[1])
-            )
-            lime_list = exp.as_list(label=1 if 1 in np.unique(y_cls) else 0)
-            lime_df = pd.DataFrame(lime_list, columns=["feature", "weight"])
-            _save_df_safe(lime_df, os.path.join(FIG_DIR, "lime_example_classification.csv"))
 
+            # Explain a sample (take first test row as representative)
+            exp = lime_explainer.explain_instance(
+                Xte_l.iloc[0].values,
+                rf_lock.predict_proba,
+                num_features=min(MASTER_CTRL.get("LIME_NUM_FEATURES", 5), X_lock.shape[1])
+            )
+
+            # Save CSV
+            lime_list = exp.as_list(label=1 if 1 in np.unique(y_lock) else 0)
+            lime_df = pd.DataFrame(lime_list, columns=["feature", "weight"])
+            _save_df_safe(lime_df, os.path.join(FIG_DIR, "lime_lockin_classification.csv"))
+
+            # Save plot
             colors = plt.cm.Set2(np.linspace(0, 1, len(lime_df)))
             plt.figure(figsize=(6, 4))
             plt.barh(lime_df["feature"], lime_df["weight"], color=colors, edgecolor="black")
             plt.xlabel("LIME weight")
             plt.ylabel("Feature")
-            plt.title("LIME explanation (stable=1)")
+            plt.title("LIME explanation (restricted to lock-in universes)")
             plt.tight_layout()
-            _savefig_safe(os.path.join(FIG_DIR, "lime_example_classification.png"))
-        except Exception as e:
-            print(f"[XAI][ERR] LIME classification failed: {e}")
+            _savefig_safe(os.path.join(FIG_DIR, "lime_lockin_classification.png"))
+
+    except Exception as e:
+        print(f"[XAI][ERR] LIME (lock-in only) failed: {e}")
             
 # ======================================================
 # 15) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
