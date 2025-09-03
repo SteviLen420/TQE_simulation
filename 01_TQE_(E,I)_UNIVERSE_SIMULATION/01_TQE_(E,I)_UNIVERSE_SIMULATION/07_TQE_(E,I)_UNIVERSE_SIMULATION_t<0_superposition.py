@@ -25,6 +25,19 @@ try:
 except Exception:
     qt = None
 
+from shutil import copy2
+
+def _mirror_file(src: pathlib.Path, mirrors: list, put_in_figs: bool = False, cfg: dict = ACTIVE):
+    fig_sub = cfg["OUTPUTS"]["local"].get("fig_subdir", "figs")
+    for m in mirrors:
+        m = pathlib.Path(m)
+        if put_in_figs:
+            dst_dir = m / fig_sub
+            dst_dir.mkdir(parents=True, exist_ok=True)
+            copy2(src, dst_dir / src.name)
+        else:
+            copy2(src, m / src.name)
+
 # ---------------------------
 # Helpers
 # ---------------------------
