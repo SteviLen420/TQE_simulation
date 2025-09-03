@@ -19,8 +19,19 @@
 # reproducibility; epsilon sweep
 # =============================================================================
 
-from google.colab import drive
-drive.mount('/content/drive', force_remount=True)
+# --- Colab detection + optional Drive mount ---
+IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
+if IN_COLAB:
+    from google.colab import drive
+    drive.mount('/content/drive', force_remount=True)
+
+# --- Strict determinism knobs (optional but recommended) ---
+if MASTER_CTRL.get("USE_STRICT_SEED", True):
+    os.environ["PYTHONHASHSEED"] = "0"
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["OPENBLAS_NUM_THREADS"] = "1"
+    os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 import os, time, json, warnings, sys, subprocess, shutil
 import numpy as np
@@ -214,29 +225,34 @@ def sample_information_param(dim=None):
 # ======================================================
 # 2) Energy sampling
 # ======================================================
-def sample_energy():
+def sample_energy(rng_local=None):
+    """Sample energy using the provided RNG (per-universe) for reproducibility."""
+    r = rng_local or rng
     if MASTER_CTRL["E_DISTR"] == "lognormal":
-        E = float(rng.lognormal(MASTER_CTRL["E_LOG_MU"], MASTER_CTRL["E_LOG_SIGMA"]))
+        E = float(r.lognormal(MASTER_CTRL["E_LOG_MU"], MASTER_CTRL["E_LOG_SIGMA"]))
     else:
-        E = float(rng.lognormal(MASTER_CTRL["E_LOG_MU"], MASTER_CTRL["E_LOG_SIGMA"]))  # fallback
+        E = float(r.lognormal(MASTER_CTRL["E_LOG_MU"], MASTER_CTRL["E_LOG_SIGMA"]))  # fallback
 
     lo, hi = MASTER_CTRL["E_TRUNC_LOW"], MASTER_CTRL["E_TRUNC_HIGH"]
-    if lo is not None: E = max(E, lo)
-    if hi is not None: E = min(E, hi)
+    if lo is not None:
+        E = max(E, lo)
+    if hi is not None:
+        E = min(E, hi)
     return E
+    
 # ======================================================
 # 3) Goldilocks noise function
 # ======================================================
 def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
+    """Goldilocks-shaped noise: outside penalty + quadratic curvature inside."""
     if E_c_low is None or E_c_high is None:
         return sigma0
     if X < E_c_low or X > E_c_high:
         return sigma0 * MASTER_CTRL["OUTSIDE_PENALTY"]
-    mid = 0.5*(E_c_low + E_c_high)
-    width = max(0.5*(E_c_high - E_c_low), 1e-12)
+    mid = 0.5 * (E_c_low + E_c_high)
+    width = max(0.5 * (E_c_high - E_c_low), 1e-12)
     dist = abs(X - mid) / width  # 0 center, 1 edges
-    alpha_in = MASTER_CTRL["SIGMA_ALPHA"]
-    return sigma0 * (1 + alpha_in * dist**2)
+    return sigma0 * (1 + alpha * dist**2)  # <-- use the passed-in alpha
 
 # ======================================================
 # 4) Lock-in simulation (drop-in: MASTER_CTRL-driven)
@@ -366,7 +382,7 @@ def run_mc(E_c_low=None, E_c_high=None):
         np.random.seed(uni_seed)  # for libs using np.random (QuTiP, etc.)
 
         # sample energy and information
-        E = sample_energy()
+        E = sample_energy(rng_local=rng_uni)
         I = sample_information_param()
 
         # X definition (MASTER_CTRL-driven)
@@ -383,7 +399,7 @@ def run_mc(E_c_low=None, E_c_high=None):
             X,
             MASTER_CTRL["LOCKIN_EPOCHS"],
             sigma0=MASTER_CTRL["EXP_NOISE_BASE"],
-            alpha=MASTER_CTRL.get("SIGMA_ALPHA", 1.0),
+            alpha=MASTER_CTRL.get("SIGMA_ALPHA", 1.0),  # pass alpha from MASTER_CTRL
             E_c_low=E_c_low,
             E_c_high=E_c_high,
             rng=rng_uni
@@ -411,51 +427,123 @@ def run_mc(E_c_low=None, E_c_high=None):
 
 def compute_dynamic_goldilocks(df_in):
     """
-    Estimate Goldilocks window dynamically from stability curve P(stable|X).
-    Returns: (E_c_low, E_c_high, xs, ys, xx, yy) and cleansed df with bin column.
-    """
-    # Bin X values into intervals for averaging (guard bin==0)
-    bins = np.linspace(df_in["X"].min(), df_in["X"].max(), MASTER_CTRL["STAB_BINS"])
-    df_tmp = df_in.copy()
-    df_tmp["bin"] = np.digitize(df_tmp["X"], bins)
-    df_tmp = df_tmp[df_tmp["bin"] > 0]
+    Estimate Goldilocks window dynamically from the stability curve P(stable | X).
 
-    # Aggregate mean X and stability rate per bin
+    Returns:
+        (E_c_low, E_c_high, xs, ys, xx, yy, df_tmp)
+        - E_c_low, E_c_high: estimated X-window bounds
+        - xs, ys: smoothed curve samples for plotting
+        - xx, yy: bin means (X) and empirical stability rates
+        - df_tmp: input df with a 'bin' column (filtered to valid bins)
+    """
+    # ---------- Guards & config ----------
+    if df_in is None or len(df_in) == 0:
+        # Degenerate fallback
+        return None, None, np.array([]), np.array([]), np.array([]), np.array([]), df_in
+
+    # Ensure numeric X
+    Xvals = pd.to_numeric(df_in["X"], errors="coerce").values
+    if np.all(~np.isfinite(Xvals)):
+        return None, None, np.array([]), np.array([]), np.array([]), np.array([]), df_in
+
+    # Binning parameters
+    nbins = int(max(5, MASTER_CTRL.get("STAB_BINS", 40)))
+    min_per_bin = int(max(1, MASTER_CTRL.get("STAB_MIN_COUNT", 10)))
+
+    # ---------- Binning (inclusive last bin, right=True) ----------
+    x_min = np.nanmin(Xvals)
+    x_max = np.nanmax(Xvals)
+    if not np.isfinite(x_min) or not np.isfinite(x_max) or x_min == x_max:
+        # Degenerate X range -> cannot bin
+        return None, None, np.array([]), np.array([]), np.array([]), np.array([]), df_in
+
+    eps_max = 1e-12
+    bins = np.linspace(x_min, x_max + eps_max, nbins)
+    df_tmp = df_in.copy()
+    df_tmp["bin"] = np.digitize(df_tmp["X"].values, bins, right=True)
+
+    # Drop out-of-range / zero-bin
+    df_tmp = df_tmp[(df_tmp["bin"] > 0) & np.isfinite(df_tmp["bin"])]
+
+    # ---------- Aggregate per bin ----------
     bin_stats = df_tmp.groupby("bin").agg(
         mean_X=("X", "mean"),
         stable_rate=("stable", "mean"),
         count=("stable", "size")
     ).dropna()
 
+    # Keep only bins with enough data
+    bin_stats = bin_stats[bin_stats["count"] >= min_per_bin]
+    if bin_stats.empty:
+        # Not enough data -> fallback
+        return None, None, np.array([]), np.array([]), np.array([]), np.array([]), df_tmp
+
+    # ---------- Prepare data for smoothing ----------
+    # Sort by mean_X, remove duplicate X by averaging stability
+    bin_stats = bin_stats.sort_values("mean_X")
     xx = bin_stats["mean_X"].values
     yy = bin_stats["stable_rate"].values
 
-    # Smooth the stability curve using spline interpolation
-    if len(xx) > MASTER_CTRL["SPLINE_K"]:
-        spline = make_interp_spline(xx, yy, k=MASTER_CTRL["SPLINE_K"])
-        xs = np.linspace(xx.min(), xx.max(), 300)
-        ys = spline(xs)
-    else:
-        xs, ys = xx, yy
+    if len(xx) > 1:
+        df_u = pd.DataFrame({"x": xx, "y": yy}).groupby("x", as_index=False)["y"].mean()
+        xx, yy = df_u["x"].values, df_u["y"].values
 
-    # clip probabilities to [0,1]
+    # Clip probabilities to [0,1]
+    yy = np.clip(yy, 0.0, 1.0)
+
+    # ---------- Smoothing (spline if possible, else linear) ----------
+    if len(xx) >= 2:
+        xs = np.linspace(xx.min(), xx.max(), 300)
+        # Spline order must be < number of unique points
+        k_max = max(1, len(xx) - 1)
+        k_cfg = int(MASTER_CTRL.get("SPLINE_K", 3))
+        k_use = min(k_cfg, k_max)
+        try:
+            if k_use >= 2:
+                spline = make_interp_spline(xx, yy, k=k_use)
+                ys = spline(xs)
+            else:
+                # Too few points for cubic/quadratic: linear interpolation
+                ys = np.interp(xs, xx, yy)
+        except Exception:
+            # Any spline failure -> linear fallback
+            ys = np.interp(xs, xx, yy)
+    else:
+        # Only one point -> no curve
+        xs, ys = xx.copy(), yy.copy()
+
+    # Final clip to [0,1]
     ys = np.clip(ys, 0.0, 1.0)
 
-    # Threshold-based window around max
-    peak_index = int(np.argmax(ys)) if len(ys) else 0
-    peak_value = float(ys[peak_index]) if len(ys) else 0.0
+    # ---------- Window extraction ----------
+    if len(xs) == 0 or len(ys) == 0:
+        return None, None, xs, ys, xx, yy, df_tmp
 
-    threshold = MASTER_CTRL.get("GOLDILOCKS_THRESHOLD", 0.5)
-    half_max = threshold * peak_value
+    peak_idx = int(np.argmax(ys))
+    peak_val = float(ys[peak_idx]) if len(ys) else 0.0
 
-    valid_region = xs[ys >= half_max] if len(ys) else np.array([])
-    if len(valid_region) > 0:
-        E_c_low, E_c_high = float(valid_region.min()), float(valid_region.max())
+    threshold = float(MASTER_CTRL.get("GOLDILOCKS_THRESHOLD", 0.5))
+    half_max = threshold * peak_val
+
+    # Handle flat/near-zero curves: use full range (with margin) as conservative fallback
+    if not np.isfinite(peak_val) or peak_val <= 1e-12:
+        margin = float(MASTER_CTRL.get("GOLDILOCKS_MARGIN", 0.10))
+        x_mid = float(np.median(xx)) if len(xx) else float(np.median(Xvals))
+        E_c_low = x_mid * (1 - margin)
+        E_c_high = x_mid * (1 + margin)
+        return E_c_low, E_c_high, xs, ys, xx, yy, df_tmp
+
+    valid_mask = ys >= half_max
+    if np.any(valid_mask):
+        valid_region = xs[valid_mask]
+        E_c_low = float(valid_region.min())
+        E_c_high = float(valid_region.max())
     else:
-        # fallback: ± margin around peak
-        peak_x = float(xs[peak_index]) if len(xs) else float(df_in["X"].median())
-        margin = MASTER_CTRL.get("GOLDILOCKS_MARGIN", 0.10)
-        E_c_low, E_c_high = peak_x * (1 - margin), peak_x * (1 + margin)
+        # Fallback: ± margin around peak x
+        peak_x = float(xs[peak_idx])
+        margin = float(MASTER_CTRL.get("GOLDILOCKS_MARGIN", 0.10))
+        E_c_low = peak_x * (1 - margin)
+        E_c_high = peak_x * (1 + margin)
         print("⚠️ No wide peak region found, using ±margin around peak.")
 
     return E_c_low, E_c_high, xs, ys, xx, yy, df_tmp
@@ -517,6 +605,9 @@ plt.title("Goldilocks zone: stability curve")
 plt.legend()
 savefig(os.path.join(FIG_DIR, "stability_curve.png"))
 
+if MASTER_CTRL.get("SAVE_FIGS", True):
+    savefig(os.path.join(FIG_DIR, "stability_curve.png"))
+
 # ======================================================
 # 7) Scatter E vs I
 # ======================================================
@@ -524,8 +615,12 @@ plt.figure(figsize=(7,6))
 sc = plt.scatter(df["E"], df["I"], c=df["stable"], cmap="coolwarm", s=10, alpha=0.5)
 plt.xlabel("Energy (E)"); plt.ylabel("Information parameter (I: KL×Shannon)")
 plt.title("Universe outcomes in (E, I) space")
-plt.colorbar(sc, label="Stable=1 / Unstable=0")
+cb = plt.colorbar(sc, ticks=[0, 1])
+cb.set_label("Stable (0/1)")
 savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
+
+if MASTER_CTRL.get("SAVE_FIGS", True):
+    savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
 
 # ======================================================
 # 8+10) Save consolidated summary (single write)
@@ -562,6 +657,11 @@ summary = {
         "tqe_runs_csv": os.path.join(SAVE_DIR, "tqe_runs.csv"),
         "universe_seeds_csv": os.path.join(SAVE_DIR, "universe_seeds.csv")
     }
+    summary["meta"] = {
+        "code_version": "2025-09-03a",
+        "platform": sys.platform,
+        "python": sys.version.split()[0]
+    }
 }
 save_json(os.path.join(SAVE_DIR, "summary_full.json"), summary)
 
@@ -570,6 +670,9 @@ print(f"Total universes: {len(df)}")
 print(f"Stable:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
 print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
+
+if MASTER_CTRL.get("SAVE_JSON", True):
+    save_json(os.path.join(SAVE_DIR, "summary_full.json"), summary)
 
 # ======================================================
 # 8b) Universe Stability Distribution (bar chart)
@@ -588,6 +691,9 @@ plt.ylabel("Number of Universes")
 plt.title("Universe Stability Distribution")
 plt.tight_layout()
 savefig(os.path.join(FIG_DIR, "stability_distribution.png"))
+
+if MASTER_CTRL.get("SAVE_FIGS", True):
+    savefig(os.path.join(FIG_DIR, "stability_distribution.png"))
 
 # ======================================================
 # 9) Stability by I (exact zero vs eps sweep) — extended
@@ -754,38 +860,71 @@ if MASTER_CTRL.get("RUN_XAI", True):
         except Exception as e:
             print(f"[XAI][ERR] SHAP classification failed: {e}")
 
-    # -------------------- SHAP: regression --------------------
-    if MASTER_CTRL.get("RUN_SHAP", True) and rf_reg is not None:
+    # -------------------- SHAP: regression (robust) --------------------
+if MASTER_CTRL.get("RUN_SHAP", True) and rf_reg is not None and have_reg:
+    try:
+        # --- Config (caps to keep SHAP fast on large datasets) ---
+        MAX_SHAP_SAMPLES   = int(MASTER_CTRL.get("MAX_SHAP_SAMPLES", 1000))
+        SHAP_BG_SIZE       = int(MASTER_CTRL.get("SHAP_BACKGROUND_SIZE", 200))
+        RNG_STATE          = MASTER_CTRL.get("TEST_RANDOM_STATE", 42)
+
+        # --- Select evaluation slice (cap to MAX_SHAP_SAMPLES) ---
+        X_plot_r = Xte_r.copy()
+        if len(X_plot_r) > MAX_SHAP_SAMPLES:
+            X_plot_r = X_plot_r.sample(MAX_SHAP_SAMPLES, random_state=RNG_STATE)
+
+        # --- Prefer TreeExplainer; if it fails, fall back to model-agnostic Explainer ---
+        sv_reg = None
         try:
-            X_plot_r = Xte_r.copy()
-            try:
-                expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional", model_output="raw")
-                sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
-            except Exception:
-                expl_reg = shap.Explainer(rf_reg, Xtr_r)
-                shap_res_r = expl_reg(X_plot_r)
-                sv_reg = getattr(shap_res_r, "values", shap_res_r)
+            # TreeExplainer is usually fastest/most accurate for tree ensembles
+            expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional", model_output="raw")
+            sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
+        except Exception:
+            # Build a compact background dataset for model-agnostic Explainer
+            if len(Xtr_r) > SHAP_BG_SIZE:
+                background = Xtr_r.sample(SHAP_BG_SIZE, random_state=RNG_STATE)
+            else:
+                background = Xtr_r
+            expl_reg = shap.Explainer(rf_reg, background)
+            shap_res_r = expl_reg(X_plot_r)
+            sv_reg = getattr(shap_res_r, "values", shap_res_r)
 
-            sv_reg = np.asarray(sv_reg)
+        # --- Normalize to ndarray and fix common shape variants ---
+        sv_reg = np.asarray(sv_reg)
 
-            # Guard shape similarly
-            if sv_reg.ndim == 3:
-                if sv_reg.shape[0] == X_plot_r.shape[0]:
-                    sv_reg = sv_reg[:, :, 0]
-                elif sv_reg.shape[-1] == X_plot_r.shape[1]:
-                    sv_reg = sv_reg[0, :, :]
+        # Expected shape is (n_samples, n_features) for single-output regression.
+        # Some SHAP versions may return (n_samples, n_features, 1) or (1, n_samples, n_features).
+        if sv_reg.ndim == 3:
+            # (n, d, 1) -> (n, d)
+            if sv_reg.shape[2] == 1 and sv_reg.shape[0] == len(X_plot_r):
+                sv_reg = sv_reg[:, :, 0]
+            # (1, n, d) -> (n, d)
+            elif sv_reg.shape[0] == 1 and sv_reg.shape[1] == len(X_plot_r):
+                sv_reg = sv_reg[0, :, :]
+            # If still 3D, try to pick the feature axis matching d
+            elif sv_reg.shape[-1] == X_plot_r.shape[1]:
+                # assume (k, n, d) -> take first output (k=1) if applicable
+                sv_reg = sv_reg[0, :, :]
 
-            assert sv_reg.shape[1] == X_plot_r.shape[1], f"SHAP shape mismatch: {sv_reg.shape} vs {X_plot_r.shape}"
+        # Final sanity check on shape
+        assert sv_reg.ndim == 2 and sv_reg.shape[1] == X_plot_r.shape[1], \
+            f"SHAP shape mismatch: {sv_reg.shape} vs {X_plot_r.shape}"
 
+        # --- Plot summary (only if saving figures is enabled) ---
+        if MASTER_CTRL.get("SAVE_FIGS", True):
             plt.figure()
-            shap.summary_plot(sv_reg, X_plot_r.values, feature_names=X_plot_r.columns.tolist(), show=False)
+            shap.summary_plot(sv_reg, X_plot_r.values,
+                              feature_names=X_plot_r.columns.tolist(),
+                              show=False)
             _savefig_safe(os.path.join(FIG_DIR, "shap_summary_reg_lock_epoch.png"))
 
-            _save_df_safe(pd.DataFrame(sv_reg, columns=X_plot_r.columns),
-                          os.path.join(FIG_DIR, "shap_values_regression.csv"))
-            np.save(os.path.join(FIG_DIR, "shap_values_reg.npy"), sv_reg)
-        except Exception as e:
-            print(f"[XAI][ERR] SHAP regression failed: {e}")
+        # --- Persist values (CSV + NPY) ---
+        _save_df_safe(pd.DataFrame(sv_reg, columns=X_plot_r.columns),
+                      os.path.join(FIG_DIR, "shap_values_regression.csv"))
+        np.save(os.path.join(FIG_DIR, "shap_values_reg.npy"), sv_reg)
+
+    except Exception as e:
+        print(f"[XAI][ERR] SHAP regression failed: {e}")
 
     # -------------------- LIME: classification --------------------
     if (MASTER_CTRL.get("RUN_LIME", True)
