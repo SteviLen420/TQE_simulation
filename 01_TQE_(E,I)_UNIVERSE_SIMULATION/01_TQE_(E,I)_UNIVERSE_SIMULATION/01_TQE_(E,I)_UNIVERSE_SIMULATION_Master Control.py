@@ -18,30 +18,32 @@ MASTER_CTRL = {
         "RUN_ID_FORMAT": "%Y%m%d_%H%M%S",
         "CODE_VERSION": "2025-09-03a",
         "DESCRIPTION": "Monte Carlo universes with Energy–Information coupling; KL × Shannon configurable.",
+        # Append EI/E tag at the end of run_id for clarity (e.g. ..._20250903_123000-EI)
+        "append_ei_to_run_id": True,
     },
 
     # ---------------------------
     # Pipeline switches (high-level)
     # ---------------------------
     "PIPELINE": {
-        # Use the information channel at all? (if False => E-only)
-        "use_information": True,
+        # Global channel toggle
+        "use_information": True,            # False => E-only baseline
 
-        # early stages (t<0)
-        "run_energy_sampling": True,
-        "run_info_bootstrap": True,      
-        "run_fluctuation": True,
-        "run_superposition": True,
+        # Early stages (t < 0)
+        "run_energy_sampling": True,        # E0 sampling
+        "run_info_bootstrap": True,         # I0 (KL+Shannon) seeding (only if use_information=True)
+        "run_fluctuation": True,            # fluctuation with E×I coupling from the start
+        "run_superposition": True,          # optional quantum/superposed pass
 
-        # Which stages to run (the code should respect these flags)
-        "run_lockin": True,
-        "run_expansion": True,
-        "run_anomaly_scan": True,  # CMB/sky-map anomaly pass
-        "run_xai": True,           # SHAP/LIME
+        # Later stages
+        "run_lockin": True,                 # law lock-in detection
+        "run_expansion": True,              # expansion dynamics
+        "run_anomaly_scan": True,           # CMB/sky-map anomaly pass
+        "run_xai": True,                    # SHAP/LIME
     },
 
     # ---------------------------
-    # Energy sampling
+    # Energy sampling (E0)
     # ---------------------------
     "ENERGY": {
         "distribution": "lognormal",
@@ -49,15 +51,20 @@ MASTER_CTRL = {
         "log_sigma": 0.8,
         "trunc_low": None,
         "trunc_high": None,
-        "num_universes": 5000,   # Monte Carlo population
-        "time_steps": 800,       # generic steps for simple stability loops
-        "lockin_epochs": 500,    # epochs for law lock-in dynamics
-        "expansion_epochs": 800, # epochs for expansion dynamics
-        "seed": None,            # None => auto-generate
+        "num_universes": 5000,              # Monte Carlo population
+        "time_steps": 800,                  # generic steps for simple stability loops
+        "lockin_epochs": 500,               # epochs for law lock-in dynamics
+        "expansion_epochs": 800,            # epochs for expansion dynamics
+        "seed": None,                       # None => auto-generate
+    },
+    "ENERGY_SAMPLING": {
+        "save_raw_arrays": True,            # save E0 vector(s)
+        "plot_histogram": True,             # E0 histogram PNG
+        "hist_bins": 60,
     },
 
     # ---------------------------
-    # Information (KL & Shannon)
+    # Information bootstrap (I0 via KL & Shannon)
     # ---------------------------
     "INFORMATION": {
         # Component toggles
@@ -76,22 +83,52 @@ MASTER_CTRL = {
         "weight_shannon": 0.5,
 
         # Post-processing
-        "exponent": 1.0,     # I <- I ** exponent
-        "floor_eps": 0.0,    # clamp minimum (avoid exact zeros if needed)
+        "exponent": 1.0,                    # I <- I ** exponent
+        "floor_eps": 0.0,                   # clamp minimum (avoid exact zeros if needed)
+    },
+    "INFORMATION_BOOTSTRAP": {
+        "seed_from_energy": True,           # correlate RNG stream with ENERGY.seed if set
+        "add_noise_eps": 1e-9,              # numerical floor for normalizations
+        "save_raw_arrays": True,            # save I_kl, I_sh, and fused I0
+        "plot_components": True,            # plot distributions and KL vs Shannon
     },
 
     # ---------------------------
     # Coupling X ≡ f(E, I)
     # ---------------------------
     "COUPLING_X": {
-        # X_MODE:
-        #   "product"      => X = E * (alpha_I * I)
-        #   "E_plus_I"     => X = (E + alpha_I * I)
-        #   "E_times_I_pow"=> X = E * (alpha_I * I) ** X_I_POWER
+        # mode:
+        #   "product"       => X = E * (alpha_I * I)
+        #   "E_plus_I"      => X = (E + alpha_I * I)
+        #   "E_times_I_pow" => X = E * (alpha_I * I) ** I_power
         "mode": "product",
         "alpha_I": 0.8,
         "I_power": 1.0,
         "scale": 1.0,
+    },
+
+    # ---------------------------
+    # Fluctuation (t<0 dynamics with E×I from the start)
+    # ---------------------------
+    "FLUCTUATION": {
+        "steps": 250,
+        "dt": 1.0,
+        "sigma_scale": 1.0,                 # multiplies NOISE.exp_noise_base
+        "drift_mode": "none",               # "none" | "ou" | "custom"
+        "save_trajectories": True,          # CSV/NPY for E(t), I(t), X(t)
+        "plot_timeseries": True,            # PNG: sample time-series
+        "plot_phase": True,                 # PNG: E vs I / X
+    },
+
+    # ---------------------------
+    # Superposition / quantum pass (optional)
+    # ---------------------------
+    "SUPERPOSITION": {
+        "enabled": True,
+        "use_qutip": True,                  # graceful fallback if QuTiP not installed
+        "n_realizations": 64,               # Monte Carlo realizations
+        "save_states": False,               # potentially large; keep off by default
+        "plot_observables": True,           # PNG plots of observables / norms / overlaps
     },
 
     # ---------------------------
@@ -108,10 +145,10 @@ MASTER_CTRL = {
 
         # Lock-in gating rules
         "min_lockin_epoch": 200,
-        "lockin_window": 10,             # rolling window size
-        "lockin_roll_metric": "median",  # "mean" | "median" | "max"
-        "lockin_requires_stable": True,  # must be stable before lock-in
-        "lockin_min_stable_epoch": 0,    # extra delay after stable_at
+        "lockin_window": 10,                # rolling window size
+        "lockin_roll_metric": "median",     # "mean" | "median" | "max"
+        "lockin_requires_stable": True,     # must be stable before lock-in
+        "lockin_min_stable_epoch": 0,       # extra delay after stable_at
     },
 
     # ---------------------------
@@ -128,26 +165,26 @@ MASTER_CTRL = {
         "E_width": 4.0,
 
         # Dynamic extraction settings
-        "threshold_frac_of_peak": 0.85,  # retain xs where P(stable) >= 0.85 * peak
-        "fallback_margin": 0.10,         # ±10% around peak if curve is flat
-        "sigma_alpha": 1.5,              # curvature strength inside window
-        "outside_penalty": 5,            # noise multiplier outside window
+        "threshold_frac_of_peak": 0.85,     # retain xs where P(stable) >= 0.85 * peak
+        "fallback_margin": 0.10,            # ±10% around peak if curve is flat
+        "sigma_alpha": 1.5,                 # curvature strength inside window
+        "outside_penalty": 5,               # noise multiplier outside window
 
         # Stability curve binning/smoothing
         "stab_bins": 40,
-        "spline_k": 3,                   # cubic if enough points
-        "stab_min_count": 10,            # min samples per bin
+        "spline_k": 3,                      # cubic if enough points
+        "stab_min_count": 10,               # min samples per bin
     },
 
     # ---------------------------
-    # Noise model (used by lock-in loop)
+    # Noise model (used by lock-in loop and fluctuation)
     # ---------------------------
     "NOISE": {
-        "exp_noise_base": 0.12,  # baseline sigma0
-        "ll_base_noise": 8e-4,   # absolute floor
-        "decay_tau": 500,        # e-folding time
-        "floor_frac": 0.25,      # portion of initial sigma preserved
-        "coeff_A": 1.0,          # per-var multipliers
+        "exp_noise_base": 0.12,             # baseline sigma0
+        "ll_base_noise": 8e-4,              # absolute floor
+        "decay_tau": 500,                   # e-folding time
+        "floor_frac": 0.25,                 # portion of initial sigma preserved
+        "coeff_A": 1.0,                     # per-var multipliers
         "coeff_ns": 0.10,
         "coeff_H": 0.20,
     },
@@ -156,28 +193,24 @@ MASTER_CTRL = {
     # Expansion dynamics (optional)
     # ---------------------------
     "EXPANSION": {
-        "growth_base": 1.005,
-        # reuse exp_noise_base from NOISE as amplitude if needed
+        "growth_base": 1.005,               # reuse NOISE.exp_noise_base as amplitude if needed
     },
 
     # ---------------------------
     # CMB / anomaly detection parameters
-    # (pipeline code should read these to build maps & scan)
     # ---------------------------
     "ANOMALY": {
         "enabled": True,
         "map": {
-            "resolution_nside": 128,   # or 256/512 if you use HEALPix
-            "beam_fwhm_deg": 1.0,      # smoothing for map (if applicable)
-            "seed_per_map": True,      # reproducible per-universe maps
+            "resolution_nside": 128,        # or 256/512 if you use HEALPix
+            "beam_fwhm_deg": 1.0,           # smoothing for map (if applicable)
+            "seed_per_map": True,           # reproducible per-universe maps
         },
         "targets": [
-            # enable/disable specific anomaly tests
             {"name": "cold_spot", "enabled": True, "patch_deg": 10.0, "zscore_thresh": 3.0},
             {"name": "hemispheric_asymmetry", "enabled": True, "l_max": 40, "pval_thresh": 0.05},
             {"name": "quad_oct_align", "enabled": False, "l2l3_align_deg": 20.0},
         ],
-        # Output control for anomaly products
         "save_cutouts": True,
         "save_metrics_csv": True,
     },
@@ -198,33 +231,46 @@ MASTER_CTRL = {
         "max_shap_samples": 1000,
         "shap_background_size": 200,
     },
-    
+
     # ---------------------------
-    # Outputs 
+    # Outputs / IO
     # ---------------------------
     "ENV": {
-        "auto_detect": True,               # automatically try to detect Colab / Desktop / Cloud
-        "force_environment": None,         # manually force environment ("colab", "desktop", "cloud")
-        "colab_markers": ["COLAB_RELEASE_TAG", "COLAB_BACKEND_VERSION"]  
-        # typical environment variables that exist in Colab
+        "auto_detect": True,                # detect Colab / Desktop / Cloud
+        "force_environment": None,          # force environment ("colab", "desktop", "cloud")
+        "colab_markers": ["COLAB_RELEASE_TAG", "COLAB_BACKEND_VERSION"],
     },
 
     "OUTPUTS": {
-        "save_figs": True,                 # save generated figures
-        "save_json": True,                 # save JSON summaries
-        "save_csv": True,                  # save CSV outputs
-        "max_figs_to_save": None,          # None => no limit on saved figures
+        "save_figs": True,                  # save generated figures
+        "save_json": True,                  # save JSON summaries
+        "save_csv": True,                   # save CSV outputs
+        "max_figs_to_save": None,           # None => no cap
 
-        # Local file system outputs (Desktop or local project folder)
+        # Save-per-stage fine switches
+        "save_per_stage": {
+            "energy_sampling": True,
+            "information_bootstrap": True,
+            "fluctuation": True,
+            "superposition": True,
+            "lockin": True,
+            "expansion": True,
+            "anomaly": True,
+            "xai": True,
+        },
+
+        # File name tagging
+        "tag_ei_in_filenames": True,       # append _EI or _E to filenames
+        "tag_profile_in_runid": True,      # include profile into run_id (e.g. -paper)
+
+        # Local file system outputs
         "local": {
-            "base_dir": "./",              # default path (will be auto-adjusted if Desktop is available)
-            "fig_subdir": "figs",          # subdirectory for figures
+            "base_dir": "./",
+            "fig_subdir": "figs",
             "allow_exts": [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
-
-            # Desktop-specific overrides
-            "prefer_desktop": True,        # if Desktop exists, always use it as priority
-            "desktop_subdir": "TQE_Output",# subfolder created on Desktop
-            "desktop_env_var": "TQE_DESKTOP_DIR"  # env var to override Desktop location
+            "prefer_desktop": True,
+            "desktop_subdir": "TQE_Output",
+            "desktop_env_var": "TQE_DESKTOP_DIR",
         },
 
         # Google Colab Drive outputs
@@ -236,30 +282,36 @@ MASTER_CTRL = {
         # Cloud bucket outputs (e.g. Google Cloud Storage, AWS S3)
         "cloud": {
             "enabled": False,
-            "bucket_url": None,            # e.g. "gs://my-bucket/tqe/"
+            "bucket_url": None,             # e.g. "gs://my-bucket/tqe/"
         },
 
         # Mirroring settings (allow saving to multiple targets at once)
         "mirroring": {
             "enabled": True,
-            "targets": ["local", "colab_drive"]  
-            # saves to Desktop/local + Colab by default (add "cloud" if needed)
+            "targets": ["local", "colab_drive"],  # add "cloud" if needed
         },
 
-        # Plot controls
-        "plot_avg_lockin": True,           # plot average law lock-in curve
-        "plot_lockin_hist": True,          # plot histogram of lock-in epochs
-        "plot_stability_basic": False,     # simple stability diagnostic plot
-        "verbose": True,                   # print extra logs
+        # Plot toggles (global defaults)
+        "plot_avg_lockin": True,
+        "plot_lockin_hist": True,
+        "plot_stability_basic": False,
+        "verbose": True,
+    },
+
+    # ---------------------------
+    # Debug / sanity checks
+    # ---------------------------
+    "DEBUG": {
+        "assert_non_nan": True,
+        "preview_first_n": 5,
     },
 
     # ---------------------------
     # Reproducibility
     # ---------------------------
     "REPRO": {
-        "use_strict_seed": True,           # set env vars to limit threads, etc.
-        "per_universe_seed_mode": "rng",   # "rng" | "np_random"
-        # Optional explicit system thread caps (the runner may apply them)
+        "use_strict_seed": True,            # set env vars to limit threads, etc.
+        "per_universe_seed_mode": "rng",    # "rng" | "np_random"
         "env_thread_caps": {
             "PYTHONHASHSEED": "0",
             "OMP_NUM_THREADS": "1",
@@ -343,6 +395,11 @@ def resolve_profile(profile_name: str):
     if active["REPRO"]["use_strict_seed"]:
         for k, v in active["REPRO"]["env_thread_caps"].items():
             os.environ[k] = str(v)
+
+    # Optionally tag the run_id with the selected profile and EI/E mode
+    if base["OUTPUTS"].get("tag_profile_in_runid", False):
+        os.environ["TQE_PROFILE_TAG"] = profile_name
+
     return active
 
 ACTIVE = resolve_profile(SELECTED_PROFILE)
