@@ -420,12 +420,15 @@ def run_mc(E_c_low=None, E_c_high=None):
             # X definetion
             mode = MASTER_CTRL["X_MODE"]
             aI = MASTER_CTRL["ALPHA_I"]
+
             if mode == "E_plus_I":
-                X = (E + I) * MASTER_CTRL["X_SCALE"]
+                X = (E + aI * I) * MASTER_CTRL["X_SCALE"]
+
             elif mode == "E_times_I_pow":
-                X = E * (I ** MASTER_CTRL["X_I_POWER"]) * MASTER_CTRL["X_SCALE"]
-            else:
-                X = (E * I) * MASTER_CTRL["X_SCALE"]
+                X = E * ((aI * I) ** MASTER_CTRL["X_I_POWER"]) * MASTER_CTRL["X_SCALE"]
+
+            else:  # "product"
+                X = (E * (aI * I)) * MASTER_CTRL["X_SCALE"]
 
             # Simulation
             stable, lockin, stable_epoch, lock_epoch = simulate_lock_in(
@@ -825,7 +828,7 @@ if MASTER_CTRL.get("RUN_XAI", True):
     )
 
     # -------------------- Regression split --------------------
-    have_reg = len(X_reg) >= MASTER_CTRL.get("REGRESSION_MIN", 30)
+    have_reg = len(X_reg) >= MASTER_CTRL.get("REGRESSION_MIN", 10)
     if have_reg:
         Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
             X_reg, y_reg,
