@@ -862,7 +862,7 @@ if MASTER_CTRL.get("RUN_XAI", True):
         reg_r2 = r2_score(yte_r, rf_reg.predict(Xte_r))
         print(f"[XAI] Regression R^2 (lock_epoch): {reg_r2:.3f}")
     else:
-        print("[XAI] Not enough locked samples for regression (need ~30+).")
+        print("[XAI] Not enough locked samples for regression (need ~10+).")
 
     # -------------------- SHAP: classification --------------------
     if MASTER_CTRL.get("RUN_SHAP", True) and rf_cls is not None:
