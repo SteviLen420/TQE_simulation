@@ -1,6 +1,16 @@
 # io_paths.py
-# All environment detection and output path resolution helpers live here.
-# Keep comments in English, so future readers understand the rules.
+# ===================================================================================
+# Environment and Output Path Resolver for TQE Simulation
+# ===================================================================================
+# Handles detection of runtime environment (Colab / Desktop / Cloud),
+# automatic path resolution for saving results (figures, CSV, JSON),
+# and optional mirroring of outputs across multiple storage targets.
+#
+# Author: Stefan Len
+# ===================================================================================
+
+from config import ACTIVE        # load the active master controller settings
+from imports import *            # common imports (numpy, matplotlib, qutip, etc.)
 
 import os, platform, time, pathlib
 from typing import Dict, List
