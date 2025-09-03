@@ -88,7 +88,7 @@ def resolve_output_paths(active_cfg: dict) -> Dict[str, str]:
     env     = _resolve_environment(active_cfg)
     outputs = active_cfg["OUTPUTS"]
     meta    = active_cfg["META"]
-    run_id  = _run_id(meta)
+    run_id  = _run_id(meta, active_cfg)
 
     # Safety: never use Colab Drive when not in Colab
     if env != "colab":
