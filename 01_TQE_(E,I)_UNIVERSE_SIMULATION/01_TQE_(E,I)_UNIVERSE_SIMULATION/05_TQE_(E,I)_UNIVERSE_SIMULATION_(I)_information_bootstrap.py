@@ -126,7 +126,7 @@ def run_information_bootstrap(active=ACTIVE, tag="EIseed"):
         "I_seed_stats": {
             "min": float(np.min(I_seed)),
             "max": float(np.max(I_seed)),
-            "mean": float(np.mean(I_seed))),
+            "mean": float(np.mean(I_seed)),
             "median": float(np.median(I_seed)),
             "std": float(np.std(I_seed)),
             "p01": float(np.quantile(I_seed, 0.01)),
