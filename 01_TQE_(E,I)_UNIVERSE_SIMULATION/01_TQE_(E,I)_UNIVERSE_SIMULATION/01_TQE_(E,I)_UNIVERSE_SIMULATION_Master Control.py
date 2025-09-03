@@ -13,8 +13,8 @@ import os
 MASTER_CTRL = {
     "META": {
         # Run labeling
-        "RUN_ID_PREFIX": "TQE_(E,I)_KL_SHANNON_",
-        "RUN_ID_FORMAT": "%Y%m%d_%H%M%S",
+        "RUN_ID_PREFIX": "TQE_(E,I)_UNIVERSE_SIMULATION",
+        "RUN_ID_FORMAT": "TQE_(E,I)_UNIVERSE_SIMULATION_%Y%m%d_%H%M%S",
         "CODE_VERSION": "2025-09-03a",
         "DESCRIPTION": "Monte Carlo universes with Energy–Information coupling; KL × Shannon configurable.",
     },
