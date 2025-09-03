@@ -34,12 +34,25 @@ def _desktop_dir(active_cfg: dict) -> str:
         if os.path.isdir(p):
             return p
     return os.getcwd()
-
-def _run_id(meta_cfg: dict) -> str:
-    """Build a run_id using prefix + time format."""
+    
+def _run_id(meta_cfg: dict, active_cfg: dict) -> str:
+    """Build a run_id using prefix + time format, then append -EI/-E and -profile if requested."""
     prefix = meta_cfg.get("RUN_ID_PREFIX", "")
-    fmt = meta_cfg.get("RUN_ID_FORMAT", "%Y%m%d_%H%M%S")
-    return prefix + time.strftime(fmt)
+    fmt    = meta_cfg.get("RUN_ID_FORMAT", "%Y%m%d_%H%M%S")
+    rid    = prefix + time.strftime(fmt)
+
+    # EI/E tag a run_id végére (ha kérve)
+    if meta_cfg.get("append_ei_to_run_id", False):
+        ei_tag = "EI" if active_cfg["PIPELINE"].get("use_information", True) else "E"
+        rid += f"-{ei_tag}"
+
+    # profil tag a run_id végére (ha kérve)
+    if active_cfg["OUTPUTS"].get("tag_profile_in_runid", False):
+        prof = os.environ.get("TQE_PROFILE", None)
+        if prof:
+            rid += f"-{prof}"
+
+    return rid
 
 def _resolve_environment(active_cfg: dict) -> str:
     """
