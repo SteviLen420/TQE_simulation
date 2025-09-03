@@ -27,6 +27,12 @@ MASTER_CTRL = {
         # Use the information channel at all? (if False => E-only)
         "use_information": True,
 
+        # early stages (t<0)
+        "run_energy_sampling": True,
+        "run_info_bootstrap": True,      
+        "run_fluctuation": True,
+        "run_superposition": True,
+
         # Which stages to run (the code should respect these flags)
         "run_lockin": True,
         "run_expansion": True,
