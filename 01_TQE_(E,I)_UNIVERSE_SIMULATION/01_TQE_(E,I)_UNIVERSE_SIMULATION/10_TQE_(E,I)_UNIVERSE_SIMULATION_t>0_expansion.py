@@ -1,14 +1,15 @@
-# 10_TQE_(E,I)_UNIVERSE_SIMULATION_t>0_expansion.py
+# expansion.py
 # ===================================================================================
 # t > 0 : Expansion stage for the TQE universe simulation
 # -----------------------------------------------------------------------------------
 # - Starts from per-universe initial "size/law" S0 (by default: collapse.final_L,
 #   else X or E0 fallback).
 # - Evolves multiplicative growth with decaying noise:
-#     S_{t+1} = S_t * exp( dt * g_eff(X) + eps_t )
+#       S_{t+1} = S_t * exp( dt * g_eff(X) + eps_t )
 #   where eps_t ~ N(0, sigma_t^2), with sigma_t decaying toward a floor.
-# - X = f(E,I) modulates the effective growth (Goldilocks can damp / penalize).
-# - Saves CSV (finals + basic stats), JSON (summary), PNG (mean curve, hist, scatter).
+# - X = f(E,I) modulates the effective growth (Goldilocks can damp/penalize).
+# - Saves CSV (finals + basic stats), JSON (summary),
+#   PNG figures (mean expansion curve, reference-universe curve).
 #
 # Author: Stefan Len
 # ===================================================================================
@@ -31,22 +32,20 @@ import matplotlib.pyplot as plt
 def _growth_from_X(X: np.ndarray, cfg: dict) -> np.ndarray:
     """
     Map X to an effective per-step growth-rate offset.
-    We use a saturating transform so huge X doesn't blow up:
+    Saturated mapping so huge X doesn't explode:
         g_eff(X) = log(growth_base) * ( 1 + gamma * X / (1 + X) ) - penalty_outside
     """
-    base = float(cfg["EXPANSION"].get("growth_base", 1.005))  # multiplicative base
+    base = float(cfg["EXPANSION"].get("growth_base", 1.005))  # multiplicative base (>1 ⇒ growth)
     gamma = float(cfg["EXPANSION"].get("gamma", 1.0))         # X sensitivity
     logb = math.log(base)
 
-    # Goldilocks: light penalty outside the window
+    # Goldilocks penalty (simple heuristic around median(X))
     gcfg = cfg["GOLDILOCKS"]
-    # heuristic band (center ~ median(X))
     center = float(np.median(X))
     width  = float(2.0 * (np.quantile(X, 0.75) - np.quantile(X, 0.25) + 1e-9))
     half   = 0.5 * width
     inside = (X >= center - half) & (X <= center + half)
     penalty = float(gcfg.get("outside_penalty", 5.0))
-    # translate penalty to growth-domain: small negative drift outside
     penalty_out = (~inside).astype(float) * (logb * 0.25 * min(1.0, penalty / 10.0))
 
     xsat = X / (1.0 + X)            # in (0,1)
@@ -55,7 +54,7 @@ def _growth_from_X(X: np.ndarray, cfg: dict) -> np.ndarray:
 
 
 def _noise_schedule(T: int, cfg: dict) -> np.ndarray:
-    """Exponential decay of noise variance toward a floor."""
+    """Exponential decay of noise std toward a floor (vector of length T)."""
     ncfg = cfg["NOISE"]
     sigma0 = float(ncfg.get("exp_noise_base", 0.12))
     tau    = float(ncfg.get("decay_tau", 500))
@@ -65,6 +64,21 @@ def _noise_schedule(T: int, cfg: dict) -> np.ndarray:
     sigma = sigma0 * (floorf + (1.0 - floorf) * np.exp(-t / tau))
     sigma = np.maximum(sigma, ll)
     return sigma
+
+
+def _simulate_expansion_traj(S0_i: float, g_eff_i: float, sigmaT: np.ndarray,
+                             dt: float, T: int, seed: int) -> np.ndarray:
+    """
+    Deterministically simulate a single expansion trajectory with a given seed.
+    Returns S (length T).
+    """
+    rng = np.random.default_rng(int(seed))
+    S = np.empty(T, dtype=float)
+    S[0] = max(1e-12, float(S0_i))
+    for t in range(1, T):
+        eps = rng.normal(0.0, sigmaT[t])
+        S[t] = max(1e-18, S[t-1] * math.exp(dt * g_eff_i + eps))
+    return S
 
 
 # ---------------------------
@@ -77,8 +91,9 @@ def run_expansion(active_cfg: Dict = ACTIVE,
     Expand post-collapse with multiplicative growth and decaying noise.
 
     Inputs (optional):
-      - collapse_df: table from run_collapse(...) (uses 'final_L' as S0 and 'X' if present)
-      - arrays: optional dict; if contains 'S0' and/or 'X', they override defaults
+      - collapse_df: table from run_collapse(...) (uses 'final_L' as S0 and 'X' if present).
+                     If contains 'lockin_at', we can mark the reference lock-in epoch.
+      - arrays: optional dict; if contains 'S0' and/or 'X', they override defaults.
 
     Returns:
       dict(csv, json, plots, table)
@@ -95,7 +110,8 @@ def run_expansion(active_cfg: Dict = ACTIVE,
     mirrors = paths["mirrors"]
 
     seeds = load_or_create_run_seeds(active_cfg)  # master + per-universe seeds
-    rngs  = universe_rngs(seeds["universe_seeds"])
+    uni_seeds = seeds["universe_seeds"]
+    rngs  = universe_rngs(uni_seeds)
 
     use_I = bool(active_cfg["PIPELINE"].get("use_information", True))
     tag = "EI" if use_I else "E"
@@ -103,44 +119,43 @@ def run_expansion(active_cfg: Dict = ACTIVE,
     # --- Prepare inputs ---
     N = int(active_cfg["ENERGY"]["num_universes"])
 
-    # X and S0 sourcing priority:
-    # arrays['X'] / collapse_df['X'] / arrays['E0'] / collapse_df['final_L']/random
+    # X sourcing priority: arrays['X'] / collapse_df['X'] / arrays['E0'] / collapse_df['E0'] / random
     if arrays and "X" in arrays:
         X = np.asarray(arrays["X"], dtype=float)
-        N = len(X)
     elif collapse_df is not None and "X" in collapse_df.columns:
         X = collapse_df["X"].to_numpy(dtype=float)
-        N = len(X)
     elif arrays and "E0" in arrays:
         X = np.asarray(arrays["E0"], dtype=float)
-        N = len(X)
     elif collapse_df is not None and "E0" in collapse_df.columns:
         X = collapse_df["E0"].to_numpy(dtype=float)
-        N = len(X)
     else:
         # fallback: mild lognormal around 1
         X = np.exp(np.random.normal(loc=0.0, scale=0.25, size=N)).astype(float)
 
+    # S0 sourcing priority: arrays['S0'] / collapse_df['final_L'] / fallback S0 ~ X
     if arrays and "S0" in arrays:
         S0 = np.asarray(arrays["S0"], dtype=float)
     elif collapse_df is not None and "final_L" in collapse_df.columns:
         S0 = collapse_df["final_L"].to_numpy(dtype=float)
     else:
-        # fallback S0 ~ X (same scale)
         S0 = X.copy()
 
-    # lengths
+    # Harmonize lengths
+    N = min(int(active_cfg["ENERGY"]["num_universes"]), len(X), len(S0), len(uni_seeds))
+    X  = X[:N]
+    S0 = S0[:N]
+
+    # Simulation horizon and step
     T  = int(active_cfg["ENERGY"].get("expansion_epochs", 800))
-    dt = float(active_cfg["FLUCTUATION"].get("dt", 1.0))
+    dt = float(active_cfg.get("FLUCTUATION", {}).get("dt", 1.0))
 
-    # schedules
-    g_eff  = _growth_from_X(X, active_cfg)          # per-universe drift
-    sigmaT = _noise_schedule(T, active_cfg)         # global time-decay noise
+    # Schedules
+    g_eff  = _growth_from_X(X, active_cfg)   # per-universe drift (length N)
+    sigmaT = _noise_schedule(T, active_cfg)  # time-decaying noise (length T)
 
-    # --- Simulate ---
+    # --- Simulate panel ---
     S_last = np.empty(N, dtype=float)
-    # for plotting mean curve we keep a small panel of trajectories
-    keep = np.linspace(0, N - 1, num=min(N, 256), dtype=int)
+    keep_idx = np.linspace(0, N - 1, num=min(N, 256), dtype=int)  # small panel for averaging
     S_stack = []
 
     for i in range(N):
@@ -151,7 +166,7 @@ def run_expansion(active_cfg: Dict = ACTIVE,
             eps = rng.normal(0.0, sigmaT[t])
             S[t] = max(1e-18, S[t-1] * math.exp(dt * g_eff[i] + eps))
         S_last[i] = S[-1]
-        if i in keep:
+        if i in keep_idx:
             S_stack.append(S)
 
     # --- Save CSV ---
@@ -189,52 +204,66 @@ def run_expansion(active_cfg: Dict = ACTIVE,
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
-    # --- Plots ---
-figs = []
+    # ---------------------------
+    # Plots
+    # ---------------------------
+    figs = []
 
-# 1) Average lock-in curve (as before)
-if want_avg and len(L_stack) > 0:
-    arr = np.vstack(L_stack)  # shape: (K, epochs)
-    mean_curve = arr.mean(axis=0)
+    # 1) Average expansion curve over the panel (if any collected)
+    if len(S_stack) > 0:
+        arr = np.vstack(S_stack)                 # shape: (K, T)
+        mean_curve = arr.mean(axis=0)            # ⟨S_t⟩
+        plt.figure()
+        plt.plot(mean_curve, linewidth=1.5, label="⟨S_t⟩ (average)")
+        plt.xlabel("epoch")
+        plt.ylabel("mean size/value ⟨S_t⟩")
+        plt.title("t > 0 : Expansion dynamics (average panel)")
+        plt.legend()
+        f1 = fig_dir / f"{tag}__avg_expansion_curve.png"
+        plt.tight_layout()
+        plt.savefig(f1, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
+        plt.close()
+        figs.append(str(f1))
+
+    # 2) Reference universe curve:
+    #    If collapse_df contains 'lockin_at', pick the earliest lock-in;
+    #    otherwise fallback to universe 0. Mark the lock-in epoch if known.
+    ref_idx = 0
+    ref_lockin = None
+    if collapse_df is not None and "lockin_at" in collapse_df.columns:
+        lk_arr = collapse_df.get("lockin_at").to_numpy()
+        if np.any(lk_arr >= 0):
+            # pick earliest lock-in among the first N universes present here
+            valid = lk_arr[:N]
+            if np.any(valid >= 0):
+                ref_idx = int(np.nanargmin(np.where(valid >= 0, valid, np.nan)))
+                ref_lockin = int(valid[ref_idx])
+
+    # Deterministic re-run for the reference universe using its own seed
+    S_ref = _simulate_expansion_traj(
+        S0_i=S0[ref_idx],
+        g_eff_i=g_eff[ref_idx],
+        sigmaT=sigmaT,
+        dt=dt,
+        T=T,
+        seed=int(uni_seeds[ref_idx])
+    )
+
     plt.figure()
-    plt.plot(mean_curve, linewidth=1.5, label="⟨L_t⟩ (average)")
+    plt.plot(S_ref, linewidth=1.5, color="tab:blue", label="S(t)")
+    plt.axhline(y=float(np.mean(S_ref)), color="gray", linestyle="--", label="⟨S⟩ (equilibrium-ish)")
+    if ref_lockin is not None and ref_lockin > 0 and ref_lockin < T:
+        plt.axvline(x=ref_lockin, color="red", linestyle="--", label=f"Law lock-in ≈ {ref_lockin}")
     plt.xlabel("epoch")
-    plt.ylabel("mean law value ⟨L_t⟩")
-    plt.title("Average lock-in trajectory")
+    plt.ylabel("Parameters")
+    plt.title("t > 0 : Expansion dynamics (reference universe)")
     plt.legend()
-    f1 = fig_dir / f"{tag}__avg_lockin_curve.png"
+    f2 = fig_dir / f"{tag}__reference_expansion_curve.png"
     plt.tight_layout()
-    plt.savefig(f1, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
+    plt.savefig(f2, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
     plt.close()
-    figs.append(str(f1))
+    figs.append(str(f2))
 
-# 2) Reference universe lock-in curve
-# Strategy: pick the universe with the earliest lock-in (if any).
-ref_idx = None
-if (lockin_at >= 0).any():
-    ref_idx = int(np.argmin(lockin_at[lockin_at >= 0]))
-else:
-    ref_idx = 0  # fallback: universe 0
-
-# Re-run trajectory for this reference universe (with its own seed)
-si = (None if base_seed is None else (base_seed + ref_idx * 9973))
-L_ref, _, _, lk_ref = _simulate_law_trajectory(float(X[ref_idx]), epochs, si, active_cfg)
-
-plt.figure()
-plt.plot(L_ref, linewidth=1.5, color="tab:blue", label="Amplitude A")
-plt.axhline(y=np.mean(L_ref), color="gray", linestyle="--", label="Equilibrium A")
-if lk_ref > 0:
-    plt.axvline(x=lk_ref, color="red", linestyle="--", label=f"Law lock-in ≈ {lk_ref}")
-plt.xlabel("epoch")
-plt.ylabel("Parameters")
-plt.title("Expansion dynamics (reference universe)")
-plt.legend()
-f2 = fig_dir / f"{tag}__reference_lockin_curve.png"
-plt.tight_layout()
-plt.savefig(f2, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
-plt.close()
-figs.append(str(f2))
-                    
     # --- Mirror copies ---
     from shutil import copy2
     fig_sub = ACTIVE["OUTPUTS"]["local"].get("fig_subdir", "figs")
@@ -254,5 +283,6 @@ figs.append(str(f2))
     return {"csv": str(csv_path), "json": str(json_path), "plots": figs, "table": out_df}
 
 
+# Allow standalone execution
 if __name__ == "__main__":
     run_expansion(ACTIVE)
