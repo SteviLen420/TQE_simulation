@@ -198,7 +198,7 @@ MASTER_CTRL = {
     # --- add new section in MASTER_CTRL ---
     "BEST_UNIVERSE": {
         # How many top items to render as individual PNGs (set 0 to disable)
-        "top_k_png": 5,
+        "top_k_png": 1,
 
         # Scoring weights (linear score; higher is better)
         # score = w_growth*z(S_final) + w_speed*z(-lockin_at_pos) + w_stability*stable_flag
@@ -224,6 +224,20 @@ MASTER_CTRL = {
             "dpi": 180,
             "curve_color": None,     # default Matplotlib color if None
             "annot_color": "red",
+        }
+    }
+
+    # ---------------------------
+    # Finetune diag
+    # ---------------------------
+    "FINETUNE_DIAG": {
+        "top_k": 1,
+        "targets": {
+            "rms":   {"target": 1.0, "tol": 0.25, "weight": 1.0},
+            "alpha": {"target": 2.9, "tol": 0.6,  "weight": 1.0},
+            "corr_len": {"min": 2.0, "max": 40.0, "tol": 2.0, "weight": 0.7},
+            "skew":  {"target": 0.0, "tol": 0.15, "weight": 0.5},
+            "kurt":  {"target": 0.0, "tol": 0.3,  "weight": 0.5},
         }
     }
 
