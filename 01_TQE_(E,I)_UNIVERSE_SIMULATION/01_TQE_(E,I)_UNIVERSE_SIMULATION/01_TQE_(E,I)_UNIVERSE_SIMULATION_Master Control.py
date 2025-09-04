@@ -1,4 +1,4 @@
-# config.py
+config.py
 # ===================================================================================
 # MASTER CONTROLLER for TQE universe simulation of Energy–Information (E,I) dynamics
 # ===================================================================================
