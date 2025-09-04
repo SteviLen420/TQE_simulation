@@ -1,4 +1,4 @@
-# superposition.py
+superposition.py
 # ===================================================================================
 # Superposition (Information channel) for TQE universe simulation
 # - Computes I_shannon (from eigenvalue entropy) and I_kl (KL vs uniform of diag)
