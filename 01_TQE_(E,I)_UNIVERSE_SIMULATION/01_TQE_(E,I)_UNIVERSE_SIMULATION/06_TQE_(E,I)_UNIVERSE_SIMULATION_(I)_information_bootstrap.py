@@ -1,6 +1,5 @@
+information_bootstrap.py
 # ===================================================================================
-# information_bootstrap.py
-# -----------------------------------------------------------------------------------
 # Fast information seed (I_seed):
 # - Generates a probability vector per universe (Dirichlet or Uniform),
 # - Computes normalized Shannon entropy in [0,1],
