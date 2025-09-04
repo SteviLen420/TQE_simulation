@@ -190,6 +190,44 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
+    # BEST_UNIVERSE
+    # ---------------------------
+   
+    "run_best_universe": True,     # turn on/off the Best Universe stage
+
+    # --- add new section in MASTER_CTRL ---
+    "BEST_UNIVERSE": {
+        # How many top items to render as individual PNGs (set 0 to disable)
+        "top_k_png": 5,
+
+        # Scoring weights (linear score; higher is better)
+        # score = w_growth*z(S_final) + w_speed*z(-lockin_at_pos) + w_stability*stable_flag
+        "weights": {
+            "growth": 1.0,      # favors large S_final
+            "speed":  0.7,      # favors earlier lock-in (smaller lockin_at)
+            "stability": 0.3    # favors universes that reached stability
+        },
+
+        # Normalization safety
+        "eps": 1e-9,
+
+        # Which columns are expected/used (only change if átnevezted a korábbi modulok kimeneteit)
+        "columns": {
+            "id": "universe_id",
+            "s_final": "S_final",
+            "lockin": "lockin_at",
+            "stable_flag": "stable"   # 0/1
+        },
+
+        # Figure style
+        "plot": {
+            "dpi": 180,
+            "curve_color": None,     # default Matplotlib color if None
+            "annot_color": "red",
+        }
+    }
+
+    # ---------------------------
     # Expansion dynamics (optional)
     # ---------------------------
     "EXPANSION": {
