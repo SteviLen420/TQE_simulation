@@ -1,6 +1,11 @@
-config.py
+Master Control.py
 # ===================================================================================
-# MASTER CONTROLLER for TQE universe simulation of Energy–Information (E,I) dynamics
+# Central configuration (MASTER CONTROLLER) for the TQE (E,I) universe simulation.
+# - Human-readable dictionary MASTER_CTRL
+# - Profile system (demo / paper / full_cloud / ei_only / e_only)
+# - ACTIVE = resolved config used by all modules
+#
+# Keep this file import-only; no I/O here.
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
@@ -9,14 +14,14 @@ from copy import deepcopy
 import os
 
 # ---------------------------
-# Top-level, human-readable
+# Human-readable master config
 # ---------------------------
 MASTER_CTRL = {
     "META": {
         # Run labeling
         "RUN_ID_PREFIX": "TQE_(E,I)_UNIVERSE_SIMULATION",
         "RUN_ID_FORMAT": "%Y%m%d_%H%M%S",
-        "CODE_VERSION": "2025-09-03a",
+        "CODE_VERSION": "2025-09-04b",
         "DESCRIPTION": "Monte Carlo universes with Energy–Information coupling; KL × Shannon configurable.",
         # Append EI/E tag at the end of run_id for clarity (e.g. ..._20250903_123000-EI)
         "append_ei_to_run_id": True,
@@ -26,20 +31,25 @@ MASTER_CTRL = {
     # Pipeline switches (high-level)
     # ---------------------------
     "PIPELINE": {
-        # Global channel toggle
+        # Global information channel toggle
         "use_information": True,            # False => E-only baseline
 
         # Early stages (t < 0)
         "run_energy_sampling": True,        # E0 sampling
-        "run_info_bootstrap": True,         # I0 (KL+Shannon) seeding (only if use_information=True)
+        "run_info_bootstrap": True,         # I0 seeding (KL + Shannon) if use_information=True
         "run_fluctuation": True,            # fluctuation with E×I coupling from the start
         "run_superposition": True,          # optional quantum/superposed pass
 
-        # Later stages
+        # t = 0 and t > 0
         "run_lockin": True,                 # law lock-in detection
         "run_expansion": True,              # expansion dynamics
-        "run_anomaly_scan": True,           # CMB/sky-map anomaly pass
+
+        # Post stages / analytics
+        "run_montecarlo": True,             # scoring / metrics over the population
+        "run_best_universe": True,          # render top-K universes (PNG)
+        "run_anomaly_scan": True,           # CMB/sky-map anomaly pass (e.g. cold spot)
         "run_xai": True,                    # SHAP/LIME
+        "run_finetune_diag": True,          # fine-tuning diagnostics (no feedback to sim)
     },
 
     # ---------------------------
@@ -51,11 +61,11 @@ MASTER_CTRL = {
         "log_sigma": 0.8,
         "trunc_low": None,
         "trunc_high": None,
-        "num_universes": 5000,              # Monte Carlo population
+        "num_universes": 5000,              # Monte Carlo population size
         "time_steps": 800,                  # generic steps for simple stability loops
         "lockin_epochs": 500,               # epochs for law lock-in dynamics
         "expansion_epochs": 800,            # epochs for expansion dynamics
-        "seed": None,                       # None => auto-generate
+        "seed": None,                       # None => auto-generate per run (seeding module)
     },
     "ENERGY_SAMPLING": {
         "save_raw_arrays": True,            # save E0 vector(s)
@@ -97,10 +107,9 @@ MASTER_CTRL = {
     # Coupling X ≡ f(E, I)
     # ---------------------------
     "COUPLING_X": {
-        # mode:
-        #   "product"       => X = E * (alpha_I * I)
-        #   "E_plus_I"      => X = (E + alpha_I * I)
-        #   "E_times_I_pow" => X = E * (alpha_I * I) ** I_power
+        # "product"       => X = E * (alpha_I * I)
+        # "E_plus_I"      => X = E + alpha_I * I
+        # "E_times_I_pow" => X = E * (alpha_I * I) ** I_power
         "mode": "product",
         "alpha_I": 0.8,
         "I_power": 1.0,
@@ -108,7 +117,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Fluctuation (t<0 dynamics with E×I from the start)
+    # Fluctuation (t < 0)
     # ---------------------------
     "FLUCTUATION": {
         "steps": 250,
@@ -155,9 +164,8 @@ MASTER_CTRL = {
     # Goldilocks zone over X
     # ---------------------------
     "GOLDILOCKS": {
-        # Mode:
-        #   "heuristic" => fixed window from center/width
-        #   "dynamic"   => estimate from empirical stability curve
+        # "heuristic" => fixed window from center/width
+        # "dynamic"   => estimate from empirical stability curve
         "mode": "dynamic",
 
         # Heuristic params (used if mode == "heuristic")
@@ -184,18 +192,14 @@ MASTER_CTRL = {
         "ll_base_noise": 8e-4,              # absolute floor
         "decay_tau": 500,                   # e-folding time
         "floor_frac": 0.25,                 # portion of initial sigma preserved
-        "coeff_A": 1.0,                     # per-var multipliers
+        "coeff_A": 1.0,                     # per-var multipliers (reserved)
         "coeff_ns": 0.10,
         "coeff_H": 0.20,
     },
 
     # ---------------------------
-    # BEST_UNIVERSE
+    # Best-universe rendering / scoring
     # ---------------------------
-   
-    "run_best_universe": True,     # turn on/off the Best Universe stage
-
-    # --- add new section in MASTER_CTRL ---
     "BEST_UNIVERSE": {
         # How many top items to render as individual PNGs (set 0 to disable)
         "top_k_png": 1,
@@ -211,41 +215,41 @@ MASTER_CTRL = {
         # Normalization safety
         "eps": 1e-9,
 
-        # Which columns are expected/used (only change if átnevezted a korábbi modulok kimeneteit)
+        # Expected column names from upstream stages
         "columns": {
             "id": "universe_id",
             "s_final": "S_final",
             "lockin": "lockin_at",
-            "stable_flag": "stable"   # 0/1
+            "stable_flag": "stable"         # 0/1
         },
 
         # Figure style
         "plot": {
             "dpi": 180,
-            "curve_color": None,     # default Matplotlib color if None
+            "curve_color": None,            # default Matplotlib color if None
             "annot_color": "red",
-        }
-    }
+        },
+    },
 
     # ---------------------------
-    # Finetune diag
+    # Fine-tuning diagnostics (analysis only; no feedback into sim)
     # ---------------------------
     "FINETUNE_DIAG": {
         "top_k": 1,
         "targets": {
-            "rms":   {"target": 1.0, "tol": 0.25, "weight": 1.0},
-            "alpha": {"target": 2.9, "tol": 0.6,  "weight": 1.0},
-            "corr_len": {"min": 2.0, "max": 40.0, "tol": 2.0, "weight": 0.7},
-            "skew":  {"target": 0.0, "tol": 0.15, "weight": 0.5},
-            "kurt":  {"target": 0.0, "tol": 0.3,  "weight": 0.5},
-        }
-    }
+            "rms":       {"target": 1.0, "tol": 0.25, "weight": 1.0},
+            "alpha":     {"target": 2.9, "tol": 0.6,  "weight": 1.0},
+            "corr_len":  {"min": 2.0, "max": 40.0, "tol": 2.0, "weight": 0.7},
+            "skew":      {"target": 0.0, "tol": 0.15, "weight": 0.5},
+            "kurt":      {"target": 0.0, "tol": 0.3,  "weight": 0.5},
+        },
+    },
 
     # ---------------------------
-    # Expansion dynamics (optional)
+    # Expansion dynamics
     # ---------------------------
     "EXPANSION": {
-        "growth_base": 1.005,               # reuse NOISE.exp_noise_base as amplitude if needed
+        "growth_base": 1.005,               # multiplicative base; modulated by X
     },
 
     # ---------------------------
@@ -259,7 +263,7 @@ MASTER_CTRL = {
             "seed_per_map": True,           # reproducible per-universe maps
         },
         "targets": [
-            {"name": "cold_spot", "enabled": True, "patch_deg": 10.0, "zscore_thresh": 3.0},
+            {"name": "cold_spot", "enabled": True,  "patch_deg": 10.0, "zscore_thresh": 3.0},
             {"name": "hemispheric_asymmetry", "enabled": True, "l_max": 40, "pval_thresh": 0.05},
             {"name": "quad_oct_align", "enabled": False, "l2l3_align_deg": 20.0},
         ],
@@ -309,11 +313,14 @@ MASTER_CTRL = {
             "expansion": True,
             "anomaly": True,
             "xai": True,
+            "montecarlo": True,
+            "best_universe": True,
+            "finetune_diag": True,
         },
 
-        # File name tagging
-        "tag_ei_in_filenames": True,       # append _EI or _E to filenames
-        "tag_profile_in_runid": True,      # include profile into run_id (e.g. -paper)
+        # File naming & run-id tagging
+        "tag_ei_in_filenames": True,        # append _EI or _E to filenames
+        "tag_profile_in_runid": True,       # include profile into run_id (e.g. -paper)
 
         # Local file system outputs
         "local": {
@@ -419,7 +426,7 @@ MASTER_CTRL = {
 }
 
 # ======================================================
-# Small helper: deep-merge dict (right overrides left)
+# Deep-merge helper (right overrides left)
 # ======================================================
 def _deep_merge(base, override):
     if not isinstance(override, dict):
@@ -433,7 +440,7 @@ def _deep_merge(base, override):
     return out
 
 # ======================================================
-# Select profile here (or from CLI) and build ACTIVE cfg
+# Build ACTIVE from profile (env var TQE_PROFILE may override)
 # ======================================================
 SELECTED_PROFILE = os.environ.get("TQE_PROFILE", "paper")  # "demo" | "paper" | "full_cloud" | "ei_only" | "e_only"
 
@@ -448,7 +455,7 @@ def resolve_profile(profile_name: str):
         for k, v in active["REPRO"]["env_thread_caps"].items():
             os.environ[k] = str(v)
 
-    # Optionally tag the run_id with the selected profile and EI/E mode
+    # Optionally tag the run_id with the selected profile
     if base["OUTPUTS"].get("tag_profile_in_runid", False):
         os.environ["TQE_PROFILE_TAG"] = profile_name
 
