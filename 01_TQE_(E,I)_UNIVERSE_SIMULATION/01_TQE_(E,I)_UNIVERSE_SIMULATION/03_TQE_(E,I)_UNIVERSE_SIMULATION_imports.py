@@ -1,4 +1,4 @@
-# imports.py
+imports.py
 # ===================================================================================
 # Centralized imports for the TQE universe simulation project
 # Grouped by category for clarity and maintainability
