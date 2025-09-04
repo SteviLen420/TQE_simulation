@@ -1,4 +1,4 @@
-# 11_TQE_(E,I)_UNIVERSE_SIMULATION_best_universe.py
+best_universe.py
 # ===================================================================================
 # Best Universe selection for the TQE simulation
 # -----------------------------------------------------------------------------------
