@@ -1,4 +1,4 @@
-# fluctuation.py
+fluctuation.py
 # ===================================================================================
 # Fluctuation stage for the TQE universe simulation.
 # Samples Energy (E) and, if enabled, computes Information (I) from random
