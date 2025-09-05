@@ -1,59 +1,59 @@
 Master Control.py
 # ===================================================================================
-# Central configuration (MASTER CONTROLLER) for the TQE (E,I) universe simulation.
-# - Human-readable dictionary MASTER_CTRL
-# - Profile system (demo / paper / full_cloud / ei_only / e_only)
-# - ACTIVE = resolved config used by all modules
-#
-# Keep this file import-only; no I/O here.
+# 00_TQE_(E,I)_UNIVERSE_SIMULATION_config.py
 # ===================================================================================
+# Single source of truth for all pipeline stages.
+# - Edit switches under PIPELINE to turn stages on/off.
+# - All other modules should only import: from config import ACTIVE
 # Author: Stefan Len
 # ===================================================================================
 
 from copy import deepcopy
 import os
 
-# ---------------------------
-# Human-readable master config
-# ---------------------------
+# ===================================================================================
+# MASTER CONFIGURATION
+# ===================================================================================
 MASTER_CTRL = {
+    # ---------------------------
+    # Metadata and run labeling
+    # ---------------------------
     "META": {
-        # Run labeling
         "RUN_ID_PREFIX": "TQE_(E,I)_UNIVERSE_SIMULATION",
         "RUN_ID_FORMAT": "%Y%m%d_%H%M%S",
-        "CODE_VERSION": "2025-09-04b",
-        "DESCRIPTION": "Monte Carlo universes with Energy–Information coupling; KL × Shannon configurable.",
-        # Append EI/E tag at the end of run_id for clarity (e.g. ..._20250903_123000-EI)
-        "append_ei_to_run_id": True,
+        "CODE_VERSION": "2025-09-05",
+        "DESCRIPTION": "Universe Monte Carlo with Energy–Information coupling, anomalies, XAI, manifest.",
+        "append_ei_to_run_id": True,   # Append -EI or -E at the end of run_id
     },
 
     # ---------------------------
     # Pipeline switches (high-level)
     # ---------------------------
     "PIPELINE": {
-        # Global information channel toggle
-        "use_information": True,            # False => E-only baseline
+        "use_information": True,          # False => Energy-only baseline
 
-        # Early stages (t < 0)
-        "run_energy_sampling": True,        # E0 sampling
-        "run_info_bootstrap": True,         # I0 seeding (KL + Shannon) if use_information=True
-        "run_fluctuation": True,            # fluctuation with E×I coupling from the start
-        "run_superposition": True,          # optional quantum/superposed pass
+        # Early stages
+        "run_energy_sampling": True,      # E0 sampling
+        "run_info_bootstrap": True,       # I0 seeding (KL + Shannon)
+        "run_fluctuation": True,          # Pre t=0 fluctuation dynamics
+        "run_superposition": True,        # Optional quantum superposition stage
 
-        # t = 0 and t > 0
-        "run_lockin": True,                 # law lock-in detection
-        "run_expansion": True,              # expansion dynamics
+        # Core evolution
+        "run_lockin": True,               # Law lock-in detection
+        "run_expansion": True,            # Expansion dynamics
 
         # Post stages / analytics
-        "run_montecarlo": True,             # scoring / metrics over the population
-        "run_best_universe": True,          # render top-K universes (PNG)
-        "run_anomaly_scan": True,           # CMB/sky-map anomaly pass (e.g. cold spot)
-        "run_xai": True,                    # SHAP/LIME
-        "run_finetune_diag": True,          # fine-tuning diagnostics (no feedback to sim)
+        "run_montecarlo": True,           # Monte Carlo statistics
+        "run_best_universe": True,        # Best-universe scoring
+        "run_cmb_map": True,              # CMB map generation
+        "run_anomaly_scan": True,         # Anomaly detection
+        "run_finetune_diag": True,        # Fine-tuning diagnostics
+        "run_xai": True,                  # SHAP/LIME explainability
+        "run_manifest": True,             # Results manifest generation
     },
 
     # ---------------------------
-    # Energy sampling (E0)
+    # Energy sampling
     # ---------------------------
     "ENERGY": {
         "distribution": "lognormal",
@@ -61,249 +61,239 @@ MASTER_CTRL = {
         "log_sigma": 0.8,
         "trunc_low": None,
         "trunc_high": None,
-        "num_universes": 5000,              # Monte Carlo population size
-        "time_steps": 800,                  # generic steps for simple stability loops
-        "lockin_epochs": 500,               # epochs for law lock-in dynamics
-        "expansion_epochs": 800,            # epochs for expansion dynamics
-        "seed": None,                       # None => auto-generate per run (seeding module)
+        "num_universes": 5000,
+        "time_steps": 800,
+        "lockin_epochs": 500,
+        "expansion_epochs": 800,
+        "seed": None,                     # None => auto-generate
     },
     "ENERGY_SAMPLING": {
-        "save_raw_arrays": True,            # save E0 vector(s)
-        "plot_histogram": True,             # E0 histogram PNG
+        "save_raw_arrays": True,          # Save raw sampled values
+        "plot_histogram": True,           # Plot histogram of E0
         "hist_bins": 60,
     },
 
     # ---------------------------
-    # Information bootstrap (I0 via KL & Shannon)
+    # Information bootstrap (KL + Shannon)
     # ---------------------------
     "INFORMATION": {
-        # Component toggles
-        "use_kl": True,
-        "use_shannon": True,
-
-        # Hilbert space + numerics
+        "use_kl": True,                   # Enable KL divergence component
+        "use_shannon": True,              # Enable Shannon entropy component
         "hilbert_dim": 8,
         "kl_eps": 1e-12,
-
-        # Fusion rule of components to scalar I in [0,1]
-        #   "product"  => I = I_kl * I_shannon
-        #   "weighted" => I = w_kl*I_kl + w_sh*I_shannon  (weights normalized)
-        "fusion": "product",
+        "fusion": "product",              # "product" | "weighted"
         "weight_kl": 0.5,
         "weight_shannon": 0.5,
-
-        # Post-processing
-        "exponent": 1.0,                    # I <- I ** exponent
-        "floor_eps": 0.0,                   # clamp minimum (avoid exact zeros if needed)
+        "exponent": 1.0,                  # Post-processing exponent
+        "floor_eps": 0.0,                 # Minimum clamp
     },
     "INFORMATION_BOOTSTRAP": {
-        "seed_from_energy": True,           # correlate RNG stream with ENERGY.seed if set
-        "add_noise_eps": 1e-9,              # numerical floor for normalizations
-        "save_raw_arrays": True,            # save I_kl, I_sh, and fused I0
-        "plot_components": True,            # plot distributions and KL vs Shannon
+        "seed_from_energy": True,         # Correlate RNG with ENERGY.seed if set
+        "add_noise_eps": 1e-9,            # Numerical floor for normalization
+        "save_raw_arrays": True,          # Save KL, Shannon, fused I0
+        "plot_components": True,          # Plot component distributions
     },
 
     # ---------------------------
-    # Coupling X ≡ f(E, I)
+    # Coupling definition: X ≡ f(E,I)
     # ---------------------------
     "COUPLING_X": {
-        # "product"       => X = E * (alpha_I * I)
-        # "E_plus_I"      => X = E + alpha_I * I
-        # "E_times_I_pow" => X = E * (alpha_I * I) ** I_power
-        "mode": "product",
-        "alpha_I": 0.8,
-        "I_power": 1.0,
-        "scale": 1.0,
+        "mode": "product",                # "product" | "E_plus_I" | "E_times_I_pow"
+        "alpha_I": 0.8,                   # Scaling for I
+        "I_power": 1.0,                   # Power exponent for I
+        "scale": 1.0,                     # Global scale
     },
 
     # ---------------------------
-    # Fluctuation (t < 0)
+    # Fluctuation (t < 0 dynamics)
     # ---------------------------
     "FLUCTUATION": {
         "steps": 250,
         "dt": 1.0,
-        "sigma_scale": 1.0,                 # multiplies NOISE.exp_noise_base
-        "drift_mode": "none",               # "none" | "ou" | "custom"
-        "save_trajectories": True,          # CSV/NPY for E(t), I(t), X(t)
-        "plot_timeseries": True,            # PNG: sample time-series
-        "plot_phase": True,                 # PNG: E vs I / X
+        "sigma_scale": 1.0,               # Multiplies NOISE.exp_noise_base
+        "drift_mode": "none",             # "none" | "ou" | "custom"
+        "save_trajectories": True,        # Save E(t), I(t), X(t)
+        "plot_timeseries": True,          # Plot sample trajectories
+        "plot_phase": True,               # Plot E vs I phase space
     },
 
     # ---------------------------
-    # Superposition / quantum pass (optional)
+    # Superposition / quantum stage
     # ---------------------------
     "SUPERPOSITION": {
         "enabled": True,
-        "use_qutip": True,                  # graceful fallback if QuTiP not installed
-        "n_realizations": 64,               # Monte Carlo realizations
-        "save_states": False,               # potentially large; keep off by default
-        "plot_observables": True,           # PNG plots of observables / norms / overlaps
+        "use_qutip": True,                # Fallback gracefully if QuTiP not available
+        "n_realizations": 64,             # Monte Carlo realizations
+        "save_states": False,             # Save full states (large memory use)
+        "plot_observables": True,         # Plot observables and overlaps
     },
 
     # ---------------------------
-    # Stability / lock-in thresholds
+    # Stability and lock-in thresholds
     # ---------------------------
     "STABILITY": {
-        # Relative calmness thresholds (per-step or rolling)
-        "rel_eps_stable": 0.010,
-        "rel_eps_lockin": 5e-3,
-
-        # Consecutive calm steps required
-        "calm_steps_stable": 10,
-        "calm_steps_lockin": 12,
-
-        # Lock-in gating rules
-        "min_lockin_epoch": 200,
-        "lockin_window": 10,                # rolling window size
-        "lockin_roll_metric": "median",     # "mean" | "median" | "max"
-        "lockin_requires_stable": True,     # must be stable before lock-in
-        "lockin_min_stable_epoch": 0,       # extra delay after stable_at
+        "rel_eps_stable": 0.010,          # Stability threshold
+        "rel_eps_lockin": 5e-3,           # Lock-in threshold
+        "calm_steps_stable": 10,          # Required calm steps for stability
+        "calm_steps_lockin": 12,          # Required calm steps for lock-in
+        "min_lockin_epoch": 200,          # Earliest epoch for lock-in
+        "lockin_window": 10,              # Rolling window size
+        "lockin_roll_metric": "median",   # "mean" | "median" | "max"
+        "lockin_requires_stable": True,   # Require stability before lock-in
+        "lockin_min_stable_epoch": 0,     # Extra delay after stability
     },
 
     # ---------------------------
-    # Goldilocks zone over X
+    # Goldilocks zone (dynamic stability window)
     # ---------------------------
     "GOLDILOCKS": {
-        # "heuristic" => fixed window from center/width
-        # "dynamic"   => estimate from empirical stability curve
-        "mode": "dynamic",
-
-        # Heuristic params (used if mode == "heuristic")
-        "E_center": 4.0,
+        "mode": "dynamic",                # "heuristic" | "dynamic"
+        "E_center": 4.0,                  # Used if mode = heuristic
         "E_width": 4.0,
-
-        # Dynamic extraction settings
-        "threshold_frac_of_peak": 0.85,     # retain xs where P(stable) >= 0.85 * peak
-        "fallback_margin": 0.10,            # ±10% around peak if curve is flat
-        "sigma_alpha": 1.5,                 # curvature strength inside window
-        "outside_penalty": 5,               # noise multiplier outside window
-
-        # Stability curve binning/smoothing
-        "stab_bins": 40,
-        "spline_k": 3,                      # cubic if enough points
-        "stab_min_count": 10,               # min samples per bin
+        "threshold_frac_of_peak": 0.85,   # Fraction of peak stability
+        "fallback_margin": 0.10,          # ±10% margin if flat curve
+        "sigma_alpha": 1.5,               # Inside curve sharpness
+        "outside_penalty": 5.0,           # Noise penalty outside window
+        "stab_bins": 40,                  # Number of bins
+        "spline_k": 3,                    # Cubic spline degree
+        "stab_min_count": 10,             # Minimum samples per bin
     },
 
     # ---------------------------
-    # Noise model (used by lock-in loop and fluctuation)
+    # Noise model
     # ---------------------------
     "NOISE": {
-        "exp_noise_base": 0.12,             # baseline sigma0
-        "ll_base_noise": 8e-4,              # absolute floor
-        "decay_tau": 500,                   # e-folding time
-        "floor_frac": 0.25,                 # portion of initial sigma preserved
-        "coeff_A": 1.0,                     # per-var multipliers (reserved)
+        "exp_noise_base": 0.12,           # Baseline noise
+        "ll_base_noise": 8e-4,            # Absolute noise floor
+        "decay_tau": 500,                 # Exponential decay constant
+        "floor_frac": 0.25,               # Noise floor fraction
+        "coeff_A": 1.0,                   # Multipliers
         "coeff_ns": 0.10,
         "coeff_H": 0.20,
-    },
-
-    # ---------------------------
-    # Best-universe rendering / scoring
-    # ---------------------------
-    "BEST_UNIVERSE": {
-        # How many top items to render as individual PNGs (set 0 to disable)
-        "top_k_png": 1,
-
-        # Scoring weights (linear score; higher is better)
-        # score = w_growth*z(S_final) + w_speed*z(-lockin_at_pos) + w_stability*stable_flag
-        "weights": {
-            "growth": 1.0,      # favors large S_final
-            "speed":  0.7,      # favors earlier lock-in (smaller lockin_at)
-            "stability": 0.3    # favors universes that reached stability
-        },
-
-        # Normalization safety
-        "eps": 1e-9,
-
-        # Expected column names from upstream stages
-        "columns": {
-            "id": "universe_id",
-            "s_final": "S_final",
-            "lockin": "lockin_at",
-            "stable_flag": "stable"         # 0/1
-        },
-
-        # Figure style
-        "plot": {
-            "dpi": 180,
-            "curve_color": None,            # default Matplotlib color if None
-            "annot_color": "red",
-        },
     },
 
     # ---------------------------
     # Expansion dynamics
     # ---------------------------
     "EXPANSION": {
-        "growth_base": 1.005,               # multiplicative base; modulated by X
+        "growth_base": 1.005,
+        "gamma": 1.0,
     },
 
     # ---------------------------
-    # CMB / anomaly detection parameters
+    # Monte Carlo run
+    # ---------------------------
+    "MONTECARLO": {
+        "save_csv": True,
+        "save_json": True,
+        "plot_distributions": True,
+    },
+
+    # ---------------------------
+    # Best Universe scoring
+    # ---------------------------
+    "BEST_UNIVERSE": {
+        "top_k_png": 1,                   # Number of top universes to plot
+        "weights": {"growth": 1.0, "speed": 0.7, "stability": 0.3},
+        "eps": 1e-9,                      # Numerical safety epsilon
+        "columns": {
+            "id": "universe_id",
+            "s_final": "S_final",
+            "lockin": "lockin_at",
+            "stable_flag": "stable",
+        },
+        "plot": {"dpi": 180, "curve_color": None, "annot_color": "red"},
+    },
+
+    # ---------------------------
+    # CMB map generation
+    # ---------------------------
+    "CMB_MAP": {
+        "resolution_nside": 128,          # HEALPix resolution
+        "beam_fwhm_deg": 1.0,             # Beam smoothing
+        "seed_per_map": True,             # Per-universe reproducibility
+        "save_png": True,                 # Save CMB maps as PNG
+        "save_npy": True,                 # Save CMB maps as NumPy arrays
+    },
+
+    # ---------------------------
+    # Anomaly detection
     # ---------------------------
     "ANOMALY": {
         "enabled": True,
-        "map": {
-            "resolution_nside": 128,        # or 256/512 if you use HEALPix
-            "beam_fwhm_deg": 1.0,           # smoothing for map (if applicable)
-            "seed_per_map": True,           # reproducible per-universe maps
-        },
+        "save_cutouts": True,             # Save map cutouts
+        "save_metrics_csv": True,         # Save anomaly metrics
         "targets": [
-            {"name": "cold_spot", "enabled": True,  "patch_deg": 10.0, "zscore_thresh": 3.0},
+            {"name": "cold_spot", "enabled": True, "patch_deg": 10.0, "zscore_thresh": 3.0},
+            {"name": "low_multipole_align", "enabled": True, "l2l3_align_deg": 20.0},
+            {"name": "lack_large_angle_corr", "enabled": True, "theta_min_deg": 60.0, "num_boot": 500},
             {"name": "hemispheric_asymmetry", "enabled": True, "l_max": 40, "pval_thresh": 0.05},
-            {"name": "quad_oct_align", "enabled": False, "l2l3_align_deg": 20.0},
         ],
-        "save_cutouts": True,
-        "save_metrics_csv": True,
     },
 
     # ---------------------------
-    # Fine-tuning diagnostics 
+    # Fine-tuning diagnostics
     # ---------------------------
     "FINETUNE_DIAG": {
         "top_k": 1,
         "targets": {
-            "rms":       {"target": 1.0, "tol": 0.25, "weight": 1.0},
-            "alpha":     {"target": 2.9, "tol": 0.6,  "weight": 1.0},
-            "corr_len":  {"min": 2.0, "max": 40.0, "tol": 2.0, "weight": 0.7},
-            "skew":      {"target": 0.0, "tol": 0.15, "weight": 0.5},
-            "kurt":      {"target": 0.0, "tol": 0.3,  "weight": 0.5},
+            "rms":      {"target": 1.0, "tol": 0.25, "weight": 1.0},
+            "alpha":    {"target": 2.9, "tol": 0.6,  "weight": 1.0},
+            "corr_len": {"min": 2.0, "max": 40.0, "tol": 2.0, "weight": 0.7},
+            "skew":     {"target": 0.0, "tol": 0.15, "weight": 0.5},
+            "kurt":     {"target": 0.0, "tol": 0.3,  "weight": 0.5},
         },
     },
 
     # ---------------------------
-    # XAI stack
+    # Explainable AI (SHAP / LIME)
     # ---------------------------
     "XAI": {
         "run_shap": True,
         "run_lime": True,
-        "lime_num_features": 5,
+        "lime_num_features": 6,
         "test_size": 0.25,
         "test_random_state": 42,
         "rf_n_estimators": 400,
         "rf_class_weight": None,
         "sklearn_n_jobs": -1,
+        "features": {
+            "energy": True,
+            "info": True,
+            "coupling": True,
+            "lockin": True,
+            "expansion": True,
+            "anomalies": True,
+        },
+        "targets": {
+            "S_final_regression": True,
+            "lockin_binary": True,
+            "cold_spot_zscore": True,
+            "lack_large_angle_C": True,
+            "hemi_asymmetry_index": True,
+        },
         "regression_min": 10,
         "max_shap_samples": 1000,
         "shap_background_size": 200,
     },
 
     # ---------------------------
-    # Outputs / IO
+    # Environment detection
     # ---------------------------
     "ENV": {
-        "auto_detect": True,                # detect Colab / Desktop / Cloud
-        "force_environment": None,          # force environment ("colab", "desktop", "cloud")
+        "auto_detect": True,
+        "force_environment": None,        # "colab" | "cloud" | "desktop"
         "colab_markers": ["COLAB_RELEASE_TAG", "COLAB_BACKEND_VERSION"],
     },
 
+    # ---------------------------
+    # Output / IO settings
+    # ---------------------------
     "OUTPUTS": {
-        "save_figs": True,                  # save generated figures
-        "save_json": True,                  # save JSON summaries
-        "save_csv": True,                   # save CSV outputs
-        "max_figs_to_save": None,           # None => no cap
-
-        # Save-per-stage fine switches
+        "save_figs": True,
+        "save_json": True,
+        "save_csv": True,
+        "max_figs_to_save": None,
         "save_per_stage": {
             "energy_sampling": True,
             "information_bootstrap": True,
@@ -311,18 +301,16 @@ MASTER_CTRL = {
             "superposition": True,
             "lockin": True,
             "expansion": True,
-            "anomaly": True,
-            "xai": True,
             "montecarlo": True,
             "best_universe": True,
-            "finetune_diag": True,
+            "cmb_map": True,
+            "anomaly": True,
+            "finetune": True,
+            "xai": True,
+            "manifest": True,
         },
-
-        # File naming & run-id tagging
-        "tag_ei_in_filenames": True,        # append _EI or _E to filenames
-        "tag_profile_in_runid": True,       # include profile into run_id (e.g. -paper)
-
-        # Local file system outputs
+        "tag_ei_in_filenames": True,      # Append -EI or -E to filenames
+        "tag_profile_in_runid": True,     # Append profile tag to run_id
         "local": {
             "base_dir": "./",
             "fig_subdir": "figs",
@@ -331,26 +319,18 @@ MASTER_CTRL = {
             "desktop_subdir": "TQE_Output",
             "desktop_env_var": "TQE_DESKTOP_DIR",
         },
-
-        # Google Colab Drive outputs
         "colab_drive": {
             "enabled": True,
             "base_dir": "/content/drive/MyDrive/TQE_(E,I)_KL_Shannon",
         },
-
-        # Cloud bucket outputs (e.g. Google Cloud Storage, AWS S3)
         "cloud": {
             "enabled": False,
-            "bucket_url": None,             # e.g. "gs://my-bucket/tqe/"
+            "bucket_url": None,
         },
-
-        # Mirroring settings (allow saving to multiple targets at once)
         "mirroring": {
             "enabled": True,
-            "targets": ["local", "colab_drive"],  # add "cloud" if needed
+            "targets": ["local", "colab_drive"],
         },
-
-        # Plot toggles (global defaults)
         "plot_avg_lockin": True,
         "plot_lockin_hist": True,
         "plot_stability_basic": False,
@@ -358,7 +338,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Debug / sanity checks
+    # Debug options
     # ---------------------------
     "DEBUG": {
         "assert_non_nan": True,
@@ -369,8 +349,8 @@ MASTER_CTRL = {
     # Reproducibility
     # ---------------------------
     "REPRO": {
-        "use_strict_seed": True,            # set env vars to limit threads, etc.
-        "per_universe_seed_mode": "rng",    # "rng" | "np_random"
+        "use_strict_seed": True,
+        "per_universe_seed_mode": "rng",
         "env_thread_caps": {
             "PYTHONHASHSEED": "0",
             "OMP_NUM_THREADS": "1",
@@ -381,7 +361,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Runtime knobs (plots, logging)
+    # Runtime
     # ---------------------------
     "RUNTIME": {
         "matplotlib_dpi": 180,
@@ -389,45 +369,36 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Profiles (named overrides)
+    # Profiles
     # ---------------------------
     "PROFILES": {
-        # Lightweight smoke test / Colab demo
         "demo": {
             "ENERGY": {"num_universes": 800, "time_steps": 200, "lockin_epochs": 200, "expansion_epochs": 200},
-            "ANOMALY": {"map": {"resolution_nside": 64}},
+            "CMB_MAP": {"resolution_nside": 64},
         },
-
-        # Publication-style settings (balanced)
         "paper": {
             "ENERGY": {"num_universes": 5000, "time_steps": 800, "lockin_epochs": 500, "expansion_epochs": 800},
-            "ANOMALY": {"map": {"resolution_nside": 128}},
+            "CMB_MAP": {"resolution_nside": 128},
             "XAI": {"rf_n_estimators": 400},
         },
-
-        # Bigger cloud run
         "full_cloud": {
             "ENERGY": {"num_universes": 20000},
-            "ANOMALY": {"map": {"resolution_nside": 256}},
+            "CMB_MAP": {"resolution_nside": 256},
             "OUTPUTS": {"cloud": {"enabled": True, "bucket_url": "gs://YOUR_BUCKET/tqe_runs/"}},
         },
-
-        # Force E×I with both components on
         "ei_only": {
             "PIPELINE": {"use_information": True},
             "INFORMATION": {"use_kl": True, "use_shannon": True, "fusion": "product"},
         },
-
-        # E-only baseline (no info channel)
         "e_only": {
             "PIPELINE": {"use_information": False},
         },
     },
 }
 
-# ======================================================
-# Deep-merge helper (right overrides left)
-# ======================================================
+# ===================================================================================
+# Helper: deep-merge dicts
+# ===================================================================================
 def _deep_merge(base, override):
     if not isinstance(override, dict):
         return override
@@ -439,10 +410,10 @@ def _deep_merge(base, override):
             out[k] = deepcopy(v)
     return out
 
-# ======================================================
-# Build ACTIVE from profile (env var TQE_PROFILE may override)
-# ======================================================
-SELECTED_PROFILE = os.environ.get("TQE_PROFILE", "paper")  # "demo" | "paper" | "full_cloud" | "ei_only" | "e_only"
+# ===================================================================================
+# Profile resolution
+# ===================================================================================
+SELECTED_PROFILE = os.environ.get("TQE_PROFILE", "paper")
 
 def resolve_profile(profile_name: str):
     base = deepcopy(MASTER_CTRL)
@@ -450,12 +421,12 @@ def resolve_profile(profile_name: str):
     chosen = profs.get(profile_name, {})
     active = _deep_merge(base, chosen)
 
-    # If strict seed requested, expose env caps (runner can apply)
+    # Enforce strict seed reproducibility
     if active["REPRO"]["use_strict_seed"]:
         for k, v in active["REPRO"]["env_thread_caps"].items():
             os.environ[k] = str(v)
 
-    # Optionally tag the run_id with the selected profile
+    # Tag run_id with profile name if enabled
     if base["OUTPUTS"].get("tag_profile_in_runid", False):
         os.environ["TQE_PROFILE_TAG"] = profile_name
 
