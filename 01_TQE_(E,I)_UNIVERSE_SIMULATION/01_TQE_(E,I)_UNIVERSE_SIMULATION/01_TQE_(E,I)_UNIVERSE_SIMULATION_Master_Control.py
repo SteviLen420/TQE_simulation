@@ -410,7 +410,7 @@ def _deep_merge(base, override):
 # ===================================================================================
 # Profile resolution
 # ===================================================================================
-SELECTED_PROFILE = os.environ.get("TQE_PROFILE", "paper")
+SELECTED_PROFILE = os.environ.get("TQE_PROFILE", "demo")
 
 def resolve_profile(profile_name: str):
     base = deepcopy(MASTER_CTRL)
