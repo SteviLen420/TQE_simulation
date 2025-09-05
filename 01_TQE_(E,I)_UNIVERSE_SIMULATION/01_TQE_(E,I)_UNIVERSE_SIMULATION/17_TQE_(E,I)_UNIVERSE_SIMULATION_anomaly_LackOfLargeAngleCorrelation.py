@@ -1,17 +1,6 @@
-anomaly_LackOfLargeAngleCorrelation.py
 # ===================================================================================
-# Lack of Large-Angle Correlation (LLAC) anomaly detector for the TQE pipeline
-# -----------------------------------------------------------------------------------
-# - Computes the two-point angular correlation C(θ) from C_l or from CMB maps.
-# - Calculates the S_{1/2} statistic on large angles (θ >= theta_min, default 60 deg).
-# - (If healpy available) estimates a Monte Carlo p-value under isotropic Gaussian skies.
-# - Saves per-universe CSV, a JSON summary, and PNG plots (S1/2 histogram + C(θ) samples).
-#
-# Compatible with:
-#   - config.ACTIVE (ANOMALY target settings; OUTPUT routing; REPRO seeding)
-#   - io_paths.resolve_output_paths / ensure_colab_drive_mounted (I/O, mirroring)
-#   - seeding.load_or_create_run_seeds / universe_rngs (reproducible seeds)
-#
+# 17_TQE_(E,I)_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation.py
+# ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
 
