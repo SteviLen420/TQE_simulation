@@ -1,10 +1,6 @@
 # ===================================================================================
 # 00_TQE_EI_UNIVERSE_SIMULATION_config.py
-# ===================================================================================
-# Config wrapper for the TQE simulation.
-# - Imports the Master Controller.
-# - Resolves the active profile.
-# - Exports ACTIVE configuration for all modules.
+# ===================================================================================.
 # Author: Stefan Len
 # ===================================================================================
 
