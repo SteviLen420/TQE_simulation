@@ -1,5 +1,5 @@
 # ===================================================================================
-# 00_TQE_(E,I)_UNIVERSE_SIMULATION_config.py
+# 00_TQE_EI_UNIVERSE_SIMULATION_config.py
 # ===================================================================================
 # Config wrapper for the TQE simulation.
 # - Imports the Master Controller.
