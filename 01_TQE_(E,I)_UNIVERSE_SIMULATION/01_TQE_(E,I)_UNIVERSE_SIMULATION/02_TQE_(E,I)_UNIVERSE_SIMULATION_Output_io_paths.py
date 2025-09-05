@@ -42,7 +42,7 @@ Notes:
   - The "desktop" environment detection is platform-specific (Windows/Linux/macOS).
 """
 # ===================================================================================
-
+from config import ACTIVE
 import os, platform, time, pathlib
 from typing import Dict, List
 
