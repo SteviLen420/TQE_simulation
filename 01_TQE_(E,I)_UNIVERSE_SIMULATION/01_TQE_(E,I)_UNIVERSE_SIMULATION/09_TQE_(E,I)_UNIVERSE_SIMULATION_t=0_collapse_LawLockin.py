@@ -1,23 +1,6 @@
-collapse_LawLockin.py
 # ===================================================================================
-# Law Collapse / Lock-in stage for the TQE universe simulation
-# -----------------------------------------------------------------------------------
-# Simulates a per-universe "law" value over epochs with decaying noise. Detects:
-#   - STABLE when relative per-step change stays below rel_eps_stable for
-#     calm_steps_stable consecutive steps (after min_lockin_epoch gate can be 0)
-#   - LOCK-IN when below rel_eps_lockin for calm_steps_lockin consecutive steps
-#     and (optionally) only after having been STABLE first.
-#
-# Noise and drift are modulated by X = f(E, I) (or E in E-only mode):
-#   sigma_t ≈ max(ll_base_noise, exp_noise_base * sigma_decay(t) * g(X))
-#   with an exponential decay toward a floor. X rescales noise (outside window
-#   noisier, inside Goldilocks calmer) using GOLDILOCKS params.
-#
-# Outputs:
-#   - CSV: per-universe stable_at, lockin_at, last_value, last_rel_delta, flags
-#   - JSON: summary stats and config snapshot (relative file paths + figs list)
-#   - PNG: average lock-in curve, histogram of lock-in epochs, optional stability plot
-#
+# 09_TQE_(E,I)_UNIVERSE_SIMULATION_t=0_collapse_LawLockin.py
+# ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
 
