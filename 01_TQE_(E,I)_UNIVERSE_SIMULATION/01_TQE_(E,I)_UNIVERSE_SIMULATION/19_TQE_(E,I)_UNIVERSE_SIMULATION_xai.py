@@ -1,17 +1,6 @@
 # ===================================================================================
 # 19_TQE_(E,I)_UNIVERSE_SIMULATION_xai.py
 # ===================================================================================
-# Explainability (XAI) stage for the TQE simulation using SHAP and optional LIME.
-# - Loads and merges per-stage CSV outputs by `universe_id`
-# - Builds a feature matrix X (E0, I_*, X, etc.) and multiple targets y:
-#     * dynamics: S_final, lockin_at, stable, ...
-#     * anomalies: cold_spot_*, low_l_align_*, lack_large_angle_*, hemi_asym_*, ...
-# - Trains RandomForest models per target (regression or classification),
-#   computes SHAP importances, and optionally LIME local explanations.
-# - Saves: merged dataset CSV, per-target SHAP plots (summary+beeswarm),
-#   feature-importance CSVs, model-metrics JSONs, and (if enabled) LIME figures/CSVs.
-# - Respects Master Controller config (ACTIVE["XAI"], OUTPUT path routing, mirroring).
-#
 # Author: Stefan Len
 # ===================================================================================
 
