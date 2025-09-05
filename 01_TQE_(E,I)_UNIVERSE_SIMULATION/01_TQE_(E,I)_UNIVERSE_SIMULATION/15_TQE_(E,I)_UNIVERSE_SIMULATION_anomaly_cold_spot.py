@@ -1,23 +1,6 @@
-anomaly_cold_spot.py
 # ===================================================================================
-# Cold Spot anomaly detection for simulated CMB maps.
+# 15_TQE_(E,I)_UNIVERSE_SIMULATION_anomaly_cold_spot.py
 # ===================================================================================
-#
-# What it does
-# ------------
-# - Loads CMB maps (from arg or from the run directory produced by module 13).
-# - For a given circular patch size (deg), finds the coldest average patch via
-#   disk-kernel convolution (FFT-based for speed).
-# - Computes per-universe metrics: patch_mean, global_mean, global_std, z_score.
-# - Saves PNG cutouts (optional), a CSV with metrics, and a JSON summary.
-#
-# Assumptions
-# -----------
-# - Maps are equirectangular lat-lon images (H x W), covering 180° in latitude.
-#   Pixel angular size ≈ 180 / H degrees (used to convert deg -> pixels).
-# - Input maps are in a single NumPy array of shape (N, H, W) with float values
-#   (already beam-smoothed if requested by the CMB module).
-#
 # Author: Stefan Len
 # ===================================================================================
 
