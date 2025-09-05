@@ -15,7 +15,7 @@ MASTER_CTRL = {
     # Metadata and run labeling
     # ---------------------------
     "META": {
-        "RUN_ID_PREFIX": "TQE_(E,I)_UNIVERSE_SIMULATION",
+        "RUN_ID_PREFIX": "TQE_EI_UNIVERSE_SIMULATION",
         "RUN_ID_FORMAT": "%Y%m%d_%H%M%S",
         "CODE_VERSION": "2025-09-05",
         "DESCRIPTION": "Universe Monte Carlo with Energy–Information coupling, anomalies, XAI, manifest.",
@@ -317,7 +317,7 @@ MASTER_CTRL = {
         },
         "colab_drive": {
             "enabled": True,
-            "base_dir": "/content/drive/MyDrive/TQE_(E,I)_KL_Shannon",
+            "base_dir": "/content/drive/MyDrive/TQE_(E,I)_UNIVERSE_SIMULATION",
         },
         "cloud": {
             "enabled": False,
