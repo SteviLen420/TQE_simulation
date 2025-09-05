@@ -1,13 +1,6 @@
+# ===================================================================================
 # 20_TQE_(E,I)_UNIVERSE_SIMULATION_results_manifest.py
 # ===================================================================================
-# Results Manifest (master aggregator) for the TQE simulation
-# -----------------------------------------------------------------------------------
-# - Collects per-stage mini-manifests (already produced by each module) and embeds
-#   them into one hierarchical master JSON: run_manifest.json
-# - Builds a per_universe_summary.csv by merging a curated set of columns across
-#   stage CSVs (best-effort; missing files are skipped).
-# - Saves under the current run directory and mirrors to configured targets.
-#
 # Author: Stefan Len
 # ===================================================================================
 
