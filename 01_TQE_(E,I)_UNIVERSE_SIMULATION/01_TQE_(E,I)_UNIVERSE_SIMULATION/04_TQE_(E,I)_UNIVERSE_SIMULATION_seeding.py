@@ -1,10 +1,6 @@
-seeding.py
 # ===================================================================================
-# Run-level and per-universe seeding for reproducibility across the whole pipeline.
-# - One "master_seed" per run (fixed if config.ENERGY.seed is set; otherwise auto)
-# - Deterministic per-universe seeds derived via SeedSequence.spawn(N)
-# - Persist seeds to seeds_run.json and seeds_universes.csv in the run directory.
-#
+# 04_TQE_(E,I)_UNIVERSE_SIMULATION_seeding.py
+# ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
 
