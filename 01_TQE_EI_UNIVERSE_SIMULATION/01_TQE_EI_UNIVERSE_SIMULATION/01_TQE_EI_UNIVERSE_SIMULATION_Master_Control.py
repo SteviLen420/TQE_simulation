@@ -277,7 +277,7 @@ MASTER_CTRL = {
     # Environment detection
     # ---------------------------
     "ENV": {
-        "auto_detect": True,
+        "auto_detect": False,
         "force_environment": None,        # "colab" | "cloud" | "desktop"
         "colab_markers": ["COLAB_RELEASE_TAG", "COLAB_BACKEND_VERSION"],
     },
@@ -308,7 +308,7 @@ MASTER_CTRL = {
         "tag_ei_in_filenames": True,      # Append -EI or -E to filenames
         "tag_profile_in_runid": True,     # Append profile tag to run_id
         "local": {
-            "base_dir": "./",
+            "base_dir": "/content/TQE_Output",
             "fig_subdir": "figs",
             "allow_exts": [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
             "prefer_desktop": True,
@@ -316,7 +316,7 @@ MASTER_CTRL = {
             "desktop_env_var": "TQE_DESKTOP_DIR",
         },
         "colab_drive": {
-            "enabled": True,
+            "enabled": False,
             "base_dir": "/content/drive/MyDrive/TQE_(E,I)_UNIVERSE_SIMULATION",
         },
         "cloud": {
