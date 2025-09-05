@@ -441,3 +441,44 @@ def resolve_profile(profile_name: str):
     return active
 
 ACTIVE = resolve_profile(SELECTED_PROFILE)
+
+# ---------------------------------------------------------------------------
+# AUTO-ZIP & DOWNLOAD (Colab-friendly)
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    import os, shutil, datetime
+
+    # 1) Default output directory (all results should land here)
+    out_dir = "/content/TQE_Output"
+
+    # Try to resolve more specific run directory if available
+    paths = None
+    try:
+        from 02_TQE_EI_UNIVERSE_SIMULATION_Output_io_paths import resolve_output_paths
+        try:
+            paths = resolve_output_paths(ACTIVE)
+            out_dir = paths.get("primary_run_dir", out_dir)
+        except Exception as e:
+            print("[WARN] resolve_output_paths() failed, fallback to /content/TQE_Output:", e)
+    except ImportError:
+        # No io-paths module → fallback
+        pass
+
+    # Make sure the directory exists
+    os.makedirs(out_dir, exist_ok=True)
+
+    # 2) Create a timestamped archive
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    zip_name = f"TQE_Output_{timestamp}"
+    zip_path = shutil.make_archive(f"/content/{zip_name}", "zip", out_dir)
+
+    print("📦 Archive created:", zip_path)
+
+    # 3) Trigger automatic download in Colab
+    try:
+        from google.colab import files
+        files.download(zip_path)
+        print("⬇️ Download triggered.")
+    except Exception:
+        # Not running in Colab → just skip
+        print("[INFO] Not in Colab, skipping auto-download.")
