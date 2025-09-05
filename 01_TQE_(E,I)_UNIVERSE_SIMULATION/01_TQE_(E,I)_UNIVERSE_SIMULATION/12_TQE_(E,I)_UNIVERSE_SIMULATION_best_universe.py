@@ -1,17 +1,6 @@
-best_universe.py
 # ===================================================================================
-# Best Universe selection for the TQE simulation
-# -----------------------------------------------------------------------------------
-# - Joins collapse + expansion (and optionally montecarlo) results by universe_id.
-# - Computes a linear score from normalized metrics (z-scores):
-#     score = w_growth*z(S_final) + w_speed*z(-lockin_at_pos) + w_stability*stable_flag
-# - Returns the best universe row and writes:
-#     * CSV: ranked table with scores
-#     * JSON: summary with winner metadata
-#     * PNG: per-top-K mini plots (lock-in curve recreated) + a Top-K overview
-#
-# Works in both E-only and E×I modes, using the active config and run directories.
-#
+# 12_TQE_(E,I)_UNIVERSE_SIMULATION_best_universe.py
+# ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
 
