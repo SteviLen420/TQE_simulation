@@ -1,18 +1,6 @@
+# ===================================================================================
 # 18_TQE_(E,I)_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry.py
 # ===================================================================================
-# Hemispherical Power Asymmetry (HPA) anomaly detector for the TQE pipeline
-# -----------------------------------------------------------------------------------
-# - Splits each CMB sky into two hemispheres along a fixed axis (default: z-axis).
-# - Computes total power in each hemisphere from C_l or directly from maps.
-# - Reports asymmetry ratio (max/min) as metric.
-# - (If healpy available) estimates Monte Carlo p-values with isotropic null skies.
-# - Saves CSV (metrics per universe), JSON (summary), and PNGs (histogram + sample maps).
-#
-# Compatible with:
-#   - config.ACTIVE (ANOMALY target settings; OUTPUT routing; REPRO seeding)
-#   - io_paths.resolve_output_paths / ensure_colab_drive_mounted
-#   - seeding.load_or_create_run_seeds / universe_rngs
-#
 # Author: Stefan Len
 # ===================================================================================
 
