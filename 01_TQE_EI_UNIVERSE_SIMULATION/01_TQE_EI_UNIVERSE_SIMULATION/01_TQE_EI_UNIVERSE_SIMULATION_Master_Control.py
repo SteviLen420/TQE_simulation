@@ -289,7 +289,8 @@ MASTER_CTRL = {
         "save_figs": True,
         "save_json": True,
         "save_csv": True,
-        "max_figs_to_save": None,
+        "max_figs_to_save": None,    # None = no limit
+        # Always save everything per stage
         "save_per_stage": {
             "energy_sampling": True,
             "information_bootstrap": True,
@@ -305,16 +306,22 @@ MASTER_CTRL = {
             "xai": True,
             "manifest": True,
         },
+
+        # Always tag filenames clearly
         "tag_ei_in_filenames": True,      # Append -EI or -E to filenames
         "tag_profile_in_runid": True,     # Append profile tag to run_id
+        
+        # Force local save to Colab path
         "local": {
             "base_dir": "/content/TQE_Output",
             "fig_subdir": "figs",
             "allow_exts": [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
-            "prefer_desktop": True,
-            "desktop_subdir": "TQE_Output",
-            "desktop_env_var": "TQE_DESKTOP_DIR",
+            "prefer_desktop": False,
+            "desktop_subdir": None,
+            "desktop_env_var": None,
         },
+
+         # Disable Drive and Cloud for now
         "colab_drive": {
             "enabled": False,
             "base_dir": "/content/drive/MyDrive/TQE_(E,I)_UNIVERSE_SIMULATION",
@@ -323,13 +330,18 @@ MASTER_CTRL = {
             "enabled": False,
             "bucket_url": None,
         },
+
+        # Disable mirroring (single target only)
         "mirroring": {
-            "enabled": True,
+            "enabled": False,
             "targets": ["local", "colab_drive"],
         },
+
+        # Plot options
         "plot_avg_lockin": True,
         "plot_lockin_hist": True,
-        "plot_stability_basic": False,
+        "plot_stability_basic": True,
+         # Verbose logs
         "verbose": True,
     },
 
