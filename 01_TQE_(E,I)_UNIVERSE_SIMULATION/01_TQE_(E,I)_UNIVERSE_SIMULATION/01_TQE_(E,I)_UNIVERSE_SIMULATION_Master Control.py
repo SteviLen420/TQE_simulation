@@ -232,20 +232,6 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Fine-tuning diagnostics (analysis only; no feedback into sim)
-    # ---------------------------
-    "FINETUNE_DIAG": {
-        "top_k": 1,
-        "targets": {
-            "rms":       {"target": 1.0, "tol": 0.25, "weight": 1.0},
-            "alpha":     {"target": 2.9, "tol": 0.6,  "weight": 1.0},
-            "corr_len":  {"min": 2.0, "max": 40.0, "tol": 2.0, "weight": 0.7},
-            "skew":      {"target": 0.0, "tol": 0.15, "weight": 0.5},
-            "kurt":      {"target": 0.0, "tol": 0.3,  "weight": 0.5},
-        },
-    },
-
-    # ---------------------------
     # Expansion dynamics
     # ---------------------------
     "EXPANSION": {
@@ -269,6 +255,20 @@ MASTER_CTRL = {
         ],
         "save_cutouts": True,
         "save_metrics_csv": True,
+    },
+
+    # ---------------------------
+    # Fine-tuning diagnostics 
+    # ---------------------------
+    "FINETUNE_DIAG": {
+        "top_k": 1,
+        "targets": {
+            "rms":       {"target": 1.0, "tol": 0.25, "weight": 1.0},
+            "alpha":     {"target": 2.9, "tol": 0.6,  "weight": 1.0},
+            "corr_len":  {"min": 2.0, "max": 40.0, "tol": 2.0, "weight": 0.7},
+            "skew":      {"target": 0.0, "tol": 0.15, "weight": 0.5},
+            "kurt":      {"target": 0.0, "tol": 0.3,  "weight": 0.5},
+        },
     },
 
     # ---------------------------
