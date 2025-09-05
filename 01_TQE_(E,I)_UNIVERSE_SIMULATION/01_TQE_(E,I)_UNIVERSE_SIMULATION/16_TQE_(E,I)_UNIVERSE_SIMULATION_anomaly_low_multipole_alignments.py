@@ -1,19 +1,6 @@
-anomaly_low_multipole_alignments.py
 # ===================================================================================
 # Low-multipole (ℓ=2,3) alignment anomaly for the TQE simulation
-# -----------------------------------------------------------------------------------
-# - For each universe, reconstruct band-limited maps for ℓ=2 (quadrupole) and ℓ=3
-#   (octopole) on a sphere sampling grid.
-# - Build a power-weighted inertia tensor I = Σ w T_ℓ(n)^2 n n^T per multipole,
-#   take the dominant eigenvector as the preferred axis.
-# - Compute the alignment angle θ = arccos(|u₂·u₃|) in degrees.
-# - Save CSV/JSON/PNGs and mirror them according to io_paths + config.
-#
-# Notes:
-# * Uses per-universe RNGs (deterministic across runs via `seeding`).
-# * If `healpy` is available, uses its pixel centers as directions; otherwise
-#   falls back to a Fibonacci sphere grid and scipy.special.sph_harm.
-#
+# ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
 
