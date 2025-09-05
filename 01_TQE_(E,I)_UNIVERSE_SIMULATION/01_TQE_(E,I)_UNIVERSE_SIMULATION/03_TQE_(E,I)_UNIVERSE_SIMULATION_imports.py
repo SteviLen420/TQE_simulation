@@ -1,7 +1,5 @@
-imports.py
 # ===================================================================================
-# Centralized imports for the TQE universe simulation project
-# Grouped by category for clarity and maintainability
+# 03_TQE_(E,I)_UNIVERSE_SIMULATION_imports.py
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
