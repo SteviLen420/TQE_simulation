@@ -1,10 +1,5 @@
-energy_sampling.py
 # ===================================================================================
-# Energy stage for the TQE universe simulation.
-# -----------------------------------------------------------------------------------
-# E0 sampling for universes (lognormal with optional truncation).
-# Saves CSV (samples), PNG (histogram + KDE), JSON (summary) using io_paths routing.
-# Works E-only OR EI (later steps can attach I); tagging is "E" here by default.
+# 05_TQE_(E,I)_UNIVERSE_SIMULATION_(E)_energy_sampling.py
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
