@@ -1,27 +1,6 @@
-cmb_map_generation.py
 # ===================================================================================
-# CMB-like Sky Map Generation (square-grid proxy, dependency-free)
-# -----------------------------------------------------------------------------------
-# For each universe:
-#   1) Synthesize a Gaussian random field on an nside×nside grid.
-#   2) Optionally apply spectral shaping ~ 1 / k^alpha (simple isotropic filter).
-#   3) Apply Gaussian beam smoothing using FWHM (in degrees → pixels).
-#   4) Normalize to zero-mean, unit-std for comparable z-scores downstream.
-#   5) Save map (.npy), plus a small PNG preview for a limited subset.
-#
-# Design choices:
-#   - No external libs (no healpy/astropy). This is a *planar proxy* for CMB maps,
-#     good enough for anomaly demos (Cold Spot, etc.). If later you want HEALPix,
-#     you can swap step (1–2) to healpy.synfast easily.
-#   - Deterministic: seeding.py provides master + per-universe seeds.
-#   - IO/mirroring: uses io_paths; filenames are EI/E tagged.
-#
-# Outputs:
-#   maps: <run>/<EI|E>__cmb_map_u<id>.npy
-#   previews (sampled): figs/<EI|E>__cmb_map_u<id>.png
-#   CSV: <EI|E>__cmb_maps.csv (rows = universes; path+params)
-#   JSON: <EI|E>__cmb_maps_summary.json
-#
+# 13_TQE_(E,I)_UNIVERSE_SIMULATION_cmb_map_generation.py
+# ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
 
