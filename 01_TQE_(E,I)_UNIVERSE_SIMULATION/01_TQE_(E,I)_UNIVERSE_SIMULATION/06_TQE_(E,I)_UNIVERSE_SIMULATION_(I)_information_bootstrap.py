@@ -1,10 +1,5 @@
-information_bootstrap.py
 # ===================================================================================
-# Fast information seed (I_seed):
-# - Generates a probability vector per universe (Dirichlet or Uniform),
-# - Computes normalized Shannon entropy in [0,1],
-# - Optionally applies floor/exp transform,
-# - Saves CSV/PNG/JSON with tag "EIseed".
+# 06_TQE_(E,I)_UNIVERSE_SIMULATION_(I)_information_bootstrap.py
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
