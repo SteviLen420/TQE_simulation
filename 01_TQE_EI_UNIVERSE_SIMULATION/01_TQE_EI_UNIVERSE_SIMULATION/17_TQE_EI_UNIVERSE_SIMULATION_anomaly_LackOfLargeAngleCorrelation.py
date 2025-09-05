@@ -1,5 +1,5 @@
 # ===================================================================================
-# 17_TQE_(E,I)_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation.py
+# 17_TQE_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation.py
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
