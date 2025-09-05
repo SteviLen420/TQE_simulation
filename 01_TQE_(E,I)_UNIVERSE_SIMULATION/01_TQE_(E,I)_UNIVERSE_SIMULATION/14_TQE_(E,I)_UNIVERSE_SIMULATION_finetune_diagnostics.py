@@ -1,16 +1,6 @@
-finetune_diagnostics.py
 # ===================================================================================
-# Fine-tuning DIAGNOSTICS for CMB-like maps (measurement only, NO modification).
-# - Filters to lock-in universes using collapse results.
-# - Loads CMB maps from the generator's manifest.
-# - Computes per-universe metrics:
-#     * RMS amplitude (std after mean removal)
-#     * Isotropic 2D power spectral slope alpha via log-log linear fit
-#     * Correlation length (first 1/e crossing of radial autocorrelation)
-#     * Gaussianity: skewness, excess kurtosis
-#     * Fine-tuning score: weighted distance to target values (configurable)
-# - Saves CSV (metrics), JSON (summary + top-K), and PNGs (top-K panels + histograms).
-#
+# 14_TQE_(E,I)_UNIVERSE_SIMULATION_finetune_diagnostics.py
+# ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
 
