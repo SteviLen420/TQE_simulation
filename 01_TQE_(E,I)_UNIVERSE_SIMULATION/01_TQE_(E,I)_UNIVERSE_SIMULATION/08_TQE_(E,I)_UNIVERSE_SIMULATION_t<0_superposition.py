@@ -1,12 +1,6 @@
-superposition.py
 # ===================================================================================
-# Superposition (Information channel) for TQE universe simulation
-# - Computes I_shannon (from eigenvalue entropy) and I_kl (KL vs uniform of diag)
-# - Fuses to scalar I according to cfg (product/weighted + exponent + floor)
-# - Couples with Energy E to form X via COUPLING_X (product / E_plus_I / E_times_I_pow)
-# - Honors MASTER CONTROLLER output switches (save_csv/json/figs, per-stage gating)
-# - Saves CSV/JSON/PNGs and mirrors them to configured targets
-#
+# 08_TQE_(E,I)_UNIVERSE_SIMULATION_t<0_superposition.py
+# ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
 
