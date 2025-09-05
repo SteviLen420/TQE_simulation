@@ -1,12 +1,6 @@
-montecarlo.py
 # ===================================================================================
-# Monte Carlo aggregation for the TQE universe simulation
-# -----------------------------------------------------------------------------------
-# - Loads results from previous pipeline stages (collapse, expansion, etc.)
-# - Aggregates across universes: distributions of stability, lock-in, expansion growth
-# - Provides histograms, summary stats, and saves to CSV/JSON
-# - This stage does NOT pick the "best" universe yet, it only aggregates.
-#
+# 11_TQE_(E,I)_UNIVERSE_SIMULATION_montecarlo.py
+# ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
 
