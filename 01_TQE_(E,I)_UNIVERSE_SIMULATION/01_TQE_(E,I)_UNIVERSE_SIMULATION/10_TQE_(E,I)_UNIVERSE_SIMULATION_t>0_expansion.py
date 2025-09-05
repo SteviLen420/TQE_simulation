@@ -1,16 +1,6 @@
-expansion.py
 # ===================================================================================
-# t > 0 : Expansion stage for the TQE universe simulation
-# -----------------------------------------------------------------------------------
-# - Starts from per-universe initial "size/law" S0 (by default: collapse.final_L,
-#   else X or E0 fallback).
-# - Evolves multiplicative growth with decaying noise:
-#       S_{t+1} = S_t * exp( dt * g_eff(X) + eps_t )
-#   where eps_t ~ N(0, sigma_t^2), with sigma_t decaying toward a floor.
-# - X = f(E,I) modulates the effective growth (Goldilocks can damp/penalize).
-# - Saves CSV (finals + basic stats), JSON (summary),
-#   PNG figures (mean expansion curve, reference-universe curve).
-#
+# 10_TQE_(E,I)_UNIVERSE_SIMULATION_t>0_expansion.py
+# ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
 
