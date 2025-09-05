@@ -1,13 +1,5 @@
-fluctuation.py
 # ===================================================================================
-# Fluctuation stage for the TQE universe simulation.
-# Samples Energy (E) and, if enabled, computes Information (I) from random
-# "quantum-like" probability vectors (KL to uniform + 1 - normalized Shannon).
-# Couples into X = f(E, I). Saves CSV, PNGs and JSON. Supports E-only and E×I.
-#
-# IO routing:
-#   Uses io_paths.resolve_output_paths(ACTIVE) for primary dirs and mirrors.
-#   PNGs are mirrored into <mirror>/figs/, CSV/JSON into <mirror>/.
+# 07_TQE_(E,I)_UNIVERSE_SIMULATION_t<0_fluctuation.py
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
