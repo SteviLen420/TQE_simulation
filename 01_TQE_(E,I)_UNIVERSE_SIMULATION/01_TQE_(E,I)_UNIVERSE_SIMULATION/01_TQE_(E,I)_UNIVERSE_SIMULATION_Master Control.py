@@ -2,9 +2,6 @@ Master Control.py
 # ===================================================================================
 # 00_TQE_(E,I)_UNIVERSE_SIMULATION_Master Control.py
 # ===================================================================================
-# Single source of truth for all pipeline stages.
-# - Edit switches under PIPELINE to turn stages on/off.
-# - All other modules should only import: from config import ACTIVE
 # Author: Stefan Len
 # ===================================================================================
 
