@@ -442,6 +442,12 @@ def resolve_profile(profile_name: str):
 
 ACTIVE = resolve_profile(SELECTED_PROFILE)
 
+try:
+    from io_paths import ensure_colab_drive_mounted
+    ensure_colab_drive_mounted(ACTIVE)
+except Exception as e:
+    print("[WARN] Drive mount skipped:", e)
+
 # ---------------------------------------------------------------------------
 # AUTO-ZIP & DOWNLOAD (Colab-friendly)
 # ---------------------------------------------------------------------------
