@@ -402,8 +402,10 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
     fig_sub = active_cfg["OUTPUTS"]["local"].get("fig_subdir", "figs")
     for m in mirrors or []:
         try:
-            copy2(out_csv,  os.path.join(m, out_csv.name))
-            copy2(out_json, os.path.join(m, out_json.name))
+            mpath = pathlib.Path(m)
+            mpath.mkdir(parents=True, exist_ok=True)
+            copy2(out_csv,  mpath / out_csv.name)
+            copy2(out_json, mpath / out_json.name)  
             if figs:
                 m_fig = pathlib.Path(m) / fig_sub
                 m_fig.mkdir(parents=True, exist_ok=True)
@@ -414,6 +416,11 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
 
     print(f"[FINETUNE] analyzed {len(out)} locked-in maps → CSV/JSON/PNGs @ {run_dir}")
     return {"csv": str(out_csv), "json": str(out_json), "plots": figs, "table": out}
+
+def run_finetune_stage(active: Dict = ACTIVE,
+                       collapse_csv: Optional[str] = None,
+                       cmb_manifest_csv: Optional[str] = None):
+    return run_finetune_diagnostics(active, collapse_csv, cmb_manifest_csv)
 
 
 # Allow standalone execution
