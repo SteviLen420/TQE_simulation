@@ -47,7 +47,6 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
     sig  = float(cfgE.get("log_sigma", 0.8))
     low  = cfgE.get("trunc_low", None)
     high = cfgE.get("trunc_high", None)
-    seed = cfgE.get("seed", None)
 
     # Resolve output directories
     run_dir = RUN_DIR
