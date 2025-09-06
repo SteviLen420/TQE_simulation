@@ -10,15 +10,17 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# Cached config + resolved paths (stable run_id within a pipeline run)
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
+
+# Prefer the project seeding utilities; fall back softly if not present
 try:
-    from seeding import load_or_create_run_seeds, universe_rngs
+    from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds, universe_rngs
 except Exception:
-    # Soft fallback if seeding module is not present
     load_or_create_run_seeds = None
     universe_rngs = None
 
-# Optional healpy for CMB-specific operations
+# Optional: Healpy for CMB-specific ops (map synthesis, Cl, etc.)
 try:
     import healpy as hp
 except Exception:
@@ -29,7 +31,7 @@ except Exception:
 # Utilities
 # ---------------------------
 def _rng(seed: Optional[int] = None) -> np.random.Generator:
-    """Create a reproducible RNG (PCG64)."""
+    """Create a reproducible NumPy Generator (PCG64)."""
     return np.random.default_rng(int(seed)) if seed is not None else np.random.default_rng()
 
 
@@ -40,20 +42,19 @@ def _legendre_transform_cl_to_Ctheta(cl: np.ndarray, costheta: np.ndarray) -> np
     """
     from numpy.polynomial.legendre import legval
     l = np.arange(len(cl), dtype=float)
-    a = (2.0 * l + 1.0) * cl / (4.0 * np.pi)  # coefficients for Legendre series
-    # legval evaluates Σ a_l P_l(x)
-    return legval(costheta, a)
+    coeffs = (2.0 * l + 1.0) * cl / (4.0 * np.pi)  # coefficients for Σ a_l P_l(x)
+    return legval(costheta, coeffs)
 
 
 def _s_one_half_from_Ctheta(costh_grid: np.ndarray, Cth: np.ndarray, theta_min_deg: float = 60.0) -> float:
     """
-    Compute S_{1/2} = ∫_{-1}^{cos θ_min} C(θ)^2 d(cos θ) using trapezoidal rule on a dense grid.
-    costh_grid must be monotonically increasing; we integrate over the required sub-interval.
+    Compute S_{1/2} = ∫_{-1}^{cos θ_min} C(θ)^2 d(cos θ) using a trapezoidal rule.
+    costh_grid must be monotonically increasing in [-1, 1].
     """
     x = costh_grid
     y2 = Cth * Cth
-    x_cut = np.clip(math.cos(np.deg2rad(theta_min_deg)), -1.0, 1.0)
-    mask = x <= x_cut
+    x_cut = float(np.clip(np.cos(np.deg2rad(theta_min_deg)), -1.0, 1.0))
+    mask = x <= x_cut  # integrate from -1 up to cos(theta_min)
     if not np.any(mask):
         return 0.0
     return float(np.trapz(y2[mask], x[mask]))
@@ -61,14 +62,13 @@ def _s_one_half_from_Ctheta(costh_grid: np.ndarray, Cth: np.ndarray, theta_min_d
 
 def _default_cl(lmax: int = 64) -> np.ndarray:
     """
-    Provide a simple, decaying baseline power spectrum (if nothing else is supplied),
-    roughly C_l ∝ 1/(l(l+1)) for l >= 2; set C0,C1 to zero to avoid monopole/dipole.
+    Simple decaying baseline C_l (∝ 1/[l(l+1)] for l>=2); monopole/dipole set to 0.
+    Light normalization to ~unit variance.
     """
     cl = np.zeros(lmax + 1, dtype=float)
     l = np.arange(2, lmax + 1, dtype=float)
     cl[2:] = 1.0 / (l * (l + 1.0))
-    # Normalize to unit variance-ish scale (optional; harmless if left as-is)
-    norm = np.sum((2*l + 1) * cl[2:]) / (4*np.pi)
+    norm = np.sum((2 * l + 1) * cl[2:]) / (4 * np.pi)
     if norm > 0:
         cl[2:] /= norm
     return cl
@@ -83,36 +83,36 @@ def _make_maps_from_cl(cl: np.ndarray, nside: int, rng: np.random.Generator, n_m
         raise RuntimeError("healpy is not available; cannot synthesize CMB maps.")
     npix = hp.nside2npix(nside)
     maps = np.empty((n_maps, npix), dtype=float)
-    # healpy uses its own RNG; to keep reproducibility, draw unique seeds from our rng
+    # healpy.synfast uses numpy.random under the hood → seed NumPy's global RNG for reproducibility
     for i in range(n_maps):
         local_seed = int(rng.integers(0, 2**31 - 1))
-        hp.random.seed(local_seed)
-        maps[i] = hp.synfast(cl, nside=nside, lmax=len(cl)-1, new=True, verbose=False)
+        np.random.seed(local_seed)
+        maps[i] = hp.synfast(cl, nside=nside, lmax=len(cl) - 1, new=True, verbose=False)
     return maps
 
 
 def _compute_cl_from_map(m: np.ndarray, lmax: int) -> np.ndarray:
-    """Compute C_l from a HEALPix map via hp.anafast; if not available, raise."""
+    """Compute C_l from a HEALPix map with hp.anafast; monopole/dipole removed by default."""
     if hp is None:
         raise RuntimeError("healpy is not available; cannot compute C_l from a map.")
-    # Remove monopole/dipole by default to mimic large-angle analyses
     return hp.anafast(m, lmax=lmax, pol=False)
 
 
 def _save_mirrors(files: List[str], mirrors: List[str], fig_sub: str):
     """Copy generated files to mirror targets; figures go under <mirror>/<fig_sub>/."""
     from shutil import copy2
-    for m in mirrors:
+    for m in mirrors or []:
         try:
             m_path = pathlib.Path(m)
+            m_path.mkdir(parents=True, exist_ok=True)
             for fp in files:
-                fp = pathlib.Path(fp)
-                if fp.suffix.lower() in {".png", ".jpg"}:
+                p = pathlib.Path(fp)
+                if p.suffix.lower() in {".png", ".jpg"}:
                     tdir = m_path / fig_sub
                     tdir.mkdir(parents=True, exist_ok=True)
-                    copy2(fp, tdir / fp.name)
+                    copy2(p, tdir / p.name)
                 else:
-                    copy2(fp, m_path / fp.name)
+                    copy2(p, m_path / p.name)
         except Exception as e:
             print(f"[WARN] mirror copy failed for {m}: {e}")
 
@@ -129,28 +129,31 @@ def run_llac(active_cfg: Dict = ACTIVE,
     Inputs (optional):
       - cmb_maps: array of shape (N, npix) in HEALPix RING ordering. If provided and healpy is
                   present, we compute C_l from each map. If not provided, we synthesize skies.
-      - cl_spectrum: array of C_l (length lmax+1). If provided, used for transform and MC.
+      - cl_spectrum: array of C_l (length lmax+1) used for C(θ) transform and MC nulls.
 
-    Returns:
-      dict with CSV/JSON paths, plot paths, and the per-universe dataframe.
+    Outputs:
+      - CSV/JSON in run dir (tagged with EI/E), PNGs in figs dir (+ mirrors), and a result dict.
     """
+    # Stage toggle
     if not active_cfg.get("ANOMALY", {}).get("enabled", True):
         print("[LLAC] ANOMALY.enabled=False → skipping.")
         return {}
 
-    # Resolve outputs and environment
-    ensure_colab_drive_mounted(active_cfg)
-    paths = resolve_output_paths(active_cfg)
-    run_dir = pathlib.Path(paths["primary_run_dir"])
-    fig_dir = pathlib.Path(paths["fig_dir"])
-    mirrors = paths["mirrors"]
+    # Use cached paths (keeps run_id consistent with the whole pipeline)
+    paths   = PATHS
+    run_dir = pathlib.Path(RUN_DIR); run_dir.mkdir(parents=True, exist_ok=True)
+    fig_dir = pathlib.Path(FIG_DIR); fig_dir.mkdir(parents=True, exist_ok=True)
+    mirrors = paths.get("mirrors", [])
     fig_sub = active_cfg["OUTPUTS"]["local"].get("fig_subdir", "figs")
 
-    # Read LLAC controls (we place them under ANOMALY.targets 'lack_large_angle'; add sane defaults)
-    a_cfg = active_cfg.get("ANOMALY", {})
+    # EI/E filename tag
+    tag = "EI" if active_cfg["PIPELINE"].get("use_information", True) else "E"
+    dpi = int(active_cfg["RUNTIME"].get("matplotlib_dpi", 180))
+
+    # Read LLAC controls from config
+    a_cfg   = active_cfg.get("ANOMALY", {})
     map_cfg = a_cfg.get("map", {})
     targets = a_cfg.get("targets", [])
-    # Find or define LLAC block
     llac_cfg = None
     for t in targets:
         if t.get("name") in {"lack_large_angle", "llac"}:
@@ -159,35 +162,34 @@ def run_llac(active_cfg: Dict = ACTIVE,
     if llac_cfg is None:
         llac_cfg = {"name": "lack_large_angle", "enabled": True, "theta_min_deg": 60.0,
                     "lmax": 64, "n_mc": 200, "p_percentile": 0.05}
-
     if not llac_cfg.get("enabled", True):
         print("[LLAC] target disabled → skipping.")
         return {}
 
     # Parameters
-    nside = int(map_cfg.get("resolution_nside", 128))
-    lmax = int(llac_cfg.get("lmax", 64))
+    nside         = int(map_cfg.get("resolution_nside", 128))
+    lmax          = int(llac_cfg.get("lmax", 64))
     theta_min_deg = float(llac_cfg.get("theta_min_deg", 60.0))
-    n_mc = int(llac_cfg.get("n_mc", 200))
-    p_perc = float(llac_cfg.get("p_percentile", 0.05))  # for boolean flag
-    seed_per_map = bool(map_cfg.get("seed_per_map", True))
+    n_mc          = int(llac_cfg.get("n_mc", 200))
+    p_perc        = float(llac_cfg.get("p_percentile", 0.05))
+    seed_per_map  = bool(map_cfg.get("seed_per_map", True))
 
     # Seeding
     if load_or_create_run_seeds is not None:
-        seeds = load_or_create_run_seeds(active_cfg)
-        master_seed = seeds["master_seed"]
-        uni_seeds = seeds["universe_seeds"]
-        rng_master = _rng(master_seed)
+        seeds       = load_or_create_run_seeds(active_cfg)
+        master_seed = seeds.get("master_seed", 1234567)
+        uni_seeds   = seeds.get("universe_seeds", [])
+        rng_master  = _rng(master_seed)
     else:
-        rng_master = _rng(active_cfg.get("ENERGY", {}).get("seed", None))
-        uni_seeds = None
+        rng_master  = _rng(active_cfg.get("ENERGY", {}).get("seed", None))
+        uni_seeds   = []
 
-    # Determine number of universes
+    # Number of universes
     N = int(active_cfg["ENERGY"].get("num_universes", 1000))
     if cmb_maps is not None:
         N = int(cmb_maps.shape[0])
 
-    # Prepare power spectrum
+    # Power spectrum (input or default)
     if cl_spectrum is not None:
         cl_in = np.asarray(cl_spectrum, dtype=float)
         lmax_eff = min(lmax, len(cl_in) - 1)
@@ -195,49 +197,43 @@ def run_llac(active_cfg: Dict = ACTIVE,
     else:
         cl_in = _default_cl(lmax)
 
-    # If no maps provided: synthesize (only when healpy available)
+    # If no maps provided but healpy is available → synthesize
     synthesized = False
     if cmb_maps is None and hp is not None:
         synthesized = True
-        # Build per-universe RNGs if requested; else use a single rng
-        if seed_per_map and universe_rngs is not None and uni_seeds is not None:
+        if seed_per_map and universe_rngs is not None and len(uni_seeds) > 0:
             rngs = universe_rngs(uni_seeds[:N])
-            # synth map one-by-one to keep strict reproducibility
             maps_list = []
             for i in range(N):
-                local_maps = _make_maps_from_cl(cl_in, nside, rngs[i], 1)
-                maps_list.append(local_maps[0])
+                maps_list.append(_make_maps_from_cl(cl_in, nside, rngs[i], 1)[0])
             cmb_maps = np.vstack(maps_list)
         else:
             cmb_maps = _make_maps_from_cl(cl_in, nside, rng_master, N)
 
-    # Grid for C(θ)
-    # Use dense cosine grid for numerically stable S_{1/2} integration
-    n_grid = 2048
+    # Dense grid in cos(theta) for stable S_{1/2} integration
+    n_grid     = 2048
     costh_grid = np.linspace(-1.0, 1.0, n_grid, dtype=float)
     theta_grid = np.rad2deg(np.arccos(np.clip(costh_grid, -1.0, 1.0)))
 
-    # Compute per-universe C(θ) and S1/2
+    # Per-universe metrics
     S12 = np.empty(N, dtype=float)
     Cth_at_tmin = np.empty(N, dtype=float)
-    # We won't store full C(θ) curves for all N (too big). Keep a small panel to plot.
     keep_idx = np.linspace(0, N - 1, num=min(N, 6), dtype=int)
     kept_curves: List[Tuple[int, np.ndarray]] = []
 
     if cmb_maps is not None and hp is not None:
         # Path: map → C_l → C(θ)
         for i in range(N):
-            m = cmb_maps[i]
-            cl = _compute_cl_from_map(m, lmax=lmax)
+            m   = cmb_maps[i]
+            cl  = _compute_cl_from_map(m, lmax=lmax)
             Cth = _legendre_transform_cl_to_Ctheta(cl, costh_grid)
             S12[i] = _s_one_half_from_Ctheta(costh_grid, Cth, theta_min_deg=theta_min_deg)
-            # value at theta_min for quick sanity check
             ccut = math.cos(math.radians(theta_min_deg))
             Cth_at_tmin[i] = float(np.interp(ccut, costh_grid, Cth))
             if i in keep_idx:
                 kept_curves.append((i, Cth))
     else:
-        # Path: C_l (theoretical or provided) → same C(θ) for all universes
+        # Path: theoretical C_l → same C(θ) for all universes (no map/HP)
         Cth = _legendre_transform_cl_to_Ctheta(cl_in, costh_grid)
         base_S12 = _s_one_half_from_Ctheta(costh_grid, Cth, theta_min_deg=theta_min_deg)
         base_Ctmin = float(np.interp(math.cos(math.radians(theta_min_deg)), costh_grid, Cth))
@@ -245,32 +241,26 @@ def run_llac(active_cfg: Dict = ACTIVE,
         Cth_at_tmin[:] = base_Ctmin
         kept_curves.append((0, Cth))
 
-    # Monte Carlo p-values (optional; requires healpy)
+    # Monte Carlo null (optional; requires healpy)
     p_values = np.full(N, np.nan, dtype=float)
     if hp is not None and n_mc > 0:
-        # We'll use the same cl_in for null skies to test S1/2 distribution
-        # Draw MC using master RNG (reproducible). Costly but manageable at small n_mc.
         mc_rng = _rng(int(rng_master.integers(0, 2**31 - 1)))
-        # Precompute null S1/2 distribution
         mc_S = np.empty(n_mc, dtype=float)
         for j in range(n_mc):
-            # For speed, synthesize a single sky and compute S1/2
             m = _make_maps_from_cl(cl_in, nside, mc_rng, 1)[0]
             cl = _compute_cl_from_map(m, lmax=lmax)
             Cth_mc = _legendre_transform_cl_to_Ctheta(cl, costh_grid)
             mc_S[j] = _s_one_half_from_Ctheta(costh_grid, Cth_mc, theta_min_deg=theta_min_deg)
-
-        # p-value as fraction of null S below observed (lack-of-correlation = small S)
-        # Use rank-based with +1 smoothing
+        # p-value: fraction of null S below observed (lack-of-correlation = small S)
         for i in range(N):
             p_values[i] = float((1 + np.sum(mc_S <= S12[i])) / (1 + n_mc))
 
-        # Boolean flag if in the bottom p_percentile
         flag_llac = (p_values <= p_perc).astype(int)
     else:
-        flag_llac = np.zeros(N, dtype=int)  # unknown; keep zeros
+        flag_llac = np.zeros(N, dtype=int)  # unknown without nulls
 
     # Build output table
+    used_map_flag = int(cmb_maps is not None and hp is not None)
     out_df = pd.DataFrame({
         "universe_id": np.arange(N, dtype=int),
         "S_half": S12,
@@ -278,16 +268,18 @@ def run_llac(active_cfg: Dict = ACTIVE,
         "theta_min_deg": float(theta_min_deg),
         "p_value": p_values,
         "llac_flag": flag_llac,
-        "used_map": int(cmb_maps is not None),
+        "used_map": used_map_flag,
         "synthesized_map": int(synthesized),
     })
 
-    # Save CSV
-    csv_path = run_dir / "LLAC__metrics.csv"
+    # Tagged outputs
+    csv_path  = run_dir / f"{tag}__LLAC_metrics.csv"
+    json_path = run_dir / f"{tag}__LLAC_summary.json"
     out_df.to_csv(csv_path, index=False)
 
     # Summary JSON
     def _stats(x: np.ndarray) -> Dict[str, float]:
+        x = np.asarray(x)
         return {
             "min": float(np.min(x)),
             "max": float(np.max(x)),
@@ -301,6 +293,7 @@ def run_llac(active_cfg: Dict = ACTIVE,
     summary = {
         "env": paths["env"],
         "run_id": paths["run_id"],
+        "mode": tag,
         "N": int(N),
         "theta_min_deg": float(theta_min_deg),
         "lmax": int(lmax),
@@ -308,25 +301,20 @@ def run_llac(active_cfg: Dict = ACTIVE,
         "synthesized": bool(synthesized),
         "S_half": _stats(S12),
         "p_values_summary": _stats(p_values[np.isfinite(p_values)]) if np.isfinite(p_values).any() else None,
-        "files": {"csv": str(csv_path)}
+        "files": {"csv": str(csv_path)},
     }
-    json_path = run_dir / "LLAC__summary.json"
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
-    # Plots
+    # Plots (tagged)
     figs: List[str] = []
 
     # 1) Histogram of S1/2
     plt.figure()
     plt.hist(S12, bins=40)
-    plt.xlabel(r"$S_{1/2}$")
-    plt.ylabel("count")
-    plt.title("Lack of Large-Angle Correlation — $S_{1/2}$")
-    f1 = fig_dir / "LLAC__S12_hist.png"
-    plt.tight_layout()
-    plt.savefig(f1, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
-    plt.close()
+    plt.xlabel(r"$S_{1/2}$"); plt.ylabel("count"); plt.title("Lack of Large-Angle Correlation — $S_{1/2}$")
+    f1 = fig_dir / f"{tag}__LLAC_S12_hist.png"
+    plt.tight_layout(); plt.savefig(f1, dpi=dpi); plt.close()
     figs.append(str(f1))
 
     # 2) A few C(theta) curves
@@ -335,29 +323,26 @@ def run_llac(active_cfg: Dict = ACTIVE,
         for idx, Cth in kept_curves:
             plt.plot(theta_grid, Cth, linewidth=1.0, alpha=0.85, label=f"u={idx}")
         plt.axvline(theta_min_deg, linestyle="--", alpha=0.6)
-        plt.xlabel(r"$\theta$ [deg]")
-        plt.ylabel(r"$C(\theta)$")
-        plt.title("Two-point correlation C(θ) — samples")
+        plt.xlabel(r"$\theta$ [deg]"); plt.ylabel(r"$C(\theta)$"); plt.title("Two-point correlation C(θ) — samples")
         plt.legend(ncols=2, fontsize=8)
-        f2 = fig_dir / "LLAC__Ctheta_samples.png"
-        plt.tight_layout()
-        plt.savefig(f2, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
-        plt.close()
+        f2 = fig_dir / f"{tag}__LLAC_Ctheta_samples.png"
+        plt.tight_layout(); plt.savefig(f2, dpi=dpi); plt.close()
         figs.append(str(f2))
 
-    # Mirror copies
+    # Mirror copies (CSV/JSON to mirror root; PNGs to <mirror>/<fig_subdir>/)
     _save_mirrors([str(csv_path), str(json_path), *figs], mirrors, fig_sub)
 
-    print(f"[LLAC] saved CSV/JSON/PNGs under:\n  {run_dir}")
-
-    return {
-        "csv": str(csv_path),
-        "json": str(json_path),
-        "plots": figs,
-        "table": out_df,
-    }
+    print(f"[LLAC] mode={tag} → CSV/JSON/PNGs saved under:\n  {run_dir}")
+    return {"csv": str(csv_path), "json": str(json_path), "plots": figs, "table": out_df}
 
 
-# Allow standalone execution
+# Optional stage wrapper for Master Controller
+def run_llac_stage(active: Dict = ACTIVE,
+                   cmb_maps: Optional[np.ndarray] = None,
+                   cl_spectrum: Optional[np.ndarray] = None):
+    return run_llac(active, cmb_maps=cmb_maps, cl_spectrum=cl_spectrum)
+
+
+# Standalone
 if __name__ == "__main__":
     run_llac(ACTIVE)
