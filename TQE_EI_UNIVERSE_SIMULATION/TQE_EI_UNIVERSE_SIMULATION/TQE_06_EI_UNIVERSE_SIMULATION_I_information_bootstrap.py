@@ -6,7 +6,7 @@
 
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 
-import os, json, math, time, pathlib
+import os, json, math, pathlib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
