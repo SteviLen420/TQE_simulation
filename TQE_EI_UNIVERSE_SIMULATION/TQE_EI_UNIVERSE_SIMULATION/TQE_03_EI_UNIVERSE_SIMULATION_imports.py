@@ -58,8 +58,8 @@ except ImportError:
 # ---------------------------
 # Internal project modules
 # ---------------------------
-from config import ACTIVE
-from io_paths import resolve_output_paths, ensure_colab_drive_mounted
+from TQE_00_EI_UNIVERSE_SIMULATION_config import ACTIVE
+from TQE_02_EI_UNIVERSE_SIMULATION_Output_io_paths import resolve_output_paths, ensure_colab_drive_mounted
 
 # ---------------------------
 # I/O path bootstrap (one-time)
