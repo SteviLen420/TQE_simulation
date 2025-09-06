@@ -18,7 +18,7 @@ from Master_Control import MASTER_CTRL, _deep_merge
 # ===================================================================================
 
 # Default profile; override via environment:  export TQE_PROFILE=demo
-SELECTED_PROFILE = os.environ.get("TQE_PROFILE", "paper")
+SELECTED_PROFILE = os.environ.get("TQE_PROFILE", "demo")
 
 def resolve_profile(profile_name: str):
     """
