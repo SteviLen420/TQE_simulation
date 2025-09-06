@@ -60,3 +60,19 @@ except ImportError:
 # ---------------------------
 from config import ACTIVE
 from io_paths import resolve_output_paths, ensure_colab_drive_mounted
+
+# ---------------------------
+# I/O path bootstrap (one-time)
+# ---------------------------
+try:
+    # Colab Drive mount (no-op desktopon)
+    ensure_colab_drive_mounted(ACTIVE)
+except Exception as e:
+    print("[WARN] Drive mount skipped:", e)
+
+# Resolve and cache run paths once per process (stable run_id)
+PATHS = resolve_output_paths(ACTIVE)
+
+# Convenience aliases used by stages
+RUN_DIR = PATHS["primary_run_dir"]
+FIG_DIR = PATHS["fig_dir"]
