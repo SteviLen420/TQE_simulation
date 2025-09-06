@@ -49,12 +49,13 @@ def _goldilocks_noise_scale(X: np.ndarray, cfg: dict) -> np.ndarray:
 # Core collapse simulation
 # ---------------------------
 def _simulate_law_trajectory(
-    X_row: float,
-    epochs: int,
-    seed: Optional[int],
-    cfg: dict,
-    gX: float = 1.0,  # Goldilocks per-universe noise scale (applied to sigma0)
-):
+    X_row: float,
+    epochs: int,
+    rng: np.random.Generator, 
+    cfg: dict,
+    gX: float = 1.0, # Goldilocks per-universe noise scale (applied to sigma0)
+): 
+    
     """
     Simulate a single universe's law value L_t with decaying noise and mild drift.
 
@@ -86,8 +87,6 @@ def _simulate_law_trajectory(
     Xn = max(0.0, float(X_row))
     xnorm = Xn / (1.0 + Xn)
     sX = 1.0 / (1.0 + 2.0 * xnorm)  # in (0,1]
-
-    rng = _rng(seed)
 
     # initialize near X (bounded positive)
     L = np.empty(epochs, dtype=np.float64)
@@ -217,12 +216,14 @@ def run_collapse(
     keep_idx    = np.linspace(0, N - 1, num=min(N, max_for_avg), dtype=int)
     L_stack     = []
 
-    for i in range(N):
-        # Use the unique seed for this specific universe
-        si = int(universe_seeds[i])
-        L, rel_d, st, lk = _simulate_law_trajectory(
-            float(X[i]), epochs, si, active_cfg, gX=float(g_scale[i])
-        )
+    for i in range(N):
+        # Use the unique seed for this specific universe
+        si = int(universe_seeds[i])
+        # Create a generator from the universe's unique seed
+        rng_universe = np.random.default_rng(si)
+        L, rel_d, st, lk = _simulate_law_trajectory(
+            float(X[i]), epochs, rng_universe, active_cfg, gX=float(g_scale[i])
+        )
         L_last[i]    = L[-1]
         rel_last[i]  = rel_d[-1]
         stable_at[i] = st
