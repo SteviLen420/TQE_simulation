@@ -16,13 +16,7 @@ from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DI
 from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
 
 
-# --- Minimal re-implementation of the lock-in trajectory (for plotting only) ---
-def _rng(seed: Optional[int]):
-    """Return a reproducible Generator if seed is given, else fresh entropy."""
-    return np.random.default_rng(int(seed)) if seed is not None else np.random.default_rng()
-
-
-def _simulate_law_trajectory(X_row: float, epochs: int, seed: Optional[int], cfg: dict):
+def _simulate_law_trajectory(X_row: float, epochs: int, rng: np.random.Generator, cfg: dict):
     """Recreate a lock-in-like trajectory for a single universe (visualization only)."""
     noise = cfg["NOISE"]
 
@@ -35,7 +29,6 @@ def _simulate_law_trajectory(X_row: float, epochs: int, seed: Optional[int], cfg
     xnorm = Xn / (1.0 + Xn)
     sX = 1.0 / (1.0 + 2.0 * xnorm)
 
-    rng = _rng(seed)
     L = np.empty(epochs, dtype=float)
     L[0] = max(1e-9, Xn)
 
@@ -203,8 +196,9 @@ def run_best_universe(active_cfg: Dict = ACTIVE,
             else:
                 X_val = 1.0
 
-            uni_seed = int(uni_seeds[uid % len(uni_seeds)])
-            L = _simulate_law_trajectory(X_val, epochs, uni_seed, active_cfg)
+            uni_seed = int(uni_seeds[uid % len(uni_seeds)])
+            rng_universe = np.random.default_rng(uni_seed)
+            L = _simulate_law_trajectory(X_val, epochs, rng_universe, active_cfg)
 
             plt.figure()
             plt.plot(L, label=f"Universe {uid}")
