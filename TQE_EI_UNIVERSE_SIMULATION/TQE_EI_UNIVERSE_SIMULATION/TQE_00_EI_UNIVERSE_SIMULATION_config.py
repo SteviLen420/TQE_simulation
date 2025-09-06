@@ -14,7 +14,7 @@ from TQE_01_EI_UNIVERSE_SIMULATION_Master_Control import MASTER_CTRL, _deep_merg
 
 
 # ===================================================================================
-# 1) Profile resolution
+# Profile resolution
 # ===================================================================================
 
 # Default profile; override via environment:  export TQE_PROFILE=demo
@@ -50,7 +50,7 @@ def resolve_profile(profile_name: str):
 
 
 # ===================================================================================
-# 2) Active configuration (import this from all pipeline modules)
+# Active configuration (import this from all pipeline modules)
 # ===================================================================================
 ACTIVE = resolve_profile(SELECTED_PROFILE)
 
