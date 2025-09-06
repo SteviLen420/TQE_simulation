@@ -4,12 +4,15 @@
 # Author: Stefan Len
 # ===================================================================================
 
-from typing import Dict, Optional, List
+from typing import Any, Dict
 import os, json, pathlib
 import numpy as np
 
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 
+def load_or_create_run_seeds(active: Dict[str, Any] = ACTIVE) -> Dict[str, Any]:
+    pass
+    
 SEEDS_JSON_NAME = "seeds_run.json"
 SEEDS_CSV_NAME  = "seeds_universes.csv"
 
