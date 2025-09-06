@@ -4,8 +4,7 @@
 # Author: Stefan Len
 # ===================================================================================
 
-from config import ACTIVE
-from io_paths import resolve_output_paths
+from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 
 import os, json, math, time, pathlib
 import numpy as np
