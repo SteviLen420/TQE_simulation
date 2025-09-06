@@ -14,6 +14,7 @@ from shutil import copy2
 
 # Cached config + resolved paths for the current run (stable run_id)
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
+from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
 
 # Optional quantum dependency (graceful fallback to NumPy)
 try:
@@ -42,9 +43,6 @@ def _mirror_file(src: pathlib.Path, mirrors: List[str], put_in_figs: bool, cfg: 
 # -----------------------------------------------------------------------------------
 # RNG and quantum helpers
 # -----------------------------------------------------------------------------------
-def _rng(seed: Optional[int] = None) -> np.random.Generator:
-    """Create a reproducible Generator if seed is given, else fresh entropy."""
-    return np.random.default_rng(int(seed) if seed is not None else np.random.SeedSequence())
 
 def _random_pure_state(d: int, rng: np.random.Generator) -> np.ndarray:
     """Haar-like random ket via complex normal + normalization."""
@@ -124,7 +122,10 @@ def _compute_information_for_population(N: int, cfg: dict, seed: Optional[int]) 
     """
     d       = int(cfg["INFORMATION"]["hilbert_dim"])
     kl_eps  = float(cfg["INFORMATION"]["kl_eps"])
-    rng     = _rng(seed)
+    # RNG from central seeder
+    seeds_data = load_or_create_run_seeds(ACTIVE)
+    master_seed = seeds_data["master_seed"]
+    rng = np.random.default_rng(master_seed)
     lam_max = 0.35  # small depolarization for diversity
 
     I_sh_list, I_kl_list, I_list = [], [], []
