@@ -448,3 +448,137 @@ try:
 except Exception as e:
     print("[WARN] Drive mount skipped:", e)
 
+# ---------------------------------------------------------------------------
+# EXECUTION HARNESS (append this block at the very end of the file)
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    import importlib, os, json, traceback
+    from io_paths import resolve_output_paths
+
+    # Resolve run dirs on Drive (and create them)
+    paths   = resolve_output_paths(ACTIVE)
+    run_dir = paths["primary_run_dir"]
+    fig_dir = paths["fig_dir"]
+    os.makedirs(run_dir, exist_ok=True)
+    os.makedirs(fig_dir, exist_ok=True)
+
+    log_fp = os.path.join(run_dir, "pipeline_log.txt")
+
+    def log(msg: str):
+        print(msg)
+        try:
+            with open(log_fp, "a", encoding="utf-8") as lf:
+                lf.write(msg + "\n")
+        except Exception:
+            pass
+
+    log("========== TQE PIPELINE START ==========")
+    log(f"run_dir: {run_dir}")
+    log(f"fig_dir: {fig_dir}")
+    with open(os.path.join(run_dir, "CHECK_PIPELINE_WRITE.txt"), "w", encoding="utf-8") as f:
+        f.write("ok\n")
+
+    # Helper: safe import + call
+    def safe_call(module_name: str, func_name: str, kwargs: dict):
+        try:
+            mod = importlib.import_module(module_name)
+        except Exception as e:
+            log(f"[SKIP] Cannot import module '{module_name}': {e}")
+            return None
+        fn = getattr(mod, func_name, None)
+        if fn is None:
+            log(f"[SKIP] Function '{func_name}' not found in '{module_name}'.")
+            return None
+        try:
+            log(f"[RUN] {module_name}.{func_name}()")
+            out = fn(**kwargs)
+            log(f"[OK ] {module_name}.{func_name} finished.")
+            return out
+        except Exception as e:
+            log(f"[ERR] {module_name}.{func_name} raised: {e}")
+            tb = "".join(traceback.format_exc())
+            log(tb)
+            return None
+
+    # Stage plan: (pipeline_flag, module, function, kwargs_builder)
+    # NOTE: Filenevekhez igazítva: TQE_04_..., TQE_05_..., stb.
+    STAGES = [
+        ("run_energy_sampling",
+         "TQE_05_EI_UNIVERSE_SIMULATION_E_energy_sampling",
+         "run_energy_sampling",
+         lambda: {"active": ACTIVE, "tag": "EI" if ACTIVE["PIPELINE"]["use_information"] else "E"}),
+
+        ("run_info_bootstrap",
+         "TQE_06_EI_UNIVERSE_SIMULATION_I_information_bootstrap",
+         "run_information_bootstrap",
+         lambda: {"active": ACTIVE}),
+
+        ("run_fluctuation",
+         "TQE_07_EI_UNIVERSE_SIMULATION_t_lt_0_fluctuation",
+         "run_fluctuation_stage",
+         lambda: {"active": ACTIVE}),
+
+        ("run_superposition",
+         "TQE_08_EI_UNIVERSE_SIMULATION_t_lt_0_superposition",
+         "run_superposition_stage",
+         lambda: {"active": ACTIVE}),
+
+        ("run_lockin",
+         "TQE_09_EI_UNIVERSE_SIMULATION_t_eq_0_collapse_LawLockin",
+         "run_lockin_stage",
+         lambda: {"active": ACTIVE}),
+
+        ("run_expansion",
+         "TQE_10_EI_UNIVERSE_SIMULATION_t_gt_0_expansion",
+         "run_expansion_stage",
+         lambda: {"active": ACTIVE}),
+
+        ("run_montecarlo",
+         "TQE_11_EI_UNIVERSE_SIMULATION_montecarlo",
+         "run_montecarlo",
+         lambda: {"active": ACTIVE}),
+
+        ("run_best_universe",
+         "TQE_12_EI_UNIVERSE_SIMULATION_best_universe",
+         "run_best_universe",
+         lambda: {"active": ACTIVE}),
+
+        ("run_cmb_map",
+         "TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation",
+         "run_cmb_generation",
+         lambda: {"active": ACTIVE}),
+
+        ("run_anomaly_scan",
+         "TQE_15_EI_UNIVERSE_SIMULATION_anomaly_cold_spot",             # first anomaly
+         "run_cold_spot_scan",
+         lambda: {"active": ACTIVE}),
+        # You can add the other anomalies similarly:
+        # ("run_anomaly_scan", "TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments", "run_low_ell_alignments", lambda: {"active": ACTIVE}),
+        # ("run_anomaly_scan", "TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation", "run_lack_large_angle", lambda: {"active": ACTIVE}),
+        # ("run_anomaly_scan", "TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry", "run_hemi_asymmetry", lambda: {"active": ACTIVE}),
+
+        ("run_finetune_diag",
+         "TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics",
+         "run_finetune_diagnostics",
+         lambda: {"active": ACTIVE}),
+
+        ("run_xai",
+         "TQE_19_EI_UNIVERSE_SIMULATION_xai",
+         "run_xai",
+         lambda: {"active": ACTIVE}),
+
+        ("run_manifest",
+         "TQE_20_EI_UNIVERSE_SIMULATION_results_manifest",
+         "run_results_manifest",
+         lambda: {"active_cfg": ACTIVE, "run_dir": run_dir}),
+    ]
+
+    # Execute in order, honoring PIPELINE flags
+    for flag, module_name, func_name, make_kwargs in STAGES:
+        if not ACTIVE["PIPELINE"].get(flag, False):
+            log(f"[SKIP] {module_name} ({func_name}) because {flag}=False")
+            continue
+        safe_call(module_name, func_name, make_kwargs())
+
+    log("=========== TQE PIPELINE END ===========")
+
