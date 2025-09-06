@@ -4,7 +4,6 @@
 # Author: Stefan Len
 # ===================================================================================
 
-from config import ACTIVE
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 
 import os, json, pathlib
