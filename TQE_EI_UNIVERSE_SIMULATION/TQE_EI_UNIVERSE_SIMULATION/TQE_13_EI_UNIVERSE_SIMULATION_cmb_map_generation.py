@@ -4,22 +4,29 @@
 # Author: Stefan Len
 # ===================================================================================
 
-from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
-from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
-
+from typing import Dict, Optional
 import os, json, math, pathlib
-from typing import Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+
+# Cached config + paths (stable run_id within a pipeline run)
+from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
+from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
+
+# Try to import universe_rngs; if not available, build RNGs from seeds locally
+try:
+    from TQE_04_EI_UNIVERSE_SIMULATION_seeding import universe_rngs  # preferred
+except Exception:
+    universe_rngs = None
 
 
 # ---------------------------
 # Math helpers (no SciPy)
 # ---------------------------
 def _gaussian_kernel1d(sigma: float, truncate: float = 3.0) -> np.ndarray:
-    """Return a normalized 1D Gaussian kernel of std=sigma (pixels)."""
+    """Return a normalized 1D Gaussian kernel with standard deviation `sigma` in pixels."""
     if sigma <= 0:
         return np.array([1.0], dtype=float)
     radius = int(truncate * sigma + 0.5)
@@ -50,8 +57,8 @@ def _gaussian_blur2d(img: np.ndarray, sigma: float) -> np.ndarray:
 
 def _spectral_shaping_white_to_1overk(field: np.ndarray, alpha: float) -> np.ndarray:
     """
-    Isotropic spectral shaping: multiply FFT by (1 / k^alpha) radial filter.
-    alpha=0 → white; alpha in [0.5..2] gives redder fields (CMB-like large-scale power).
+    Isotropic spectral shaping: multiply FFT by a radial (1 / k^alpha) filter.
+    alpha=0 → white; alpha in [~0.5..2] makes the field redder (more large-scale power).
     """
     if alpha <= 0:
         return field
@@ -60,10 +67,9 @@ def _spectral_shaping_white_to_1overk(field: np.ndarray, alpha: float) -> np.nda
     ky = np.fft.fftfreq(ny)[:, None]
     kx = np.fft.fftfreq(nx)[None, :]
     k = np.sqrt(kx * kx + ky * ky)
-    # Avoid singularity at k=0: set gain(0) = gain at nearest nonzero bin
-    eps = 1e-9
+    eps = 1e-9  # avoid division by zero at k=0
     gain = 1.0 / np.maximum(k, eps) ** alpha
-    # Normalize filter energy to keep overall variance in a reasonable range
+    # Normalize filter energy to keep overall variance reasonable
     gain /= np.sqrt(np.mean(gain * gain))
 
     F = np.fft.fft2(field)
@@ -73,7 +79,7 @@ def _spectral_shaping_white_to_1overk(field: np.ndarray, alpha: float) -> np.nda
 
 def _fwhm_deg_to_sigma_pix(fwhm_deg: float, nside: int) -> float:
     """
-    Convert Gaussian beam FWHM (deg) → sigma in pixels, assuming the square spans ~180°.
+    Convert Gaussian beam FWHM (degrees) to sigma in pixels, assuming the square spans ~180°.
     """
     fwhm_pix = (nside / 180.0) * float(fwhm_deg)
     sigma_pix = fwhm_pix / (2.0 * math.sqrt(2.0 * math.log(2.0)))
@@ -89,10 +95,10 @@ def _synthesize_cmb_proxy(nside: int,
                           beam_sigma_pix: float) -> np.ndarray:
     """
     Build a CMB-like map:
-      - start white Gaussian noise
-      - apply 1/k^alpha spectral shaping (optional)
-      - apply Gaussian beam smoothing
-      - normalize (mean=0, std=1)
+      1) white Gaussian noise
+      2) optional 1/k^alpha spectral shaping
+      3) Gaussian beam smoothing
+      4) normalize to mean=0, std=1
     """
     sky = rng.normal(0.0, 1.0, size=(nside, nside)).astype(np.float64)
     if psd_alpha > 0:
@@ -113,21 +119,24 @@ def run_cmb_map_generation(active_cfg: Dict = ACTIVE,
                            arrays: Optional[Dict[str, np.ndarray]] = None,
                            preview_max: Optional[int] = None) -> Dict:
     """
-    Generate a CMB-like map per universe and save .npy (and sampled PNG previews).
+    Generate a CMB-like map per universe and save .npy (plus a limited number of PNG previews).
 
     Inputs:
-      - active_cfg: config dict (uses ANOMALY.map.* for nside/beam; optional ANOMALY.psd_alpha)
-      - arrays: optional, currently unused (kept for future joins)
+      - active_cfg: config dict (reads ANOMALY.map.* for resolution/beam; ANOMALY.psd_alpha optional)
+      - arrays: optional, currently unused (reserved for future joins)
       - preview_max: cap on the number of PNG previews (default: min(N, 24))
 
     Returns:
       dict(csv, json, previews, table)
     """
-    ensure_colab_drive_mounted(active_cfg)
-    paths = resolve_output_paths(active_cfg)
-    run_dir = pathlib.Path(paths["primary_run_dir"])
-    fig_dir = pathlib.Path(paths["fig_dir"])
-    mirrors = paths["mirrors"]
+    # Use cached paths to keep run_id consistent with the rest of the pipeline
+    paths   = PATHS
+    run_dir = pathlib.Path(RUN_DIR)
+    fig_dir = pathlib.Path(FIG_DIR)
+    mirrors = paths.get("mirrors", [])
+
+    run_dir.mkdir(parents=True, exist_ok=True)
+    fig_dir.mkdir(parents=True, exist_ok=True)
 
     # EI/E filename tag
     use_I = bool(active_cfg["PIPELINE"].get("use_information", True))
@@ -140,13 +149,27 @@ def run_cmb_map_generation(active_cfg: Dict = ACTIVE,
     beam_sigma_pix = _fwhm_deg_to_sigma_pix(beam_fwhm_deg, nside)
 
     # optional spectral shaping
-    psd_alpha = float(active_cfg["ANOMALY"].get("psd_alpha", 1.0))  # 0=white, 1..2 redder
+    psd_alpha = float(active_cfg["ANOMALY"].get("psd_alpha", 1.0))  # 0=white, 1..2=redder
 
-    # Seeds
+    # Seeds → one RNG per universe
     seeds = load_or_create_run_seeds(active_cfg)
-    rngs = universe_rngs(seeds["universe_seeds"])
+    uni_seeds = seeds.get("universe_seeds", [])
+    if universe_rngs is not None:
+        rngs = universe_rngs(uni_seeds)
+    else:
+        # Fallback: build RNGs locally from the provided seeds
+        if not isinstance(uni_seeds, (list, tuple, np.ndarray)) or len(uni_seeds) == 0:
+            uni_seeds = [int(seeds.get("master_seed", 1234567))]
+        rngs = [np.random.default_rng(int(s)) for s in uni_seeds]
 
     N = int(active_cfg["ENERGY"]["num_universes"])
+    # Make sure we have at least N RNGs
+    if len(rngs) < N:
+        # deterministically extend with offsets of master seed
+        base = int(seeds.get("master_seed", 1234567))
+        for i in range(len(rngs), N):
+            rngs.append(np.random.default_rng(base + 10007 * i))
+
     preview_cap = min(N, 24) if preview_max is None else int(preview_max)
 
     rows = []
@@ -172,6 +195,7 @@ def run_cmb_map_generation(active_cfg: Dict = ACTIVE,
         # Limited previews to keep disk footprint reasonable
         if len(previews) < preview_cap:
             plt.figure()
+            # fixed color scale for comparability across universes
             plt.imshow(sky, origin="lower", interpolation="nearest", vmin=-3, vmax=3, cmap="coolwarm")
             plt.colorbar(fraction=0.046, pad=0.04)
             plt.title(f"CMB-like map (u={i})")
@@ -203,10 +227,10 @@ def run_cmb_map_generation(active_cfg: Dict = ACTIVE,
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
-    # Mirroring
+    # Mirroring (CSV/JSON to mirror root; PNGs to <mirror>/<fig_subdir>/)
     from shutil import copy2
-    fig_sub = ACTIVE["OUTPUTS"]["local"].get("fig_subdir", "figs")
-    for m in mirrors:
+    fig_sub = active_cfg["OUTPUTS"]["local"].get("fig_subdir", "figs")
+    for m in mirrors or []:
         try:
             copy2(csv_path, os.path.join(m, csv_path.name))
             copy2(json_path, os.path.join(m, json_path.name))
