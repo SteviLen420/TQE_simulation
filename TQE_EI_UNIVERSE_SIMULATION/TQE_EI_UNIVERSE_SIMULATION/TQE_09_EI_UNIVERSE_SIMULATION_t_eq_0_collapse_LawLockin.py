@@ -29,7 +29,7 @@ def _goldilocks_noise_scale(X: np.ndarray, cfg: dict) -> np.ndarray:
     Return a multiplicative noise scale s(X).
     - Inside the Goldilocks window: shrink noise (1 / (1 + sigma_alpha))
     - Outside: boost noise (outside_penalty)
-    If dynamic mode is requested but we don't have a learned window yet,
+    If dynamic mode is requested but no learned window exists yet,
     fallback to a heuristic window around median(X).
     """
     g = cfg["GOLDILOCKS"]
@@ -250,8 +250,6 @@ def run_collapse(
         "stable": (stable_at >= 0).astype(int),
     })
 
-    csv_path = run_dir / f"{tag}__collapse_lockin.csv}"
-    # small typo fix: correct filename (remove stray brace)
     csv_path = run_dir / f"{tag}__collapse_lockin.csv"
     out_df.to_csv(csv_path, index=False)
 
@@ -273,6 +271,7 @@ def run_collapse(
 
     # --- Plots ---
     figs = []
+    dpi = int(ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
 
     if want_avg and len(L_stack) > 0:
         arr = np.vstack(L_stack)
@@ -284,7 +283,7 @@ def run_collapse(
         plt.title("Average lock-in trajectory")
         f1 = fig_dir / f"{tag}__avg_lockin_curve.png"
         plt.tight_layout()
-        plt.savefig(f1, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
+        plt.savefig(f1, dpi=dpi)
         plt.close()
         figs.append(str(f1))
 
@@ -300,7 +299,7 @@ def run_collapse(
         plt.title("Lock-in epoch distribution")
         f2 = fig_dir / f"{tag}__lockin_hist.png"
         plt.tight_layout()
-        plt.savefig(f2, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
+        plt.savefig(f2, dpi=dpi)
         plt.close()
         figs.append(str(f2))
 
@@ -312,7 +311,7 @@ def run_collapse(
         plt.title("X vs lock-in epoch (nan = no lock-in)")
         f3 = fig_dir / f"{tag}__stability_basic.png"
         plt.tight_layout()
-        plt.savefig(f3, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
+        plt.savefig(f3, dpi=dpi)
         plt.close()
         figs.append(str(f3))
 
@@ -362,6 +361,10 @@ def run_collapse(
         "plots": figs,
         "table": out_df,
     }
+
+# Thin wrapper to match Master Control entrypoint
+def run_lockin_stage(active: Dict = ACTIVE) -> Dict:
+    return run_collapse(active_cfg=active)
 
 # Allow standalone run
 if __name__ == "__main__":
