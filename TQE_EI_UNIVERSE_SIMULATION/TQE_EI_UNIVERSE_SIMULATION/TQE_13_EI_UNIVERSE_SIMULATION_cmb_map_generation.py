@@ -5,7 +5,7 @@
 # ===================================================================================
 
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
-from seeding import load_or_create_run_seeds, universe_rngs
+from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
 
 import os, json, math, pathlib
 from typing import Dict, Optional, Tuple
@@ -172,7 +172,7 @@ def run_cmb_map_generation(active_cfg: Dict = ACTIVE,
         # Limited previews to keep disk footprint reasonable
         if len(previews) < preview_cap:
             plt.figure()
-            plt.imshow(sky, origin="lower", interpolation="nearest")
+            plt.imshow(sky, origin="lower", interpolation="nearest", vmin=-3, vmax=3, cmap="coolwarm")
             plt.colorbar(fraction=0.046, pad=0.04)
             plt.title(f"CMB-like map (u={i})")
             p = fig_dir / f"{tag}__cmb_map_u{i}.png"
