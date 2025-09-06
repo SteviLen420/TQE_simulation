@@ -12,7 +12,7 @@ import os
 # ===================================================================================
 MASTER_CTRL = {
     # ---------------------------
-    # 1) Metadata and run labeling
+    # Metadata and run labeling
     # ---------------------------
     "META": {
         "RUN_ID_PREFIX": "TQE_EI_UNIVERSE_SIMULATION",
@@ -23,7 +23,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 2) Pipeline switches (high-level)
+    # Pipeline switches (high-level)
     # ---------------------------
     "PIPELINE": {
         "use_information": True,          # False => Energy-only baseline
@@ -49,7 +49,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 3) Energy sampling
+    # Energy sampling
     # ---------------------------
     "ENERGY": {
         "distribution": "lognormal",
@@ -70,7 +70,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 4) Information bootstrap (KL + Shannon)
+    # Information bootstrap (KL + Shannon)
     # ---------------------------
     "INFORMATION": {
         "use_kl": True,                   # Enable KL divergence component
@@ -91,7 +91,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 5) Coupling definition: X ≡ f(E,I)
+    # Coupling definition: X ≡ f(E,I)
     # ---------------------------
     "COUPLING_X": {
         "mode": "product",                # "product" | "E_plus_I" | "E_times_I_pow"
@@ -101,7 +101,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 6) Fluctuation (t < 0 dynamics)
+    # Fluctuation (t < 0 dynamics)
     # ---------------------------
     "FLUCTUATION": {
         "steps": 250,
@@ -114,7 +114,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 7) Superposition / quantum stage
+    # Superposition / quantum stage
     # ---------------------------
     "SUPERPOSITION": {
         "enabled": True,
@@ -125,7 +125,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 8) Stability and lock-in thresholds
+    # Stability and lock-in thresholds
     # ---------------------------
     "STABILITY": {
         "rel_eps_stable": 0.010,          # Stability threshold
@@ -140,7 +140,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 9) Goldilocks zone (dynamic stability window)
+    # Goldilocks zone (dynamic stability window)
     # ---------------------------
     "GOLDILOCKS": {
         "mode": "dynamic",                # "heuristic" | "dynamic"
@@ -156,7 +156,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 10) Noise model
+    # Noise model
     # ---------------------------
     "NOISE": {
         "exp_noise_base": 0.12,           # Baseline noise
@@ -169,7 +169,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 11) Expansion dynamics
+    # Expansion dynamics
     # ---------------------------
     "EXPANSION": {
         "growth_base": 1.005,
@@ -177,7 +177,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 12) Monte Carlo run
+    # Monte Carlo run
     # ---------------------------
     "MONTECARLO": {
         "save_csv": True,
@@ -186,7 +186,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 13) Best Universe scoring
+    # Best Universe scoring
     # ---------------------------
     "BEST_UNIVERSE": {
         "top_k_png": 1,                   # Number of top universes to plot
@@ -202,7 +202,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 14) CMB map generation
+    # CMB map generation
     # ---------------------------
     "CMB_MAP": {
         "resolution_nside": 128,          # HEALPix resolution
@@ -213,7 +213,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 15) Anomaly detection
+    # Anomaly detection
     # ---------------------------
     "ANOMALY": {
         "enabled": True,
@@ -228,7 +228,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 16) Fine-tuning diagnostics
+    # Fine-tuning diagnostics
     # ---------------------------
     "FINETUNE_DIAG": {
         "top_k": 1,
@@ -242,7 +242,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 17) Explainable AI (SHAP / LIME)
+    # Explainable AI (SHAP / LIME)
     # ---------------------------
     "XAI": {
         "run_shap": True,
@@ -274,7 +274,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 18) Environment detection
+    # Environment detection
     # ---------------------------
     "ENV": {
         "auto_detect": True,
@@ -283,7 +283,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 19) Output / IO settings
+    # Output / IO settings
     # ---------------------------
     "OUTPUTS": {
         "save_figs": True,
@@ -346,7 +346,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 20) Debug options
+    # Debug options
     # ---------------------------
     "DEBUG": {
         "assert_non_nan": True,
@@ -354,7 +354,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 21) Reproducibility
+    # Reproducibility
     # ---------------------------
     "REPRO": {
         "use_strict_seed": True,
@@ -369,7 +369,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 22) Runtime
+    # Runtime
     # ---------------------------
     "RUNTIME": {
         "matplotlib_dpi": 180,
@@ -377,7 +377,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # 23) Profiles
+    # Profiles
     # ---------------------------
     "PROFILES": {
         "demo": {
@@ -405,7 +405,7 @@ MASTER_CTRL = {
 }
 
 # ===================================================================================
-# 24) Helper: deep-merge dicts
+# Helper: deep-merge dicts
 # ===================================================================================
 def _deep_merge(base, override):
     if not isinstance(override, dict):
@@ -419,7 +419,7 @@ def _deep_merge(base, override):
     return out
 
 # ===================================================================================
-# 25) Profile resolution
+# Profile resolution
 # ===================================================================================
 SELECTED_PROFILE = os.environ.get("TQE_PROFILE", "demo")
 
@@ -449,7 +449,7 @@ except Exception as e:
     print("[WARN] Drive mount skipped:", e)
 
 # ---------------------------------------------------------------------------
-# 26) EXECUTION HARNESS (append this block at the very end of the file)
+# EXECUTION HARNESS (append this block at the very end of the file)
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import importlib, os, json, traceback
