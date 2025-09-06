@@ -8,7 +8,7 @@ from typing import Dict, Optional, List
 import os, json, pathlib
 import numpy as np
 
-from config import ACTIVE
+from 03_TQE_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 from io_paths import resolve_output_paths
 
 SEEDS_JSON_NAME = "seeds_run.json"
