@@ -5,6 +5,7 @@
 # ===================================================================================
 
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
+from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
 
 import os, json, math, pathlib
 import numpy as np
@@ -15,14 +16,6 @@ import matplotlib.pyplot as plt
 # ---------------------------
 # RNG and small helpers
 # ---------------------------
-
-def _get_rng(seed=None):
-    """Return a NumPy Generator; if seed is None, initialize from system entropy."""
-    if seed is None:
-        ss = np.random.SeedSequence()
-        return np.random.default_rng(ss)
-    return np.random.default_rng(int(seed))
-
 
 def _normalized_shannon(p):
     """Return H(p)/log(K) in [0,1] for probability vector p (K = len(p))."""
@@ -75,9 +68,10 @@ def run_information_bootstrap(active=ACTIVE, tag="EIseed"):
     bins   = int(bs_cfg.get("hist_bins", 60))
     seed_from_energy = bool(bs_cfg.get("seed_from_energy", True))
 
-    # Determine RNG seed source (can reuse ENERGY.seed if desired)
-    seed = active["ENERGY"].get("seed", None) if seed_from_energy else None
-    rng = _get_rng(seed)
+    # RNG from central seeder
+    seeds_data = load_or_create_run_seeds(active)
+    master_seed = seeds_data["master_seed"]
+    rng = np.random.default_rng(master_seed)
 
     # Resolve outputs (paths are pre-resolved & stable for this run)
     run_dir = RUN_DIR
