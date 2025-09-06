@@ -41,17 +41,22 @@ Notes:
   - The "desktop" environment detection is platform-specific (Windows/Linux/macOS).
 """
 # ===================================================================================
+
 from config import ACTIVE
 import os, platform, time, pathlib
 from typing import Dict, List
 
+# -----------------------------------------------------------------------------------
+# Helpers for environment detection and path resolution
+# -----------------------------------------------------------------------------------
+
 def _is_colab(active_cfg: dict) -> bool:
-    """Detect Google Colab by presence of known environment variables."""
+    """Detect Colab by checking known environment variables."""
     markers = active_cfg["ENV"].get("colab_markers", [])
     return any(k in os.environ for k in markers)
 
 def _desktop_dir(active_cfg: dict) -> str:
-    """Resolve Desktop folder (env override -> OS default -> CWD fallback)."""
+    """Resolve a Desktop path for saving when not in Colab/Cloud."""
     env_key = active_cfg["OUTPUTS"]["local"].get("desktop_env_var", "TQE_DESKTOP_DIR")
     if os.environ.get(env_key):
         return os.path.expanduser(os.environ[env_key])
@@ -67,19 +72,19 @@ def _desktop_dir(active_cfg: dict) -> str:
         if os.path.isdir(p):
             return p
     return os.getcwd()
-    
+
 def _run_id(meta_cfg: dict, active_cfg: dict) -> str:
-    """Build a run_id using prefix + time format, then append -EI/-E and -profile if requested."""
+    """Build a run_id with timestamp and optional EI/profile tags."""
     prefix = meta_cfg.get("RUN_ID_PREFIX", "")
     fmt    = meta_cfg.get("RUN_ID_FORMAT", "%Y%m%d_%H%M%S")
     rid    = prefix + time.strftime(fmt)
 
-    # EI/E tag a run_id végére (ha kérve)
+    # Append -EI / -E tag if requested
     if meta_cfg.get("append_ei_to_run_id", False):
         ei_tag = "EI" if active_cfg["PIPELINE"].get("use_information", True) else "E"
         rid += f"-{ei_tag}"
 
-    # profil tag a run_id végére (ha kérve)
+    # Append profile name if requested
     if active_cfg["OUTPUTS"].get("tag_profile_in_runid", False):
         prof = os.environ.get("TQE_PROFILE", None)
         if prof:
@@ -89,12 +94,13 @@ def _run_id(meta_cfg: dict, active_cfg: dict) -> str:
 
 def _resolve_environment(active_cfg: dict) -> str:
     """
-    Decide primary environment string: 'colab' | 'cloud' | 'desktop'.
+    Decide which environment we are in: 'colab' | 'cloud' | 'desktop'.
+
     Priority:
       1) ENV.force_environment if set
-      2) auto-detect Colab
-      3) if cloud.enabled+bucket_url -> 'cloud'
-      4) else 'desktop'
+      2) Auto-detect Colab
+      3) Cloud if bucket_url is set
+      4) Fallback: desktop
     """
     forced = active_cfg["ENV"].get("force_environment")
     if forced in {"colab", "cloud", "desktop"}:
@@ -107,65 +113,73 @@ def _resolve_environment(active_cfg: dict) -> str:
             return "cloud"
     return "desktop"
 
+# -----------------------------------------------------------------------------------
+# Main resolver
+# -----------------------------------------------------------------------------------
+
 def resolve_output_paths(active_cfg: dict) -> Dict[str, str]:
     """
-    Apply routing rule:
-      - if env == 'colab'   => PRIMARY = Colab Drive
-      - if env == 'cloud'   => PRIMARY = Desktop
-      - if env == 'desktop' => PRIMARY = Desktop
+    Main function to resolve output directories.
 
-    Also prepares optional mirror targets (local project folder and/or Colab Drive),
-    and returns a cloud bucket path (no directories are created for cloud).
-    Keys returned: { env, run_id, primary_run_dir, fig_dir, mirrors, cloud_bucket }
+    - Colab: primary = Google Drive, mirror = /content
+    - Cloud: primary = Desktop (cloud sync handled separately)
+    - Desktop: primary = Desktop or local.base_dir
+
+    Returns:
+        dict with keys:
+          - env
+          - run_id
+          - primary_run_dir
+          - fig_dir
+          - mirrors
+          - cloud_bucket
     """
+    # Ensure Drive is mounted if needed
+    ensure_colab_drive_mounted(active_cfg)
+
     env     = _resolve_environment(active_cfg)
     outputs = active_cfg["OUTPUTS"]
     meta    = active_cfg["META"]
     run_id  = _run_id(meta, active_cfg)
 
-    # Safety: never use Colab Drive when not in Colab
+    # Disable Drive outside Colab
     if env != "colab":
         outputs["colab_drive"]["enabled"] = False
 
-    # Ensure cloud is marked enabled when a bucket is present
+    # Enable cloud if bucket URL exists
     if outputs["cloud"].get("bucket_url") and not outputs["cloud"].get("enabled"):
         outputs["cloud"]["enabled"] = True
 
-    # Primary base dir: always honor OUTPUTS.local.base_dir if present
-    local_base_cfg = outputs.get("local", {})
-    local_base = local_base_cfg.get("base_dir")
-
-    if local_base and str(local_base).strip():
-        # e.g. "/content/TQE_Output" in Colab
-        primary_base = local_base
-    elif env == "colab":
-        # fallback to Drive if no local base specified
+    # Primary base dir
+    if env == "colab" and outputs["colab_drive"].get("enabled", False):
         primary_base = outputs["colab_drive"]["base_dir"]
     else:
-        # final fallback: OS desktop path + subdir
-        primary_base = os.path.join(
-            _desktop_dir(active_cfg),
-            local_base_cfg.get("desktop_subdir", "TQE_Output")
-        )
+        local_cfg   = outputs.get("local", {})
+        local_base  = local_cfg.get("base_dir")
+        if local_base and str(local_base).strip():
+            primary_base = local_base
+        else:
+            primary_base = os.path.join(
+                _desktop_dir(active_cfg),
+                local_cfg.get("desktop_subdir", "TQE_Output")
+            )
 
-    # Create primary run dir and figs subdir
+    # Create directories
     primary_run_dir = os.path.join(primary_base, run_id)
     fig_sub         = outputs["local"].get("fig_subdir", "figs")
     fig_dir         = os.path.join(primary_run_dir, fig_sub)
     pathlib.Path(fig_dir).mkdir(parents=True, exist_ok=True)
 
-    # Mirrors
+    # Handle mirrors
     mirrors: List[str] = []
     if outputs.get("mirroring", {}).get("enabled", True):
-        targets = outputs["mirroring"].get("targets", ["local", "colab_drive"])
+        targets = outputs["mirroring"].get("targets", ["colab_drive", "local"])
         for tgt in targets:
             if tgt == "local":
-                local_base = outputs["local"].get("base_dir", "./")
-                mdir = os.path.join(local_base, run_id)
+                mdir = os.path.join(outputs["local"].get("base_dir", "/content/TQE_Output"), run_id)
             elif tgt == "colab_drive" and outputs["colab_drive"].get("enabled", False):
                 mdir = os.path.join(outputs["colab_drive"]["base_dir"], run_id)
             elif tgt == "cloud" and outputs["cloud"].get("enabled") and outputs["cloud"].get("bucket_url"):
-                # Cloud sync handled by uploader (no mkdir)
                 continue
             else:
                 continue
@@ -176,7 +190,7 @@ def resolve_output_paths(active_cfg: dict) -> Dict[str, str]:
             pathlib.Path(os.path.join(mdir, fig_sub)).mkdir(parents=True, exist_ok=True)
             mirrors.append(mdir)
 
-    # Cloud path (for uploader)
+    # Cloud bucket path
     cloud_bucket = None
     if outputs["cloud"].get("enabled") and outputs["cloud"].get("bucket_url"):
         cloud_bucket = outputs["cloud"]["bucket_url"].rstrip("/") + "/" + run_id
@@ -190,8 +204,12 @@ def resolve_output_paths(active_cfg: dict) -> Dict[str, str]:
         "cloud_bucket": cloud_bucket,
     }
 
+# -----------------------------------------------------------------------------------
+# Drive helper
+# -----------------------------------------------------------------------------------
+
 def ensure_colab_drive_mounted(active_cfg: dict):
-    """If in Colab and Drive is enabled, try to mount."""
+    """If running in Colab and Drive is enabled, attempt to mount it."""
     if _resolve_environment(active_cfg) != "colab":
         return
     if not active_cfg["OUTPUTS"]["colab_drive"].get("enabled", False):
