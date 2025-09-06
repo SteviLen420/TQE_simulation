@@ -4,15 +4,16 @@
 # Author: Stefan Len
 # ===================================================================================
 
-from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
-
-import os, json, math, pathlib
 from typing import Optional, Tuple, Dict, List
+import os, json, math, pathlib
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from shutil import copy2
+
+# Cached config + resolved paths for the current run (stable run_id)
+from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 
 # Optional quantum dependency (graceful fallback to NumPy)
 try:
@@ -27,13 +28,16 @@ except Exception:
 def _mirror_file(src: pathlib.Path, mirrors: List[str], put_in_figs: bool, cfg: dict) -> None:
     fig_sub = cfg["OUTPUTS"]["local"].get("fig_subdir", "figs")
     for m in mirrors or []:
-        mpath = pathlib.Path(m)
-        mpath.mkdir(parents=True, exist_ok=True)
-        if put_in_figs:
-            (mpath / fig_sub).mkdir(parents=True, exist_ok=True)
-            copy2(src, mpath / fig_sub / src.name)
-        else:
-            copy2(src, mpath / src.name)
+        try:
+            mpath = pathlib.Path(m)
+            if put_in_figs:
+                (mpath / fig_sub).mkdir(parents=True, exist_ok=True)
+                copy2(src, mpath / fig_sub / src.name)
+            else:
+                mpath.mkdir(parents=True, exist_ok=True)
+                copy2(src, mpath / src.name)
+        except Exception as e:
+            print(f"[WARN] Mirror copy failed → {m}: {e}")
 
 # -----------------------------------------------------------------------------------
 # RNG and quantum helpers
@@ -131,23 +135,30 @@ def _compute_information_for_population(N: int, cfg: dict, seed: Optional[int]) 
         psi = _random_pure_state(d, rng)
 
         if use_qutip:
+            # Build density matrix in QuTiP
             ket = qt.Qobj(psi.reshape((d, 1)))
             rho = ket * ket.dag()  # |ψ><ψ|
             lam = rng.uniform(0.0, lam_max)
             rho = (1.0 - lam) * rho + lam * (qt.qeye(d) / d)
-            # eigenvalues and diagonal probabilities
+
+            # Eigenvalues (sorted), diagonal as measurement probs in computational basis
             eigs = np.clip(np.real(np.sort(rho.eigenenergies())[::-1]), 0.0, 1.0)
             eigs /= eigs.sum() if eigs.sum() > 0 else 1.0
             S = _von_neumann_entropy_eigs(eigs, base=2.0)
             diag = np.clip(np.array(rho.diag()).astype(float).ravel(), 0.0, 1.0)
+            diag /= diag.sum() if diag.sum() > 0 else 1.0
         else:
+            # NumPy path
             rho = np.outer(psi, np.conjugate(psi))
             lam = rng.uniform(0.0, lam_max)
             rho = _depolarize_rho(rho, lam)
+
             eigs = np.clip(np.linalg.eigvalsh(rho).real, 0.0, 1.0)
             eigs /= eigs.sum() if eigs.sum() > 0 else 1.0
             S = _von_neumann_entropy_eigs(eigs, base=2.0)
+
             diag = np.clip(np.diag(rho).real, 0.0, 1.0)
+            diag /= diag.sum() if diag.sum() > 0 else 1.0
 
         logd = math.log(d, 2)
         I_sh  = float(np.clip(1.0 - S / logd, 0.0, 1.0))
@@ -167,19 +178,16 @@ def _compute_information_for_population(N: int, cfg: dict, seed: Optional[int]) 
 def run_superposition(E: Optional[np.ndarray] = None, cfg: dict = ACTIVE, seed: Optional[int] = None) -> Dict[str, str]:
     """
     Compute superposition/information metrics and couple to energy E if provided.
-    Respects config output/mirroring switches and file tagging (EI/E).
+    Uses the cached RUN_DIR/FIG_DIR/PATHS for consistent run IDs across the pipeline.
     """
     # Early exit if the whole stage is disabled
     if not cfg["PIPELINE"].get("run_superposition", True):
         return {}
 
-    # Auto-mount Drive on Colab (if enabled)
-    ensure_colab_drive_mounted(cfg)
-
-    # Resolve output destinations (primary + mirrors)
-    paths   = resolve_output_paths(cfg)
-    run_dir = pathlib.Path(paths["primary_run_dir"])
-    fig_dir = pathlib.Path(paths["fig_dir"])
+    # Resolved (cached) destinations
+    paths   = PATHS
+    run_dir = pathlib.Path(RUN_DIR)
+    fig_dir = pathlib.Path(FIG_DIR)
     mirrors = paths.get("mirrors", [])
 
     # Filename tag prefix (EI__/E__) if requested
@@ -336,3 +344,10 @@ def run_superposition(E: Optional[np.ndarray] = None, cfg: dict = ACTIVE, seed: 
                 _mirror_file(f3, mirrors, put_in_figs=True, cfg=cfg)
 
     return {"primary_run_dir": str(run_dir), "fig_dir": str(fig_dir)}
+
+# Thin wrapper to match Master Control entrypoint
+def run_superposition_stage(active: Dict = ACTIVE, seed: Optional[int] = None) -> Dict[str, str]:
+    return run_superposition(E=None, cfg=active, seed=seed)
+
+if __name__ == "__main__":
+    run_superposition(cfg=ACTIVE)
