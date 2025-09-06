@@ -5,6 +5,7 @@
 # ===================================================================================
 
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
+from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
 
 import os, json, pathlib
 import numpy as np
@@ -12,15 +13,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # -----------------------------------------------------------------------------------
-# RNG helpers
+# 1) RNG helpers
 # -----------------------------------------------------------------------------------
-
-def _get_rng(seed=None):
-    """Create a NumPy Generator; if seed is None, initialize from system entropy."""
-    if seed is None:
-        ss = np.random.SeedSequence()
-        return np.random.default_rng(ss)
-    return np.random.default_rng(int(seed))
 
 def _maybe_truncate(arr, low, high):
     """Clamp values if truncation bounds are given."""
@@ -31,7 +25,7 @@ def _maybe_truncate(arr, low, high):
     return arr
 
 # -----------------------------------------------------------------------------------
-# Main routine
+# 2) Main routine
 # -----------------------------------------------------------------------------------
 
 def run_energy_sampling(active=ACTIVE, tag="E"):
@@ -51,9 +45,9 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
     n    = int(cfgE["num_universes"])
     mu   = float(cfgE.get("log_mu", 2.5))
     sig  = float(cfgE.get("log_sigma", 0.8))
-    low  = cfgE.get("trunc_low", None)
-    high = cfgE.get("trunc_high", None)
-    seed = cfgE.get("seed", None)
+    low  = cfgE.get("trunc_low", None)
+    high = cfgE.get("trunc_high", None)
+    seed = cfgE.get("seed", None)
 
     # Resolve output directories
     run_dir = RUN_DIR
@@ -62,7 +56,9 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
     run_id  = PATHS["run_id"]
 
     # RNG
-    rng = _get_rng(seed)
+    seeds_data = load_or_create_run_seeds(active)
+    master_seed = seeds_data["master_seed"]
+    rng = np.random.default_rng(master_seed)
 
     # Draw samples from lognormal distribution
     E0 = rng.lognormal(mean=mu, sigma=sig, size=n).astype(np.float64)
@@ -146,7 +142,7 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
     }
 
 # -----------------------------------------------------------------------------------
-# Standalone execution
+# 3) Standalone execution
 # -----------------------------------------------------------------------------------
 if __name__ == "__main__":
     out = run_energy_sampling(ACTIVE, tag="E")
