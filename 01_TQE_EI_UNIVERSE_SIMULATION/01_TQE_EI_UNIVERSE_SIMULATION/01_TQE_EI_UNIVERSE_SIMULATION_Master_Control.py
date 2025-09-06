@@ -447,7 +447,7 @@ ACTIVE = resolve_profile(SELECTED_PROFILE)
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import os, shutil, datetime
-    from io_paths import resolve_output_paths  # <-- SZÁM NÉLKÜLI shim import
+    from io_paths import resolve_output_paths  
 
     # 1) Default output directory (all results should land here)
     out_dir = "/content/TQE_Output"
