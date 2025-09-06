@@ -14,17 +14,11 @@ from scipy.stats import entropy
 
 # Import cached config + paths
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
-
+from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
 
 # ---------------------------
 # Helpers
 # ---------------------------
-
-def _rng(seed: Optional[int]):
-    """Return reproducible RNG (falls back to SeedSequence if seed is None)."""
-    if seed is None:
-        return np.random.default_rng(np.random.SeedSequence())
-    return np.random.default_rng(int(seed))
 
 def _apply_truncation(E: np.ndarray, low, high) -> np.ndarray:
     """Clamp sampled energies to [low, high] if thresholds are set."""
@@ -139,9 +133,10 @@ def run_fluctuation(active_cfg: Dict = ACTIVE, seed: Optional[int] = None) -> Di
     use_I          = bool(active_cfg["PIPELINE"].get("use_information", True))
     prefix         = ("EI__" if use_I else "E__") if ei_tag_enabled else ""
 
-    # RNG
-    seed_eff = active_cfg["ENERGY"].get("seed") if seed is None else seed
-    rng      = _rng(seed_eff)
+    # RNG from central seeder
+    seeds_data = load_or_create_run_seeds(active_cfg)
+    master_seed = seeds_data["master_seed"]
+    rng = np.random.default_rng(master_seed)
 
     # --- 1) Energy ---
     N     = int(active_cfg["ENERGY"]["num_universes"])
