@@ -10,7 +10,7 @@ import os
 # Ensure there is a file named `Master_Control.py` in the same folder that contains:
 #   - MASTER_CTRL
 #   - _deep_merge
-from Master_Control import MASTER_CTRL, _deep_merge
+from TQE_01_EI_UNIVERSE_SIMULATION_Master_Control import MASTER_CTRL, _deep_merge
 
 
 # ===================================================================================
