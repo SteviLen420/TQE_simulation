@@ -443,19 +443,35 @@ def resolve_profile(profile_name: str):
 ACTIVE = resolve_profile(SELECTED_PROFILE)
 
 # ---------------------------------------------------------------------------
-# Auto-trigger PostRun Zip (Colab-friendly)
+# AUTO-ZIP & DOWNLOAD (Colab-friendly)
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    import os, glob, runpy
+    import os, shutil, datetime
+    from io_paths import resolve_output_paths  # <-- SZÁM NÉLKÜLI shim import
 
-    # Locate and run the post-run zip module (21_*), if present
-    here = os.path.dirname(os.path.abspath(__file__))
-    candidates = sorted(glob.glob(os.path.join(here, "21_*PostRun_Zip_and_Download.py")))
-    if candidates:
-        print(f"[POST-RUN] Executing zip module: {os.path.basename(candidates[0])}")
-        try:
-            runpy.run_path(candidates[0], run_name="__main__")
-        except Exception as e:
-            print(f"[WARN] Post-run zip failed: {e}")
-    else:
-        print("[POST-RUN] No 21_*PostRun_Zip_and_Download.py found — skipping zip.")
+    # 1) Default output directory (all results should land here)
+    out_dir = "/content/TQE_Output"
+
+    # Try to resolve more specific run directory if available
+    try:
+        paths = resolve_output_paths(ACTIVE)
+        out_dir = paths.get("primary_run_dir", out_dir)
+    except Exception as e:
+        print("[WARN] resolve_output_paths() failed, fallback to /content/TQE_Output:", e)
+
+    # Make sure the directory exists
+    os.makedirs(out_dir, exist_ok=True)
+
+    # 2) Create a timestamped archive
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    zip_name = f"TQE_Output_{timestamp}"
+    zip_path = shutil.make_archive(f"/content/{zip_name}", "zip", out_dir)
+    print("📦 Archive created:", zip_path)
+
+    # 3) Trigger automatic download in Colab
+    try:
+        from google.colab import files
+        files.download(zip_path)
+        print("⬇️ Download triggered.")
+    except Exception:
+        print("[INFO] Not in Colab, skipping auto-download.")
