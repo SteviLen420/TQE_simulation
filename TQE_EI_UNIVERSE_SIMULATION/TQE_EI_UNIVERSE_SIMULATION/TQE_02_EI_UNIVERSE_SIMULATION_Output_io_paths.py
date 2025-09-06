@@ -9,7 +9,7 @@ import os, platform, time, pathlib
 from typing import Dict, List
 
 # -----------------------------------------------------------------------------------
-# 1) Helpers for environment detection and path resolution
+# Helpers for environment detection and path resolution
 # -----------------------------------------------------------------------------------
 
 def _is_colab(active_cfg: dict) -> bool:
@@ -76,7 +76,7 @@ def _resolve_environment(active_cfg: dict) -> str:
     return "desktop"
 
 # -----------------------------------------------------------------------------------
-# 2) Main resolver
+# Main resolver
 # -----------------------------------------------------------------------------------
 
 def resolve_output_paths(active_cfg: dict) -> Dict[str, str]:
@@ -167,7 +167,7 @@ def resolve_output_paths(active_cfg: dict) -> Dict[str, str]:
     }
 
 # -----------------------------------------------------------------------------------
-# 3) Drive helper
+# Drive helper
 # -----------------------------------------------------------------------------------
 
 def ensure_colab_drive_mounted(active_cfg: dict):
