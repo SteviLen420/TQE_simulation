@@ -5,7 +5,7 @@
 # ===================================================================================
 
 from config import ACTIVE
-from 03_TQE_EI_UNIVERSE_SIMULATION_imports import PATHS, RUN_DIR, FIG_DIR
+from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 
 import os, json, pathlib
 import numpy as np
