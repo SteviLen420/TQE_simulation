@@ -84,10 +84,10 @@ def load_or_create_run_seeds(active: Dict = ACTIVE) -> Dict:
         "universe_seeds": np.ndarray[uint64] shape (N,),
         "json_path": str,
         "csv_path": str,
-        "paths": resolve_output_paths(active)
+        "paths": PATHS
       }
     """
-    paths = resolve_output_paths(active)
+    paths = PATHS
     run_dir = pathlib.Path(RUN_DIR)   
     n = int(active["ENERGY"]["num_universes"])
 
