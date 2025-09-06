@@ -3,46 +3,8 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
-"""
-Environment and Output Path Resolver for the TQE Simulation.
 
-This module is responsible for the automatic detection of the runtime environment
-(e.g., Colab, desktop, cloud) and for creating the necessary folder structure
-for saving simulation results (figures, CSV, JSON). For each simulation run,
-it generates a unique, timestamped, and profile-tagged directory to ensure
-reproducibility and clarity.
-
-The primary purpose of this module is to provide all other pipeline modules
-with the correct save paths from a central, reliable source, regardless of
-where the code is being executed. It also supports the simultaneous mirroring
-of outputs to multiple storage targets (e.g., a local folder and Google Drive).
-
-Key Functions:
-  - `resolve_output_paths()`: The central function that detects the environment,
-    generates the unique run ID, creates the necessary directories based on the
-    config, and returns a dictionary of the fully resolved, absolute paths.
-  - `ensure_colab_drive_mounted()`: A helper function that checks if Google
-    Drive is mounted in a Colab environment and attempts to mount it if necessary.
-
-Inputs:
-  - `config.py`: It uses the `ENV`, `OUTPUTS`, and `META` sections of the `ACTIVE`
-    configuration dictionary to function.
-  - Environment Variables: It checks for `TQE_PROFILE` and `TQE_DESKTOP_DIR`
-    to override the run profile and the desktop save location, respectively.
-
-Outputs:
-  - Folder Structure: Creates the run-specific directories on the filesystem.
-  - Data Structure: Returns a dictionary (`dict`) containing all generated
-    paths (e.g., `primary_run_dir`, `fig_dir`, `mirrors`).
-
-Notes:
-  - This module requires write permissions for the output directories specified
-    in `config.py`.
-  - The "desktop" environment detection is platform-specific (Windows/Linux/macOS).
-"""
-# ===================================================================================
-
-from config import ACTIVE
+from TQE_00_EI_UNIVERSE_SIMULATION_config import ACTIVE
 import os, platform, time, pathlib
 from typing import Dict, List
 
