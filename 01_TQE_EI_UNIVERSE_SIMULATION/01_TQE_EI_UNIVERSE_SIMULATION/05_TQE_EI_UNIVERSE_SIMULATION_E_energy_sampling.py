@@ -12,31 +12,40 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# -----------------------------------------------------------------------------------
+# RNG helpers
+# -----------------------------------------------------------------------------------
+
 def _get_rng(seed=None):
-    """Create a NumPy Generator; if seed is None, use SeedSequence for fresh entropy."""
+    """Create a NumPy Generator; if seed is None, initialize from system entropy."""
     if seed is None:
         ss = np.random.SeedSequence()
         return np.random.default_rng(ss)
     return np.random.default_rng(int(seed))
 
 def _maybe_truncate(arr, low, high):
-    """Clamp values if low/high truncation thresholds are provided."""
+    """Clamp values if truncation bounds are given."""
     if low is not None:
         arr = np.maximum(arr, float(low))
     if high is not None:
         arr = np.minimum(arr, float(high))
     return arr
 
-def _kde_smooth(x, bins=80):
-    """Simple histogram centers for plotting; leave true KDE to mpl's density display."""
-    hist, edges = np.histogram(x, bins=bins, density=True)
-    centers = 0.5 * (edges[:-1] + edges[1:])
-    return centers, hist
+# -----------------------------------------------------------------------------------
+# Main routine
+# -----------------------------------------------------------------------------------
 
 def run_energy_sampling(active=ACTIVE, tag="E"):
     """
-    Sample initial energies E0 for NUM_UNIVERSES using params under ACTIVE['ENERGY'].
-    Returns a dict with arrays and file paths; also writes CSV/PNG/JSON to disk.
+    Sample initial energies E0 for N universes using parameters under ACTIVE['ENERGY'].
+
+    Outputs:
+        - CSV: sampled E0 values
+        - PNG: histogram plot of E0 distribution
+        - JSON: summary with statistics and file paths
+
+    Returns:
+        dict with arrays, file paths, and run metadata.
     """
     cfgE = active["ENERGY"]
 
@@ -47,7 +56,7 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
     high = cfgE.get("trunc_high", None)
     seed = cfgE.get("seed", None)
 
-    # Resolve output directories for this run
+    # Resolve output directories
     run_dir = RUN_DIR
     fig_dir = FIG_DIR
     mirrors = PATHS["mirrors"]
@@ -56,23 +65,22 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
     # RNG
     rng = _get_rng(seed)
 
-    # Sample lognormal
-    # Note: NumPy's lognormal takes mean/sigma of the underlying normal.
+    # Draw samples from lognormal distribution
     E0 = rng.lognormal(mean=mu, sigma=sig, size=n).astype(np.float64)
     E0 = _maybe_truncate(E0, low, high)
 
-    # Build DataFrame and save CSV
+    # Save CSV
     df = pd.DataFrame({
         "universe_id": np.arange(n, dtype=np.int64),
         "E0": E0,
     })
-
     csv_path = os.path.join(run_dir, f"energy_samples__{tag}.csv")
     df.to_csv(csv_path, index=False)
 
-    # Plot histogram with density
+    # Plot histogram
     plt.figure(dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
-    plt.hist(E0, bins=80, density=True, alpha=0.6)
+    bins = ACTIVE["ENERGY_SAMPLING"].get("hist_bins", 80)
+    plt.hist(E0, bins=bins, density=True, alpha=0.6)
     plt.title(f"E0 distribution ({tag}) — lognormal mu={mu}, sigma={sig}, n={n}")
     plt.xlabel("E0")
     plt.ylabel("Density")
@@ -81,7 +89,7 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
     plt.savefig(png_path)
     plt.close()
 
-    # Summary JSON
+    # Build summary JSON
     summary = {
         "run_id": run_id,
         "tag": tag,
@@ -107,18 +115,20 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
         "mirrors": [],
     }
 
-    # Mirror to additional targets (if any)
+    # Mirror outputs if configured
     for mdir in mirrors:
         m_csv = os.path.join(mdir, os.path.basename(csv_path))
-        # ensure mirror fig subdir exists (same subdir name as primary 'figs')
         fig_sub = ACTIVE["OUTPUTS"]["local"].get("fig_subdir", "figs")
         mirror_fig_dir = os.path.join(mdir, fig_sub)
         pathlib.Path(mirror_fig_dir).mkdir(parents=True, exist_ok=True)
-        # write files
+
         df.to_csv(m_csv, index=False)
         from shutil import copy2
         copy2(png_path, os.path.join(mirror_fig_dir, os.path.basename(png_path)))
-        summary["mirrors"].append({"csv": m_csv, "png": os.path.join(mirror_fig_dir, os.path.basename(png_path))})
+        summary["mirrors"].append({
+            "csv": m_csv,
+            "png": os.path.join(mirror_fig_dir, os.path.basename(png_path)),
+        })
 
     # Save JSON
     json_path = os.path.join(run_dir, f"energy_summary__{tag}.json")
@@ -136,7 +146,9 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
         "run": PATHS,
     }
 
+# -----------------------------------------------------------------------------------
+# Standalone execution
+# -----------------------------------------------------------------------------------
 if __name__ == "__main__":
-    # Default E-only sampling when executed standalone
     out = run_energy_sampling(ACTIVE, tag="E")
     print("[energy_sampling] done →", out["paths"])
