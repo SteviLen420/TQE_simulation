@@ -13,7 +13,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # -----------------------------------------------------------------------------------
-# 1) RNG helpers
+# RNG helpers
 # -----------------------------------------------------------------------------------
 
 def _maybe_truncate(arr, low, high):
@@ -25,7 +25,7 @@ def _maybe_truncate(arr, low, high):
     return arr
 
 # -----------------------------------------------------------------------------------
-# 2) Main routine
+# Main routine
 # -----------------------------------------------------------------------------------
 
 def run_energy_sampling(active=ACTIVE, tag="E"):
@@ -141,7 +141,7 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
     }
 
 # -----------------------------------------------------------------------------------
-# 3) Standalone execution
+# Standalone execution
 # -----------------------------------------------------------------------------------
 if __name__ == "__main__":
     out = run_energy_sampling(ACTIVE, tag="E")
