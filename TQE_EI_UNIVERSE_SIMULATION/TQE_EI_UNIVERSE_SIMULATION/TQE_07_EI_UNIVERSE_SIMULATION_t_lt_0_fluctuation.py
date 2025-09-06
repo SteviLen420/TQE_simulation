@@ -245,7 +245,10 @@ def run_fluctuation(active_cfg: Dict = ACTIVE, seed: Optional[int] = None) -> Di
                        "I_fused": I_fused if use_I else None,
                        "X": X, "in_goldilocks_E": in_goldilocks_E},
             "dataframe": df}
-
+    
+def run_fluctuation_stage(active_cfg: Dict = ACTIVE, seed: Optional[int] = None) -> Dict:
+    # thin wrapper to match Master Control's expected entrypoint
+    return run_fluctuation(active_cfg, seed)
 
 if __name__ == "__main__":
     run_fluctuation(ACTIVE)
