@@ -4,15 +4,15 @@
 # Author: Stefan Len
 # ===================================================================================
 
-from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
-
-import os, json, math, pathlib
 from typing import Dict, Optional
+import os, json, math, pathlib
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# Cached config + resolved paths for the current run (stable run_id)
+from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 
 # ---------------------------
 # Utility: RNG
@@ -20,7 +20,6 @@ import matplotlib.pyplot as plt
 def _rng(seed: Optional[int]):
     """Create a reproducible Generator if seed is provided; otherwise fresh entropy."""
     return np.random.default_rng(int(seed)) if seed is not None else np.random.default_rng()
-
 
 # ---------------------------
 # Goldilocks shaping over X
@@ -31,7 +30,7 @@ def _goldilocks_noise_scale(X: np.ndarray, cfg: dict) -> np.ndarray:
     - Inside the Goldilocks window: shrink noise (1 / (1 + sigma_alpha))
     - Outside: boost noise (outside_penalty)
     If dynamic mode is requested but we don't have a learned window yet,
-    we fallback to a heuristic window around median(X).
+    fallback to a heuristic window around median(X).
     """
     g = cfg["GOLDILOCKS"]
     mode = g.get("mode", "dynamic")
@@ -39,7 +38,6 @@ def _goldilocks_noise_scale(X: np.ndarray, cfg: dict) -> np.ndarray:
         center = float(g.get("E_center", 4.0))
         width  = float(g.get("E_width", 4.0))
     else:
-        # Fallback window from median and IQR
         center = float(np.median(X))
         iqr    = float(np.quantile(X, 0.75) - np.quantile(X, 0.25))
         width  = max(1e-12, 2.0 * (iqr if iqr > 0 else 0.5 * max(center, 1e-12)))
@@ -53,7 +51,6 @@ def _goldilocks_noise_scale(X: np.ndarray, cfg: dict) -> np.ndarray:
     s = np.where(inside, 1.0 / (1.0 + sigma_alpha), outside_penalty)
     return s.astype(np.float64)
 
-
 # ---------------------------
 # Core collapse simulation
 # ---------------------------
@@ -62,14 +59,10 @@ def _simulate_law_trajectory(
     epochs: int,
     seed: Optional[int],
     cfg: dict,
-    gX: float = 1.0,  # << Goldilocks per-universe noise scale (applied to sigma0)
+    gX: float = 1.0,  # Goldilocks per-universe noise scale (applied to sigma0)
 ):
     """
     Simulate a single universe's law value L_t with decaying noise and mild drift.
-
-    gX:
-      Goldilocks noise scale for this universe.
-      Values < 1.0 shrink noise (inside window), values > 1.0 boost noise (outside).
 
     Returns:
         L: (epochs,) array of law values
@@ -90,25 +83,22 @@ def _simulate_law_trajectory(
     min_stable_ep  = int(stab.get("lockin_min_stable_epoch", 0))
 
     # noise dynamics (apply Goldilocks scale directly to sigma0)
-    sigma0    = float(noise.get("exp_noise_base", 0.12)) * float(gX)  # << key change
+    sigma0    = float(noise.get("exp_noise_base", 0.12)) * float(gX)
     ll_floor  = float(noise.get("ll_base_noise", 8e-4))
     tau       = float(noise.get("decay_tau", 500))
     floor_frac= float(noise.get("floor_frac", 0.25))
 
     # X-modulation of noise (larger X → smaller noise, monotonically)
-    # simple monotone: sX = 1 / (1 + X_norm)
     Xn = max(0.0, float(X_row))
     xnorm = Xn / (1.0 + Xn)
     sX = 1.0 / (1.0 + 2.0 * xnorm)  # in (0,1]
 
-    # random state
     rng = _rng(seed)
 
-    # initialize law value near X (bounded positive)
+    # initialize near X (bounded positive)
     L = np.empty(epochs, dtype=np.float64)
     L[0] = max(1e-9, Xn)
 
-    # stability trackers
     rel_d = np.empty(epochs - 1, dtype=np.float64)
     stable_at = -1
     lockin_at = -1
@@ -116,26 +106,21 @@ def _simulate_law_trajectory(
     consec_lockin = 0
 
     for t in range(1, epochs):
-        # decaying sigma toward a floor
         decay = math.exp(-t / tau)
         sigma_t = max(ll_floor, sigma0 * (floor_frac + (1.0 - floor_frac) * decay))
-        # apply X monotone shaping via sX (sX<=1 → damp)
         sigma_eff = sigma_t * sX
 
-        # drift: small pull toward Xn (OU-like)
-        kappa = 0.02  # small mean-reverting drift
+        # small OU-like drift toward Xn
+        kappa = 0.02
         drift = kappa * (Xn - L[t-1])
 
-        # step
         eps = rng.normal(loc=0.0, scale=sigma_eff)
         L[t] = max(1e-12, L[t-1] + drift + eps)
 
-        # relative delta
         denom = max(1e-12, abs(L[t-1]))
         rel = abs(L[t] - L[t-1]) / denom
         rel_d[t-1] = rel
 
-        # stability counters
         if rel < rel_eps_stable:
             consec_stable += 1
         else:
@@ -146,25 +131,20 @@ def _simulate_law_trajectory(
         else:
             consec_lockin = 0
 
-        # first time we hit stable
-        if stable_at < 0 and consec_stable >= calm_stable:
+        if (stable_at < 0) and (consec_stable >= calm_stable):
             stable_at = t
 
-        # lock-in condition
         lockin_gate_ok = (t >= min_lock_epoch)
         if require_stable:
             lockin_gate_ok = lockin_gate_ok and (stable_at >= 0) and (t >= stable_at + min_stable_ep)
 
-        if lockin_at < 0 and lockin_gate_ok and consec_lockin >= calm_lockin:
+        if (lockin_at < 0) and lockin_gate_ok and (consec_lockin >= calm_lockin):
             lockin_at = t
 
-        # early stop if locked in and we have a small tail already
-        if lockin_at > 0 and (t - lockin_at) > 10:
-            # allow a short buffer after lock-in then break
+        if (lockin_at > 0) and ((t - lockin_at) > 10):
             break
 
     return L, rel_d, int(stable_at), int(lockin_at)
-
 
 # ---------------------------
 # Public API
@@ -180,21 +160,16 @@ def run_collapse(
     Inputs (optional):
       - df: DataFrame containing at least one of ['X','E0','E'].
       - arrays: dict with numpy arrays, e.g. {'X': ..., 'E0': ..., 'I_fused': ...}
-    If neither is supplied, we generate a synthetic X scale from config.
-
-    Returns a dict with:
-      - 'csv', 'json' (paths as strings)
-      - 'plots' (list of figure paths as strings)
-      - 'table' (pandas DataFrame)
+    If neither is supplied, a synthetic X scale is generated from config.
     """
     if not active_cfg["PIPELINE"].get("run_lockin", True):
         print("[COLLAPSE] run_lockin=False → skipping.")
         return {}
 
-    ensure_colab_drive_mounted(active_cfg)
-    paths = resolve_output_paths(active_cfg)
-    run_dir = pathlib.Path(paths["primary_run_dir"])
-    fig_dir = pathlib.Path(paths["fig_dir"])
+    # Use cached run paths (no re-resolve, no drive mount here)
+    paths  = PATHS
+    run_dir = pathlib.Path(RUN_DIR)
+    fig_dir = pathlib.Path(FIG_DIR)
     mirrors = paths["mirrors"]
 
     use_I = bool(active_cfg["PIPELINE"].get("use_information", True))
@@ -206,7 +181,6 @@ def run_collapse(
         if "X" in arrays and arrays["X"] is not None:
             X = np.asarray(arrays["X"], dtype=float)
         elif "E0" in arrays:
-            # degrade to E-only if I not provided
             X = np.asarray(arrays["E0"], dtype=float)
         elif "E" in arrays:
             X = np.asarray(arrays["E"], dtype=float)
@@ -223,13 +197,11 @@ def run_collapse(
             X = np.maximum(1e-9, np.abs(np.random.normal(loc=1.0, scale=0.5, size=len(df))))
         N = len(X)
     else:
-        # synthetic X
-        N = int(active_cfg["ENERGY"].get("num_universes", 1000))
         rng = _rng(active_cfg["ENERGY"].get("seed"))
         mu, sig = float(active_cfg["ENERGY"]["log_mu"]), float(active_cfg["ENERGY"]["log_sigma"])
         X = rng.lognormal(mean=mu, sigma=sig, size=N).astype(np.float64)
 
-    # Goldilocks noise shaping vector for all universes (broadcast later)
+    # Goldilocks noise shaping vector for all universes
     g_scale = _goldilocks_noise_scale(X, active_cfg)
 
     epochs = int(active_cfg["ENERGY"].get("lockin_epochs", 500))
@@ -241,7 +213,6 @@ def run_collapse(
     stable_at = np.full(N, -1, dtype=int)
     lockin_at = np.full(N, -1, dtype=int)
 
-    # For average curve plot: collect a trimmed set of trajectories
     want_avg    = bool(active_cfg["OUTPUTS"].get("plot_avg_lockin", True))
     max_for_avg = 256
     keep_idx    = np.linspace(0, N - 1, num=min(N, max_for_avg), dtype=int)
@@ -249,21 +220,16 @@ def run_collapse(
 
     base_seed = int(seed) if seed is not None else None
     for i in range(N):
-        # per-universe seed
         si = (None if base_seed is None else (base_seed + i * 9973))
-
-        # Pass Goldilocks scale into the simulation (applied to sigma0)
         L, rel_d, st, lk = _simulate_law_trajectory(
             float(X[i]), epochs, si, active_cfg, gX=float(g_scale[i])
         )
-
         L_last[i]    = L[-1]
         rel_last[i]  = rel_d[-1]
         stable_at[i] = st
         lockin_at[i] = lk
 
         if want_avg and (i in keep_idx):
-            # Pad to epochs length for alignment (for plotting mean curve)
             if L.shape[0] < epochs:
                 pad = np.full(epochs - L.shape[0], L[-1], dtype=float)
                 Lp = np.concatenate([L, pad], axis=0)
@@ -284,10 +250,12 @@ def run_collapse(
         "stable": (stable_at >= 0).astype(int),
     })
 
+    csv_path = run_dir / f"{tag}__collapse_lockin.csv}"
+    # small typo fix: correct filename (remove stray brace)
     csv_path = run_dir / f"{tag}__collapse_lockin.csv"
     out_df.to_csv(csv_path, index=False)
 
-    # --- Summary JSON helpers ---
+    # --- Summary helpers ---
     def _stat_int(x):
         x = x[x >= 0]
         if x.size == 0:
@@ -306,9 +274,8 @@ def run_collapse(
     # --- Plots ---
     figs = []
 
-    # 1) Average lock-in curve
     if want_avg and len(L_stack) > 0:
-        arr = np.vstack(L_stack)  # (K, epochs)
+        arr = np.vstack(L_stack)
         mean_curve = arr.mean(axis=0)
         plt.figure()
         plt.plot(mean_curve, linewidth=1.5)
@@ -321,7 +288,6 @@ def run_collapse(
         plt.close()
         figs.append(str(f1))
 
-    # 2) Histogram of lock-in epochs
     if active_cfg["OUTPUTS"].get("plot_lockin_hist", True):
         lk = lockin_at[lockin_at >= 0]
         plt.figure()
@@ -338,7 +304,6 @@ def run_collapse(
         plt.close()
         figs.append(str(f2))
 
-    # 3) Optional: simple stability diagnostic
     if active_cfg["OUTPUTS"].get("plot_stability_basic", False):
         plt.figure()
         plt.scatter(X, np.where(lockin_at >= 0, lockin_at, np.nan), s=6, alpha=0.5)
@@ -351,7 +316,7 @@ def run_collapse(
         plt.close()
         figs.append(str(f3))
 
-    # --- Summary JSON (relative paths + figs list) ---
+    # --- Summary JSON ---
     summary = {
         "env": paths["env"],
         "run_id": paths["run_id"],
@@ -375,14 +340,12 @@ def run_collapse(
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
-    # --- Mirror copies (CSV/JSON/PNGs) ---
+    # --- Mirror copies ---
     from shutil import copy2
     for m in mirrors:
         try:
-            # CSV + JSON to mirror root
             copy2(csv_path, os.path.join(m, csv_path.name))
             copy2(json_path, os.path.join(m, json_path.name))
-            # figures to <mirror>/<fig_subdir>/
             fig_sub = ACTIVE["OUTPUTS"]["local"].get("fig_subdir", "figs")
             m_fig_dir = pathlib.Path(m) / fig_sub
             m_fig_dir.mkdir(parents=True, exist_ok=True)
@@ -399,7 +362,6 @@ def run_collapse(
         "plots": figs,
         "table": out_df,
     }
-
 
 # Allow standalone run
 if __name__ == "__main__":
