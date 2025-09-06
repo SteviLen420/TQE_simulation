@@ -12,8 +12,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import entropy
 
-from config import ACTIVE
-from io_paths import resolve_output_paths, ensure_colab_drive_mounted
+from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 
 
 # ---------------------------
