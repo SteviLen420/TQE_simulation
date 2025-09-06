@@ -5,7 +5,7 @@
 # ===================================================================================
 
 from config import ACTIVE
-from io_paths import resolve_output_paths
+from 03_TQE_EI_UNIVERSE_SIMULATION_imports import PATHS, RUN_DIR, FIG_DIR
 
 import os, json, math, time, pathlib
 import numpy as np
@@ -48,11 +48,10 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
     seed = cfgE.get("seed", None)
 
     # Resolve output directories for this run
-    paths = resolve_output_paths(active)
-    run_dir   = paths["primary_run_dir"]
-    fig_dir   = paths["fig_dir"]
-    mirrors   = paths["mirrors"]
-    run_id    = paths["run_id"]
+    run_dir = RUN_DIR
+    fig_dir = FIG_DIR
+    mirrors = PATHS["mirrors"]
+    run_id  = PATHS["run_id"]
 
     # RNG
     rng = _get_rng(seed)
@@ -134,7 +133,7 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
             "png": png_path,
             "json": json_path,
         },
-        "run": paths,
+        "run": PATHS,
     }
 
 if __name__ == "__main__":
