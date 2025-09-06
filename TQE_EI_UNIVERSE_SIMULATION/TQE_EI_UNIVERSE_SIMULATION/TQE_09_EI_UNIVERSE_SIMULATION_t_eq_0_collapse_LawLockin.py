@@ -13,13 +13,7 @@ import matplotlib.pyplot as plt
 
 # Cached config + resolved paths for the current run (stable run_id)
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
-
-# ---------------------------
-# Utility: RNG
-# ---------------------------
-def _rng(seed: Optional[int]):
-    """Create a reproducible Generator if seed is provided; otherwise fresh entropy."""
-    return np.random.default_rng(int(seed)) if seed is not None else np.random.default_rng()
+from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
 
 # ---------------------------
 # Goldilocks shaping over X
@@ -205,7 +199,9 @@ def run_collapse(
     g_scale = _goldilocks_noise_scale(X, active_cfg)
 
     epochs = int(active_cfg["ENERGY"].get("lockin_epochs", 500))
-    seed   = active_cfg["ENERGY"].get("seed", None)
+    # Get master seed and per-universe seeds from the central seeder
+    seeds_data = load_or_create_run_seeds(active_cfg)
+    universe_seeds = seeds_data["universe_seeds"]
 
     # --- Simulate per-universe ---
     L_last   = np.empty(N, dtype=float)
@@ -220,7 +216,8 @@ def run_collapse(
 
     base_seed = int(seed) if seed is not None else None
     for i in range(N):
-        si = (None if base_seed is None else (base_seed + i * 9973))
+        # Use the unique seed for this specific universe
+        si = int(universe_seeds[i])
         L, rel_d, st, lk = _simulate_law_trajectory(
             float(X[i]), epochs, si, active_cfg, gX=float(g_scale[i])
         )
