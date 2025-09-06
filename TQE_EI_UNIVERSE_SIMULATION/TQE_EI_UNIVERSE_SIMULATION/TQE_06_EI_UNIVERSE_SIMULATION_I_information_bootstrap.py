@@ -54,12 +54,11 @@ def run_information_bootstrap(active=ACTIVE, tag="EIseed"):
     expo   = float(bs_cfg.get("exponent", 1.0))
     seed   = active["ENERGY"].get("seed", None)  # reuse energy seed for coupling if present
 
-    # Resolve outputs
-    paths  = resolve_output_paths(active)
-    run_dir = paths["primary_run_dir"]
-    fig_dir = paths["fig_dir"]
-    mirrors = paths["mirrors"]
-    run_id  = paths["run_id"]
+    # Resolve outputs via cached bootstrap
+    run_dir = RUN_DIR
+    fig_dir = FIG_DIR
+    mirrors = PATHS["mirrors"]
+    run_id  = PATHS["run_id"]
 
     rng = _get_rng(seed)
 
@@ -158,7 +157,7 @@ def run_information_bootstrap(active=ACTIVE, tag="EIseed"):
             "png": png_path,
             "json": json_path,
         },
-        "run": paths,
+        "run": PATHS,
     }
 
 if __name__ == "__main__":
