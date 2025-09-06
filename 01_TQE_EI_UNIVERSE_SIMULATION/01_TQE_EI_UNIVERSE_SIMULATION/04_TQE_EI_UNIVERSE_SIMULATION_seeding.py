@@ -9,7 +9,6 @@ import os, json, pathlib
 import numpy as np
 
 from 03_TQE_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
-from io_paths import resolve_output_paths
 
 SEEDS_JSON_NAME = "seeds_run.json"
 SEEDS_CSV_NAME  = "seeds_universes.csv"
@@ -89,7 +88,7 @@ def load_or_create_run_seeds(active: Dict = ACTIVE) -> Dict:
       }
     """
     paths = resolve_output_paths(active)
-    run_dir = pathlib.Path(paths["primary_run_dir"])
+    run_dir = pathlib.Path(RUN_DIR)   
     n = int(active["ENERGY"]["num_universes"])
 
     # Try to load existing files (so multiple stages share the same seeds)
@@ -110,7 +109,7 @@ def load_or_create_run_seeds(active: Dict = ACTIVE) -> Dict:
         "universe_seeds": uni_seeds,
         "json_path": str(run_dir / SEEDS_JSON_NAME),
         "csv_path":  str(run_dir / SEEDS_CSV_NAME),
-        "paths": paths,
+        "paths": PATHS,
     }
 
 def universe_rng(seed_uint64: int) -> np.random.Generator:
