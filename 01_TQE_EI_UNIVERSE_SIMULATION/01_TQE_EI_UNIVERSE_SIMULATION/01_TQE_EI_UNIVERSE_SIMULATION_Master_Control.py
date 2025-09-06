@@ -323,7 +323,7 @@ MASTER_CTRL = {
 
          # Disable Drive and Cloud for now
         "colab_drive": {
-            "enabled": False,
+            "enabled": True,
             "base_dir": "/content/drive/MyDrive/TQE_(E,I)_UNIVERSE_SIMULATION",
         },
         "cloud": {
