@@ -4,17 +4,11 @@
 # Author: Stefan Len
 # ===================================================================================
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional, List
 import os, json, pathlib
 import numpy as np
 
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
-
-def load_or_create_run_seeds(active: Dict[str, Any] = ACTIVE) -> Dict[str, Any]:
-    pass
-    
-SEEDS_JSON_NAME = "seeds_run.json"
-SEEDS_CSV_NAME  = "seeds_universes.csv"
 
 def _auto_master_seed() -> int:
     """Create an automatic master seed (stable 64-bit int) for this run if none is provided."""
@@ -75,8 +69,9 @@ def _load_seeds_files(run_dir: pathlib.Path) -> Optional[Dict]:
             "csv_path": str(cpath),
         }
         return out
-    except Exception:
-        return None
+    except Exception as e:
+        print(f"[WARN] Error while loading seed files in the '{run_dir}' directory: {e}")
+        return None
 
 def load_or_create_run_seeds(active: Dict = ACTIVE) -> Dict:
     """
