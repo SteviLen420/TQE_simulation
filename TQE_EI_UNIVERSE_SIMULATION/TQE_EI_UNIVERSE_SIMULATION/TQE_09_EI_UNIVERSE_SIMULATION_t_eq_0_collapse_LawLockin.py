@@ -191,9 +191,12 @@ def run_collapse(
             X = np.maximum(1e-9, np.abs(np.random.normal(loc=1.0, scale=0.5, size=len(df))))
         N = len(X)
     else:
-        rng = _rng(active_cfg["ENERGY"].get("seed"))
-        mu, sig = float(active_cfg["ENERGY"]["log_mu"]), float(active_cfg["ENERGY"]["log_sigma"])
-        X = rng.lognormal(mean=mu, sigma=sig, size=N).astype(np.float64)
+        # Generate synthetic X using the master seed for reproducibility
+        seeds_data = load_or_create_run_seeds(active_cfg)
+        master_seed = seeds_data["master_seed"]
+        rng = np.random.default_rng(master_seed)
+        mu, sig = float(active_cfg["ENERGY"]["log_mu"]), float(active_cfg["ENERGY"]["log_sigma"])
+        X = rng.lognormal(mean=mu, sigma=sig, size=N).astype(np.float64)
 
     # Goldilocks noise shaping vector for all universes
     g_scale = _goldilocks_noise_scale(X, active_cfg)
@@ -214,7 +217,6 @@ def run_collapse(
     keep_idx    = np.linspace(0, N - 1, num=min(N, max_for_avg), dtype=int)
     L_stack     = []
 
-    base_seed = int(seed) if seed is not None else None
     for i in range(N):
         # Use the unique seed for this specific universe
         si = int(universe_seeds[i])
