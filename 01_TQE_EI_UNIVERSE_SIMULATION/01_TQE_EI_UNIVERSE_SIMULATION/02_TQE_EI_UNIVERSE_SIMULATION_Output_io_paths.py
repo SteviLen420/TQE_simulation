@@ -131,13 +131,21 @@ def resolve_output_paths(active_cfg: dict) -> Dict[str, str]:
     if outputs["cloud"].get("bucket_url") and not outputs["cloud"].get("enabled"):
         outputs["cloud"]["enabled"] = True
 
-    # Primary base dir by env
-    if env == "colab":
+    # Primary base dir: always honor OUTPUTS.local.base_dir if present
+    local_base_cfg = outputs.get("local", {})
+    local_base = local_base_cfg.get("base_dir")
+
+    if local_base and str(local_base).strip():
+        # e.g. "/content/TQE_Output" in Colab
+        primary_base = local_base
+    elif env == "colab":
+        # fallback to Drive if no local base specified
         primary_base = outputs["colab_drive"]["base_dir"]
     else:
+        # final fallback: OS desktop path + subdir
         primary_base = os.path.join(
             _desktop_dir(active_cfg),
-            outputs["local"].get("desktop_subdir", "TQE_Output")
+            local_base_cfg.get("desktop_subdir", "TQE_Output")
         )
 
     # Create primary run dir and figs subdir
