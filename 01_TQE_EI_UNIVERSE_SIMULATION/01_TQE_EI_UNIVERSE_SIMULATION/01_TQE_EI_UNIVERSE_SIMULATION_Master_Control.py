@@ -277,7 +277,7 @@ MASTER_CTRL = {
     # Environment detection
     # ---------------------------
     "ENV": {
-        "auto_detect": False,
+        "auto_detect": True,
         "force_environment": None,        # "colab" | "cloud" | "desktop"
         "colab_markers": ["COLAB_RELEASE_TAG", "COLAB_BACKEND_VERSION"],
     },
@@ -313,7 +313,7 @@ MASTER_CTRL = {
         
         # Force local save to Colab path
         "local": {
-            "base_dir": "/content/TQE_Output",
+            "base_dir": None,
             "fig_subdir": "figs",
             "allow_exts": [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
             "prefer_desktop": False,
@@ -333,7 +333,7 @@ MASTER_CTRL = {
 
         # Disable mirroring (single target only)
         "mirroring": {
-            "enabled": False,
+            "enabled": True,
             "targets": ["local", "colab_drive"],
         },
 
