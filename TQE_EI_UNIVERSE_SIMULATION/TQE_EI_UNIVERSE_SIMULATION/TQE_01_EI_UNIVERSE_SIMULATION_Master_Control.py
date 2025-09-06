@@ -12,7 +12,7 @@ import os
 # ===================================================================================
 MASTER_CTRL = {
     # ---------------------------
-    # Metadata and run labeling
+    # 1) Metadata and run labeling
     # ---------------------------
     "META": {
         "RUN_ID_PREFIX": "TQE_EI_UNIVERSE_SIMULATION",
@@ -23,7 +23,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Pipeline switches (high-level)
+    # 2) Pipeline switches (high-level)
     # ---------------------------
     "PIPELINE": {
         "use_information": True,          # False => Energy-only baseline
@@ -49,7 +49,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Energy sampling
+    # 3) Energy sampling
     # ---------------------------
     "ENERGY": {
         "distribution": "lognormal",
@@ -70,7 +70,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Information bootstrap (KL + Shannon)
+    # 4) Information bootstrap (KL + Shannon)
     # ---------------------------
     "INFORMATION": {
         "use_kl": True,                   # Enable KL divergence component
@@ -91,7 +91,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Coupling definition: X ≡ f(E,I)
+    # 5) Coupling definition: X ≡ f(E,I)
     # ---------------------------
     "COUPLING_X": {
         "mode": "product",                # "product" | "E_plus_I" | "E_times_I_pow"
@@ -101,7 +101,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Fluctuation (t < 0 dynamics)
+    # 6) Fluctuation (t < 0 dynamics)
     # ---------------------------
     "FLUCTUATION": {
         "steps": 250,
@@ -114,7 +114,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Superposition / quantum stage
+    # 7) Superposition / quantum stage
     # ---------------------------
     "SUPERPOSITION": {
         "enabled": True,
@@ -125,7 +125,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Stability and lock-in thresholds
+    # 8) Stability and lock-in thresholds
     # ---------------------------
     "STABILITY": {
         "rel_eps_stable": 0.010,          # Stability threshold
@@ -140,7 +140,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Goldilocks zone (dynamic stability window)
+    # 9) Goldilocks zone (dynamic stability window)
     # ---------------------------
     "GOLDILOCKS": {
         "mode": "dynamic",                # "heuristic" | "dynamic"
@@ -156,7 +156,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Noise model
+    # 10) Noise model
     # ---------------------------
     "NOISE": {
         "exp_noise_base": 0.12,           # Baseline noise
@@ -169,7 +169,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Expansion dynamics
+    # 11) Expansion dynamics
     # ---------------------------
     "EXPANSION": {
         "growth_base": 1.005,
@@ -177,7 +177,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Monte Carlo run
+    # 12) Monte Carlo run
     # ---------------------------
     "MONTECARLO": {
         "save_csv": True,
@@ -186,7 +186,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Best Universe scoring
+    # 13) Best Universe scoring
     # ---------------------------
     "BEST_UNIVERSE": {
         "top_k_png": 1,                   # Number of top universes to plot
@@ -202,7 +202,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # CMB map generation
+    # 14) CMB map generation
     # ---------------------------
     "CMB_MAP": {
         "resolution_nside": 128,          # HEALPix resolution
@@ -213,7 +213,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Anomaly detection
+    # 15) Anomaly detection
     # ---------------------------
     "ANOMALY": {
         "enabled": True,
@@ -228,7 +228,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Fine-tuning diagnostics
+    # 16) Fine-tuning diagnostics
     # ---------------------------
     "FINETUNE_DIAG": {
         "top_k": 1,
@@ -242,7 +242,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Explainable AI (SHAP / LIME)
+    # 17) Explainable AI (SHAP / LIME)
     # ---------------------------
     "XAI": {
         "run_shap": True,
@@ -274,7 +274,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Environment detection
+    # 18) Environment detection
     # ---------------------------
     "ENV": {
         "auto_detect": True,
@@ -283,7 +283,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Output / IO settings
+    # 19) Output / IO settings
     # ---------------------------
     "OUTPUTS": {
         "save_figs": True,
@@ -346,7 +346,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Debug options
+    # 20) Debug options
     # ---------------------------
     "DEBUG": {
         "assert_non_nan": True,
@@ -354,7 +354,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Reproducibility
+    # 21) Reproducibility
     # ---------------------------
     "REPRO": {
         "use_strict_seed": True,
@@ -369,7 +369,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Runtime
+    # 22) Runtime
     # ---------------------------
     "RUNTIME": {
         "matplotlib_dpi": 180,
@@ -377,7 +377,7 @@ MASTER_CTRL = {
     },
 
     # ---------------------------
-    # Profiles
+    # 23) Profiles
     # ---------------------------
     "PROFILES": {
         "demo": {
@@ -405,7 +405,7 @@ MASTER_CTRL = {
 }
 
 # ===================================================================================
-# Helper: deep-merge dicts
+# 24) Helper: deep-merge dicts
 # ===================================================================================
 def _deep_merge(base, override):
     if not isinstance(override, dict):
@@ -419,7 +419,7 @@ def _deep_merge(base, override):
     return out
 
 # ===================================================================================
-# Profile resolution
+# 25) Profile resolution
 # ===================================================================================
 SELECTED_PROFILE = os.environ.get("TQE_PROFILE", "demo")
 
@@ -449,7 +449,7 @@ except Exception as e:
     print("[WARN] Drive mount skipped:", e)
 
 # ---------------------------------------------------------------------------
-# EXECUTION HARNESS (append this block at the very end of the file)
+# 26) EXECUTION HARNESS (append this block at the very end of the file)
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import importlib, os, json, traceback
@@ -549,13 +549,24 @@ if __name__ == "__main__":
          lambda: {"active": ACTIVE}),
 
         ("run_anomaly_scan",
-         "TQE_15_EI_UNIVERSE_SIMULATION_anomaly_cold_spot",             # first anomaly
+         "TQE_15_EI_UNIVERSE_SIMULATION_anomaly_cold_spot",
          "run_cold_spot_scan",
          lambda: {"active": ACTIVE}),
-        # You can add the other anomalies similarly:
-        # ("run_anomaly_scan", "TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments", "run_low_ell_alignments", lambda: {"active": ACTIVE}),
-        # ("run_anomaly_scan", "TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation", "run_lack_large_angle", lambda: {"active": ACTIVE}),
-        # ("run_anomaly_scan", "TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry", "run_hemi_asymmetry", lambda: {"active": ACTIVE}),
+
+       ("run_anomaly_scan",
+        "TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments",
+        "run_low_ell_alignments",
+        lambda: {"active": ACTIVE}),
+
+       ("run_anomaly_scan",
+        "TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation",
+        "run_lack_large_angle",
+        lambda: {"active": ACTIVE}),
+
+       ("run_anomaly_scan",
+        "TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry",
+        "run_hemi_asymmetry",
+        lambda: {"active": ACTIVE}),
 
         ("run_finetune_diag",
          "TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics",
