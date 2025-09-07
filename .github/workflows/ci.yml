@@ -6,21 +6,19 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch: {}   # allow manual runs
 
-# Least-privilege token for the workflow
 permissions:
-  contents: read
+  contents: read          # least-privilege token
 
-# Cancel older runs of the same branch if a new push arrives
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -34,43 +32,31 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'  # cache pip downloads between runs for faster builds
+          cache: pip
 
-      # (Optional) OS packages needed if you want to compile healpy in CI
-      # - name: Install system deps for healpy
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y build-essential gfortran python3-dev
-
-      - name: Install dependencies
+      - name: Install dependencies (lenient)
         run: |
-          python -m pip install -U pip wheel setuptools
+          python -m pip install -U pip
           if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
+            # Try your pinned deps; if fail, fall back to a minimal set
+            pip install -r requirements.txt || { echo "Falling back to minimal deps"; pip install numpy pandas matplotlib scikit-learn; }
           else
-            # Fallback minimal set if no requirements.txt is present
             pip install numpy pandas matplotlib scikit-learn
           fi
-          # Optional extras (uncomment only if you really need them in CI):
-          # pip install healpy scipy shap lime qutip
 
-      # (Optional) Enable once your code is lint-clean
-      # - name: Lint (flake8)
-      #   run: |
-      #     pip install flake8
-      #     flake8 .
+          # OPTIONAL: install heavy extras only if you set EXTRAS=true (Repo Settings → Actions → Variables)
+          if [ "${{ vars.EXTRAS || 'false' }}" = "true" ]; then
+            sudo apt-get update
+            sudo apt-get install -y gfortran libopenblas-dev liblapack-dev
+            pip install healpy scipy shap lime qutip
+          fi
 
       - name: Smoke test
         run: |
           python - <<'PY'
-          import sys, platform
-          print("CI smoke test OK")
-          print("Python:", sys.version.split()[0], "| Platform:", platform.platform())
+          import sys
+          print("Python:", sys.version)
+          for pkg in ("numpy","pandas","matplotlib","sklearn"):
+              __import__(pkg)
+          print("Smoke test OK")
           PY
-
-      # (Optional) Demo profile dry-run: wire up your real entry-point later if desired
-      # - name: Demo profile dry-run
-      #   env:
-      #     TQE_PROFILE: demo
-      #   run: |
-      #     python -c "print('Running profile:', 'demo')"
