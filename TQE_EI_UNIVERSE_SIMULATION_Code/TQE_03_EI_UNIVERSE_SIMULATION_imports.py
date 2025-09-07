@@ -6,6 +6,25 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script serves as a centralized import and initialization hub for the entire
+# pipeline. Its purpose is to consolidate all external and internal dependencies
+# into a single, consistent module.
+#
+# It handles the import of all necessary libraries, including standard Python
+# packages, numerical (NumPy, Pandas), scientific (SciPy), and visualization
+# (Matplotlib) tools. It also manages optional dependencies for quantum computing
+# (QuTiP) and XAI (scikit-learn, SHAP, LIME) within `try-except` blocks to allow
+# the pipeline to run gracefully even if they are not installed.
+#
+# Critically, upon its first import, this module performs a one-time bootstrap:
+# it resolves the unique output paths for the current run. These paths are then
+# exposed as convenient global constants (`PATHS`, `RUN_DIR`, `FIG_DIR`), ensuring
+# all subsequent scripts have immediate and consistent access to the correct
+# output locations.
+#
+# ===================================================================================
 
 # ---------------------------
 # Standard Python libraries
