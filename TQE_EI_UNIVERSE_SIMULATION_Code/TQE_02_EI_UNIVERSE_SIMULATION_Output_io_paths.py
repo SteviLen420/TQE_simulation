@@ -6,6 +6,24 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This module is the dedicated path management utility for the pipeline. Its sole
+# responsibility is to determine the correct locations for saving all output files,
+# such as data, logs, and figures.
+#
+# It intelligently detects the execution environment (e.g., local Desktop, Google
+# Colab) to select the appropriate base directory. The core function,
+# `resolve_output_paths`, generates a unique, timestamped run identifier (`run_id`)
+# for each execution, which can be tagged with the run profile (e.g., "demo") and
+# model type (E vs. EI) for clear experiment tracking.
+#
+# Based on the environment and run ID, it creates the necessary output directories
+# and returns a dictionary of fully resolved paths. All other pipeline scripts use
+# this module to get a consistent and reliable source for their output locations,
+# abstracting away the complexity of environment-specific path handling.
+#
+# ===================================================================================
 
 from TQE_00_EI_UNIVERSE_SIMULATION_config import ACTIVE
 import os, platform, time, pathlib
