@@ -6,6 +6,27 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script is a scientific analysis module that tests for the "Hemispherical
+# Power Asymmetry" (HPA) anomaly in the simulated CMB maps. This refers to the
+# observation that the variance of temperature fluctuations is unexpectedly
+# different in two opposing hemispheres of the real sky.
+#
+# For each simulated universe, the script splits its CMB map into two
+# hemispheres (e.g., North and South). It then calculates the total statistical
+# power (variance) of the CMB fluctuations independently within each hemisphere.
+# The primary metric is the ratio of these two power values, where a value
+# significantly greater than 1 indicates a strong asymmetry.
+#
+# To determine if an observed asymmetry is statistically significant, the script
+# performs a Monte Carlo null test. It synthesizes a large number of isotropic
+# (non-anomalous) random skies to generate the expected distribution of power
+# ratios. This allows it to assign a p-value to each simulated universe,
+# quantifying the probability of its asymmetry occurring by chance. The analysis
+# is critically dependent on the healpy library.
+#
+# ===================================================================================
 
 from typing import Dict, Optional, List
 import os, json, math, pathlib
