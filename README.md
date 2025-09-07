@@ -1,7 +1,7 @@
 [![CI](https://github.com/SteviLen420/TQE_simulation/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SteviLen420/TQE_simulation/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11-blue)](https://www.python.org/doc/)
 [![CI](https://img.shields.io/github/actions/workflow/status/SteviLen420/TQE_simulation/ci.yml?branch=main)](https://github.com/SteviLen420/TQE_simulation/actions)
-
+[Read the story behind the project →](STORY.md)
 
 #  TQE (E,I) UNIVERSE SIMULATION PIPELINE
 
