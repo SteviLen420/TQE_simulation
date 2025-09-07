@@ -6,6 +6,24 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This module manages the generation and persistence of random number generator (RNG)
+# seeds to ensure the entire simulation is scientifically reproducible.
+#
+# Its core responsibility is to establish a single "master seed" for each pipeline
+# run. From this master seed, it deterministically "spawns" a unique, independent
+# seed for each individual universe being simulated, following modern best practices
+# for parallelizable stochastic simulations using NumPy's `SeedSequence`.
+#
+# The main function, `load_or_create_run_seeds`, implements a load-or-create
+# strategy: it first attempts to load seeds from files if they already exist for
+# the current run. If not found, it generates, saves, and then returns them.
+# This guarantees that all stages of the pipeline use the exact same random seeds
+# for each universe, which is critical for validity. The generated seeds are
+# saved to JSON and CSV files for auditing and future replication.
+#
+# ===================================================================================
 
 from typing import Any, Dict, Optional, List
 import os, json, pathlib
