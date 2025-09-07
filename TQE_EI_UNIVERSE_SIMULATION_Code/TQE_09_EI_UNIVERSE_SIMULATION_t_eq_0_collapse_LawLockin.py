@@ -6,6 +6,27 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script simulates the pivotal t=0 event of the model: the "collapse" of the
+# initial chaotic state and the subsequent "lock-in" of each universe's
+# fundamental physical laws.
+#
+# For each universe, it simulates the evolution of a "law" parameter (L) over
+# time, starting from the coupled Energy-Information state (X). The evolution is
+# modeled as a stochastic process driven by random noise that decays over time,
+# representing a transition from a chaotic to an ordered state. The script
+# monitors this trajectory to determine if and when the law parameter becomes
+# stable and ultimately "locks in" to a constant value.
+#
+# Key physical mechanisms include a "Goldilocks" feature that modulates the
+# initial noise based on the starting X value, creating a selection pressure.
+# Crucially, it uses a unique random seed for each universe's trajectory,
+# ensuring statistical independence and ensemble reproducibility. The script
+# outputs a detailed record, including a .csv file specifying the lock-in time
+# for each universe, diagnostic plots, and a .json summary.
+#
+# ===================================================================================
 
 from typing import Dict, Optional
 import os, json, math, pathlib
