@@ -6,6 +6,27 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script simulates an optional quantum superposition stage (t < 0), providing a
+# physically motivated and sophisticated model for the "Information" (I) component
+# of the simulation. It replaces simpler probabilistic models with ones based on
+# quantum mechanics, optionally using the QuTiP library.
+#
+# For each universe, it constructs a random quantum state (a density matrix ρ) by
+# taking a pure state |ψ⟩ and mixing it with classical noise (depolarization).
+# It then extracts two distinct information metrics from this quantum state:
+# 1.  Shannon-based Information (I_sh): Derived from the state's Von Neumann entropy,
+#     quantifying its degree of quantum mixedness or purity.
+# 2.  KL-based Information (I_kl): Derived from the measurement probabilities
+#     (the diagonal of ρ), quantifying the state's non-uniformity.
+#
+# These components are fused into a single value, I. The script can either
+# generate these I values or take Energy (E) values as input to compute the
+# final coupled variable X = f(E, I). It produces the standard CSV, PNG, and
+# JSON outputs for the stage.
+#
+# ===================================================================================
 
 from typing import Optional, Tuple, Dict, List
 import os, json, math, pathlib
