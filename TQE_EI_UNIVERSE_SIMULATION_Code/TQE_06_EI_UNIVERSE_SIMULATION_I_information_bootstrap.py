@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Stefan Len
+
 # ===================================================================================
 # TQE_06_EI_UNIVERSE_SIMULATION_I_information_bootstrap.py
 # ===================================================================================
