@@ -6,6 +6,26 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script serves as a ranking and selection module designed to identify the
+# "best-performing" universes from the entire simulated population. It synthesizes
+# results from previous stages to score and rank each universe.
+#
+# The core logic calculates a composite "score" for each universe by creating a
+# weighted sum of several key performance metrics. These metrics, defined in the
+# configuration, typically include the final size of the universe (growth), the
+# speed at which its laws stabilized (speed), and whether it achieved stability at
+# all. The script normalizes these metrics to ensure they are combined fairly
+# before ranking the entire population from best to worst.
+#
+# A key feature is its ability to re-simulate and plot the evolutionary
+# trajectories of the top-K ranked universes. This provides a visual narrative of
+# how the most successful universes evolved, offering more insight than a simple
+# table of results. The outputs include a ranked .csv file, a .json summary of
+# the winner, and detailed plots for the top performers.
+#
+# ===================================================================================
 
 from typing import Dict, Optional
 import os, json, math, pathlib
