@@ -41,9 +41,9 @@ and a final manifest-generation stage that consolidates all parameters, data,
 and metadata into a navigable, publication-ready dataset.
 
 
-===================================================================================
+-----------------------------------------------------------------------------------
 1. COMPUTATIONAL FRAMEWORK AND METHODOLOGY
-===================================================================================
+
 
 The TQE pipeline is a sequence of 20 interoperable Python modules designed to
 simulate and analyze an ensemble of universes. The architecture can be logically
