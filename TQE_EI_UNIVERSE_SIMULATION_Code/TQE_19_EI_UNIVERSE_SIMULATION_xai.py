@@ -6,6 +6,29 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script is an Explainable AI (XAI) analysis module designed to provide a
+# deep understanding of the simulation's internal dynamics. It uses machine
+# learning to determine which input parameters are the most influential
+# drivers of the simulation's outcomes.
+#
+# The methodology involves several steps:
+# 1. It ingests and merges all data from the preceding simulation stages into
+#    a single master dataset.
+# 2. It iteratively trains a machine learning model (a Random Forest) to
+#    predict each key outcome variable (e.g., final size, lock-in time,
+#    anomaly flags) based on the initial simulation parameters (features).
+# 3. Critically, it employs state-of-the-art XAI frameworks, SHAP and LIME,
+#    to analyze these trained models. This reveals the importance of each
+#    feature for each outcome, effectively performing a global sensitivity
+#    analysis.
+#
+# This XAI stage moves beyond just observing the simulation's results to
+# explaining *why* those results occurred, providing key scientific insights
+# into the simulated physics.
+#
+# ===================================================================================
 
 from typing import Dict, List, Optional, Tuple
 import os, json, pathlib, warnings
