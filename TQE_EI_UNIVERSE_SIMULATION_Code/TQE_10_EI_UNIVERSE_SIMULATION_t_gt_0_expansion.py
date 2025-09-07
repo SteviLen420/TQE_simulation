@@ -6,6 +6,26 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script simulates the t > 0 expansion phase, modeling the evolution of each
+# universe *after* its fundamental laws have locked in during the collapse stage.
+#
+# It models the expansion of a "size" parameter (S) over time as a multiplicative
+# stochastic process. The growth at each time step is determined by two factors:
+# 1.  A deterministic growth rate that is unique to each universe and is a
+#     function of its initial coupled Energy-Information state (X). This
+#     directly links the conditions at t=0 to the universe's subsequent fate.
+# 2.  A stochastic noise term that decays over time, making the expansion
+#     progressively smoother and more predictable.
+#
+# The script takes the final state from the collapse stage as its initial
+# condition (S0). It then simulates the expansion trajectory for each universe
+# independently, using a unique random seed to ensure statistical validity.
+# The outputs include a .csv file with the final size of each universe, plots of
+# the expansion dynamics, and a .json summary.
+#
+# ===================================================================================
 
 from typing import Dict, Optional
 import os, json, math, pathlib
