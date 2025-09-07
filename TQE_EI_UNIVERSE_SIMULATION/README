@@ -382,9 +382,111 @@ Typical artifacts:
   - EI__xai_dataset.csv, EI__xai_global_feature_ranking.csv, EI__xai_summary.json,
     SHAP/LIME figures (module 19)
 
+-----------------------------------------------------------------------------------
+6) Profiles — Available Runtime Profiles
+-----------------------------------------------------------------------------------
+
+What is a profile?
+A “profile” bundles runtime settings for the pipeline (e.g., number of universes,
+anomaly scan parameters, output mirrors). You select a profile with the TQE_PROFILE
+environment variable. If none is set, the configuration’s DEFAULT_PROFILE is used.
+
+Where are profiles defined?
+Profiles live in the configuration module (e.g., TQE_00_EI_UNIVERSE_SIMULATION_config.py)
+inside a PROFILES dictionary. The Master Controller reads this and constructs the
+ACTIVE configuration that all modules import via
+TQE_03_EI_UNIVERSE_SIMULATION_imports.
+
+Typical profiles (examples):
+- demo  — small num_universes, fast test, lower n_mc
+- paper — large sample sizes, full MC/diagnostics, publication runs
+- colab — Google Colab–friendly settings (Drive mirror, modest resources)
+
+Select a profile at runtime
+
+Linux/macOS (bash/zsh):
+    export TQE_PROFILE=demo
+    python TQE_01_EI_UNIVERSE_SIMULATION_Master_Control.py
+
+Windows (PowerShell):
+    $Env:TQE_PROFILE = 'demo'
+    python TQE_01_EI_UNIVERSE_SIMULATION_Master_Control.py
+
+
+Where & how to add/modify profiles
+Open the config file (e.g., TQE_00_EI_UNIVERSE_SIMULATION_config.py) and edit the
+PROFILES dictionary. The following schema is a guide (adjust to your repo):
+
+    # TQE_00_EI_UNIVERSE_SIMULATION_config.py — example schema
+    DEFAULT_PROFILE = "demo"
+
+    PROFILES = {
+        "demo": {
+            "PIPELINE": {"use_information": True, "run_anomaly_scan": True},
+            "ENERGY":   {"num_universes": 200, "seed": None},
+            "ANOMALY": {
+                "map": {"resolution_nside": 128, "seed_per_map": True},
+                "targets": [
+                    {"name": "cold_spot", "enabled": True, "patch_deg": 10.0, "zscore_thresh": 3.0},
+                    {"name": "quad_oct_align", "enabled": True, "l2l3_align_deg": 20.0},
+                    {"name": "lack_large_angle", "enabled": True, "theta_min_deg": 60.0,
+                     "lmax": 64, "n_mc": 100, "p_percentile": 0.05},
+                ],
+                "save_cutouts": True,
+                "save_metrics_csv": True,
+            },
+            "OUTPUTS": {"local": {"fig_subdir": "figs"}, "mirrors": []},
+            "RUNTIME": {"matplotlib_dpi": 180},
+            "XAI": {"test_size": 0.25, "rf_n_estimators": 300, "sklearn_n_jobs": -1, "run_lime": True},
+        },
+
+        "paper": {
+            # Example: larger N / deeper MC
+            # "ENERGY": {"num_universes": 5000},
+            # "ANOMALY": {"targets": [...], "map": {"resolution_nside": 256}, ...},
+            # "XAI": {"rf_n_estimators": 800, ...},
+        },
+
+        "colab": {
+            # Colab-friendly: smaller N, Google Drive mirror, etc.
+            # "OUTPUTS": {"local": {"fig_subdir": "figs"}, "mirrors": ["/content/drive/MyDrive/tqe_runs"]},
+        },
+    }
+
+Quickly add a new profile (copy from demo):
+
+    PROFILES["my_profile"] = {
+        **PROFILES["demo"],
+        "ENERGY": {**PROFILES["demo"]["ENERGY"], "num_universes": 1500},
+        "ANOMALY": {
+            **PROFILES["demo"]["ANOMALY"],
+            "targets": [
+                *PROFILES["demo"]["ANOMALY"]["targets"],
+                {"name": "hemispheric_asymmetry", "enabled": True, "l_max": 40, "n_mc": 200, "pval_thresh": 0.05},
+            ],
+        },
+    }
+
+Run with the new profile
+
+Linux/macOS:
+    export TQE_PROFILE=my_profile
+    python TQE_01_EI_UNIVERSE_SIMULATION_Master_Control.py
+
+Windows (PowerShell):
+    $Env:TQE_PROFILE = 'my_profile'
+    python TQE_01_EI_UNIVERSE_SIMULATION_Master_Control.py
+
+List available profiles
+
+Linux/macOS:
+    python -c "from TQE_00_EI_UNIVERSE_SIMULATION_config import PROFILES; print(', '.join(PROFILES.keys()))"
+
+Windows (PowerShell):
+    python -c "from TQE_00_EI_UNIVERSE_SIMULATION_config import PROFILES; print(', '.join(PROFILES.keys()))"
 
 -----------------------------------------------------------------------------------
-6) REPRODUCIBILITY (SEEDING)
+7) REPRODUCIBILITY (SEEDING)
 -----------------------------------------------------------------------------------
 
 • A master 64-bit seed and per-universe seeds are generated and stored by module 04.
@@ -394,7 +496,7 @@ Typical artifacts:
 
 
 -----------------------------------------------------------------------------------
-7) RECOMMENDED END-TO-END ORDER
+8) RECOMMENDED END-TO-END ORDER
 -----------------------------------------------------------------------------------
 
 (00–04) Setup: config, paths, imports, seeding
@@ -410,7 +512,7 @@ Note: Modules 13–19 are individually runnable, provided their expected inputs 
 
 
 -----------------------------------------------------------------------------------
-8) PERFORMANCE TIPS
+9) PERFORMANCE TIPS
 -----------------------------------------------------------------------------------
 
 • Set ACTIVE['XAI']['sklearn_n_jobs'] = -1 to use all cores for RandomForest.
@@ -421,7 +523,7 @@ Note: Modules 13–19 are individually runnable, provided their expected inputs 
 
 
 -----------------------------------------------------------------------------------
-9) TROUBLESHOOTING
+10) TROUBLESHOOTING
 -----------------------------------------------------------------------------------
 
 • ImportError for shared modules:
@@ -437,7 +539,7 @@ Note: Modules 13–19 are individually runnable, provided their expected inputs 
 
 
 -----------------------------------------------------------------------------------
-10) MINIMAL END-TO-END SNIPPET
+11) MINIMAL END-TO-END SNIPPET
 -----------------------------------------------------------------------------------
 
 from TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation import run_cmb_map_generation
