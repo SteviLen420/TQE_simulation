@@ -2,15 +2,16 @@
 [![Python](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11-blue)](https://www.python.org/doc/)
 [![CI](https://img.shields.io/github/actions/workflow/status/SteviLen420/TQE_simulation/ci.yml?branch=main)](https://github.com/SteviLen420/TQE_simulation/actions)
 
+-----------------------------------------------------------------------------------
 #  TQE (E,I) UNIVERSE SIMULATION PIPELINE
-
+-----------------------------------------------------------------------------------
 # Author: Stefan Len
-
+-----------------------------------------------------------------------------------
 
 Title: The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo
 Simulation of Universe Evolution from Energy-Information Principles
 
-
+-----------------------------------------------------------------------------------
 ABSTRACT
 -----------------------------------------------------------------------------------
 In this work, I present a comprehensive computational framework, TQE, 
@@ -40,16 +41,14 @@ architected for robustness, featuring configuration-driven execution via profile
 and a final manifest-generation stage that consolidates all parameters, data,
 and metadata into a navigable, publication-ready dataset.
 
-
+-----------------------------------------------------------------------------------
 1. COMPUTATIONAL FRAMEWORK AND METHODOLOGY
 -----------------------------------------------------------------------------------
-
-
 The TQE pipeline is a sequence of 20 interoperable Python modules designed to
 simulate and analyze an ensemble of universes. The architecture can be logically
 divided into four main components.
 
-
+-----------------------------------------------------------------------------------
 1.1. Framework Architecture and Reproducibility (Modules 00-04)
 -----------------------------------------------------------------------------------
 The foundation of the pipeline ensures consistency, configurability, and
@@ -77,7 +76,7 @@ reproducibility.
   seeded from either the master seed or the specific per-universe seed,
   guaranteeing bit-for-bit reproducibility of any given run.
 
-
+-----------------------------------------------------------------------------------
 1.2. Simulation Core: Universe Generation and Evolution (Modules 05-10)
 -----------------------------------------------------------------------------------
 This component simulates the life cycle of each universe.
@@ -102,7 +101,7 @@ This component simulates the life cycle of each universe.
   multiplicative growth process, where the growth rate is modulated by the
   universe's `X` value and subject to decaying noise.
 
-
+-----------------------------------------------------------------------------------
 1.3. Analysis Suite: Diagnostics and Anomaly Detection (Modules 11-18)
 -----------------------------------------------------------------------------------
 This component analyzes the properties of the simulated population of universes.
