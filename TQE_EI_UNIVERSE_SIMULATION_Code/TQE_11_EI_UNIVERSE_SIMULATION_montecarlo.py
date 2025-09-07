@@ -6,6 +6,26 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script functions as the primary analysis and aggregation stage for the
+# entire Monte Carlo simulation. It does not perform new simulations but instead
+# synthesizes and summarizes the results from the preceding `collapse` and
+# `expansion` stages.
+#
+# Its core operation is to take the output DataFrames from the previous two stages
+# and merge them into a single, comprehensive master table that describes the
+# full lifecycle of every simulated universe.
+#
+# The script then calculates aggregate summary statistics (e.g., mean, median,
+# quartiles) for key outcome variables across the entire population, such as
+# lock-in time and final universe size. It generates high-level visualizations,
+# including histograms and scatter plots, to reveal the overall behavior of the
+# model and explore correlations between different phases of evolution. The final
+# outputs (a master .csv, a summary .json, and plots) represent a consolidated
+# overview of the entire simulation run.
+#
+# ===================================================================================
 
 from typing import Dict, Optional
 import os, json, pathlib
