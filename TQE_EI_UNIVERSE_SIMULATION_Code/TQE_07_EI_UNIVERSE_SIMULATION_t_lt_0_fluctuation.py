@@ -6,6 +6,25 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script simulates the initial "fluctuation" stage (t < 0) of the universes'
+# evolution. It establishes the foundational state by generating the initial Energy (E)
+# and Information (I) values and, critically, modeling their first interaction.
+#
+# The process involves several steps:
+# 1.  It samples the initial energy (E0) for each universe from a log-normal distribution.
+# 2.  If the Energy-Information model is active, it computes a sophisticated Information
+#     value (I_fused) derived from both KL-divergence and Shannon entropy components.
+# 3.  The central computation is the **coupling** of these two quantities into a new
+#     composite variable, X = f(E, I), representing the combined state.
+#
+# This stage produces a complete snapshot of this pre-t=0 state, including a
+# comprehensive .csv file with all variables (E0, I components, X), diagnostic
+# plots (.png) of their distributions and relationships, and a .json summary file
+# for a complete audit trail.
+#
+# ===================================================================================
 
 from typing import Dict, Tuple, Optional
 import os, json, shutil
