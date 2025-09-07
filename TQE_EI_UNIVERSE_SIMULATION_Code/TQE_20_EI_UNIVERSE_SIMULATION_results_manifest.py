@@ -6,6 +6,26 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script serves as the final archiving and summarization module for the
+# entire simulation pipeline. Its purpose is to consolidate all key results
+# from the preceding stages into a comprehensive and easily accessible format.
+#
+# The script scans the run output directory to discover all the summary JSON and
+# per-universe CSV files. It then performs two main aggregation tasks:
+# 1. It embeds all stage-level JSON summaries into a single, master
+#    `run_manifest.json` file, which acts as a structured table of contents
+#    for the run's high-level results.
+# 2. It merges all per-universe CSV files into a single, master
+#    `per_universe_summary.csv` table, providing a complete lifecycle record
+#    for each universe in one place.
+#
+# This final step is crucial for good data management, ensuring that the complex
+# output of the multi-stage pipeline is neatly organized, archived, and easy
+# to analyze programmatically.
+#
+# ===================================================================================
 
 from typing import Dict, List, Optional, Tuple
 import os, json, glob, pathlib, time
