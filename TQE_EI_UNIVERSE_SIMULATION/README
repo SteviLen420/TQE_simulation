@@ -223,8 +223,8 @@ Run your scripts from the project root so these modules resolve on PYTHONPATH.
 ### Quick start — Linux/macOS
 
 # 1) Clone the repository
-git clone https://github.com/<your-username>/<your-project>.git
-cd <your-project>
+git clone https://github.com/SteviLen420/TQE_simulation.git
+cd TQE_simulation
 
 # 2) Create & activate a virtual environment
 python -m venv .venv
@@ -245,8 +245,8 @@ pip install -r requirements.txt
 pip install healpy scipy shap lime qutip
 
 # 1) Clone the repository
-git clone https://github.com/<your-username>/<your-project>.git
-cd <your-project>
+git clone https://github.com/SteviLen420/TQE_simulation.git
+cd TQE_simulation
 
 # 2) Create & activate a virtual environment
 py -3 -m venv .venv
