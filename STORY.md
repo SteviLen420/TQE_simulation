@@ -134,14 +134,20 @@ to succeed.
 I tried to leverage everything the world wide web made available to me to
 get the most accurate and error-free results possible. Thus, I created a
 virtual laboratory where I used several AIs as research colleagues—primarily
-to minimize error. I used Gemini 2.5 Pro, GPT-5, and an offline DeepSeek.
-They helped me process publications, write code, and develop the theory. The
-mathematical calculations were validated by Wolfram.
+to minimize error. I used Gemini 2.5 Pro, GPT-5, and an offline DeepSeek
+to help process publications, write code, and develop the theory. The
+mathematical calculations were validated by Wolfram. As a final step of 
+validation, knowledge discovery tools like IBM Watson were used to perform 
+a deep semantic analysis against the existing scientific literature. 
+This ensured the work was properly contextualized and compared to prior art.
 
-Yet, despite all this, doubts remained in me. I strove to do the work as
-professionally as possible so that it would stand its ground in the world
-of science. But I know that real scientists are also needed—those who,
-with their professional experience and knowledge, can add real assertions
-to this research. My journey has led me to this point; from here on,
-collaborative work is needed for this thought to truly become a part of
-science.
+Yet, despite this extensive process of creation and validation, the
+fundamental doubt remains—as it should in any true scientific endeavor.
+In reality, I do not know if this model is "right." I only know that it is a
+logically consistent exploration born from first principles. I strove to do
+the work as professionally as possible so that it would stand its ground
+in the world of science. But I know that real scientists are also
+needed—those who, with their professional experience and knowledge, can add
+real assertions to this research. My journey has led me to this point; from
+here on, collaborative work is needed for this thought to truly become a
+part of science.
