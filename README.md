@@ -41,15 +41,15 @@ and a final manifest-generation stage that consolidates all parameters, data,
 and metadata into a navigable, publication-ready dataset.
 
 
------------------------------------------------------------------------------------
 1. COMPUTATIONAL FRAMEWORK AND METHODOLOGY
+-----------------------------------------------------------------------------------
 
 
 The TQE pipeline is a sequence of 20 interoperable Python modules designed to
 simulate and analyze an ensemble of universes. The architecture can be logically
 divided into four main components.
 
------------------------------------------------------------------------------------
+
 1.1. Framework Architecture and Reproducibility (Modules 00-04)
 -----------------------------------------------------------------------------------
 The foundation of the pipeline ensures consistency, configurability, and
@@ -77,7 +77,7 @@ reproducibility.
   seeded from either the master seed or the specific per-universe seed,
   guaranteeing bit-for-bit reproducibility of any given run.
 
------------------------------------------------------------------------------------
+
 1.2. Simulation Core: Universe Generation and Evolution (Modules 05-10)
 -----------------------------------------------------------------------------------
 This component simulates the life cycle of each universe.
@@ -102,7 +102,7 @@ This component simulates the life cycle of each universe.
   multiplicative growth process, where the growth rate is modulated by the
   universe's `X` value and subject to decaying noise.
 
------------------------------------------------------------------------------------
+
 1.3. Analysis Suite: Diagnostics and Anomaly Detection (Modules 11-18)
 -----------------------------------------------------------------------------------
 This component analyzes the properties of the simulated population of universes.
@@ -122,7 +122,7 @@ This component analyzes the properties of the simulated population of universes.
   (Quadrupole-Octopole) Alignments, Lack of Large-Angle Correlation, and
   Hemispherical Power Asymmetry.
 
------------------------------------------------------------------------------------
+
 1.4. Meta-Analysis and Finalization (Modules 19-20)
 -----------------------------------------------------------------------------------
 The final component provides a high-level interpretation and summary of the
@@ -144,14 +144,14 @@ entire run.
 
 
 
-===================================================================================
+
 TQE (E,I) UNIVERSE SIMULATION — PRACTICAL USAGE GUIDE 
-===================================================================================
+-----------------------------------------------------------------------------------
 
 This guide describes how to install, configure, run, and interpret the outputs 
 of the TQE pipeline.
 
------------------------------------------------------------------------------------
+
 1) ENVIRONMENT & DEPENDENCIES
 -----------------------------------------------------------------------------------
 
@@ -188,7 +188,7 @@ Notes on healpy:
   • If you hit build issues, try installing 'astropy' first, then 'healpy'.
 
 
------------------------------------------------------------------------------------
+
 2) PROJECT FILES & SHARED IMPORTS
 -----------------------------------------------------------------------------------
 
@@ -204,7 +204,7 @@ Many modules share the same configuration and run paths through:
 
 Run your scripts from the project root so these modules resolve on PYTHONPATH.
 
------------------------------------------------------------------------------------
+
 3a) Installation / Requirements 
 -----------------------------------------------------------------------------------
 
@@ -260,7 +260,7 @@ pip install -r requirements.txt
 # 5) (Optional) Extras used by certain modules
 pip install healpy scipy shap lime qutip
 
------------------------------------------------------------------------------------
+
 3b) CONFIGURATION (ACTIVE) — MINIMAL WORKING EXAMPLE
 -----------------------------------------------------------------------------------
 
@@ -307,7 +307,7 @@ ACTIVE = {
   "RUNTIME": { "matplotlib_dpi": 180 }
 }
 
------------------------------------------------------------------------------------
+
 4) RUNNING THE MODULES
 -----------------------------------------------------------------------------------
 
@@ -364,7 +364,7 @@ run_llac(ACTIVE)  # needs healpy
 run_hpa(ACTIVE)   # needs healpy
 run_xai_stage(ACTIVE, paths=PATHS)
 
------------------------------------------------------------------------------------
+
 5) OUTPUTS & FILENAMING
 -----------------------------------------------------------------------------------
 
@@ -384,7 +384,7 @@ Typical artifacts:
   - EI__xai_dataset.csv, EI__xai_global_feature_ranking.csv, EI__xai_summary.json,
     SHAP/LIME figures (module 19)
 
------------------------------------------------------------------------------------
+
 6) Profiles — Available Runtime Profiles
 -----------------------------------------------------------------------------------
 
@@ -487,7 +487,7 @@ Linux/macOS:
 Windows (PowerShell):
     python -c "from TQE_00_EI_UNIVERSE_SIMULATION_config import PROFILES; print(', '.join(PROFILES.keys()))"
 
------------------------------------------------------------------------------------
+
 7) REPRODUCIBILITY (SEEDING)
 -----------------------------------------------------------------------------------
 
@@ -497,7 +497,7 @@ Windows (PowerShell):
 • Using the same ACTIVE and RUN_DIR yields bit-for-bit identical results.
 
 
------------------------------------------------------------------------------------
+
 8) RECOMMENDED END-TO-END ORDER
 -----------------------------------------------------------------------------------
 
@@ -513,7 +513,7 @@ Note: Modules 13–19 are individually runnable, provided their expected inputs 
 (e.g., module 15 automatically picks up the map manifest from module 13).
 
 
------------------------------------------------------------------------------------
+
 9) PERFORMANCE TIPS
 -----------------------------------------------------------------------------------
 
@@ -524,7 +524,7 @@ Note: Modules 13–19 are individually runnable, provided their expected inputs 
 • Control figure resolution with ACTIVE['RUNTIME']['matplotlib_dpi'].
 
 
------------------------------------------------------------------------------------
+
 10) TROUBLESHOOTING
 -----------------------------------------------------------------------------------
 
@@ -540,7 +540,7 @@ Note: Modules 13–19 are individually runnable, provided their expected inputs 
     - Check write permissions and existence of mirror paths.
 
 
------------------------------------------------------------------------------------
+
 11) MINIMAL END-TO-END SNIPPET
 -----------------------------------------------------------------------------------
 
@@ -564,6 +564,6 @@ run_xai_stage(ACTIVE, paths=PATHS)
 
 print("Done. See RUN_DIR/FIG_DIR for outputs, mirrored to configured 'mirrors' (if any).")
 
-===================================================================================
+
 END OF DROP-IN CELL
-===================================================================================
+
