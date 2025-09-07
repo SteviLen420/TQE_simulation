@@ -6,6 +6,24 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script executes the second data-generating stage of the pipeline, tasked with
+# bootstrapping the initial "information" value (I_seed) for each universe. This
+# value complements the initial energy (E0) generated in the preceding stage.
+#
+# The methodology models the initial information content as the normalized Shannon
+# entropy of an underlying, unobserved state. For each universe, the script first
+# generates a random probability vector of a specified dimension (`hilbert_dim`),
+# typically using a Dirichlet distribution. It then calculates the entropy of this
+# vector to yield a single scalar value for I_seed, normalized to the range [0, 1].
+#
+# Following the pipeline's standard for auditability, it produces three outputs:
+# 1. A .csv file containing the generated I_seed value for each universe.
+# 2. A .png histogram visualizing the distribution of these initial information values.
+# 3. A .json summary file detailing the run parameters, statistics, and file paths.
+#
+# ===================================================================================
 
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
