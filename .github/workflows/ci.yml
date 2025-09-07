@@ -62,3 +62,21 @@ jobs:
           print("Repo checkout OK.")
           print("CI smoke test OK ✅")
           PY
+
+          # File: .github/workflows/selftest.yml
+name: Selftest
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show Python
+        run: |
+          which python3 || true
+          python3 --version || true
+          echo "Runner OK ✅"
