@@ -4,7 +4,6 @@
 # Author: Stefan Len
 # ===================================================================================
 
-"""
 ===================================================================================
 Title: The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo
 Simulation of Universe Evolution from Energy-Information Principles
@@ -141,10 +140,8 @@ entire run.
   `per_universe_summary.csv` that consolidates the most critical metrics for each
   universe, ready for final statistical analysis.
 
-"""
 
 
-"""
 ===================================================================================
 TQE (E,I) UNIVERSE SIMULATION — PRACTICAL USAGE GUIDE 
 ===================================================================================
@@ -205,9 +202,64 @@ Many modules share the same configuration and run paths through:
 
 Run your scripts from the project root so these modules resolve on PYTHONPATH.
 
+-----------------------------------------------------------------------------------
+3a) Installation / Requirements 
+-----------------------------------------------------------------------------------
+
+**Prerequisites**
+- Python 3.9–3.11
+- Git
+- (Optional / Opcionális) Build tools for some extras:
+  - **Linux**: `build-essential`, `python3-dev`, `gfortran` (for healpy)
+  - **macOS**: Xcode Command Line Tools (`xcode-select --install`), optionally Homebrew `gcc`
+  - **Windows**: Recent Python from python.org; if venv activation is blocked:  
+    `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+
+> If `healpy` build fails, try installing `astropy` first, then `healpy`.
+
+### Quick start — Linux/macOS
+
+# 1) Clone the repository
+git clone https://github.com/<your-username>/<your-project>.git
+cd <your-project>
+
+# 2) Create & activate a virtual environment
+python -m venv .venv
+source .venv/bin/activate
+
+# 3) Upgrade pip tooling
+pip install -U pip wheel setuptools
+
+# 4) Install core dependencies
+pip install -r requirements.txt
+
+# 5) (Optional) Extras used by certain modules
+#    healpy   → spherical maps / LLAC & HPA modules
+#    scipy    → low-ℓ alignment fallback (sph_harm)
+#    shap     → SHAP explanations in XAI
+#    lime     → LIME explanations in XAI
+#    qutip    → quantum/superposition stages
+pip install healpy scipy shap lime qutip
+
+# 1) Clone the repository
+git clone https://github.com/<your-username>/<your-project>.git
+cd <your-project>
+
+# 2) Create & activate a virtual environment
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# 3) Upgrade pip tooling
+python -m pip install -U pip wheel setuptools
+
+# 4) Install core dependencies
+pip install -r requirements.txt
+
+# 5) (Optional) Extras used by certain modules
+pip install healpy scipy shap lime qutip
 
 -----------------------------------------------------------------------------------
-3) CONFIGURATION (ACTIVE) — MINIMAL WORKING EXAMPLE
+3b) CONFIGURATION (ACTIVE) — MINIMAL WORKING EXAMPLE
 -----------------------------------------------------------------------------------
 
 ACTIVE = {
@@ -235,9 +287,7 @@ ACTIVE = {
     "save_cutouts": True,
     "save_metrics_csv": True
   },
-  "FINETUNE_DIAG": {
-    "top_k": 5
-  },
+  "FINETUNE_DIAG": { "top_k": 5 },
   "XAI": {
     "test_size": 0.25,
     "test_random_state": 42,
@@ -250,14 +300,10 @@ ACTIVE = {
   },
   "OUTPUTS": {
     "local": { "fig_subdir": "figs" },
-    # Optional:
-    # "mirrors": ["/mnt/drive/tqe_mirror", "D:/results_mirror"]
+    # "mirrors": ["/mnt/drive/tqe_mirror", "D:/results_mirror"]  # optional
   },
-  "RUNTIME": {
-    "matplotlib_dpi": 180
-  }
+  "RUNTIME": { "matplotlib_dpi": 180 }
 }
-
 
 -----------------------------------------------------------------------------------
 4) RUNNING THE MODULES
@@ -266,59 +312,55 @@ ACTIVE = {
 ### Recommended Method: Using the Master Controller
 
 The primary way to run the entire end-to-end pipeline is by executing 
-the `TQE_01_Master_Control.py` script. The behavior of the run is controlled 
-by the `TQE_PROFILE` environment variable.
+the `TQE_01_EI_UNIVERSE_SIMULATION_Master_Control.py` script. The behavior 
+of the run is controlled by the `TQE_PROFILE` environment variable.
 
 **Example (Linux/macOS):**
-*To run a quick test using the 'demo' profile:*
-```sh
 export TQE_PROFILE=demo
 python TQE_01_EI_UNIVERSE_SIMULATION_Master_Control.py
 
-Each stage is both script-runnable (__main__) and callable from Python.
+Example (Windows PowerShell):
+$Env:TQE_PROFILE = 'demo'
+python TQE_01_EI_UNIVERSE_SIMULATION_Master_Control.py
 
-From the command line:
-    # 13 — CMB-like map generation
-    python TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation.py
+# 13 — CMB-like map generation
+python TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation.py
 
-    # 14 — Fine-tuning diagnostics on maps
-    python TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics.py
+# 14 — Fine-tuning diagnostics on maps
+python TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics.py
 
-    # 15 — Cold Spot anomaly
-    python TQE_15_EI_UNIVERSE_SIMULATION_anomaly_cold_spot.py
+# 15 — Cold Spot anomaly
+python TQE_15_EI_UNIVERSE_SIMULATION_anomaly_cold_spot.py
 
-    # 16 — Low-ℓ (l=2,3) alignment
-    python TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments.py
+# 16 — Low-ℓ (l=2,3) alignment
+python TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments.py
 
-    # 17 — Lack of Large-Angle Correlation (needs healpy)
-    python TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation.py
+# 17 — Lack of Large-Angle Correlation (needs healpy)
+python TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation.py
 
-    # 18 — Hemispherical Power Asymmetry (needs healpy)
-    python TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry.py
+# 18 — Hemispherical Power Asymmetry (needs healpy)
+python TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry.py
 
-    # 19 — XAI (RandomForest + SHAP/LIME if installed)
-    python TQE_19_EI_UNIVERSE_SIMULATION_xai.py
+# 19 — XAI (RandomForest + SHAP/LIME if installed)
+python TQE_19_EI_UNIVERSE_SIMULATION_xai.py
 
-From Python:
-    from TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation import run_cmb_map_generation
-    from TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics import run_finetune_stage
-    from TQE_15_EI_UNIVERSE_SIMULATION_anomaly_cold_spot import run_anomaly_cold_spot
-    from TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments import (
-        run_anomaly_low_multipole_alignments_stage
-    )
-    from TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation import run_llac
-    from TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry import run_hpa
-    from TQE_19_EI_UNIVERSE_SIMULATION_xai import run_xai_stage
-    from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS
+from TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation import run_cmb_map_generation
+from TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics import run_finetune_stage
+from TQE_15_EI_UNIVERSE_SIMULATION_anomaly_cold_spot import run_anomaly_cold_spot
+from TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments import \
+    run_anomaly_low_multipole_alignments_stage
+from TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation import run_llac
+from TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry import run_hpa
+from TQE_19_EI_UNIVERSE_SIMULATION_xai import run_xai_stage
+from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS
 
-    run_cmb_map_generation(ACTIVE)
-    run_finetune_stage(ACTIVE)
-    run_anomaly_cold_spot(ACTIVE)
-    run_anomaly_low_multipole_alignments_stage(ACTIVE)
-    run_llac(ACTIVE)  # needs healpy
-    run_hpa(ACTIVE)   # needs healpy
-    run_xai_stage(ACTIVE, paths=PATHS)
-
+run_cmb_map_generation(ACTIVE)
+run_finetune_stage(ACTIVE)
+run_anomaly_cold_spot(ACTIVE)
+run_anomaly_low_multipole_alignments_stage(ACTIVE)
+run_llac(ACTIVE)  # needs healpy
+run_hpa(ACTIVE)   # needs healpy
+run_xai_stage(ACTIVE, paths=PATHS)
 
 -----------------------------------------------------------------------------------
 5) OUTPUTS & FILENAMING
@@ -421,4 +463,3 @@ print("Done. See RUN_DIR/FIG_DIR for outputs, mirrored to configured 'mirrors' (
 ===================================================================================
 END OF DROP-IN CELL
 ===================================================================================
-"""
