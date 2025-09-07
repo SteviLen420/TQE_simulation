@@ -3,14 +3,13 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/SteviLen420/TQE_simulation/ci.yml?branch=main)](https://github.com/SteviLen420/TQE_simulation/actions)
 
 #  TQE (E,I) UNIVERSE SIMULATION PIPELINE
-# ===================================================================================
-# Author: Stefan Len
-# ===================================================================================
 
-===================================================================================
+# Author: Stefan Len
+
+
 Title: The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo
 Simulation of Universe Evolution from Energy-Information Principles
-===================================================================================
+
 
 ABSTRACT
 -----------------------------------------------------------------------------------
