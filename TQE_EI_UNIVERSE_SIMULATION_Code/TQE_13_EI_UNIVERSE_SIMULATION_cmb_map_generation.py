@@ -6,6 +6,27 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script functions as an observational data synthesizer. Its primary purpose is
+# to generate a synthetic, physically-motivated Cosmic Microwave Background (CMB)
+# map for each universe produced by the simulation. This stage is crucial for
+# bridging the gap between the theoretical model and real-world astronomical
+# observations.
+#
+# The synthesis follows a standard procedure for creating mock cosmological maps:
+# 1. It begins with a field of Gaussian white noise, unique to each universe via
+#    its dedicated random seed.
+# 2. It applies a spectral shaping filter in Fourier space to imbue the map
+#    with realistic large-scale correlations (a 1/k^alpha power spectrum).
+# 3. It smooths the result with a Gaussian blur to simulate the finite
+#    resolution of a telescope's "beam."
+#
+# The generated maps are mock "observables" that subsequent stages can analyze for
+# features like anomalies. The full map data for every universe is saved as a
+# .npy file, while a limited number of .png visual previews are also created.
+#
+# ===================================================================================
 
 from typing import Dict, Optional
 import os, json, math, pathlib
