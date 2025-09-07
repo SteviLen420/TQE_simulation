@@ -41,6 +41,29 @@ architected for robustness, featuring configuration-driven execution via profile
 and a final manifest-generation stage that consolidates all parameters, data,
 and metadata into a navigable, publication-ready dataset.
 
+## How to Cite
+
+If you use this software in your research, please consider citing it. This helps to 
+acknowledge the work and allows others to discover and reproduce your results. 
+The `CITATION.cff` file in the root of this repository is provided for automated 
+citation management.
+
+**Plain Text Citation:**
+> Stefan Len. (2025). *TQE (E,I) Universe Simulation Pipeline* (Version 1.0.0) [Software]. GitHub. https://github.com/SteviLen420/TQE_simulation
+
+**BibTeX Entry:**
+
+```bibtex
+@software{TQE_Simulation_2025,
+  author = {Len, Stefan},
+  title = {{TQE (E,I) Universe Simulation Pipeline}},
+  year = {2025},
+  publisher = {GitHub},
+  version = {1.0.0},
+  url = {[https://github.com/SteviLen420/TQE_simulation](https://github.com/SteviLen420/TQE_simulation)}
+}
+```
+
 -----------------------------------------------------------------------------------
 1. COMPUTATIONAL FRAMEWORK AND METHODOLOGY
 
