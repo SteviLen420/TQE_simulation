@@ -586,6 +586,6 @@ run_xai_stage(ACTIVE, paths=PATHS)
 
 print("Done. See RUN_DIR/FIG_DIR for outputs, mirrored to configured 'mirrors' (if any).")
 
-
-END OF DROP-IN CELL
-
+## Contact
+For questions, suggestions, or collaboration inquiries, feel free to reach out to me at:
+**stefan.len [at] gmail.com**
