@@ -142,3 +142,272 @@ entire run.
   universe, ready for final statistical analysis.
 
 """
+
+
+"""
+===================================================================================
+TQE (E,I) UNIVERSE SIMULATION — PRACTICAL USAGE GUIDE 
+===================================================================================
+
+This cell is a self-contained, copy-paste guide you can drop into a notebook cell
+or into a Python file as a top-level docstring. It describes how to install,
+configure, run, and interpret the outputs of the TQE pipeline.
+
+-----------------------------------------------------------------------------------
+1) ENVIRONMENT & DEPENDENCIES
+-----------------------------------------------------------------------------------
+
+Recommended Python: 3.9–3.11
+OS: Linux / macOS / Windows (note: healpy requires native build tools)
+
+Required packages:
+  - numpy
+  - pandas
+  - matplotlib
+  - scikit-learn
+
+Optional (enable extra functionality):
+  - healpy   — HEALPix ops (needed by LLAC/HPA modules and spherical maps)
+  - scipy    — required where sph_harm is used (low-ℓ alignment fallback)
+  - qutip    — optional for quantum/superposition stages
+  - shap     — SHAP explanations in XAI module
+  - lime     — LIME explanations in XAI module
+
+Quick install (pip):
+    python -m venv .venv
+    # Linux/macOS:
+    source .venv/bin/activate
+    # Windows:
+    # .venv\Scripts\activate
+
+    pip install -U pip wheel setuptools
+    pip install numpy pandas matplotlib scikit-learn
+    # optional extras:
+    pip install healpy scipy shap lime
+
+Notes on healpy:
+  • You may need build tools (Linux: build-essential; macOS: Xcode CLT).
+  • If you hit build issues, try installing 'astropy' first, then 'healpy'.
+
+
+-----------------------------------------------------------------------------------
+2) PROJECT FILES & SHARED IMPORTS
+-----------------------------------------------------------------------------------
+
+Many modules share the same configuration and run paths through:
+  • TQE_03_EI_UNIVERSE_SIMULATION_imports → exports:
+      - ACTIVE  : dict with the active configuration
+      - PATHS   : dict with environment info (incl. mirrors)
+      - RUN_DIR : base directory for this run (unique, timestamped)
+      - FIG_DIR : figures directory for this run
+  • TQE_04_EI_UNIVERSE_SIMULATION_seeding → provides:
+      - load_or_create_run_seeds(active_cfg)
+      - universe_rngs(universe_seeds)
+
+Run your scripts from the project root so these modules resolve on PYTHONPATH.
+
+
+-----------------------------------------------------------------------------------
+3) CONFIGURATION (ACTIVE) — MINIMAL WORKING EXAMPLE
+-----------------------------------------------------------------------------------
+
+ACTIVE = {
+  "PIPELINE": {
+    "use_information": True,        # EI vs E mode → filename tag: 'EI__' or 'E__'
+    "run_anomaly_scan": True
+  },
+  "ENERGY": {
+    "num_universes": 1000,
+    "seed": None                    # fallback seed if seeding module not used
+  },
+  "ANOMALY": {
+    "map": {
+      "resolution_nside": 128,
+      "seed_per_map": True
+    },
+    "targets": [
+      {"name": "cold_spot", "enabled": True, "patch_deg": 10.0, "zscore_thresh": 3.0},
+      {"name": "quad_oct_align", "enabled": True, "l2l3_align_deg": 20.0},
+      {"name": "lack_large_angle", "enabled": True, "theta_min_deg": 60.0, "lmax": 64,
+       "n_mc": 200, "p_percentile": 0.05},
+      {"name": "hemispheric_asymmetry", "enabled": True, "l_max": 40, "n_mc": 200,
+       "pval_thresh": 0.05}
+    ],
+    "save_cutouts": True,
+    "save_metrics_csv": True
+  },
+  "FINETUNE_DIAG": {
+    "top_k": 5
+  },
+  "XAI": {
+    "test_size": 0.25,
+    "test_random_state": 42,
+    "rf_n_estimators": 400,
+    "rf_class_weight": None,
+    "regression_min": 10,
+    "lime_num_features": 5,
+    "sklearn_n_jobs": -1,
+    "run_lime": True
+  },
+  "OUTPUTS": {
+    "local": { "fig_subdir": "figs" },
+    # Optional:
+    # "mirrors": ["/mnt/drive/tqe_mirror", "D:/results_mirror"]
+  },
+  "RUNTIME": {
+    "matplotlib_dpi": 180
+  }
+}
+
+
+-----------------------------------------------------------------------------------
+4) RUNNING THE MODULES
+-----------------------------------------------------------------------------------
+
+Each stage is both script-runnable (__main__) and callable from Python.
+
+From the command line:
+    # 13 — CMB-like map generation
+    python TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation.py
+
+    # 14 — Fine-tuning diagnostics on maps
+    python TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics.py
+
+    # 15 — Cold Spot anomaly
+    python TQE_15_EI_UNIVERSE_SIMULATION_anomaly_cold_spot.py
+
+    # 16 — Low-ℓ (l=2,3) alignment
+    python TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments.py
+
+    # 17 — Lack of Large-Angle Correlation (needs healpy)
+    python TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation.py
+
+    # 18 — Hemispherical Power Asymmetry (needs healpy)
+    python TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry.py
+
+    # 19 — XAI (RandomForest + SHAP/LIME if installed)
+    python TQE_19_EI_UNIVERSE_SIMULATION_xai.py
+
+From Python:
+    from TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation import run_cmb_map_generation
+    from TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics import run_finetune_stage
+    from TQE_15_EI_UNIVERSE_SIMULATION_anomaly_cold_spot import run_anomaly_cold_spot
+    from TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments import (
+        run_anomaly_low_multipole_alignments_stage
+    )
+    from TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation import run_llac
+    from TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry import run_hpa
+    from TQE_19_EI_UNIVERSE_SIMULATION_xai import run_xai_stage
+    from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS
+
+    run_cmb_map_generation(ACTIVE)
+    run_finetune_stage(ACTIVE)
+    run_anomaly_cold_spot(ACTIVE)
+    run_anomaly_low_multipole_alignments_stage(ACTIVE)
+    run_llac(ACTIVE)  # needs healpy
+    run_hpa(ACTIVE)   # needs healpy
+    run_xai_stage(ACTIVE, paths=PATHS)
+
+
+-----------------------------------------------------------------------------------
+5) OUTPUTS & FILENAMING
+-----------------------------------------------------------------------------------
+
+• RUN_DIR — unique (timestamped) run directory; FIG_DIR under it for figures.
+• EI/E tag — filenames are prefixed with 'EI__' or 'E__' per PIPELINE.use_information.
+• Mirroring — if OUTPUTS.local.mirrors is set:
+    - CSV/JSON copied to the mirror root.
+    - PNGs copied into <mirror>/<fig_subdir>/ (default 'figs').
+
+Typical artifacts:
+  - EI__cmb_maps.csv       + per-universe *.npy and PNG previews (module 13)
+  - EI__finetune_metrics.csv, EI__finetune_summary.json (module 14)
+  - EI__anomaly_cold_spot_metrics.csv + cutout PNGs (module 15)
+  - EI__anomaly_low_multipole_align.csv + histogram PNG (module 16)
+  - LLAC__metrics.csv, LLAC__summary.json + S1/2 histogram (module 17; untagged by design)
+  - EI__anomaly_hpa_metrics.csv + ratio histogram (module 18)
+  - EI__xai_dataset.csv, EI__xai_global_feature_ranking.csv, EI__xai_summary.json,
+    SHAP/LIME figures (module 19)
+
+
+-----------------------------------------------------------------------------------
+6) REPRODUCIBILITY (SEEDING)
+-----------------------------------------------------------------------------------
+
+• A master 64-bit seed and per-universe seeds are generated and stored by module 04.
+• Downstream modules use these seeds (load_or_create_run_seeds / universe_rngs).
+• If seeding is unavailable, modules fall back to deterministic seeds via ACTIVE['ENERGY']['seed'].
+• Using the same ACTIVE and RUN_DIR yields bit-for-bit identical results.
+
+
+-----------------------------------------------------------------------------------
+7) RECOMMENDED END-TO-END ORDER
+-----------------------------------------------------------------------------------
+
+(00–04) Setup: config, paths, imports, seeding
+(05–10) Simulation core: E/I init → fluctuation/superposition → law lock-in → expansion
+(11–12) Aggregation and ranking
+(13–14) Map generation + fine-tuning diagnostics
+(15–18) Anomaly scans (Cold Spot, low-ℓ alignment, LLAC, HPA)
+(19)    XAI (RF + SHAP/LIME)
+(20)    Results manifest (if implemented in your repo)
+
+Note: Modules 13–19 are individually runnable, provided their expected inputs exist
+(e.g., module 15 automatically picks up the map manifest from module 13).
+
+
+-----------------------------------------------------------------------------------
+8) PERFORMANCE TIPS
+-----------------------------------------------------------------------------------
+
+• Set ACTIVE['XAI']['sklearn_n_jobs'] = -1 to use all cores for RandomForest.
+• For large N, healpy-based modules (17, 18) are CPU-heavy:
+    - reduce ANOMALY.targets[*]['n_mc'] during iteration,
+    - or temporarily lower ENERGY.num_universes.
+• Control figure resolution with ACTIVE['RUNTIME']['matplotlib_dpi'].
+
+
+-----------------------------------------------------------------------------------
+9) TROUBLESHOOTING
+-----------------------------------------------------------------------------------
+
+• ImportError for shared modules:
+    - Run from the project root; ensure TQE_03_* and TQE_04_* are on PYTHONPATH.
+• healpy build errors:
+    - Install native build tools; try 'pip install astropy' first, then 'healpy'.
+• SciPy missing:
+    - Low-ℓ alignment path that relies on sph_harm requires 'scipy'.
+• Missing inputs (e.g., CMB manifest):
+    - Run module 13 first to generate EI__cmb_maps.csv and the per-universe maps.
+• Mirror copy warnings:
+    - Check write permissions and existence of mirror paths.
+
+
+-----------------------------------------------------------------------------------
+10) MINIMAL END-TO-END SNIPPET
+-----------------------------------------------------------------------------------
+
+from TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation import run_cmb_map_generation
+from TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics import run_finetune_stage
+from TQE_15_EI_UNIVERSE_SIMULATION_anomaly_cold_spot import run_anomaly_cold_spot
+from TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments import \
+    run_anomaly_low_multipole_alignments_stage
+from TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation import run_llac
+from TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry import run_hpa
+from TQE_19_EI_UNIVERSE_SIMULATION_xai import run_xai_stage
+from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS
+
+run_cmb_map_generation(ACTIVE)
+run_finetune_stage(ACTIVE)
+run_anomaly_cold_spot(ACTIVE)
+run_anomaly_low_multipole_alignments_stage(ACTIVE)
+run_llac(ACTIVE)  # requires healpy
+run_hpa(ACTIVE)   # requires healpy
+run_xai_stage(ACTIVE, paths=PATHS)
+
+print("Done. See RUN_DIR/FIG_DIR for outputs, mirrored to configured 'mirrors' (if any).")
+
+===================================================================================
+END OF DROP-IN CELL
+===================================================================================
+"""
