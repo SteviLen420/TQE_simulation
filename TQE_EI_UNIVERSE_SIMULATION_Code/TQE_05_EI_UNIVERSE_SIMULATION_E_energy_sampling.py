@@ -6,6 +6,24 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script executes the first data-generating stage of the simulation pipeline.
+# Its primary purpose is to sample the initial energy value (E0) for every
+# universe in the ensemble, establishing the foundational state for the simulation.
+#
+# It loads all necessary parameters, such as the number of universes and the
+# statistical distribution's properties (e.g., log-normal), from the central
+# `ACTIVE` configuration. Using a reproducible random number generator seeded from
+# the run's master seed, it draws the E0 samples.
+#
+# The script produces three key outputs for a complete audit trail:
+# 1. A .csv file containing the raw E0 value for each universe.
+# 2. A .png histogram visualizing the distribution of the sampled energies.
+# 3. A .json file summarizing the input parameters, descriptive statistics
+#    of the output, and the paths to the generated files.
+#
+# ===================================================================================
 
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
