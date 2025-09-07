@@ -6,6 +6,27 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script is a scientific analysis module that tests for the "Lack of
+# Large-Angle Correlation" (LLAC) anomaly in the simulated CMB maps. This
+# anomaly refers to the observed suppression of correlations at large angular
+# scales (theta > 60 degrees) in the real sky.
+#
+# The script's core calculation involves transforming the statistical information
+# from each map's power spectrum (C_l) into the two-point angular correlation
+# function (C(theta)) via a Legendre transform. It then computes the S_1/2
+# statistic, which is the integrated power of C(theta)^2 over large angles. A
+# small S_1/2 value indicates a lack of correlation.
+#
+# To determine if a low S_1/2 value is statistically significant, the script
+# performs a Monte Carlo null test. It generates many random skies based on the
+# theoretical average to build an expected distribution of S_1/2 values. This
+# allows it to assign a p-value to each simulated universe, quantifying the
+# rarity of its correlation properties. The full analysis requires the
+# healpy library.
+#
+# ===================================================================================
 
 from typing import Dict, Optional, Tuple, List
 import os, json, math, pathlib
