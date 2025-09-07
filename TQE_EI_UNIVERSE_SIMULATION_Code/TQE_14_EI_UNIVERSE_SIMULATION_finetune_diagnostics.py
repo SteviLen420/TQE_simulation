@@ -6,6 +6,26 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script performs an advanced diagnostic analysis to evaluate the "fine-tuning"
+# of the simulated universes. It measures sophisticated statistical properties of
+# the generated CMB maps and scores each universe based on how closely it matches
+# a set of ideal cosmological parameters.
+#
+# The analysis is restricted to the subset of universes that successfully achieved
+# "lock-in," focusing on the most viable outcomes of the simulation. For each of
+# these universes, it computes a suite of key metrics from its CMB map, including
+# the RMS, power spectral slope (alpha), correlation length, skewness, and
+# kurtosis. It then calculates a "fine-tuning score" representing the weighted
+# distance between these measured metrics and pre-defined target values.
+#
+# The outputs include a ranked .csv with the diagnostic metrics for all locked-in
+# universes, a .json summary, and crucially, detailed multi-plot diagnostic
+# panels (.png) for the top-K best-tuned universes, providing a deep visual
+# analysis of their properties.
+#
+# ===================================================================================
 
 from typing import Dict, Optional, Tuple
 import os, json, math, pathlib
