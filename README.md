@@ -6,14 +6,14 @@
 #  TQE (E,I) UNIVERSE SIMULATION PIPELINE
 -----------------------------------------------------------------------------------
 # Author: Stefan Len
------------------------------------------------------------------------------------
+
 
 Title: The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo
 Simulation of Universe Evolution from Energy-Information Principles
 
 -----------------------------------------------------------------------------------
 ABSTRACT
------------------------------------------------------------------------------------
+
 In this work, I present a comprehensive computational framework, TQE, 
 for conducting large-scale Monte Carlo simulations of universe evolution.
 The model is based on the foundational hypothesis of a coupling between 
@@ -43,14 +43,14 @@ and metadata into a navigable, publication-ready dataset.
 
 -----------------------------------------------------------------------------------
 1. COMPUTATIONAL FRAMEWORK AND METHODOLOGY
------------------------------------------------------------------------------------
+
 The TQE pipeline is a sequence of 20 interoperable Python modules designed to
 simulate and analyze an ensemble of universes. The architecture can be logically
 divided into four main components.
 
 -----------------------------------------------------------------------------------
 1.1. Framework Architecture and Reproducibility (Modules 00-04)
------------------------------------------------------------------------------------
+
 The foundation of the pipeline ensures consistency, configurability, and
 reproducibility.
 
@@ -78,7 +78,7 @@ reproducibility.
 
 -----------------------------------------------------------------------------------
 1.2. Simulation Core: Universe Generation and Evolution (Modules 05-10)
------------------------------------------------------------------------------------
+
 This component simulates the life cycle of each universe.
 
 - Initialization (05_energy_sampling, 06_information_bootstrap): The
@@ -103,7 +103,7 @@ This component simulates the life cycle of each universe.
 
 -----------------------------------------------------------------------------------
 1.3. Analysis Suite: Diagnostics and Anomaly Detection (Modules 11-18)
------------------------------------------------------------------------------------
+
 This component analyzes the properties of the simulated population of universes.
 
 - Aggregation and Ranking (11_montecarlo, 12_best_universe): Results from the
@@ -121,9 +121,9 @@ This component analyzes the properties of the simulated population of universes.
   (Quadrupole-Octopole) Alignments, Lack of Large-Angle Correlation, and
   Hemispherical Power Asymmetry.
 
-
-1.4. Meta-Analysis and Finalization (Modules 19-20)
 -----------------------------------------------------------------------------------
+1.4. Meta-Analysis and Finalization (Modules 19-20)
+
 The final component provides a high-level interpretation and summary of the
 entire run.
 
@@ -143,16 +143,16 @@ entire run.
 
 
 
-
-TQE (E,I) UNIVERSE SIMULATION — PRACTICAL USAGE GUIDE 
 -----------------------------------------------------------------------------------
+TQE (E,I) UNIVERSE SIMULATION — PRACTICAL USAGE GUIDE 
+
 
 This guide describes how to install, configure, run, and interpret the outputs 
 of the TQE pipeline.
 
-
-1) ENVIRONMENT & DEPENDENCIES
 -----------------------------------------------------------------------------------
+1) ENVIRONMENT & DEPENDENCIES
+
 
 Recommended Python: 3.9–3.11
 OS: Linux / macOS / Windows (note: healpy requires native build tools)
@@ -187,9 +187,9 @@ Notes on healpy:
   • If you hit build issues, try installing 'astropy' first, then 'healpy'.
 
 
-
-2) PROJECT FILES & SHARED IMPORTS
 -----------------------------------------------------------------------------------
+2) PROJECT FILES & SHARED IMPORTS
+
 
 Many modules share the same configuration and run paths through:
   • TQE_03_EI_UNIVERSE_SIMULATION_imports → exports:
@@ -203,9 +203,9 @@ Many modules share the same configuration and run paths through:
 
 Run your scripts from the project root so these modules resolve on PYTHONPATH.
 
-
-3a) Installation / Requirements 
 -----------------------------------------------------------------------------------
+3a) Installation / Requirements 
+
 
 **Prerequisites**
 - Python 3.9–3.11
@@ -259,9 +259,9 @@ pip install -r requirements.txt
 # 5) (Optional) Extras used by certain modules
 pip install healpy scipy shap lime qutip
 
-
-3b) CONFIGURATION (ACTIVE) — MINIMAL WORKING EXAMPLE
 -----------------------------------------------------------------------------------
+3b) CONFIGURATION (ACTIVE) — MINIMAL WORKING EXAMPLE
+
 
 ACTIVE = {
   "PIPELINE": {
@@ -306,9 +306,9 @@ ACTIVE = {
   "RUNTIME": { "matplotlib_dpi": 180 }
 }
 
-
-4) RUNNING THE MODULES
 -----------------------------------------------------------------------------------
+4) RUNNING THE MODULES
+
 
 ### Recommended Method: Using the Master Controller
 
@@ -363,9 +363,9 @@ run_llac(ACTIVE)  # needs healpy
 run_hpa(ACTIVE)   # needs healpy
 run_xai_stage(ACTIVE, paths=PATHS)
 
-
-5) OUTPUTS & FILENAMING
 -----------------------------------------------------------------------------------
+5) OUTPUTS & FILENAMING
+
 
 • RUN_DIR — unique (timestamped) run directory; FIG_DIR under it for figures.
 • EI/E tag — filenames are prefixed with 'EI__' or 'E__' per PIPELINE.use_information.
@@ -383,9 +383,9 @@ Typical artifacts:
   - EI__xai_dataset.csv, EI__xai_global_feature_ranking.csv, EI__xai_summary.json,
     SHAP/LIME figures (module 19)
 
-
-6) Profiles — Available Runtime Profiles
 -----------------------------------------------------------------------------------
+6) Profiles — Available Runtime Profiles
+
 
 What is a profile?
 A “profile” bundles runtime settings for the pipeline (e.g., number of universes,
@@ -486,9 +486,9 @@ Linux/macOS:
 Windows (PowerShell):
     python -c "from TQE_00_EI_UNIVERSE_SIMULATION_config import PROFILES; print(', '.join(PROFILES.keys()))"
 
-
-7) REPRODUCIBILITY (SEEDING)
 -----------------------------------------------------------------------------------
+7) REPRODUCIBILITY (SEEDING)
+
 
 • A master 64-bit seed and per-universe seeds are generated and stored by module 04.
 • Downstream modules use these seeds (load_or_create_run_seeds / universe_rngs).
@@ -496,9 +496,9 @@ Windows (PowerShell):
 • Using the same ACTIVE and RUN_DIR yields bit-for-bit identical results.
 
 
-
-8) RECOMMENDED END-TO-END ORDER
 -----------------------------------------------------------------------------------
+8) RECOMMENDED END-TO-END ORDER
+
 
 (00–04) Setup: config, paths, imports, seeding
 (05–10) Simulation core: E/I init → fluctuation/superposition → law lock-in → expansion
@@ -512,9 +512,9 @@ Note: Modules 13–19 are individually runnable, provided their expected inputs 
 (e.g., module 15 automatically picks up the map manifest from module 13).
 
 
-
-9) PERFORMANCE TIPS
 -----------------------------------------------------------------------------------
+9) PERFORMANCE TIPS
+
 
 • Set ACTIVE['XAI']['sklearn_n_jobs'] = -1 to use all cores for RandomForest.
 • For large N, healpy-based modules (17, 18) are CPU-heavy:
@@ -523,9 +523,9 @@ Note: Modules 13–19 are individually runnable, provided their expected inputs 
 • Control figure resolution with ACTIVE['RUNTIME']['matplotlib_dpi'].
 
 
-
-10) TROUBLESHOOTING
 -----------------------------------------------------------------------------------
+10) TROUBLESHOOTING
+
 
 • ImportError for shared modules:
     - Run from the project root; ensure TQE_03_* and TQE_04_* are on PYTHONPATH.
@@ -539,9 +539,9 @@ Note: Modules 13–19 are individually runnable, provided their expected inputs 
     - Check write permissions and existence of mirror paths.
 
 
-
-11) MINIMAL END-TO-END SNIPPET
 -----------------------------------------------------------------------------------
+11) MINIMAL END-TO-END SNIPPET
+
 
 from TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation import run_cmb_map_generation
 from TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics import run_finetune_stage
