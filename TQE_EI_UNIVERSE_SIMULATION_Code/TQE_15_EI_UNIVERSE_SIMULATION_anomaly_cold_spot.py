@@ -6,6 +6,27 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script is a scientific analysis module designed to detect a specific,
+# physically-motivated feature—a "Cold Spot" anomaly—within each of the
+# generated CMB maps. This analysis directly tests the simulation's ability
+# to reproduce a well-known anomaly that exists in the actual observed CMB.
+#
+# The detection algorithm systematically searches each map to find the circular
+# patch of a pre-defined angular size that has the lowest average temperature.
+# This is achieved efficiently by convolving the map with a disk-shaped kernel
+# using the Fast Fourier Transform (FFT). The script then quantifies the
+# statistical significance of this coldest patch by calculating its z-score,
+# which measures how many standard deviations its temperature is below the
+# map's global average.
+#
+# The script produces a .csv file with the z-score of the coldest spot for
+# every universe, a .json summary of the total number of anomalies found, and
+# .png cutout images of the most significant detected spots for visual
+# verification.
+#
+# ===================================================================================
 
 from typing import Optional, Dict
 import os, json, math, pathlib
