@@ -6,6 +6,27 @@
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
+#
+# SUMMARY:
+# This script is a specialized scientific analysis module designed to test for
+# the "Low Multipole Alignment" anomaly (sometimes called the "Axis of Evil")
+# in the simulated universes. This anomaly refers to the unexpected alignment
+# of the largest-scale features in the CMB.
+#
+# Instead of analyzing full sky maps, this script simulates the anomaly from
+# first principles. For each universe, it independently generates a random
+# quadrupole (l=2) and a random octopole (l=3) by drawing their spherical
+# harmonic coefficients (a_lm). Using an inertia tensor method, it then
+# calculates the preferred spatial axis for each of these two shapes and
+# computes the angle between them.
+#
+# This analysis directly tests the cosmological principle of statistical
+# isotropy. A significant number of universes with a small alignment angle
+# would challenge this assumption, mirroring a contentious debate in modern
+# cosmology. The script outputs a .csv with the alignment angles, a .json
+# summary, and a key diagnostic histogram of the angles.
+#
+# ===================================================================================
 
 from typing import Dict, Optional, Tuple
 import os, json, pathlib, math
