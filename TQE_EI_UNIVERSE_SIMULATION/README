@@ -149,9 +149,8 @@ entire run.
 TQE (E,I) UNIVERSE SIMULATION — PRACTICAL USAGE GUIDE 
 ===================================================================================
 
-This cell is a self-contained, copy-paste guide you can drop into a notebook cell
-or into a Python file as a top-level docstring. It describes how to install,
-configure, run, and interpret the outputs of the TQE pipeline.
+This guide describes how to install, configure, run, and interpret the outputs 
+of the TQE pipeline.
 
 -----------------------------------------------------------------------------------
 1) ENVIRONMENT & DEPENDENCIES
@@ -263,6 +262,18 @@ ACTIVE = {
 -----------------------------------------------------------------------------------
 4) RUNNING THE MODULES
 -----------------------------------------------------------------------------------
+
+### Recommended Method: Using the Master Controller
+
+The primary way to run the entire end-to-end pipeline is by executing 
+the `TQE_01_Master_Control.py` script. The behavior of the run is controlled 
+by the `TQE_PROFILE` environment variable.
+
+**Example (Linux/macOS):**
+*To run a quick test using the 'demo' profile:*
+```sh
+export TQE_PROFILE=demo
+python TQE_01_EI_UNIVERSE_SIMULATION_Master_Control.py
 
 Each stage is both script-runnable (__main__) and callable from Python.
 
