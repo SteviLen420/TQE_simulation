@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Stefan Len
+
 # ===================================================================================
 # TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments.py
 # ===================================================================================
