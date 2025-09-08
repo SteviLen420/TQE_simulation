@@ -305,10 +305,14 @@ def run_expansion(
 
     return {"csv": str(csv_path), "json": str(json_path), "plots": figs, "table": out_df}
 
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
 def run_expansion_stage(active=None, active_cfg=None, **kwargs):
     cfg = active if active is not None else active_cfg
-    return run_expansion(cfg, **kwargs)
-
-# Standalone
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_expansion(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    run_expansion(ACTIVE)
+    run_expansion_stage(ACTIVE)
