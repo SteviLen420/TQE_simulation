@@ -269,6 +269,9 @@ def run_cmb_map_generation(active_cfg: Dict = ACTIVE,
     print(f"[CMB] Generated {N} maps @ nside={nside}, beam={beam_fwhm_deg}° (alpha={psd_alpha}).")
     return {"csv": str(csv_path), "json": str(json_path), "previews": previews, "table": df}
 
+def run_cmb_generation(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    return run_cmb_map_generation(cfg, **kwargs)
 
 # Standalone
 if __name__ == "__main__":
