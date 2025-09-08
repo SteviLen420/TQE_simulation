@@ -225,8 +225,6 @@ def run_llac(active_cfg: Dict = ACTIVE,
     # If no maps provided but healpy is available → synthesize
     synthesized = False
     if cmb_maps is not None and hp is None:
-        print("[LLAC] healpy not available …")
-        cl  = _compute_cl_from_map(m, lmax=lmax)  # <-- ez hp nélkül kivételt dob
         synthesized = True
         if seed_per_map and universe_rngs is not None and len(uni_seeds) > 0:
             rngs = universe_rngs(uni_seeds[:N])
