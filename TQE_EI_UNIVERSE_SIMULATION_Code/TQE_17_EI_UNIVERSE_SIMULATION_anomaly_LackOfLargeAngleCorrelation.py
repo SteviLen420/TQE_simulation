@@ -330,8 +330,8 @@ def run_llac(active_cfg: Dict = ACTIVE,
             "p75": float(np.percentile(x, 75)),
         }
     summary = {
-        "env": paths["env"],
-        "run_id": paths["run_id"],
+        "env": paths.get("env", ""),
+        "run_id": paths.get("run_id", ""),
         "mode": tag,
         "N": int(N),
         "theta_min_deg": float(theta_min_deg),
