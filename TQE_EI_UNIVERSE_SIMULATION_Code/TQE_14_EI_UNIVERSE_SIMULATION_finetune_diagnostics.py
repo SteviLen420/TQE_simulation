@@ -206,6 +206,7 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
     paths   = PATHS
     run_dir = pathlib.Path(RUN_DIR)
     fig_dir = pathlib.Path(FIG_DIR)
+    run_dir.mkdir(parents=True, exist_ok=True)
     fig_dir.mkdir(parents=True, exist_ok=True)
     mirrors = paths.get("mirrors", [])
 
@@ -245,6 +246,7 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
 
     df_col = pd.read_csv(str(collapse_csv))
     df_map = pd.read_csv(str(cmb_manifest_csv))
+    df_col["lockin_at"] = pd.to_numeric(df_col["lockin_at"], errors="coerce")
 
     # required columns
     req_col = {"universe_id", "lockin_at"}
