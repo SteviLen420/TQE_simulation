@@ -226,7 +226,7 @@ def run_llac(active_cfg: Dict = ACTIVE,
     synthesized = False
     if cmb_maps is None and hp is not None:
         synthesized = True
-        if seed_per_map and universe_rngs is not None and len(uni_seeds) > 0:
+        if seed_per_map and universe_rngs is not None and len(uni_seeds) >= N:
             rngs = universe_rngs(uni_seeds[:N])
             cmb_maps = np.vstack([_make_maps_from_cl(cl_in, nside, rngs[i], 1)[0] for i in range(N)])
         else:
