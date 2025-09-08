@@ -182,7 +182,8 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
 
     records = []
     cutout_paths = []
-
+                              
+    if df_manifest is not None:
         # bail out early if manifest is empty
         if df_manifest.empty:
             print("[COLD_SPOT] Manifest is empty.")
@@ -190,6 +191,7 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
 
         # try to prepare kernel from the first map; if it fails, lazily init later
         m0, K, r_pix = None, None, None
+        H0 = W0 = None
         try:
             m0 = _load_map(df_manifest.iloc[0]["map_path"])
             H0, W0 = m0.shape
@@ -206,9 +208,10 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
                 H, W = M.shape
 
                 # lazy kernel init if the peek failed or dims differ
-                if K is None or (M.shape != (H0, W0) and r_pix is not None):
+                if K is None or (H0 is not None and (H, W) != (H0, W0)):
                     r_pix = _deg_to_pix_radius(patch_deg, H)
                     K = _make_disk_kernel(r_pix); K /= max(1.0, K.sum())
+                    H0, W0 = H, W  # update baseline shape
 
                 # compute global stats (ignore NaNs)
                 valid  = np.isfinite(M)
