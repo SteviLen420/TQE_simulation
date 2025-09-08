@@ -215,7 +215,8 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
     dpi = int(active_cfg["RUNTIME"].get("matplotlib_dpi", 180))
 
     # -------- Config for targets (override via ACTIVE["FINETUNE_DIAG"])
-    tcfg = dict(active_cfg.get("FINETUNE_DIAG", {})) or {}
+    cfg_ft = active_cfg.get("FINETUNE_DIAG", {})
+    tcfg = cfg_ft if isinstance(cfg_ft, dict) else {}
     targets = tcfg.get("targets", {
         "rms":      {"target": 1.0, "tol": 0.25, "weight": 1.0},
         "alpha":    {"target": 2.9, "tol": 0.6,  "weight": 1.0},
@@ -431,7 +432,7 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
 
     # -------- Mirror copies (CSV/JSON to mirror root; PNGs to <mirror>/<fig_subdir>/)
     from shutil import copy2
-    fig_sub = active_cfg["OUTPUTS"]["local"].get("fig_subdir", "figs")
+    fig_sub = active_cfg.get("OUTPUTS", {}).get("local", {}).get("fig_subdir", "figs")
     for m in mirrors or []:
         try:
             mpath = pathlib.Path(m)
