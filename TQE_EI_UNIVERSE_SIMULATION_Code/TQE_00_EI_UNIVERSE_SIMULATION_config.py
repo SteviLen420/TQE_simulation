@@ -471,3 +471,5 @@ ACTIVE = resolve_profile(SELECTED_PROFILE)
 assert isinstance(ACTIVE, dict), "ACTIVE must be a dict"
 for key in ("META", "PIPELINE", "OUTPUTS"):
     assert key in ACTIVE, f"ACTIVE missing required section: {key}"
+
+__all__ = ["ACTIVE", "MASTER_CTRL", "resolve_profile"]
