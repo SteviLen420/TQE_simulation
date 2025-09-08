@@ -211,13 +211,13 @@ def run_best_universe(active_cfg: Dict = ACTIVE,
             row = df_rank.iloc[idx]
             uid = int(row[col_id])
 
-            # prefer X, fall back to E0, otherwise 1.0
-            if "X" in row.index and np.isfinite(row["X"]):
-                X_val = float(row["X"])
-            elif "E0" in row.index and np.isfinite(row["E0"]):
-                X_val = float(row["E0"])
-            else:
-                X_val = 1.0
+           # prefer X (handle merged suffixes), fall back to E0, otherwise 1.0
+           for key in ("X", "X_x", "X_y", "X_expansion", "X_collapse", "E0"):
+               if key in row.index and np.isfinite(row[key]):
+                   X_val = float(row[key])
+                   break
+           else:
+               X_val = 1.0
 
             uni_seed = int(uni_seeds[uid % len(uni_seeds)])
             rng_universe = np.random.default_rng(uni_seed)
