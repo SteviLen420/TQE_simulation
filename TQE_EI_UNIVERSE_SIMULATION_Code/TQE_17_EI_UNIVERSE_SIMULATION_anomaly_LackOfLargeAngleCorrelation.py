@@ -360,13 +360,14 @@ def run_llac(active_cfg: Dict = ACTIVE,
     return {"csv": str(csv_path), "json": str(json_path), "plots": figs, "table": out_df}
 
 
-# Optional stage wrapper for Master Controller
-def run_llac_stage(active: Dict = ACTIVE,
-                   cmb_maps: Optional[np.ndarray] = None,
-                   cl_spectrum: Optional[np.ndarray] = None):
-    return run_llac(active, cmb_maps=cmb_maps, cl_spectrum=cl_spectrum)
-
-
-# Standalone
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_anomaly_llac_stage(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_anomaly_llac(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    run_llac(ACTIVE)
+    run_anomaly_llac_stage(ACTIVE)
