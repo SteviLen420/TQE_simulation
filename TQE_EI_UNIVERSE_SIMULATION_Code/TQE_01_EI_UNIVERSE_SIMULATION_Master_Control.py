@@ -30,9 +30,6 @@
 
 from copy import deepcopy
 import os
-from TQE_00_EI_UNIVERSE_SIMULATION_config import ACTIVE, build_active
-# opcionális, ha biztosra akarsz menni, hogy az env változót újraolvassa:
-# ACTIVE = build_active()
 
 # ===================================================================================
 # MASTER CONFIGURATION
