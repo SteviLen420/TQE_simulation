@@ -309,12 +309,14 @@ def run_superposition(active_cfg: dict, arrays: Optional[dict] = None, seed: Opt
             "arrays": {"E0": E_arr, "I_shannon": I_sh, "I_kl": I_kl, "I_fused": I, "X": X_arr}}
 
 
-def run_superposition_stage(active, arrays: Optional[dict] = None, seed: Optional[int] = None, **kwargs) -> Dict:
-    """Entry point expected by Master Control."""
-    return run_superposition(active_cfg=active, arrays=arrays, seed=seed)
-
-
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_superposition_stage(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_superposition(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    # Manual run for quick test
-    out = run_superposition_stage(ACTIVE)
-    print("Superposition stage done. Rows:", len(out.get("dataframe", [])))
+   run_superposition_stage(ACTIVE)
