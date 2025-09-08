@@ -107,7 +107,7 @@ def _simulate_expansion_traj(
 # Public API
 # ---------------------------
 def run_expansion(
-    active_cfg: Dict = ACTIVE,
+    active_cfg: Dict,
     collapse_df: Optional[pd.DataFrame] = None,
     arrays: Optional[Dict[str, np.ndarray]] = None,
 ):
@@ -289,7 +289,7 @@ def run_expansion(
 
     # --- Mirror ---
     from shutil import copy2
-    fig_sub = ACTIVE["OUTPUTS"]["local"].get("fig_subdir", "figs")
+    fig_sub = active_cfg["OUTPUTS"]["local"].get("fig_subdir", "figs")
     for m in mirrors or []:
         try:
             copy2(csv_path, pathlib.Path(m) / csv_path.name)
