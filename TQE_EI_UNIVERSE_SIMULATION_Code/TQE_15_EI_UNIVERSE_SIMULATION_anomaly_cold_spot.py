@@ -94,7 +94,7 @@ def _plot_cutout_with_circle(cut: np.ndarray, r: int, title: str, save_path: str
     plt.axis("off")
     plt.legend(loc="lower left", fontsize=8)
     plt.tight_layout(pad=0.1)
-    plt.savefig(save_path, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
+    plt.savefig(save_path, dpi=ACTIVE.get("RUNTIME", {}).get("matplotlib_dpi", 180))
     plt.close()
 
 # ---------------------------
@@ -116,13 +116,13 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
     import pandas as pd  # local import to avoid making pandas a hard dependency at import-time
 
     # Stage toggle
-    if not active_cfg["PIPELINE"].get("run_anomaly_scan", True):
+    if not active_cfg.get("PIPELINE", {}).get("run_anomaly_scan", True):
         print("[COLD_SPOT] run_anomaly_scan=False → skipping.")
         return {}
 
     # Target toggle
     cold_spec = None
-    for t in active_cfg["ANOMALY"].get("targets", []):
+    for t in active_cfg.get("ANOMALY", {}).get("targets", []):
         if t.get("name") in {"cold_spot", "coldspot"} and t.get("enabled", False):
             cold_spec = t
             break
@@ -137,7 +137,7 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
     mirrors = paths.get("mirrors", [])
 
     # EI/E tag
-    use_I = bool(active_cfg["PIPELINE"].get("use_information", True))
+    use_I = bool(active_cfg.get("PIPELINE", {}).get("use_information", True))
     tag   = "EI" if use_I else "E"
 
     # Config
@@ -175,6 +175,9 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
     cutout_paths = []
 
     if df_manifest is not None:
+        if df_manifest.empty:
+            print("[COLD_SPOT] Manifest is empty.")
+            return {}
         # streaming mode: iterate rows, load per-universe map on the fly
         # peek to get H for radius conversion
         m0 = _load_map(df_manifest.iloc[0]["map_path"])
@@ -283,7 +286,7 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
 
     # Mirror copies
     from shutil import copy2
-    fig_sub = ACTIVE["OUTPUTS"]["local"].get("fig_subdir", "figs")
+    fig_sub = active_cfg.get("OUTPUTS", {}).get("local", {}).get("fig_subdir", "figs")
     for m in mirrors or []:
         try:
             mpath = pathlib.Path(m); mpath.mkdir(parents=True, exist_ok=True)
