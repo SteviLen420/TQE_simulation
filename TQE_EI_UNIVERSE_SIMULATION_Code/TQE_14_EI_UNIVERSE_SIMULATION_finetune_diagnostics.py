@@ -211,7 +211,7 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
     # EI/E filename tag
     use_info   = bool(active_cfg["PIPELINE"].get("use_information", True))
     tag_prefix = "EI__" if use_info else "E__"
-    dpi = int(ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
+    dpi = int(active_cfg["RUNTIME"].get("matplotlib_dpi", 180))
 
     # -------- Config for targets (override via ACTIVE["FINETUNE_DIAG"])
     tcfg = dict(active_cfg.get("FINETUNE_DIAG", {})) or {}
