@@ -248,7 +248,7 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
             except Exception as e:
                 # keep going on per-map failure; store error for visibility
                 records.append({
-                    "universe_id": int(row.get("universe_id", -1)),
+                    "universe_id": int(getattr(row, "universe_id", i)),
                     "H": None, "W": None,
                     "patch_deg": patch_deg, "r_pix": -1 if r_pix is None else r_pix,
                     "global_mean": np.nan, "global_std": np.nan,
@@ -287,7 +287,7 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
                 cutout_paths.append(cut_png)
 
             records.append({
-                "universe_id": uid,
+                "universe_id": i,
                 "H": H, "W": W,
                 "patch_deg": patch_deg, "r_pix": r_pix,
                 "global_mean": g_mean, "global_std": g_std,
