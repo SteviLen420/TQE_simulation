@@ -282,14 +282,14 @@ def run_fluctuation(active_cfg: Dict, **kwargs) -> Dict:
         "dataframe": df
     }
 
-# ---------------------------
+# --------------------------------------------------------------
 # Wrapper for Master Controller
-# ---------------------------
-def run_fluctuation_stage(active=None, active_cfg=None, seed=None, **_):
+# --------------------------------------------------------------
+def run_fluctuation_stage(active=None, active_cfg=None, **kwargs):
     cfg = active if active is not None else active_cfg
-    return run_fluctuation_stage_impl(cfg, seed=seed)
-
-
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_fluctuation(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    # local/manual run
     run_fluctuation_stage(ACTIVE)
