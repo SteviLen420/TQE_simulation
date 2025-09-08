@@ -271,8 +271,9 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
             valid = np.isfinite(M)
             g_mean = float(np.mean(M[valid])) if valid.any() else np.nan
             g_std  = float(np.std(M[valid]))  if np.sum(valid) > 1 else np.nan
-
-            conv = _fft_convolve2d(np.nan_to_num(M, nan=g_mean), K)
+            
+            fill = g_mean if np.isfinite(g_mean) else 0.0
+            conv = _fft_convolve2d(np.nan_to_num(M, nan=fill), K)
             cy, cx = np.unravel_index(int(np.argmin(conv)), conv.shape)
             patch_mean = float(conv[cy, cx])
             z = (patch_mean - g_mean) / g_std if (g_std is not None and g_std > 0) else np.nan
@@ -286,7 +287,7 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
                 cutout_paths.append(cut_png)
 
             records.append({
-                "universe_id": i,
+                "universe_id": uid,
                 "H": H, "W": W,
                 "patch_deg": patch_deg, "r_pix": r_pix,
                 "global_mean": g_mean, "global_std": g_std,
