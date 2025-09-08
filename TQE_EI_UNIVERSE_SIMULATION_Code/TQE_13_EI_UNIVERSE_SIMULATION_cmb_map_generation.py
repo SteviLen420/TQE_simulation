@@ -146,7 +146,7 @@ def run_cmb_map_generation(active_cfg: Dict = ACTIVE,
     Generate a CMB-like map per universe and save .npy (plus a limited number of PNG previews).
 
     Inputs:
-      - active_cfg: config dict (reads ANOMALY.map.* for resolution/beam; ANOMALY.psd_alpha optional)
+      - active_cfg: config dict (reads CMB_MAP.* for resolution/beam; CMB_MAP.psd_alpha optional)
       - arrays: optional, currently unused (reserved for future joins)
       - preview_max: cap on the number of PNG previews (default: min(N, 24))
 
