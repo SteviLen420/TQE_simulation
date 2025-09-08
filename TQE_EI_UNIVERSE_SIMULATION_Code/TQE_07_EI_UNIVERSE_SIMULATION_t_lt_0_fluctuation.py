@@ -285,9 +285,9 @@ def run_fluctuation(active_cfg: Dict, **kwargs) -> Dict:
 # ---------------------------
 # Wrapper for Master Controller
 # ---------------------------
-def run_fluctuation_stage(active_cfg: Dict = ACTIVE, **kwargs) -> Dict:
-    """Wrapper for the Master Controller. It ignores extra arguments."""
-    return run_fluctuation(active_cfg=active_cfg)
+def run_fluctuation_stage(active=None, active_cfg=None, seed=None, **_):
+    cfg = active if active is not None else active_cfg
+    return run_fluctuation_stage_impl(cfg, seed=seed)
 
 
 if __name__ == "__main__":
