@@ -293,6 +293,14 @@ def run_results_manifest(active_cfg: Dict = ACTIVE,
     }
 
 
-# Allow standalone run
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_results_manifest_stage(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_results_manifest(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    run_results_manifest(ACTIVE)
+   run_results_manifest_stage(ACTIVE)
