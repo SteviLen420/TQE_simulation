@@ -372,9 +372,9 @@ def run_superposition_stage(active, **kwargs) -> Dict:
 
     return {"primary_run_dir": str(run_dir), "fig_dir": str(fig_dir)}
 
-# Thin wrapper to match Master Control entrypoint
-def run_superposition_stage(active: Dict = ACTIVE, seed: Optional[int] = None) -> Dict[str, str]:
-    return run_superposition(E=None, cfg=active, seed=seed)
+def run_superposition_stage(active_cfg: Dict = ACTIVE, **kwargs) -> Dict:
+    """Wrapper to be called by Master Control, passing through relevant data."""
+    return run_superposition(active_cfg=active_cfg, **kwargs)
 
 if __name__ == "__main__":
     run_superposition(cfg=ACTIVE)
