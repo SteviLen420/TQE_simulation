@@ -183,49 +183,75 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
     records = []
     cutout_paths = []
 
-    if df_manifest is not None:
+        # bail out early if manifest is empty
         if df_manifest.empty:
             print("[COLD_SPOT] Manifest is empty.")
             return {}
-        # streaming mode: iterate rows, load per-universe map on the fly
-        # peek to get H for radius conversion
-        m0 = _load_map(df_manifest.iloc[0]["map_path"])
-        H0, W0 = m0.shape
-        r_pix = _deg_to_pix_radius(patch_deg, H0)
-        K = _make_disk_kernel(r_pix); K /= max(1.0, K.sum())
 
+        # try to prepare kernel from the first map; if it fails, lazily init later
+        m0, K, r_pix = None, None, None
+        try:
+            m0 = _load_map(df_manifest.iloc[0]["map_path"])
+            H0, W0 = m0.shape
+            r_pix = _deg_to_pix_radius(patch_deg, H0)
+            K = _make_disk_kernel(r_pix); K /= max(1.0, K.sum())
+        except Exception:
+            m0 = None  # will fallback to first successful map
+
+        # stream maps row-by-row; robust to per-file failures
         for i, row in df_manifest.iterrows():
-            uid = int(row["universe_id"])
-            M = m0 if i == 0 else _load_map(row["map_path"])
-            H, W = M.shape
+            try:
+                uid = int(row["universe_id"])
+                M = m0 if (i == 0 and m0 is not None) else _load_map(row["map_path"])
+                H, W = M.shape
 
-            valid = np.isfinite(M)
-            g_mean = float(np.mean(M[valid])) if valid.any() else np.nan
-            g_std  = float(np.std(M[valid]))  if np.sum(valid) > 1 else np.nan
+                # lazy kernel init if the peek failed or dims differ
+                if K is None or (M.shape != (H0, W0) and r_pix is not None):
+                    r_pix = _deg_to_pix_radius(patch_deg, H)
+                    K = _make_disk_kernel(r_pix); K /= max(1.0, K.sum())
 
-            conv = _fft_convolve2d(np.nan_to_num(M, nan=g_mean), K)
-            cy, cx = np.unravel_index(int(np.argmin(conv)), conv.shape)
-            patch_mean = float(conv[cy, cx])
-            z = (patch_mean - g_mean) / g_std if (g_std is not None and g_std > 0) else np.nan
+                # compute global stats (ignore NaNs)
+                valid  = np.isfinite(M)
+                g_mean = float(np.mean(M[valid])) if valid.any() else np.nan
+                g_std  = float(np.std(M[valid]))  if np.sum(valid) > 1 else np.nan
 
-            cut_png = ""
-            if save_cutouts:
-                cut = _extract_cutout(M, cy, cx, r_pix)
-                cut_path = fig_dir / f"{tag}__cold_spot_u{uid:05d}_r{r_pix}px.png"
-                _plot_cutout_with_circle(cut, r_pix, f"u={uid} | patch≈{patch_deg}° (z={z:.2f})", str(cut_path))
-                cut_png = str(cut_path)
-                cutout_paths.append(cut_png)
+                # convolve to find coldest patch mean and z-score
+                conv = _fft_convolve2d(np.nan_to_num(M, nan=g_mean), K)
+                cy, cx = np.unravel_index(int(np.argmin(conv)), conv.shape)
+                patch_mean = float(conv[cy, cx])
+                z = (patch_mean - g_mean) / g_std if (g_std is not None and g_std > 0) else np.nan
 
-            records.append({
-                "universe_id": uid,
-                "H": H, "W": W,
-                "patch_deg": patch_deg, "r_pix": r_pix,
-                "global_mean": g_mean, "global_std": g_std,
-                "patch_mean": patch_mean, "z_score": z,
-                "is_anomalous": int(np.isfinite(z) and (z <= -abs(z_thresh))),
-                "cutout_png": cut_png, "cy": int(cy), "cx": int(cx),
-            })
+                # optional cutout export
+                cut_png = ""
+                if save_cutouts:
+                    cut = _extract_cutout(M, cy, cx, r_pix)
+                    cut_path = fig_dir / f"{tag}__cold_spot_u{uid:05d}_r{r_pix}px.png"
+                    _plot_cutout_with_circle(cut, r_pix, f"u={uid} | patch≈{patch_deg}° (z={z:.2f})", str(cut_path))
+                    cut_png = str(cut_path)
+                    cutout_paths.append(cut_png)
 
+                # record metrics
+                records.append({
+                    "universe_id": uid, "H": H, "W": W,
+                    "patch_deg": patch_deg, "r_pix": r_pix,
+                    "global_mean": g_mean, "global_std": g_std,
+                    "patch_mean": patch_mean, "z_score": z,
+                    "is_anomalous": int(np.isfinite(z) and (z <= -abs(z_thresh))),
+                    "cutout_png": cut_png, "cy": int(cy), "cx": int(cx),
+                })
+
+            except Exception as e:
+                # keep going on per-map failure; store error for visibility
+                records.append({
+                    "universe_id": int(row.get("universe_id", -1)),
+                    "H": None, "W": None,
+                    "patch_deg": patch_deg, "r_pix": -1 if r_pix is None else r_pix,
+                    "global_mean": np.nan, "global_std": np.nan,
+                    "patch_mean": np.nan, "z_score": np.nan,
+                    "is_anomalous": 0, "cutout_png": "", "cy": -1, "cx": -1,
+                    "error": str(e),
+                })
+                continue
     else:
         # batch array mode (maps provided)
         maps = np.asarray(maps, dtype=np.float64)
