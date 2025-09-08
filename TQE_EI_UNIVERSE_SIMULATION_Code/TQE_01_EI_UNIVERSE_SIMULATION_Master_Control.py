@@ -8,23 +8,17 @@
 # ===================================================================================
 #
 # SUMMARY:
-# This module serves as the central control hub and main execution driver for the
-# simulation pipeline. Its primary roles are twofold:
+# This module serves as the main execution driver and orchestrator for the
+# entire simulation pipeline. When executed directly, it systematically runs
+# each stage of the simulation in the predefined order.
 #
-# 1.  **Defines the Master Configuration (`MASTER_CTRL`):** It contains the
-#     comprehensive default parameters for every stage of the simulation, from
-#     energy sampling to XAI analysis. This includes pipeline switches to
-#     enable/disable stages, detailed physics and computational parameters, and
-#     pre-defined run "profiles" (e.g., "demo", "paper") that provide specific
-#     overrides for different use cases.
-#
-# 2.  **Acts as the Pipeline Orchestrator:** When executed directly, the
-#     `if __name__ == "__main__"` block functions as the main execution harness.
-#     It dynamically imports and calls each stage of the pipeline in sequence,
-#     respecting the on/off switches defined in the active configuration.
-#
-# It also provides the `_deep_merge` utility function used by the configuration
-# resolver to combine the base settings with a selected profile.
+# It imports the final `ACTIVE` configuration from the
+# `TQE_00_..._config.py` module, which serves as the single source of truth
+# for all parameters. The core logic iterates through a `STAGES` list,
+# dynamically importing and calling each module's main function while
+# respecting the on/off switches defined in the `PIPELINE` configuration.
+# A `safe_call` utility ensures that the failure of an optional or
+# non-critical stage does not halt the entire pipeline.
 #
 # ===================================================================================
 
