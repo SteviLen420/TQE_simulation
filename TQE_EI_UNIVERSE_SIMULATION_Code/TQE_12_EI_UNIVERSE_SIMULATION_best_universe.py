@@ -39,7 +39,7 @@ from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DI
 from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
 
 
-def _simulate_law_trajectory(X_row: float, epochs: int, rng: np.random.Generator, cfg: dict):
+def simulate_law_trajectory(X_row: float, epochs: int, rng: np.random.Generator, cfg: dict):
     """Recreate a lock-in-like trajectory for a single universe (visualization only)."""
     noise = cfg["NOISE"]
 
