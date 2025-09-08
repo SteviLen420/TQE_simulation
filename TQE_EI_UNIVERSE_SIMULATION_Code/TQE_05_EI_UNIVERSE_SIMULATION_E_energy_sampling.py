@@ -161,9 +161,14 @@ def run_energy_sampling(active=ACTIVE, tag="E"):
         "run": PATHS,
     }
 
-# -----------------------------------------------------------------------------------
-# Standalone execution
-# -----------------------------------------------------------------------------------
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_superposition_stage(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_superposition(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    out = run_energy_sampling(ACTIVE, tag="E")
-    print("[energy_sampling] done →", out["paths"])
+   run_superposition_stage(ACTIVE)
