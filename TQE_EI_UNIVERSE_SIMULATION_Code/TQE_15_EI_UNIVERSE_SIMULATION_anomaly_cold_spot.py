@@ -273,6 +273,13 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
 
     # -> JSON summary
     n_anom = int(df["is_anomalous"].sum()) if len(df) else 0
+    # -- safe stats számítás a summary előtt --
+    zv = df["z_score"].to_numpy(dtype=float) if len(df) else np.array([])
+    fin = np.isfinite(zv)
+    z_min    = float(np.min(zv[fin]))    if fin.any() else float("nan")
+    z_median = float(np.median(zv[fin])) if fin.any() else float("nan")
+    z_mean   = float(np.mean(zv[fin]))   if fin.any() else float("nan")
+
     summary = {
         "env": paths["env"], "run_id": paths["run_id"], "mode": tag,
         "N": int(len(df)),
@@ -283,10 +290,7 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
             "csv": str(csv_path) if save_metrics_csv else "",
             "cutouts": cutout_paths[:50],
         },
-        "stats": {
-            "z_min": float(np.nanmin(df["z_score"])) if len(df) else np.nan,
-            "z_median": float(np.nanmedian(df["z_score"])) if len(df) else np.nan,
-            "z_mean": float(np.nanmean(df["z_score"])) if len(df) else np.nan,
+        "stats": {"z_min": z_min, "z_median": z_median, "z_mean": z_mean},
         },
     }
     json_path = run_dir / f"{tag}__anomaly_cold_spot_summary.json"
@@ -298,6 +302,7 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
     fig_sub = active_cfg.get("OUTPUTS", {}).get("local", {}).get("fig_subdir", "figs")
     for m in mirrors or []:
         try:
+            M = m0 if i == 0 else _load_map(row["map_path"])
             mpath = pathlib.Path(m); mpath.mkdir(parents=True, exist_ok=True)
             if save_metrics_csv:
                 copy2(csv_path, mpath / csv_path.name)
@@ -311,6 +316,8 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
                     except Exception:
                         pass
         except Exception as e:
+            records.append({"universe_id": uid, "error": str(e)})
+            continue
             print(f"[WARN] mirror copy failed for {m}: {e}")
 
     print(f"[COLD_SPOT] Done → CSV/JSON/PNGs saved under:\n  {run_dir}")
