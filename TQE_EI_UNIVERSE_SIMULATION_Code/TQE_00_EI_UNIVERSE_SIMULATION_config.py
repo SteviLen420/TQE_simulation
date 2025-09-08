@@ -34,6 +34,86 @@ def _deep_merge(a, b):
             a[k] = v
     return a
 
+# --- Profile resolution (no cross-imports to other TQE modules) -----------------
+
+# Default profile; can be overridden via env var TQE_PROFILE
+DEFAULT_PROFILE = "demo"
+
+# Base (default) configuration for the whole pipeline.
+# If your repo already has MASTER_CTRL, you can set BASE = MASTER_CTRL.
+BASE = {
+    "PIPELINE": {"use_information": True, "run_anomaly_scan": True},
+    "ENERGY":   {"num_universes": 1000, "seed": None},
+    "ANOMALY": {
+        "map": {"resolution_nside": 128, "seed_per_map": True},
+        "targets": [
+            {"name": "cold_spot", "enabled": True, "patch_deg": 10.0, "zscore_thresh": 3.0},
+            {"name": "quad_oct_align", "enabled": True, "l2l3_align_deg": 20.0},
+            {"name": "lack_large_angle", "enabled": True, "theta_min_deg": 60.0,
+             "lmax": 64, "n_mc": 200, "p_percentile": 0.05},
+            {"name": "hemispheric_asymmetry", "enabled": True, "l_max": 40, "n_mc": 200,
+             "pval_thresh": 0.05},
+        ],
+        "save_cutouts": True,
+        "save_metrics_csv": True,
+    },
+    "FINETUNE_DIAG": {"top_k": 5},
+    "XAI": {
+        "test_size": 0.25,
+        "test_random_state": 42,
+        "rf_n_estimators": 400,
+        "rf_class_weight": None,
+        "regression_min": 10,
+        "lime_num_features": 5,
+        "sklearn_n_jobs": -1,
+        "run_lime": True,
+    },
+    "OUTPUTS": {"local": {"fig_subdir": "figs"}, "mirrors": []},
+    "RUNTIME": {"matplotlib_dpi": 180},
+}
+
+# Profile-specific overrides. Keep these light; only override what differs from BASE.
+PROFILES = {
+    "demo": {},
+    "paper": {
+        # Example only — tune as you wish:
+        # "ENERGY": {"num_universes": 5000},
+        # "ANOMALY": {"map": {"resolution_nside": 256}},
+        # "XAI": {"rf_n_estimators": 800},
+    },
+    "colab": {
+        # Colab-friendly defaults (optional):
+        # "ENERGY": {"num_universes": 200},
+        # "OUTPUTS": {"local": {"fig_subdir": "figs"}, "mirrors": ["/content/drive/MyDrive/tqe_runs"]},
+    },
+}
+
+def _copy_tree(d):
+    """Shallow copy dict-of-dicts safely for mutation."""
+    out = {}
+    for k, v in d.items():
+        out[k] = dict(v) if isinstance(v, dict) else v
+    return out
+
+def build_active(profile_name: Optional[str] = None) -> dict:
+    """
+    Merge BASE with the selected profile override and return a fresh ACTIVE dict.
+    No imports to other TQE modules — avoids circular imports.
+    """
+    prof = profile_name or os.environ.get("TQE_PROFILE", DEFAULT_PROFILE)
+    active = _copy_tree(BASE)
+    override = PROFILES.get(prof, {})
+    _deep_merge(active, override)
+    # Annotate selected profile for downstream logging
+    meta = dict(active.get("META", {}))
+    meta["selected_profile"] = prof
+    active["META"] = meta
+    return active
+
+# Backward-compatible globals
+SELECTED_PROFILE = os.environ.get("TQE_PROFILE", DEFAULT_PROFILE)
+ACTIVE = build_active(SELECTED_PROFILE)
+
 # ===================================================================================
 # Profile resolution
 # ===================================================================================
