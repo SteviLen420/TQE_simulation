@@ -305,6 +305,9 @@ def run_expansion(
 
     return {"csv": str(csv_path), "json": str(json_path), "plots": figs, "table": out_df}
 
+def run_expansion_stage(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    return run_expansion(cfg, **kwargs)
 
 # Standalone
 if __name__ == "__main__":
