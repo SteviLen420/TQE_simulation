@@ -440,12 +440,14 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
     print(f"[FINETUNE] analyzed {len(out)} locked-in maps → CSV/JSON/PNGs @ {run_dir}")
     return {"csv": str(out_csv), "json": str(out_json), "plots": figs, "table": out}
 
-def run_finetune_stage(active: Dict = ACTIVE,
-                       collapse_csv: Optional[str] = None,
-                       cmb_manifest_csv: Optional[str] = None):
-    return run_finetune_diagnostics(active, collapse_csv, cmb_manifest_csv)
-
-
-# Allow standalone execution
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_finetune_diagnostics_stage(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_finetune_diagnostics(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    run_finetune_diagnostics(ACTIVE)
+    run_finetune_diagnostics_stage(ACTIVE)
