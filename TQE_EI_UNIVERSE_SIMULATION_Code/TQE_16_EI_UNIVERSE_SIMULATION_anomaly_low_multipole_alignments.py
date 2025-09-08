@@ -265,22 +265,6 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
     top_idx = np.argsort(angle_deg)[:K]
     top_list = [{"universe_id": int(i), "angle_deg": float(angle_deg[i])} for i in top_idx]
 
-    summary = {
-        "env": paths.get("env", ""),
-        "run_id": paths.get("run_id", ""),
-        "mode": tag,
-        "N": int(N),
-        "align_threshold_deg": float(align_thresh_deg),
-        "counts": {"aligned_n": int((angle_deg <= align_thresh_deg).sum())},
-        "angle_deg": _stats(angle_deg),
-        "concentration": {"conc_q": _stats(conc_q), "conc_o": _stats(conc_o)},
-        "top_aligned": top_list,
-        "files": {"csv": str(csv_path), "plots": figs},
-    }
-    json_path = run_dir / f"{tag}__anomaly_low_multipole_align_summary.json"
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(summary, f, indent=2)
-
     # -- ábrák --
     figs = []
     if N > 0:
@@ -312,6 +296,22 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
                         break
         except Exception:
             pass
+
+    summary = {
+        "env": paths.get("env", ""),
+        "run_id": paths.get("run_id", ""),
+        "mode": tag,
+        "N": int(N),
+        "align_threshold_deg": float(align_thresh_deg),
+        "counts": {"aligned_n": int((angle_deg <= align_thresh_deg).sum())},
+        "angle_deg": _stats(angle_deg),
+        "concentration": {"conc_q": _stats(conc_q), "conc_o": _stats(conc_o)},
+        "top_aligned": top_list,
+        "files": {"csv": str(csv_path), "plots": figs},
+    }
+    json_path = run_dir / f"{tag}__anomaly_low_multipole_align_summary.json"
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
 
     # -- tükrözés --
     from shutil import copy2
