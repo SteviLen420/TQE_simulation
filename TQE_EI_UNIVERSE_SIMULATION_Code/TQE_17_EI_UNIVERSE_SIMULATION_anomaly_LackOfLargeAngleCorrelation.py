@@ -171,9 +171,10 @@ def run_llac(active_cfg: Dict = ACTIVE,
     # Safe fetch of figure subdir (avoid KeyError if OUTPUTS/local missing)
     fig_sub = active_cfg.get("OUTPUTS", {}).get("local", {}).get("fig_subdir", "figs")
 
-    # EI/E filename tag
-    tag = "EI" if active_cfg["PIPELINE"].get("use_information", True) else "E"
-    dpi = int(active_cfg["RUNTIME"].get("matplotlib_dpi", 180))
+    # Robust config access (avoid KeyError if sections are missing)
+    tag = "EI" if active_cfg.get("PIPELINE", {}).get("use_information", True) else "E"
+    dpi = int(active_cfg.get("RUNTIME", {}).get("matplotlib_dpi", 180))
+    N   = int(active_cfg.get("ENERGY", {}).get("num_universes", 1000))
 
     # Read LLAC controls from config
     a_cfg   = active_cfg.get("ANOMALY", {})
@@ -222,9 +223,9 @@ def run_llac(active_cfg: Dict = ACTIVE,
     else:
         cl_in = _default_cl(lmax)
 
-    # If no maps provided but healpy is available → synthesize
+    # Synthesize maps only if none are provided and healpy is available
     synthesized = False
-    if cmb_maps is not None and hp is None:
+    if cmb_maps is None and hp is not None:
         synthesized = True
         if seed_per_map and universe_rngs is not None and len(uni_seeds) > 0:
             rngs = universe_rngs(uni_seeds[:N])
@@ -247,10 +248,9 @@ def run_llac(active_cfg: Dict = ACTIVE,
     keep_idx = np.unique(np.linspace(0, max(N - 1, 0), num=min(N, 6), dtype=int))
     kept_curves: List[Tuple[int, np.ndarray]] = []
 
-    # Warn if maps are provided but healpy is unavailable → fall back to theoretical Cl
-    if cmb_maps is not None and hp is None:
-        print("[LLAC] healpy not available → cannot compute C_l from provided maps; using theoretical C_l for all universes.")
-        # Path: map → C_l → C(θ)
+    # Compute per-universe metrics depending on availability of maps/healpy
+    if cmb_maps is not None and hp is not None:
+        # Path A: maps provided and healpy available → use per-map C_l
         for i in range(N):
             m   = cmb_maps[i]
             cl  = _compute_cl_from_map(m, lmax=lmax)
@@ -260,10 +260,19 @@ def run_llac(active_cfg: Dict = ACTIVE,
             Cth_at_tmin[i] = float(np.interp(ccut, costh_grid, Cth))
             if i in keep_idx:
                 kept_curves.append((i, Cth))
-    else:
-        # Path: theoretical C_l → same C(θ) for all universes (no map/HP)
+    elif cmb_maps is not None and hp is None:
+        # Path B: maps provided but healpy unavailable → fall back to theoretical C_l
+        print("[LLAC] healpy not available → falling back to theoretical C_l for all universes.")
         Cth = _legendre_transform_cl_to_Ctheta(cl_in, costh_grid)
-        base_S12 = _s_one_half_from_Ctheta(costh_grid, Cth, theta_min_deg=theta_min_deg)
+        base_S12  = _s_one_half_from_Ctheta(costh_grid, Cth, theta_min_deg=theta_min_deg)
+        base_Ctmin = float(np.interp(math.cos(math.radians(theta_min_deg)), costh_grid, Cth))
+        S12[:] = base_S12
+        Cth_at_tmin[:] = base_Ctmin
+        kept_curves.append((0, Cth))
+   else:
+        # Path C: no maps provided → theoretical C_l for all universes
+        Cth = _legendre_transform_cl_to_Ctheta(cl_in, costh_grid)
+        base_S12  = _s_one_half_from_Ctheta(costh_grid, Cth, theta_min_deg=theta_min_deg)
         base_Ctmin = float(np.interp(math.cos(math.radians(theta_min_deg)), costh_grid, Cth))
         S12[:] = base_S12
         Cth_at_tmin[:] = base_Ctmin
