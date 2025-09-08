@@ -123,24 +123,27 @@ def _bandmap_from_alms(theta: np.ndarray, phi: np.ndarray, l: int, alm_vec: np.n
 
 
 def _inertia_axis_and_conc(dirs_xyz: np.ndarray, T: np.ndarray, weights: Optional[np.ndarray] = None) -> Tuple[np.ndarray, float]:
-    """
-    Power-weighted inertia tensor on the sphere:
-        I = Σ w T^2 n n^T
-    Returns the dominant eigenvector (unit axis) and a concentration metric λ_max / trace(I).
-    """
     N = dirs_xyz.shape[0]
     if weights is None:
         weights = np.full(N, 4.0 * np.pi / N)
-    w = (weights * (T*T))[:, None, None]               # (N,1,1)
-    I = (dirs_xyz[:, :, None] * dirs_xyz[:, None, :])  # (N,3,3) 
-    I = (w * I).sum(axis=0)                            
-    I = 0.5 * (I + I.T)                                # symmetrize
+
+    power = weights * (T * T)
+    total_power = float(np.sum(power))
+    if not np.isfinite(total_power) or total_power <= 0.0:
+        # Fallback: no directional preference → arbitrary unit axis, zero concentration
+        return np.array([0.0, 0.0, 1.0], dtype=float), 0.0
+
+    # I = Σ w T^2 n n^T
+    # Use einsum to avoid large temp arrays: (N),(N,3),(N,3) -> (3,3)
+    I = np.einsum("i,ij,ik->jk", power, dirs_xyz, dirs_xyz, optimize=True)
+    I = 0.5 * (I + I.T)
+
     vals, vecs = np.linalg.eigh(I)
     idx = int(np.argmax(vals))
     v = vecs[:, idx]
-    v = v / np.linalg.norm(v)
+    v = v / max(1e-18, np.linalg.norm(v))
     conc = float(np.max(vals) / max(1e-18, np.trace(I)))
-    return v, conc
+    return v.astype(float), conc
 
 
 def _angle_between_axes(a: np.ndarray, b: np.ndarray) -> float:
@@ -262,14 +265,18 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
         }
 
     K = min(10, N)
-    top_idx = np.argsort(angle_deg)[:K]
-    top_list = [{"universe_id": int(i), "angle_deg": float(angle_deg[i])} for i in top_idx]
+    if K > 0:
+        top_idx = np.argpartition(angle_deg, K - 1)[:K]
+        top_idx = top_idx[np.argsort(angle_deg[top_idx])]
+        top_list = [{"universe_id": int(i), "angle_deg": float(angle_deg[i])} for i in top_idx]
+    else:
+        top_list = []
 
     # -- plots --
     figs = []
     if N > 0:
         plt.figure()
-        plt.hist(angle_deg, bins=np.linspace(0, 90, 37))
+        plt.hist(angle_deg, bins=36, range=(0, 90))
         plt.axvline(align_thresh_deg, color="red", linestyle="--", label=f"threshold = {align_thresh_deg:.1f}°")
         plt.xlabel("Quadrupole–octopole alignment angle (deg)")
         plt.ylabel("count")
