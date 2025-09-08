@@ -146,8 +146,8 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
     patch_deg       = float(cold_spec.get("patch_deg", 10.0))
     z_thresh        = float(cold_spec.get("zscore_thresh", 3.0))
     anom_cfg = active_cfg.get("ANOMALY", {}) or {}
-    save_cutouts    = bool(active_cfg["ANOMALY"].get("save_cutouts", True))
-    save_metrics_csv= bool(active_cfg["ANOMALY"].get("save_metrics_csv", True))
+    save_cutouts     = bool(anom_cfg.get("save_cutouts", True))
+    save_metrics_csv = bool(anom_cfg.get("save_metrics_csv", True))
 
     # Input maps:
     # 1) explicit argument, 2) arrays["cmb_maps"], 3) stream from manifest CSV made by TQE_13
@@ -174,11 +174,11 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
             data = np.load(path)
             arr = data["map"] if "map" in data else data[list(data.keys())[0]]
         else:
-             raise ValueError(f"Unsupported map format: {path}")
-         arr = np.asarray(arr, dtype=np.float64)
-         if arr.ndim != 2:
-             raise ValueError(f"Map must be 2D: {path} has shape {arr.shape}")
-         return arr
+            raise ValueError(f"Unsupported map format: {path}")
+        arr = np.asarray(arr, dtype=np.float64)
+        if arr.ndim != 2:
+            raise ValueError(f"Map must be 2D: {path} has shape {arr.shape}")
+        return arr
 
     records = []
     cutout_paths = []
