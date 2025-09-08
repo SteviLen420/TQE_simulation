@@ -326,8 +326,9 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
 
 
 # Optional stage wrapper for Master Controller
-def run_anomaly_low_multipole_alignments_stage(active: Dict = ACTIVE):
-    return run_anomaly_low_multipole_alignments(active)
+def run_low_ell_alignments(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    return run_anomaly_low_multipole_alignments_stage(cfg, **kwargs)
 
 
 # Standalone
