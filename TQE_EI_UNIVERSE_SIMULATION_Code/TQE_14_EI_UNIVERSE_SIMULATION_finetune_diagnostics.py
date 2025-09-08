@@ -210,9 +210,12 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
     mirrors = paths.get("mirrors", [])
 
     # EI/E filename tag
-    use_info   = bool(active_cfg["PIPELINE"].get("use_information", True))
+    pipe_cfg = active_cfg.get("PIPELINE", {}) if isinstance(active_cfg, dict) else {}
+    use_info = bool(pipe_cfg.get("use_information", True))
     tag_prefix = "EI__" if use_info else "E__"
-    dpi = int(active_cfg["RUNTIME"].get("matplotlib_dpi", 180))
+
+    runtime_cfg = active_cfg.get("RUNTIME", {}) if isinstance(active_cfg, dict) else {}
+    dpi = int(runtime_cfg.get("matplotlib_dpi", 180))
 
     # -------- Config for targets (override via ACTIVE["FINETUNE_DIAG"])
     cfg_ft = active_cfg.get("FINETUNE_DIAG", {})
