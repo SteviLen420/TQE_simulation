@@ -294,7 +294,6 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
             })
 
     # -> DataFrame + CSV
-    import pandas as pd
     df = pd.DataFrame.from_records(records)
     csv_path = run_dir / f"{tag}__anomaly_cold_spot_metrics.csv"
     if save_metrics_csv:
