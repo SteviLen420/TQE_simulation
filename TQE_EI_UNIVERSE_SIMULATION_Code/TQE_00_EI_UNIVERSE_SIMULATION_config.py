@@ -53,15 +53,18 @@ MASTER_CTRL = {
         "run_superposition": True,        # Optional quantum superposition stage
 
         # Core evolution
-        "run_lockin": True,               # Law lock-in detection
+        "run_collapse_LawLockin": True,   # matches collapse stage name used in STAGES
         "run_expansion": True,            # Expansion dynamics
 
         # Post stages / analytics
         "run_montecarlo": True,           # Monte Carlo statistics
         "run_best_universe": True,        # Best-universe scoring
-        "run_cmb_map": True,              # CMB map generation
-        "run_anomaly_scan": True,         # Anomaly detection
-        "run_finetune_diag": True,        # Fine-tuning diagnostics
+        "run_cmb_map_generation": True,   # matches CMB stage name used in STAGES
+        "run_anomaly_cold_spot": True,
+        "run_anomaly_low_multipole_alignments": True,
+        "run_anomaly_llac": True,         # lack of large-angle correlation
+        "run_anomaly_hpa": True,          # hemispherical asymmetry
+        "run_finetune_diagnostics": True, # matches finetune stage name used in STAGES
         "run_xai": True,                  # SHAP/LIME explainability
         "run_manifest": True,             # Results manifest generation
     },
