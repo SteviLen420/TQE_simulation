@@ -167,7 +167,7 @@ def run_cmb_map_generation(active_cfg: Dict = ACTIVE,
     tag = "EI" if use_I else "E"
 
     # --- Config
-    an_map = active_cfg["ANOMALY"]["map"]
+    an_map = active_cfg["ANOMALY"]["CMB_MAP"]
     nside = int(an_map.get("resolution_nside", 128))
     beam_fwhm_deg = float(an_map.get("beam_fwhm_deg", 1.0))
     beam_sigma_pix = _fwhm_deg_to_sigma_pix(beam_fwhm_deg, nside)
@@ -225,7 +225,7 @@ def run_cmb_map_generation(active_cfg: Dict = ACTIVE,
             plt.title(f"CMB-like map (u={i})")
             p = fig_dir / f"{tag}__cmb_map_u{i}.png"
             plt.tight_layout()
-            plt.savefig(p, dpi=ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
+            plt.savefig(p, dpi=active_cfg["RUNTIME"].get("matplotlib_dpi", 180))
             plt.close()
             previews.append(str(p))
 
