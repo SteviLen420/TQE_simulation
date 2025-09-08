@@ -291,8 +291,8 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
             "cutouts": cutout_paths[:50],
         },
         "stats": {"z_min": z_min, "z_median": z_median, "z_mean": z_mean},
-        },
-    }
+        }
+    
     json_path = run_dir / f"{tag}__anomaly_cold_spot_summary.json"
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
@@ -302,8 +302,8 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
     fig_sub = active_cfg.get("OUTPUTS", {}).get("local", {}).get("fig_subdir", "figs")
     for m in mirrors or []:
         try:
-            M = m0 if i == 0 else _load_map(row["map_path"])
-            mpath = pathlib.Path(m); mpath.mkdir(parents=True, exist_ok=True)
+            mpath = pathlib.Path(m)
+            mpath.mkdir(parents=True, exist_ok=True)
             if save_metrics_csv:
                 copy2(csv_path, mpath / csv_path.name)
             copy2(json_path, mpath / json_path.name)
@@ -316,8 +316,6 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
                     except Exception:
                         pass
         except Exception as e:
-            records.append({"universe_id": uid, "error": str(e)})
-            continue
             print(f"[WARN] mirror copy failed for {m}: {e}")
 
     print(f"[COLD_SPOT] Done → CSV/JSON/PNGs saved under:\n  {run_dir}")
