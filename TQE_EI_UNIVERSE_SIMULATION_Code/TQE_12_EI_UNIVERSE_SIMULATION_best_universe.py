@@ -280,6 +280,9 @@ def run_best_universe(active_cfg: Dict = ACTIVE,
         "best_row": best.iloc[0].to_dict(),
     }
 
+def run_best_universe(active=None, active_cfg=None,
+                      collapse_df=None, expansion_df=None, montecarlo_df=None, **_):
+    cfg = active if active is not None else active_cfg
 
 # Standalone entry
 if __name__ == "__main__":
