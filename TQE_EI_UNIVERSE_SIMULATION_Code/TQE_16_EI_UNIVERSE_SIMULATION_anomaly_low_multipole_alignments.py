@@ -275,7 +275,7 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
         "angle_deg": _stats(angle_deg),
         "concentration": {"conc_q": _stats(conc_q), "conc_o": _stats(conc_o)},
         "top_aligned": top_list,
-        "files": {"csv": str(csv_path)},
+        "files": {"csv": str(csv_path), "plots": figs},
     }
     json_path = run_dir / f"{tag}__anomaly_low_multipole_align_summary.json"
     with open(json_path, "w", encoding="utf-8") as f:
@@ -285,7 +285,7 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
     figs = []
     if N > 0:
         plt.figure()
-        plt.hist(angle_deg, bins=36)
+        plt.hist(angle_deg, bins=np.linspace(0, 90, 37))
         plt.axvline(align_thresh_deg, color="red", linestyle="--", label=f"threshold = {align_thresh_deg:.1f}°")
         plt.xlabel("Quadrupole–octopole alignment angle (deg)")
         plt.ylabel("count")
