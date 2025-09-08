@@ -231,7 +231,7 @@ def run_expansion(
     # Plots
     # ---------------------------
     figs = []
-    dpi = int(ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
+    dpi = int(active_cfg["RUNTIME"].get("matplotlib_dpi", 180))
 
     # 1) Átlagos görbe a mintapanelen
     if len(S_stack) > 0:
