@@ -307,10 +307,14 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
             "plots": cutout_paths,
             "table": df}
 
-def run_cold_spot_scan(active=None, active_cfg=None, **kwargs):
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_anomaly_cold_spot_stage(active=None, active_cfg=None, **kwargs):
     cfg = active if active is not None else active_cfg
-    return run_anomaly_cold_spot_stage(cfg, **kwargs)
-
-# CLI entry
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_anomaly_cold_spot(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    run_anomaly_cold_spot(ACTIVE)
+    run_anomaly_cold_spot_stage(ACTIVE)
