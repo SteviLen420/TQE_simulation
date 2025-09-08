@@ -34,9 +34,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import entropy
 
-# Import cached config + paths
+# Import cached config + paths (no defaults in function signatures!)
 from TQE_03_EI_UNIVERSE_SIMULATION_imports import ACTIVE, PATHS, RUN_DIR, FIG_DIR
 from TQE_04_EI_UNIVERSE_SIMULATION_seeding import load_or_create_run_seeds
+
 
 # ---------------------------
 # Helpers
@@ -59,10 +60,10 @@ def _random_prob_vec(dim: int, rng) -> np.ndarray:
 
 def _info_components(p: np.ndarray, kl_eps: float) -> Tuple[float, float, float]:
     """
-    Compute:
-      - KL(p || u) normalized by log(dim)  ∈ [0,1]
-      - H_norm = H(p)/log(dim)             ∈ [0,1]
-      - (1 - H_norm)                       Shannon-derived info
+    Returns:
+      kl_norm     ∈ [0,1]  (KL(p||u) / log(dim))
+      H_norm      ∈ [0,1]
+      shannon_info = 1 - H_norm
     """
     dim = p.size
     u = np.full(dim, 1.0 / dim)
@@ -133,39 +134,41 @@ def _save_with_mirrors(src_path: str, mirrors: list, put_in_figs: bool = False):
 
 
 # ---------------------------
-# Main stage
+# Main stage (Master expects this name/signature)
 # ---------------------------
 
-def run_fluctuation_stage(active, seed=None):
-    """Fluctuation stage (t < 0). Accepts 'active' (not 'active_cfg').
-    Fluctuation stage:
-      1) Sample energies E
+def run_fluctuation_stage(active: Dict, seed: Optional[int] = None) -> Dict:
+    """
+    Fluctuation stage (t < 0).
+
+    Steps:
+      1) Sample energies E0
       2) Compute I components (if enabled)
-      3) Couple into X
+      3) Couple X = f(E, I)
       4) Save CSV/plots/JSON (+ mirrors)
     """
-    # Paths (pre-resolved, cached)
+    # Pre-resolved paths (from central imports)
     primary = RUN_DIR
     figdir  = FIG_DIR
     mirrors = PATHS["mirrors"]
     paths   = PATHS
 
-    # Flags
-    ei_tag_enabled = active_cfg["OUTPUTS"].get("tag_ei_in_filenames", True)
-    use_I          = bool(active_cfg["PIPELINE"].get("use_information", True))
+    # Flags / prefixes
+    ei_tag_enabled = active["OUTPUTS"].get("tag_ei_in_filenames", True)
+    use_I          = bool(active["PIPELINE"].get("use_information", True))
     prefix         = ("EI__" if use_I else "E__") if ei_tag_enabled else ""
 
     # RNG from central seeder
-    seeds_data = load_or_create_run_seeds(active_cfg)
-    master_seed = seeds_data["master_seed"]
+    seeds_data  = load_or_create_run_seeds(active)
+    master_seed = seeds_data["master_seed"] if seed is None else int(seed)
     rng = np.random.default_rng(master_seed)
 
     # --- 1) Energy ---
-    N     = int(active_cfg["ENERGY"]["num_universes"])
-    mu    = float(active_cfg["ENERGY"]["log_mu"])
-    sigma = float(active_cfg["ENERGY"]["log_sigma"])
-    t_low = active_cfg["ENERGY"].get("trunc_low", None)
-    t_high= active_cfg["ENERGY"].get("trunc_high", None)
+    N     = int(active["ENERGY"]["num_universes"])
+    mu    = float(active["ENERGY"]["log_mu"])
+    sigma = float(active["ENERGY"]["log_sigma"])
+    t_low = active["ENERGY"].get("trunc_low", None)
+    t_high= active["ENERGY"].get("trunc_high", None)
 
     logE0 = rng.normal(loc=mu, scale=sigma, size=N).astype(float)
     E0    = np.exp(logE0)
@@ -174,7 +177,7 @@ def run_fluctuation_stage(active, seed=None):
     # --- 2) Information (optional) ---
     I_kl = I_shannon = I_fused = None
     if use_I:
-        info_cfg = active_cfg["INFORMATION"]
+        info_cfg = active["INFORMATION"]
         dim      = int(info_cfg["hilbert_dim"])
         eps      = float(info_cfg["kl_eps"])
 
@@ -190,10 +193,10 @@ def run_fluctuation_stage(active, seed=None):
             I_fused[i]   = _fuse_I(kl_norm, sh_info, info_cfg)
 
     # --- 3) Coupling ---
-    X = _couple_X(E0, I_fused if use_I else None, active_cfg["COUPLING_X"])
+    X = _couple_X(E0, I_fused if use_I else None, active["COUPLING_X"])
 
     # --- 4) Goldilocks heuristic ---
-    gcfg = active_cfg["GOLDILOCKS"]
+    gcfg = active["GOLDILOCKS"]
     if gcfg.get("mode", "dynamic") == "heuristic":
         c = float(gcfg.get("E_center", 4.0))
         w = float(gcfg.get("E_width", 4.0))
@@ -202,8 +205,12 @@ def run_fluctuation_stage(active, seed=None):
     in_goldilocks_E = (np.abs(E0 - c) <= (w / 2.0)).astype(int)
 
     # --- 5) DataFrame ---
-    data = {"universe_id": np.arange(N, dtype=int), "E0": E0, "logE0": logE0,
-            "in_goldilocks_E": in_goldilocks_E, "X": X}
+    data = {
+        "universe_id": np.arange(N, dtype=int),
+        "E0": E0, "logE0": logE0,
+        "in_goldilocks_E": in_goldilocks_E,
+        "X": X
+    }
     if use_I:
         data.update({"I_kl": I_kl, "I_shannon": I_shannon, "I_fused": I_fused})
     df = pd.DataFrame(data)
@@ -214,16 +221,17 @@ def run_fluctuation_stage(active, seed=None):
     _save_with_mirrors(csv_path, mirrors)
 
     # --- 6) Plots ---
+    dpi = int(active["RUNTIME"]["matplotlib_dpi"])
     f1 = os.path.join(figdir, f"{prefix}E_hist_linear.png")
     plt.figure(); plt.hist(E0, bins=64); plt.xlabel("E0"); plt.ylabel("Count")
     plt.title("Energy distribution (linear)")
-    plt.savefig(f1, dpi=ACTIVE["RUNTIME"]["matplotlib_dpi"], bbox_inches="tight"); plt.close()
+    plt.savefig(f1, dpi=dpi, bbox_inches="tight"); plt.close()
     _save_with_mirrors(f1, mirrors, put_in_figs=True)
 
     f2 = os.path.join(figdir, f"{prefix}E_hist_log.png")
     plt.figure(); plt.hist(np.log10(E0 + 1e-12), bins=64)
     plt.xlabel("log10(E0)"); plt.ylabel("Count"); plt.title("Energy distribution (log10)")
-    plt.savefig(f2, dpi=ACTIVE["RUNTIME"]["matplotlib_dpi"], bbox_inches="tight"); plt.close()
+    plt.savefig(f2, dpi=dpi, bbox_inches="tight"); plt.close()
     _save_with_mirrors(f2, mirrors, put_in_figs=True)
 
     f3 = f4 = None
@@ -231,41 +239,51 @@ def run_fluctuation_stage(active, seed=None):
         f3 = os.path.join(figdir, f"{prefix}E_vs_I_scatter.png")
         plt.figure(); plt.scatter(E0, I_fused, s=6, alpha=0.5)
         plt.xlabel("E0"); plt.ylabel("I_fused"); plt.title("E vs I_fused")
-        plt.savefig(f3, dpi=ACTIVE["RUNTIME"]["matplotlib_dpi"], bbox_inches="tight"); plt.close()
+        plt.savefig(f3, dpi=dpi, bbox_inches="tight"); plt.close()
         _save_with_mirrors(f3, mirrors, put_in_figs=True)
 
         f4 = os.path.join(figdir, f"{prefix}X_distribution.png")
         plt.figure(); plt.hist(X, bins=64); plt.xlabel("X"); plt.ylabel("Count")
         plt.title("X distribution (from E and I)")
-        plt.savefig(f4, dpi=ACTIVE["RUNTIME"]["matplotlib_dpi"], bbox_inches="tight"); plt.close()
+        plt.savefig(f4, dpi=dpi, bbox_inches="tight"); plt.close()
         _save_with_mirrors(f4, mirrors, put_in_figs=True)
 
     # --- 7) JSON summary ---
-    summary = {"env": paths["env"], "run_id": paths["run_id"], "mode": "EI" if use_I else "E",
-               "counts": {"num_universes": int(N), "in_goldilocks_E": int(in_goldilocks_E.sum())},
-               "stats": {"E0": {"min": float(np.min(E0)), "max": float(np.max(E0)),
-                                "mean": float(np.mean(E0)), "std": float(np.std(E0))},
-                         "X": {"min": float(np.min(X)), "max": float(np.max(X)),
-                               "mean": float(np.mean(X)), "std": float(np.std(X))}},
-               "files": {"csv": os.path.relpath(csv_path, start=primary),
-                         "figs": [os.path.relpath(p, start=primary) for p in [f1, f2, f3, f4] if p]}}
+    summary = {
+        "env": paths["env"], "run_id": paths["run_id"],
+        "mode": "EI" if use_I else "E",
+        "counts": {"num_universes": int(N), "in_goldilocks_E": int(in_goldilocks_E.sum())},
+        "stats": {
+            "E0": {"min": float(np.min(E0)), "max": float(np.max(E0)),
+                   "mean": float(np.mean(E0)), "std": float(np.std(E0))},
+            "X":  {"min": float(np.min(X)),  "max": float(np.max(X)),
+                   "mean": float(np.mean(X)), "std": float(np.std(X))}
+        },
+        "files": {
+            "csv": os.path.relpath(csv_path, start=primary),
+            "figs": [os.path.relpath(p, start=primary) for p in [f1, f2, f3, f4] if p]
+        }
+    }
 
     json_path = os.path.join(primary, f"{prefix}fluctuation_summary.json")
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
     _save_with_mirrors(json_path, mirrors)
 
-    return {"paths": paths, "summary": summary,
-            "arrays": {"E0": E0, "logE0": logE0,
-                       "I_kl": I_kl if use_I else None,
-                       "I_shannon": I_shannon if use_I else None,
-                       "I_fused": I_fused if use_I else None,
-                       "X": X, "in_goldilocks_E": in_goldilocks_E},
-            "dataframe": df}
-    
-def run_fluctuation_stage(active_cfg: Dict = ACTIVE, seed: Optional[int] = None) -> Dict:
-    # thin wrapper to match Master Control's expected entrypoint
-    return run_fluctuation(active_cfg, seed)
+    return {
+        "paths": paths,
+        "summary": summary,
+        "arrays": {
+            "E0": E0, "logE0": logE0,
+            "I_kl": I_kl if use_I else None,
+            "I_shannon": I_shannon if use_I else None,
+            "I_fused": I_fused if use_I else None,
+            "X": X, "in_goldilocks_E": in_goldilocks_E
+        },
+        "dataframe": df
+    }
+
 
 if __name__ == "__main__":
-    run_fluctuation(ACTIVE)
+    # local/manual run
+    run_fluctuation_stage(ACTIVE)
