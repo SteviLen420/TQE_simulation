@@ -136,8 +136,8 @@ def _save_with_mirrors(src_path: str, mirrors: list, put_in_figs: bool = False):
 # Main stage
 # ---------------------------
 
-def run_fluctuation(active_cfg: Dict = ACTIVE, seed: Optional[int] = None) -> Dict:
-    """
+def run_fluctuation_stage(active, seed=None):
+    """Fluctuation stage (t < 0). Accepts 'active' (not 'active_cfg').
     Fluctuation stage:
       1) Sample energies E
       2) Compute I components (if enabled)
