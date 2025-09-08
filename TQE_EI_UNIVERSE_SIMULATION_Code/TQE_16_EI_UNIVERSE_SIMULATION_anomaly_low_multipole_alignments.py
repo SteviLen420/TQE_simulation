@@ -161,11 +161,11 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
     Compute quadrupole–octopole alignment for each universe and save CSV/JSON/PNGs.
     Returns a dict with file paths and the DataFrame.
     """
-    # --- kötelező SciPy (itt, helyes behúzással) ---
+    # --- mandatory SciPy (here, with correct indentation) ---
     if sph_harm is None:
         raise RuntimeError("This stage requires SciPy (scipy.special.sph_harm). Please install scipy.")
 
-    # -- stabil, cache-elt útvonalak --
+    # -- stable, cached paths --
     paths   = PATHS
     run_dir = pathlib.Path(RUN_DIR); run_dir.mkdir(parents=True, exist_ok=True)
     fig_dir = pathlib.Path(FIG_DIR); fig_dir.mkdir(parents=True, exist_ok=True)
@@ -175,13 +175,13 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
     N   = int(active_cfg.get("ENERGY", {}).get("num_universes", 0))
     dpi = int(active_cfg.get("RUNTIME", {}).get("matplotlib_dpi", 180))
 
-    # -- küszöb az ANOMALY.targets-ből --
+    # -- threshold from ANOMALY.targets --
     align_thresh_deg = 20.0
     for t in active_cfg.get("ANOMALY", {}).get("targets", []):
         if t.get("name") in ("quad_oct_align", "low_multipole_align"):
             align_thresh_deg = float(t.get("l2l3_align_deg", align_thresh_deg))
 
-    # -- irányok a gömbön (healpy vagy Fibonacci) --
+    # -- directions on the sphere (healpy or Fibonacci) --
     if hp is not None:
         nside = int(active_cfg.get("ANOMALY", {}).get("map", {}).get("resolution_nside", 64))
         npix = hp.nside2npix(nside)
@@ -195,13 +195,13 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
         theta, phi = _theta_phi_from_vecs(dirs)
         weights = np.full(npix, 4.0 * np.pi / npix)
 
-    # -- Y_{lm} előszámítás (egyszer) --
+    # -- precompute Y_{lm} (once) --
     m2 = np.arange(-2, 3)
     m3 = np.arange(-3, 4)
     Y2 = np.stack([sph_harm(m, 2, phi, theta) for m in m2], axis=1)  # (npix, 5)
     Y3 = np.stack([sph_harm(m, 3, phi, theta) for m in m3], axis=1)  # (npix, 7)
 
-    # -- magok / RNG-k --
+    # -- seeds / RNGs --
     seeds = load_or_create_run_seeds(active_cfg)
     rngs  = universe_rngs(seeds.get("universe_seeds", []))
     if len(rngs) < N:
@@ -209,21 +209,21 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
         for i in range(len(rngs), N):
             rngs.append(np.random.default_rng(base + 10007 * i))
 
-    # -- tárolók --
+    # -- storage buffers --
     axis_q = np.zeros((N, 3), dtype=float)
     axis_o = np.zeros((N, 3), dtype=float)
     conc_q = np.zeros(N, dtype=float)
     conc_o = np.zeros(N, dtype=float)
     angle_deg = np.zeros(N, dtype=float)
 
-    cl_scale = 1.0  # opcionális skála a low-ℓ varianciára
+    cl_scale = 1.0  # optional scale for low-ℓ variance
 
-    # -- fő ciklus --
+    # -- main loop --
     for i in range(N):
         rng  = rngs[i]
         alms = _draw_alms_low_l(rng, l_vals=(2, 3), cl_scale=cl_scale)
 
-        # sávkorlátos "map" visszaállítás (mátrixszorzás az előre számolt Y-kkal)
+        # band-limited map reconstruction (matrix multiply with precomputed Y)
         T2 = (Y2 @ alms[2]).real
         T3 = (Y3 @ alms[3]).real
 
@@ -234,7 +234,7 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
         axis_o[i, :] = v3; conc_o[i] = c3
         angle_deg[i] = _angle_between_axes(v2, v3)
 
-    # -- táblázat + CSV --
+    # -- table + CSV --
     df = pd.DataFrame({
         "universe_id": np.arange(N, dtype=int),
         "axis_q_x": axis_q[:, 0], "axis_q_y": axis_q[:, 1], "axis_q_z": axis_q[:, 2],
@@ -265,7 +265,7 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
     top_idx = np.argsort(angle_deg)[:K]
     top_list = [{"universe_id": int(i), "angle_deg": float(angle_deg[i])} for i in top_idx]
 
-    # -- ábrák --
+    # -- plots --
     figs = []
     if N > 0:
         plt.figure()
@@ -279,7 +279,7 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
         plt.tight_layout(); plt.savefig(f1, dpi=dpi); plt.close()
         figs.append(str(f1))
 
-        # opcionális scatter (ha van X oszlop korábbi stádiumból)
+        # optional scatter (if column X exists from an earlier stage)
         try:
             for c in [run_dir / f"{tag}__expansion.csv", run_dir / f"{tag}__collapse_lockin.csv"]:
                 if c.exists():
@@ -313,7 +313,7 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
-    # -- tükrözés --
+    # -- mirroring --
     from shutil import copy2
     fig_sub = active_cfg.get("OUTPUTS", {}).get("local", {}).get("fig_subdir", "figs")
     for m in mirrors or []:
