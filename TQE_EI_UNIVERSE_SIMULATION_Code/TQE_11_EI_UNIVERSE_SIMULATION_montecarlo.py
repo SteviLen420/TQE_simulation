@@ -242,10 +242,8 @@ def run_montecarlo(active_cfg: dict = ACTIVE,
 
 
 # Thin wrapper to match Master Control entrypoint
-def run_montecarlo_stage(active: Dict = ACTIVE,
-                         collapse_df: Optional[pd.DataFrame] = None,
-                         expansion_df: Optional[pd.DataFrame] = None):
-    return run_montecarlo(active, collapse_df, expansion_df)
+def run_montecarlo(active=None, active_cfg=None, collapse_df=None, expansion_df=None, **_):
+    cfg = active if active is not None else active_cfg
 
 
 if __name__ == "__main__":
