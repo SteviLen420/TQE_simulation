@@ -374,6 +374,7 @@ def run_llac(active_cfg: Dict = ACTIVE,
 # Wrapper for Master Controller
 # --------------------------------------------------------------
 def run_anomaly_llac_stage(active=None, active_cfg=None, **kwargs):
+    return run_llac(*args, **kwargs)
     cfg = active if active is not None else active_cfg
     if cfg is None:
         raise ValueError("Provide 'active' or 'active_cfg'")     
