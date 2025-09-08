@@ -82,6 +82,12 @@ except ImportError:
 # ---------------------------
 from TQE_00_EI_UNIVERSE_SIMULATION_config import ACTIVE
 from TQE_02_EI_UNIVERSE_SIMULATION_Output_io_paths import resolve_output_paths, ensure_colab_drive_mounted
+# If you need to rebuild with the current env-var profile:
+# ACTIVE = build_active()  # optional – a fenti ACTIVE már így is kész
+
+PATHS  = resolve_output_paths(ACTIVE)
+RUN_DIR = PATHS["RUN_DIR"]
+FIG_DIR = PATHS["FIG_DIR"]
 
 # ---------------------------
 # I/O path bootstrap (one-time)
