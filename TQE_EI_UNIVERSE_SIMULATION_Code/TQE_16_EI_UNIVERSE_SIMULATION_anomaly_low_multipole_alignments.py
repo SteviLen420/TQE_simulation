@@ -56,7 +56,7 @@ except Exception:
 # ---------------------------
 def _tag_ei(cfg: dict) -> str:
     """Return filename tag 'EI' or 'E' depending on information channel."""
-    return "EI" if cfg["PIPELINE"].get("use_information", True) else "E"
+    return "EI" if cfg.get("PIPELINE",{}).get("use_information", True) else "E"
 
 
 def _fibonacci_sphere(n_pts: int) -> np.ndarray:
@@ -131,9 +131,9 @@ def _inertia_axis_and_conc(dirs_xyz: np.ndarray, T: np.ndarray, weights: Optiona
     N = dirs_xyz.shape[0]
     if weights is None:
         weights = np.full(N, 4.0 * np.pi / N)
-    w = (weights * (T * T)).reshape(-1, 1)            # (N,1)
-    I = (dirs_xyz[:, :, None] * dirs_xyz[:, None, :])  # (N,3,3) → n n^T
-    I = (w[:, None, :] * I).sum(axis=0)                # (3,3)
+    w = (weights * (T*T))[:, None, None]               # (N,1,1)
+    I = (dirs_xyz[:, :, None] * dirs_xyz[:, None, :])  # (N,3,3) 
+    I = (w * I).sum(axis=0)                            
     I = 0.5 * (I + I.T)                                # symmetrize
     vals, vecs = np.linalg.eigh(I)
     idx = int(np.argmax(vals))
@@ -160,6 +160,9 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
     Compute quadrupole–octopole alignment for each universe and save CSV/JSON/PNGs.
     Returns a dict with file paths and the DataFrame.
     """
+if sph_harm is None:
+    raise RuntimeError("This stage requires SciPy (scipy.special.sph_harm). Please install scipy.")
+    
     # Use cached, already-resolved paths to keep run_id stable
     paths   = PATHS
     run_dir = pathlib.Path(RUN_DIR); run_dir.mkdir(parents=True, exist_ok=True)
@@ -181,7 +184,8 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
         nside = int(active_cfg["ANOMALY"]["map"].get("resolution_nside", 64))
         npix = hp.nside2npix(nside)
         theta, phi = hp.pix2ang(nside, np.arange(npix))
-        dirs = hp.ang2vec(theta, phi).T                       # (npix, 3)  ← transpose is important
+        vec = hp.ang2vec(theta, phi)
+        dirs = vec.T if vec.ndim == 2 and vec.shape[0] == 3 else vec  # (npix,3)
         weights = np.full(npix, hp.nside2pixarea(nside))
     else:
         npix = max(2048, 16 * 64)                             # a few thousand directions
@@ -211,6 +215,9 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
     for i in range(N):
         rng = rngs[i]
         alms = _draw_alms_low_l(rng, l_vals=(2, 3), cl_scale=cl_scale)
+
+        m2 = np.arange(-2,3);  Y2 = np.stack([sph_harm(m,2,phi,theta) for m in m2], axis=1)
+        m3 = np.arange(-3,4);  Y3 = np.stack([sph_harm(m,3,phi,theta) for m in m3], axis=1)
 
         # Reconstruct band-limited maps at chosen directions
         T2 = _bandmap_from_alms(theta, phi, 2, alms[2])
@@ -268,6 +275,8 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
         "top_aligned": top_list,
         "files": {"csv": str(csv_path)},
     }
+    fig_sub = active_cfg.get("OUTPUTS",{}).get("local",{}).get("fig_subdir","figs")
+    
     json_path = run_dir / f"{tag}__anomaly_low_multipole_align_summary.json"
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
