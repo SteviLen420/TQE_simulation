@@ -223,16 +223,13 @@ def run_llac(active_cfg: Dict = ACTIVE,
     else:
         cl_in = _default_cl(lmax)
 
-    # Synthesize maps only if none are provided and healpy is available
+    # If no maps provided but healpy is available → synthesize
     synthesized = False
     if cmb_maps is None and hp is not None:
         synthesized = True
         if seed_per_map and universe_rngs is not None and len(uni_seeds) > 0:
             rngs = universe_rngs(uni_seeds[:N])
-            maps_list = []
-            for i in range(N):
-                maps_list.append(_make_maps_from_cl(cl_in, nside, rngs[i], 1)[0])
-            cmb_maps = np.vstack(maps_list)
+            cmb_maps = np.vstack([_make_maps_from_cl(cl_in, nside, rngs[i], 1)[0] for i in range(N)])
         else:
             cmb_maps = _make_maps_from_cl(cl_in, nside, rng_master, N)
 
@@ -241,12 +238,31 @@ def run_llac(active_cfg: Dict = ACTIVE,
     costh_grid = np.linspace(-1.0, 1.0, n_grid, dtype=float)
     theta_grid = np.rad2deg(np.arccos(np.clip(costh_grid, -1.0, 1.0)))
 
-    # Per-universe metrics
+     # Per-universe metrics
     S12 = np.empty(N, dtype=float)
     Cth_at_tmin = np.empty(N, dtype=float)
-    # Pick up to 6 evenly spaced, unique indices for plotting C(theta)
     keep_idx = np.unique(np.linspace(0, max(N - 1, 0), num=min(N, 6), dtype=int))
     kept_curves: List[Tuple[int, np.ndarray]] = []
+
+    if hp is not None and cmb_maps is not None:
+        # Path: map → C_l → C(θ) (proper map-based analysis)
+        for i in range(N):
+            cl  = _compute_cl_from_map(cmb_maps[i], lmax=lmax)
+            Cth = _legendre_transform_cl_to_Ctheta(cl, costh_grid)
+            S12[i] = _s_one_half_from_Ctheta(costh_grid, Cth, theta_min_deg=theta_min_deg)
+            ccut = math.cos(math.radians(theta_min_deg))
+            Cth_at_tmin[i] = float(np.interp(ccut, costh_grid, Cth))
+            if i in keep_idx:
+                kept_curves.append((i, Cth))
+
+    else:
+        # Fallback: theoretical C_l for all universes (either no hp, or hp but no maps and synthesis skipped)
+        Cth = _legendre_transform_cl_to_Ctheta(cl_in, costh_grid)
+        base_S12 = _s_one_half_from_Ctheta(costh_grid, Cth, theta_min_deg=theta_min_deg)
+        base_Ctmin = float(np.interp(math.cos(math.radians(theta_min_deg)), costh_grid, Cth))
+        S12[:] = base_S12
+        Cth_at_tmin[:] = base_Ctmin
+        kept_curves.append((0, Cth))
 
     # Compute per-universe metrics depending on availability of maps/healpy
     if cmb_maps is not None and hp is not None:
