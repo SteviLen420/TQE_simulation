@@ -23,13 +23,16 @@
 # ===================================================================================
 
 import os
+from typing import Optional
 
-# Import the master dictionary and deep-merge helper from a clean, importable module.
-# Ensure there is a file named `Master_Control.py` in the same folder that contains:
-#   - MASTER_CTRL
-#   - _deep_merge
-from TQE_01_EI_UNIVERSE_SIMULATION_Master_Control import MASTER_CTRL, _deep_merge
 
+def _deep_merge(a, b):
+    for k, v in b.items():
+        if isinstance(v, dict) and isinstance(a.get(k), dict):
+            _deep_merge(a[k], v)
+        else:
+            a[k] = v
+    return a
 
 # ===================================================================================
 # Profile resolution
