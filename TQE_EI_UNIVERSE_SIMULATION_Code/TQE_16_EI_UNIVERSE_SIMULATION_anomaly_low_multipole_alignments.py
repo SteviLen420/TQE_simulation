@@ -325,12 +325,14 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
     return {"csv": str(csv_path), "json": str(json_path), "plots": figs, "table": df}
 
 
-# Optional stage wrapper for Master Controller
-def run_low_ell_alignments(active=None, active_cfg=None, **kwargs):
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_anomaly_low_multipole_alignments_stage(active=None, active_cfg=None, **kwargs):
     cfg = active if active is not None else active_cfg
-    return run_anomaly_low_multipole_alignments_stage(cfg, **kwargs)
-
-
-# Standalone
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_anomaly_low_multipole_alignments(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    run_anomaly_low_multipole_alignments(ACTIVE)
+    run_anomaly_low_multipole_alignments_stage(ACTIVE)
