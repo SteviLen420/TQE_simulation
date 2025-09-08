@@ -168,7 +168,8 @@ def run_llac(active_cfg: Dict = ACTIVE,
     run_dir = pathlib.Path(RUN_DIR); run_dir.mkdir(parents=True, exist_ok=True)
     fig_dir = pathlib.Path(FIG_DIR); fig_dir.mkdir(parents=True, exist_ok=True)
     mirrors = paths.get("mirrors", [])
-    fig_sub = active_cfg["OUTPUTS"]["local"].get("fig_subdir", "figs")
+    # Safe fetch of figure subdir (avoid KeyError if OUTPUTS/local missing)
+    fig_sub = active_cfg.get("OUTPUTS", {}).get("local", {}).get("fig_subdir", "figs")
 
     # EI/E filename tag
     tag = "EI" if active_cfg["PIPELINE"].get("use_information", True) else "E"
@@ -242,10 +243,13 @@ def run_llac(active_cfg: Dict = ACTIVE,
     # Per-universe metrics
     S12 = np.empty(N, dtype=float)
     Cth_at_tmin = np.empty(N, dtype=float)
-    keep_idx = np.linspace(0, N - 1, num=min(N, 6), dtype=int)
+    # Pick up to 6 evenly spaced, unique indices for plotting C(theta)
+    keep_idx = np.unique(np.linspace(0, max(N - 1, 0), num=min(N, 6), dtype=int))
     kept_curves: List[Tuple[int, np.ndarray]] = []
 
-    if cmb_maps is not None and hp is not None:
+    # Warn if maps are provided but healpy is unavailable → fall back to theoretical Cl
+    if cmb_maps is not None and hp is None:
+        print("[LLAC] healpy not available → cannot compute C_l from provided maps; using theoretical C_l for all universes.")
         # Path: map → C_l → C(θ)
         for i in range(N):
             m   = cmb_maps[i]
@@ -303,7 +307,14 @@ def run_llac(active_cfg: Dict = ACTIVE,
 
     # Summary JSON
     def _stats(x: np.ndarray) -> Dict[str, float]:
-        x = np.asarray(x)
+        x = np.asarray(x, dtype=float)
+        if x.size == 0 or not np.isfinite(x).any():
+            return {
+                "min": float("nan"), "max": float("nan"),
+                "mean": float("nan"), "std": float("nan"),
+                "p25": float("nan"), "median": float("nan"), "p75": float("nan"),
+            }
+        x = x[np.isfinite(x)]
         return {
             "min": float(np.min(x)),
             "max": float(np.max(x)),
@@ -313,7 +324,6 @@ def run_llac(active_cfg: Dict = ACTIVE,
             "median": float(np.median(x)),
             "p75": float(np.percentile(x, 75)),
         }
-
     summary = {
         "env": paths["env"],
         "run_id": paths["run_id"],
@@ -325,7 +335,7 @@ def run_llac(active_cfg: Dict = ACTIVE,
         "synthesized": bool(synthesized),
         "S_half": _stats(S12),
         "p_values_summary": _stats(p_values[np.isfinite(p_values)]) if np.isfinite(p_values).any() else None,
-        "files": {"csv": str(csv_path)},
+        "files": {"csv": str(csv_path), "json": str(json_path)},
     }
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
