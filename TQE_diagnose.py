@@ -11,15 +11,18 @@ Options:
 """
 
 
-import os
-import importlib
-import inspect
-import traceback
+# --- path bootstrap: repo root + code dir ---
 from pathlib import Path
-import sys
-REPO_ROOT = Path(__file__).resolve().parent
+import sys, os
+
+try:
+    REPO_ROOT = Path(__file__).resolve().parent
+except NameError:  
+    REPO_ROOT = Path.cwd()
+
 CODE_DIR = REPO_ROOT / "TQE_EI_UNIVERSE_SIMULATION_Code"
-sys.path.insert(0, str(CODE_DIR))
+if str(CODE_DIR) not in sys.path:
+    sys.path.insert(0, str(CODE_DIR))
 
 
 # Notebook/Colab doesn't define __file__. Handle both cases.
