@@ -307,10 +307,9 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
             "plots": cutout_paths,
             "table": df}
 
-def run_anomaly_cold_spot_stage(active: Dict = ACTIVE,
-                                maps: Optional[np.ndarray] = None,
-                                arrays: Optional[Dict[str, np.ndarray]] = None):
-    return run_anomaly_cold_spot(active, maps, arrays)
+def run_cold_spot_scan(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    return run_anomaly_cold_spot_stage(cfg, **kwargs)
 
 # CLI entry
 if __name__ == "__main__":
