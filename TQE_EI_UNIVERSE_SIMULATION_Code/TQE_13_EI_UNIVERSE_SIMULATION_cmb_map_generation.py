@@ -167,13 +167,13 @@ def run_cmb_map_generation(active_cfg: Dict = ACTIVE,
     tag = "EI" if use_I else "E"
 
     # --- Config
-    an_map = active_cfg["ANOMALY"]["CMB_MAP"]
+    cmb = active_cfg["CMB_MAP"]
     nside = int(an_map.get("resolution_nside", 128))
-    beam_fwhm_deg = float(an_map.get("beam_fwhm_deg", 1.0))
+    beam_fwhm_deg = float(cmb.get("beam_fwhm_deg", 1.0))
     beam_sigma_pix = _fwhm_deg_to_sigma_pix(beam_fwhm_deg, nside)
 
     # optional spectral shaping
-    psd_alpha = float(active_cfg["ANOMALY"].get("psd_alpha", 1.0))  # 0=white, 1..2=redder
+    psd_alpha = float(cmb.get("psd_alpha", 1.0))  # 0=white, 1..2=redder
 
     # Seeds → one RNG per universe
     seeds = load_or_create_run_seeds(active_cfg)
