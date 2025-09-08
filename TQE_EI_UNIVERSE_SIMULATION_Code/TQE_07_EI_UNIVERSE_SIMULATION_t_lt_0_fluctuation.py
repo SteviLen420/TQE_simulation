@@ -117,9 +117,8 @@ def _couple_X(E: np.ndarray, I: Optional[np.ndarray], x_cfg: dict) -> np.ndarray
             X = E * (alphaI * I)
     return scale * X
 
-def _save_with_mirrors(src_path: str, mirrors: list, put_in_figs: bool = False):
+def _save_with_mirrors(src_path: str, mirrors: list, fig_sub: str, put_in_figs: bool = False):
     """Copy freshly written file to mirror dirs."""
-    fig_sub = ACTIVE["OUTPUTS"]["local"].get("fig_subdir", "figs")
     for m in mirrors:
         try:
             if put_in_figs:
