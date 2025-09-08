@@ -83,7 +83,9 @@ def _plot_cutout_with_circle(cut: np.ndarray, r: int, title: str, save_path: str
     """Save a cutout PNG with a dashed circle showing the patch boundary."""
     plt.figure()
     # fixed color limits for visual comparability
-    v = np.nanstd(cut) or 1.0
+    v = float(np.nanstd(cut))
+    if not np.isfinite(v) or v <= 0:
+        v = 1.0
     plt.imshow(cut, origin="lower", vmin=-3*v, vmax=3*v, cmap="coolwarm")
     theta = np.linspace(0, 2 * math.pi, 512)
     cy = cx = r
@@ -143,6 +145,7 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
     # Config
     patch_deg       = float(cold_spec.get("patch_deg", 10.0))
     z_thresh        = float(cold_spec.get("zscore_thresh", 3.0))
+    anom_cfg = active_cfg.get("ANOMALY", {}) or {}
     save_cutouts    = bool(active_cfg["ANOMALY"].get("save_cutouts", True))
     save_metrics_csv= bool(active_cfg["ANOMALY"].get("save_metrics_csv", True))
 
@@ -165,11 +168,17 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
 
     # Build kernel (we need H to compute r_pix; if streaming, peek first map)
     def _load_map(path: str) -> np.ndarray:
-        m = np.load(path)
-        m = np.asarray(m, dtype=np.float64)
-        if m.ndim != 2:
-            raise ValueError(f"Map must be 2D: {path} has shape {m.shape}")
-        return m
+        if path.endswith(".npy"):
+            arr = np.load(path)
+        elif path.endswith(".npz"):
+            data = np.load(path)
+            arr = data["map"] if "map" in data else data[list(data.keys())[0]]
+        else:
+             raise ValueError(f"Unsupported map format: {path}")
+         arr = np.asarray(arr, dtype=np.float64)
+         if arr.ndim != 2:
+             raise ValueError(f"Map must be 2D: {path} has shape {arr.shape}")
+         return arr
 
     records = []
     cutout_paths = []
