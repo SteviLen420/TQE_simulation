@@ -201,10 +201,11 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
             m0 = None  # will fallback to first successful map
 
         # stream maps row-by-row; robust to per-file failures
-        for i, row in df_manifest.iterrows():
+        for i, row in enumerate(df_manifest.itertuples(index=False, name="Row"), start=0):
             try:
-                uid = int(row["universe_id"])
-                M = m0 if (i == 0 and m0 is not None) else _load_map(row["map_path"])
+                # faster row access via namedtuple (no Series allocation)
+                uid = int(row.universe_id)
+                M = m0 if (i == 0 and m0 is not None) else _load_map(row.map_path)
                 H, W = M.shape
 
                 # lazy kernel init if the peek failed or dims differ
@@ -219,7 +220,8 @@ def run_anomaly_cold_spot(active_cfg: Dict = ACTIVE,
                 g_std  = float(np.std(M[valid]))  if np.sum(valid) > 1 else np.nan
 
                 # convolve to find coldest patch mean and z-score
-                conv = _fft_convolve2d(np.nan_to_num(M, nan=g_mean), K)
+                fill = g_mean if np.isfinite(g_mean) else 0.0
+                conv = _fft_convolve2d(np.nan_to_num(M, nan=fill), K)
                 cy, cx = np.unravel_index(int(np.argmin(conv)), conv.shape)
                 patch_mean = float(conv[cy, cx])
                 z = (patch_mean - g_mean) / g_std if (g_std is not None and g_std > 0) else np.nan
