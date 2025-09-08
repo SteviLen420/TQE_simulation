@@ -72,6 +72,7 @@ def _isotropic_psd_and_alpha(arr: np.ndarray,
       2) Build radial wavenumber k = sqrt(kx^2 + ky^2).
       3) Fit log P ~ -alpha * log k in a safe k-range (fractions of Nyquist).
     Returns: (alpha, r2)
+    Note: kmin_frac/kmax_frac a Nyquist (0.5) arányai; a kód ezért szoroz 0.5-tel.
     """
     a = arr - np.mean(arr)
     F = np.fft.rfft2(a)           # speed-up on real input
@@ -228,21 +229,29 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
     if collapse_csv is None:
         collapse_csv = run_dir / f"{tag_prefix}collapse_lockin.csv"
     if cmb_manifest_csv is None:
-        # Default to the CMB generator's CSV (tagged)
         cmb_manifest_csv = run_dir / f"{tag_prefix}cmb_maps.csv"
 
-    collapse_csv = str(collapse_csv)
-    cmb_manifest_csv = str(cmb_manifest_csv)
+    collapse_csv = pathlib.Path(collapse_csv)
+    cmb_manifest_csv = pathlib.Path(cmb_manifest_csv)
 
-    if not os.path.isfile(collapse_csv):
+    if not collapse_csv.is_file():
         raise FileNotFoundError(f"collapse CSV not found: {collapse_csv}")
-    if not os.path.isfile(cmb_manifest_csv):
+    if not cmb_manifest_csv.is_file():
         raise FileNotFoundError(f"CMB manifest CSV not found: {cmb_manifest_csv}")
 
-    df_col = pd.read_csv(collapse_csv)
-    df_map = pd.read_csv(cmb_manifest_csv)
+    df_col = pd.read_csv(str(collapse_csv))
+    df_map = pd.read_csv(str(cmb_manifest_csv))
 
-    locked = df_col[df_col.get("lockin_at", -1) >= 0].copy()
+    # required columns
+    req_col = {"universe_id", "lockin_at"}
+    if not req_col.issubset(df_col.columns):
+        raise ValueError(f"collapse CSV must contain {req_col}, got {df_col.columns.tolist()}")
+
+    req_map = {"universe_id", "map_path"}
+    if not req_map.issubset(df_map.columns):
+        raise ValueError(f"CMB manifest must contain {req_map}, got {df_map.columns.tolist()}")
+
+    locked = df_col.loc[df_col["lockin_at"].ge(0)].copy()
     if locked.empty:
         print("[FINETUNE] No locked-in universes to analyze.")
         return {}
@@ -357,7 +366,7 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
         # 1) Map preview
         plt.figure(figsize=(10, 3.2))
         plt.subplot(1, 3, 1)
-        plt.imshow(m, origin="lower")
+        plt.imshow(m, origin="lower", vmin=-3, vmax=3, cmap="coolwarm")
         plt.title(f"u{uid}: map\nRMS={rms:.3g}")
         plt.xticks([]); plt.yticks([])
 
@@ -371,7 +380,7 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
         mask = (kr > 1e-9) & np.isfinite(P) & (P > 0)
         sort = np.argsort(kr[mask])
         ksorted, psorted = kr[mask][sort], P[mask][sort]
-        nb = 50
+        nb = int(tcfg.get("nbins_psd", 50))
         edges = np.geomspace(ksorted[0], ksorted[-1], nb + 1)
         centers = np.sqrt(edges[:-1] * edges[1:])
         means = []
