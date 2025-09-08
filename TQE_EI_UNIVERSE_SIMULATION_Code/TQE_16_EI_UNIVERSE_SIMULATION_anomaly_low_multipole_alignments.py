@@ -155,85 +155,86 @@ def _angle_between_axes(a: np.ndarray, b: np.ndarray) -> float:
 # ---------------------------
 # Main entry
 # ---------------------------
+
 def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
     """
     Compute quadrupole–octopole alignment for each universe and save CSV/JSON/PNGs.
     Returns a dict with file paths and the DataFrame.
     """
-if sph_harm is None:
-    raise RuntimeError("This stage requires SciPy (scipy.special.sph_harm). Please install scipy.")
-    
-    # Use cached, already-resolved paths to keep run_id stable
+    # --- kötelező SciPy (itt, helyes behúzással) ---
+    if sph_harm is None:
+        raise RuntimeError("This stage requires SciPy (scipy.special.sph_harm). Please install scipy.")
+
+    # -- stabil, cache-elt útvonalak --
     paths   = PATHS
     run_dir = pathlib.Path(RUN_DIR); run_dir.mkdir(parents=True, exist_ok=True)
     fig_dir = pathlib.Path(FIG_DIR); fig_dir.mkdir(parents=True, exist_ok=True)
     mirrors = paths.get("mirrors", [])
 
     tag = _tag_ei(active_cfg)
-    N = int(active_cfg["ENERGY"]["num_universes"])
-    dpi = int(active_cfg["RUNTIME"].get("matplotlib_dpi", 180))
+    N   = int(active_cfg.get("ENERGY", {}).get("num_universes", 0))
+    dpi = int(active_cfg.get("RUNTIME", {}).get("matplotlib_dpi", 180))
 
-    # Alignment threshold from config.ANOMALY.targets (quad_oct_align)
+    # -- küszöb az ANOMALY.targets-ből --
     align_thresh_deg = 20.0
-    for t in active_cfg["ANOMALY"].get("targets", []):
+    for t in active_cfg.get("ANOMALY", {}).get("targets", []):
         if t.get("name") in ("quad_oct_align", "low_multipole_align"):
             align_thresh_deg = float(t.get("l2l3_align_deg", align_thresh_deg))
 
-    # Directions on sphere (healpy or Fibonacci fallback)
+    # -- irányok a gömbön (healpy vagy Fibonacci) --
     if hp is not None:
-        nside = int(active_cfg["ANOMALY"]["map"].get("resolution_nside", 64))
+        nside = int(active_cfg.get("ANOMALY", {}).get("map", {}).get("resolution_nside", 64))
         npix = hp.nside2npix(nside)
         theta, phi = hp.pix2ang(nside, np.arange(npix))
         vec = hp.ang2vec(theta, phi)
-        dirs = vec.T if vec.ndim == 2 and vec.shape[0] == 3 else vec  # (npix,3)
+        dirs = vec.T if (vec.ndim == 2 and vec.shape[0] == 3) else vec  # (npix,3)
         weights = np.full(npix, hp.nside2pixarea(nside))
     else:
-        npix = max(2048, 16 * 64)                             # a few thousand directions
-        dirs = _fibonacci_sphere(npix)                        # (npix, 3)
+        npix = max(2048, 16 * 64)
+        dirs = _fibonacci_sphere(npix)
         theta, phi = _theta_phi_from_vecs(dirs)
         weights = np.full(npix, 4.0 * np.pi / npix)
 
-    # Seeds → per-universe RNGs (extend deterministically if needed)
+    # -- Y_{lm} előszámítás (egyszer) --
+    m2 = np.arange(-2, 3)
+    m3 = np.arange(-3, 4)
+    Y2 = np.stack([sph_harm(m, 2, phi, theta) for m in m2], axis=1)  # (npix, 5)
+    Y3 = np.stack([sph_harm(m, 3, phi, theta) for m in m3], axis=1)  # (npix, 7)
+
+    # -- magok / RNG-k --
     seeds = load_or_create_run_seeds(active_cfg)
-    rngs = universe_rngs(seeds.get("universe_seeds", []))
+    rngs  = universe_rngs(seeds.get("universe_seeds", []))
     if len(rngs) < N:
         base = int(seeds.get("master_seed", 1234567))
         for i in range(len(rngs), N):
             rngs.append(np.random.default_rng(base + 10007 * i))
 
-    # Storage
+    # -- tárolók --
     axis_q = np.zeros((N, 3), dtype=float)
     axis_o = np.zeros((N, 3), dtype=float)
     conc_q = np.zeros(N, dtype=float)
     conc_o = np.zeros(N, dtype=float)
     angle_deg = np.zeros(N, dtype=float)
 
-    # Optional global scale for low-ℓ variance
-    cl_scale = 1.0
+    cl_scale = 1.0  # opcionális skála a low-ℓ varianciára
 
-    # Loop universes
+    # -- fő ciklus --
     for i in range(N):
-        rng = rngs[i]
+        rng  = rngs[i]
         alms = _draw_alms_low_l(rng, l_vals=(2, 3), cl_scale=cl_scale)
 
-        m2 = np.arange(-2,3);  Y2 = np.stack([sph_harm(m,2,phi,theta) for m in m2], axis=1)
-        m3 = np.arange(-3,4);  Y3 = np.stack([sph_harm(m,3,phi,theta) for m in m3], axis=1)
+        # sávkorlátos "map" visszaállítás (mátrixszorzás az előre számolt Y-kkal)
+        T2 = (Y2 @ alms[2]).real
+        T3 = (Y3 @ alms[3]).real
 
-        # Reconstruct band-limited maps at chosen directions
-        T2 = _bandmap_from_alms(theta, phi, 2, alms[2])
-        T3 = _bandmap_from_alms(theta, phi, 3, alms[3])
-
-        # Preferred axes & concentration
         v2, c2 = _inertia_axis_and_conc(dirs, T2, weights)
         v3, c3 = _inertia_axis_and_conc(dirs, T3, weights)
 
-        axis_q[i, :] = v2
-        axis_o[i, :] = v3
-        conc_q[i] = c2
-        conc_o[i] = c3
+        axis_q[i, :] = v2; conc_q[i] = c2
+        axis_o[i, :] = v3; conc_o[i] = c3
         angle_deg[i] = _angle_between_axes(v2, v3)
 
-    # Build table
+    # -- táblázat + CSV --
     df = pd.DataFrame({
         "universe_id": np.arange(N, dtype=int),
         "axis_q_x": axis_q[:, 0], "axis_q_y": axis_q[:, 1], "axis_q_z": axis_q[:, 2],
@@ -242,13 +243,14 @@ if sph_harm is None:
         "angle_deg": angle_deg,
         "aligned_flag": (angle_deg <= align_thresh_deg).astype(int),
     })
-
-    # Save CSV & JSON
     csv_path = run_dir / f"{tag}__anomaly_low_multipole_align.csv"
     df.to_csv(csv_path, index=False)
 
     def _stats(x):
         x = np.asarray(x)
+        if x.size == 0:
+            return {"min": float("nan"), "p25": float("nan"), "median": float("nan"),
+                    "p75": float("nan"), "max": float("nan"), "mean": float("nan"), "std": float("nan")}
         return {
             "min": float(np.min(x)),
             "p25": float(np.percentile(x, 25)),
@@ -264,59 +266,56 @@ if sph_harm is None:
     top_list = [{"universe_id": int(i), "angle_deg": float(angle_deg[i])} for i in top_idx]
 
     summary = {
-        "env": paths["env"],
-        "run_id": paths["run_id"],
+        "env": paths.get("env", ""),
+        "run_id": paths.get("run_id", ""),
         "mode": tag,
-        "N": N,
-        "align_threshold_deg": align_thresh_deg,
+        "N": int(N),
+        "align_threshold_deg": float(align_thresh_deg),
         "counts": {"aligned_n": int((angle_deg <= align_thresh_deg).sum())},
         "angle_deg": _stats(angle_deg),
         "concentration": {"conc_q": _stats(conc_q), "conc_o": _stats(conc_o)},
         "top_aligned": top_list,
         "files": {"csv": str(csv_path)},
     }
-    fig_sub = active_cfg.get("OUTPUTS",{}).get("local",{}).get("fig_subdir","figs")
-    
     json_path = run_dir / f"{tag}__anomaly_low_multipole_align_summary.json"
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
-    # Plots
+    # -- ábrák --
     figs = []
+    if N > 0:
+        plt.figure()
+        plt.hist(angle_deg, bins=36)
+        plt.axvline(align_thresh_deg, color="red", linestyle="--", label=f"threshold = {align_thresh_deg:.1f}°")
+        plt.xlabel("Quadrupole–octopole alignment angle (deg)")
+        plt.ylabel("count")
+        plt.title("Low-ℓ alignment angle distribution")
+        plt.legend()
+        f1 = fig_dir / f"{tag}__low_multipole_alignment_hist.png"
+        plt.tight_layout(); plt.savefig(f1, dpi=dpi); plt.close()
+        figs.append(str(f1))
 
-    # 1) Histogram of alignment angles
-    plt.figure()
-    plt.hist(angle_deg, bins=36)
-    plt.axvline(align_thresh_deg, color="red", linestyle="--", label=f"threshold = {align_thresh_deg:.1f}°")
-    plt.xlabel("Quadrupole–octopole alignment angle (deg)")
-    plt.ylabel("count")
-    plt.title("Low-ℓ alignment angle distribution")
-    plt.legend()
-    f1 = fig_dir / f"{tag}__low_multipole_alignment_hist.png"
-    plt.tight_layout(); plt.savefig(f1, dpi=dpi); plt.close()
-    figs.append(str(f1))
+        # opcionális scatter (ha van X oszlop korábbi stádiumból)
+        try:
+            for c in [run_dir / f"{tag}__expansion.csv", run_dir / f"{tag}__collapse_lockin.csv"]:
+                if c.exists():
+                    tmp = pd.read_csv(c)
+                    if "X" in tmp.columns and len(tmp["X"]) >= N:
+                        X = tmp["X"].to_numpy(dtype=float)[:N]
+                        plt.figure()
+                        plt.scatter(X, angle_deg, s=6, alpha=0.6)
+                        plt.xlabel("X"); plt.ylabel("alignment angle (deg)")
+                        plt.title("X vs low-ℓ alignment")
+                        f2 = fig_dir / f"{tag}__low_multipole_alignment_scatter.png"
+                        plt.tight_layout(); plt.savefig(f2, dpi=dpi); plt.close()
+                        figs.append(str(f2))
+                        break
+        except Exception:
+            pass
 
-    # 2) Optional: scatter X vs angle if X is available from earlier stages
-    try:
-        for c in [run_dir / f"{tag}__expansion.csv", run_dir / f"{tag}__collapse_lockin.csv"]:
-            if c.exists():
-                tmp = pd.read_csv(c)
-                if "X" in tmp.columns and len(tmp["X"]) >= N:
-                    X = tmp["X"].to_numpy(dtype=float)[:N]
-                    plt.figure()
-                    plt.scatter(X, angle_deg, s=6, alpha=0.6)
-                    plt.xlabel("X"); plt.ylabel("alignment angle (deg)")
-                    plt.title("X vs low-ℓ alignment")
-                    f2 = fig_dir / f"{tag}__low_multipole_alignment_scatter.png"
-                    plt.tight_layout(); plt.savefig(f2, dpi=dpi); plt.close()
-                    figs.append(str(f2))
-                    break
-    except Exception:
-        pass
-
-    # Mirror copies (CSV/JSON to mirror root; PNGs to <mirror>/<fig_subdir>/)
+    # -- tükrözés --
     from shutil import copy2
-    fig_sub = active_cfg["OUTPUTS"]["local"].get("fig_subdir", "figs")
+    fig_sub = active_cfg.get("OUTPUTS", {}).get("local", {}).get("fig_subdir", "figs")
     for m in mirrors or []:
         try:
             mpath = pathlib.Path(m); mpath.mkdir(parents=True, exist_ok=True)
@@ -332,7 +331,6 @@ if sph_harm is None:
 
     print(f"[ANOM-LM] mode={tag} → CSV/JSON/PNGs saved under:\n  {run_dir}")
     return {"csv": str(csv_path), "json": str(json_path), "plots": figs, "table": df}
-
 
 # --------------------------------------------------------------
 # Wrapper for Master Controller
