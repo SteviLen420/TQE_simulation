@@ -175,7 +175,7 @@ def run_montecarlo(active_cfg: dict = ACTIVE,
 
     # --- Plots ---
     figs = []
-    dpi = int(ACTIVE["RUNTIME"].get("matplotlib_dpi", 180))
+    dpi = int(active_cfg["RUNTIME"].get("matplotlib_dpi", 180))
 
     if save_figs:
         # Histogram: lock-in epochs
