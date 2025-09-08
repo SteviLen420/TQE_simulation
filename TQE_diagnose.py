@@ -10,13 +10,17 @@ Options:
   --smoke  : tiny smoke-run of 1–2 stages with minimal settings (safe & quick)
 """
 
-import sys
+
 import os
 import importlib
 import inspect
 import traceback
 from pathlib import Path
-import os
+import sys
+REPO_ROOT = Path(__file__).resolve().parent
+CODE_DIR = REPO_ROOT / "TQE_EI_UNIVERSE_SIMULATION_Code"
+sys.path.insert(0, str(CODE_DIR))
+
 
 # Notebook/Colab doesn't define __file__. Handle both cases.
 try:
