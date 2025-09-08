@@ -123,6 +123,11 @@ def _bandmap_from_alms(theta: np.ndarray, phi: np.ndarray, l: int, alm_vec: np.n
 
 
 def _inertia_axis_and_conc(dirs_xyz: np.ndarray, T: np.ndarray, weights: Optional[np.ndarray] = None) -> Tuple[np.ndarray, float]:
+    """Power-weighted inertia tensor on the sphere:
+       I = Σ_i (weights[i] * T[i]^2) * n_i n_i^T
+       Returns (principal_axis_unit_vector, concentration = λ_max / trace(I)).
+       Falls back to +Z and 0.0 if total power is ~0.
+    """
     N = dirs_xyz.shape[0]
     if weights is None:
         weights = np.full(N, 4.0 * np.pi / N)
@@ -213,11 +218,11 @@ def run_anomaly_low_multipole_alignments(active_cfg: Dict = ACTIVE) -> Dict:
             rngs.append(np.random.default_rng(base + 10007 * i))
 
     # -- storage buffers --
-    axis_q = np.zeros((N, 3), dtype=float)
-    axis_o = np.zeros((N, 3), dtype=float)
-    conc_q = np.zeros(N, dtype=float)
-    conc_o = np.zeros(N, dtype=float)
-    angle_deg = np.zeros(N, dtype=float)
+    axis_q = np.zeros((N, 3), dtype=np.float64)
+    axis_o = np.zeros((N, 3), dtype=np.float64)
+    conc_q = np.zeros(N, dtype=np.float64)
+    conc_o = np.zeros(N, dtype=np.float64)
+    angle_deg = np.zeros(N, dtype=np.float64)
 
     cl_scale = 1.0  # optional scale for low-ℓ variance
 
