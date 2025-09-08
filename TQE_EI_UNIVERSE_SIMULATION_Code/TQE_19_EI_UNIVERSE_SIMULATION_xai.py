@@ -537,6 +537,14 @@ def run_xai(active_cfg: dict = ACTIVE,
     return {"summary": summary, "dataset_csv": str(dataset_csv), "global_csv": str(global_csv), "figs": out_figs}
 
 
-# Allow standalone run (will create a new run_dir; better call from Master Controller with paths)
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_xai_stage(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_xai(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    run_xai(ACTIVE)
+    run_xai_stage(ACTIVE)
