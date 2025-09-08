@@ -246,7 +246,6 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
 
     df_col = pd.read_csv(str(collapse_csv))
     df_map = pd.read_csv(str(cmb_manifest_csv))
-    df_col["lockin_at"] = pd.to_numeric(df_col["lockin_at"], errors="coerce")
 
     # required columns
     req_col = {"universe_id", "lockin_at"}
@@ -256,6 +255,8 @@ def run_finetune_diagnostics(active_cfg: Dict = ACTIVE,
     req_map = {"universe_id", "map_path"}
     if not req_map.issubset(df_map.columns):
         raise ValueError(f"CMB manifest must contain {req_map}, got {df_map.columns.tolist()}")
+
+    df_col["lockin_at"] = pd.to_numeric(df_col["lockin_at"], errors="coerce")
 
     locked = df_col.loc[df_col["lockin_at"].ge(0)].copy()
     if locked.empty:
