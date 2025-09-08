@@ -241,10 +241,14 @@ def run_montecarlo(active_cfg: dict = ACTIVE,
             "table": df}
 
 
-# Thin wrapper to match Master Control entrypoint
-def run_montecarlo(active=None, active_cfg=None, collapse_df=None, expansion_df=None, **_):
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_montecarlo_stage(active=None, active_cfg=None, **kwargs):
     cfg = active if active is not None else active_cfg
-
-
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_montecarlo(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    run_montecarlo(ACTIVE)
+    run_montecarlo_stage(ACTIVE)
