@@ -168,7 +168,7 @@ def run_cmb_map_generation(active_cfg: Dict = ACTIVE,
 
     # --- Config
     cmb = active_cfg["CMB_MAP"]
-    nside = int(an_map.get("resolution_nside", 128))
+    nside = int(cmb.get("resolution_nside", 128))
     beam_fwhm_deg = float(cmb.get("beam_fwhm_deg", 1.0))
     beam_sigma_pix = _fwhm_deg_to_sigma_pix(beam_fwhm_deg, nside)
 
