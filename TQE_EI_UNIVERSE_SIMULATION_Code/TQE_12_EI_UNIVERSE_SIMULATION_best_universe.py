@@ -280,10 +280,14 @@ def run_best_universe(active_cfg: Dict = ACTIVE,
         "best_row": best.iloc[0].to_dict(),
     }
 
-def run_best_universe(active=None, active_cfg=None,
-                      collapse_df=None, expansion_df=None, montecarlo_df=None, **_):
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_best_universe_stage(active=None, active_cfg=None, **kwargs):
     cfg = active if active is not None else active_cfg
-
-# Standalone entry
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_best_universe(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    print("[BEST] Module ready. Call run_best_universe(...) from the controller.")
+    run_best_universe_stage(ACTIVE)
