@@ -99,11 +99,11 @@ def main():
     # Ordered stage plan. Each tuple: (stage_name, pipeline_flag, module_name, function_name, kwargs_builder)
     STAGES = [
         ("energy_sampling", "run_energy_sampling",
-         "TQE_05_EI_UNIVERSE_SIMULATION_E_energy_sampling", "run_energy_sampling",
+         "TQE_05_EI_UNIVERSE_SIMULATION_E_energy_sampling", "run_energy_sampling_stage",
          lambda data: {"active_cfg": ACTIVE}),
 
         ("info_bootstrap", "run_info_bootstrap",
-         "TQE_06_EI_UNIVERSE_SIMULATION_I_information_bootstrap", "run_information_bootstrap",
+         "TQE_06_EI_UNIVERSE_SIMULATION_I_information_bootstrap", "run_info_bootstrap_stage",
          lambda data: {"active_cfg": ACTIVE}),
         
         ("fluctuation", "run_fluctuation",
@@ -114,8 +114,8 @@ def main():
          "TQE_08_EI_UNIVERSE_SIMULATION_t_lt_0_superposition", "run_superposition_stage",
          lambda data: {"active_cfg": ACTIVE, "arrays": data.get("fluctuation", {}).get("arrays")}),
 
-        ("collapse", "run_collapse",
-         "TQE_09_EI_UNIVERSE_SIMULATION_t_eq_0_collapse_LawLockin", "run_lockin_stage",
+        ("collapse", "run_collapse_LawLockin",
+         "TQE_09_EI_UNIVERSE_SIMULATION_t_eq_0_collapse_LawLockin", "run_collapse_LawLockin_stage",
          lambda data: {"active_cfg": ACTIVE, "arrays": data.get("superposition", {}).get("arrays")}),
 
         ("expansion", "run_expansion",
@@ -129,40 +129,40 @@ def main():
                        "expansion_df": data.get("expansion", {}).get("table")}),
         
         ("best_universe", "run_best_universe",
-         "TQE_12_EI_UNIVERSE_SIMULATION_best_universe", "run_best_universe",
+         "TQE_12_EI_UNIVERSE_SIMULATION_best_universe", "run_best_universe_stage",
          lambda data: {"active_cfg": ACTIVE, 
                        "montecarlo_df": data.get("montecarlo", {}).get("table")}),
         
-        ("cmb_map", "run_cmb_map",
-         "TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation", "run_cmb_map_generation",
+        ("cmb_map", "run_cmb_map_generation",
+         "TQE_13_EI_UNIVERSE_SIMULATION_cmb_map_generation", "run_cmb_map_generation_stage",
          lambda data: {"active_cfg": ACTIVE}),
 
-        ("finetune_diag", "run_finetune_diag",
-         "TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics", "run_finetune_stage",
+        ("finetune_diag", "run_finetune_diagnostics",
+         "TQE_14_EI_UNIVERSE_SIMULATION_finetune_diagnostics", "run_finetune_diagnostics_stage",
          lambda data: {"active_cfg": ACTIVE}),
         
-        ("anomaly_cold_spot", "run_anomaly_scan",
+        ("anomaly_cold_spot", "run_anomaly_cold_spot",
          "TQE_15_EI_UNIVERSE_SIMULATION_anomaly_cold_spot", "run_anomaly_cold_spot_stage",
          lambda data: {"active_cfg": ACTIVE}),
 
-        ("anomaly_low_multipole", "run_anomaly_scan",
+        ("anomaly_low_multipole", "run_anomaly_low_multipole_alignments",
          "TQE_16_EI_UNIVERSE_SIMULATION_anomaly_low_multipole_alignments", "run_anomaly_low_multipole_alignments_stage",
          lambda data: {"active_cfg": ACTIVE}),
         
-        ("anomaly_llac", "run_anomaly_scan",
-         "TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation", "run_llac_stage",
+        ("anomaly_llac", "run_anomaly_llac",
+         "TQE_17_EI_UNIVERSE_SIMULATION_anomaly_LackOfLargeAngleCorrelation", "run_anomaly_llac_stage",
          lambda data: {"active_cfg": ACTIVE}),
 
-        ("anomaly_hpa", "run_anomaly_scan",
-         "TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry", "run_hpa",
+        ("anomaly_hpa", "run_anomaly_hpa",
+         "TQE_18_EI_UNIVERSE_SIMULATION_anomaly_HemisphericalAsymmetry", "run_anomaly_hpa_stage",
          lambda data: {"active_cfg": ACTIVE}),
 
         ("xai", "run_xai",
-         "TQE_19_EI_UNIVERSE_SIMULATION_xai", "run_xai",
+         "TQE_19_EI_UNIVERSE_SIMULATION_xai", "run_xai_stage",
          lambda data: {"active_cfg": ACTIVE}),
 
         ("manifest", "run_manifest",
-         "TQE_20_EI_UNIVERSE_SIMULATION_results_manifest", "run_results_manifest",
+         "TQE_20_EI_UNIVERSE_SIMULATION_results_manifest", "run_results_manifest_stage",
          lambda data: {"active_cfg": ACTIVE, "run_dir": run_dir}),
     ]
 
