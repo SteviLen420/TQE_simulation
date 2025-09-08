@@ -8,17 +8,16 @@
 # ===================================================================================
 #
 # SUMMARY:
-# This script serves as the primary configuration module for the entire simulation
-# pipeline. It dynamically constructs the active configuration settings by selecting
-# a "profile" (e.g., "demo", "production"). The profile is determined by the
-# `TQE_PROFILE` environment variable, defaulting to "demo" if not set.
+# This module serves as the central and definitive source of configuration for
+# the entire simulation pipeline. It defines the `MASTER_CTRL` dictionary, which
+# contains the comprehensive default parameters for all stages, as well as the
+# available run "profiles" (e.g., "demo", "paper").
 #
-# The core logic involves deep-merging a base configuration (`MASTER_CTRL`) with
-# profile-specific overrides. This creates a final, unified configuration object
-# named `ACTIVE`. The script also handles critical reproducibility settings, such
-# as enforcing thread limits for deterministic execution when required by a profile.
-# All subsequent pipeline scripts should import the `ACTIVE` object to access
-# their parameters.
+# Its primary function is to resolve and export the final `ACTIVE` configuration
+# object, which it creates by deep-merging the base settings with the overrides
+# from a selected profile. The profile is selected via the `TQE_PROFILE`
+# environment variable, defaulting to "demo". This single module is now the
+# source of truth for all pipeline parameters.
 #
 # ===================================================================================
 
