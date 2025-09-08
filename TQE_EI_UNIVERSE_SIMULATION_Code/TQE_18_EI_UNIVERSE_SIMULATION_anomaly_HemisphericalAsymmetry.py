@@ -284,7 +284,14 @@ def run_hpa(active_cfg: Dict = ACTIVE,
     print(f"[HPA] mode={tag} → CSV/JSON/PNGs saved under:\n  {run_dir}")
     return {"csv": str(csv_path), "json": str(json_path), "plots": figs, "table": out_df}
 
-
-# Standalone
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_anomaly_hpa_stage(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_anomaly_hpa(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    run_hpa(ACTIVE)
+    run_anomaly_hpa_stage(ACTIVE)
