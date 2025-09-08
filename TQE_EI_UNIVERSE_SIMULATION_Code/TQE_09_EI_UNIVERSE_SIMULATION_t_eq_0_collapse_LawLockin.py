@@ -386,10 +386,14 @@ def run_collapse(
         "table": out_df,
     }
 
-# Thin wrapper to match Master Control entrypoint
-def run_lockin_stage(active: Dict = ACTIVE) -> Dict:
-    return run_collapse(active_cfg=active)
-
-# Allow standalone run
+# --------------------------------------------------------------
+# Wrapper for Master Controller
+# --------------------------------------------------------------
+def run_lockin_stage(active=None, active_cfg=None, **kwargs):
+    cfg = active if active is not None else active_cfg
+    if cfg is None:
+        raise ValueError("Provide 'active' or 'active_cfg'")     
+    return run_collapse(active_cfg=cfg, **kwargs)  
+    
 if __name__ == "__main__":
-    run_collapse(ACTIVE)
+    run_lockin_stage(ACTIVE)
