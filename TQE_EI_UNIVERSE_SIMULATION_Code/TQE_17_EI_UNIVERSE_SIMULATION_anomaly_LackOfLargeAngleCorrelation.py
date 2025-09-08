@@ -224,7 +224,9 @@ def run_llac(active_cfg: Dict = ACTIVE,
 
     # If no maps provided but healpy is available → synthesize
     synthesized = False
-    if cmb_maps is None and hp is not None:
+    if cmb_maps is not None and hp is None:
+        print("[LLAC] healpy not available …")
+        cl  = _compute_cl_from_map(m, lmax=lmax)  # <-- ez hp nélkül kivételt dob
         synthesized = True
         if seed_per_map and universe_rngs is not None and len(uni_seeds) > 0:
             rngs = universe_rngs(uni_seeds[:N])
@@ -374,11 +376,10 @@ def run_llac(active_cfg: Dict = ACTIVE,
 # Wrapper for Master Controller
 # --------------------------------------------------------------
 def run_anomaly_llac_stage(active=None, active_cfg=None, **kwargs):
-    return run_llac(*args, **kwargs)
     cfg = active if active is not None else active_cfg
     if cfg is None:
-        raise ValueError("Provide 'active' or 'active_cfg'")     
-    return run_anomaly_llac(active_cfg=cfg, **kwargs)  
+        raise ValueError("Provide 'active' or 'active_cfg'")
+    return run_llac(active_cfg=cfg, **kwargs)
     
 if __name__ == "__main__":
     run_anomaly_llac_stage(ACTIVE)
