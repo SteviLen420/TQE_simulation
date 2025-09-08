@@ -389,11 +389,11 @@ def run_collapse(
 # --------------------------------------------------------------
 # Wrapper for Master Controller
 # --------------------------------------------------------------
-def run_lockin_stage(active=None, active_cfg=None, **kwargs):
+def run_collapse_LawLockin_stage(active=None, active_cfg=None, **kwargs):
     cfg = active if active is not None else active_cfg
     if cfg is None:
         raise ValueError("Provide 'active' or 'active_cfg'")     
-    return run_collapse(active_cfg=cfg, **kwargs)  
+    return run_collapse_LawLockin(active_cfg=cfg, **kwargs)  
     
 if __name__ == "__main__":
-    run_lockin_stage(ACTIVE)
+    run_collapse_LawLockin_stage(ACTIVE)
