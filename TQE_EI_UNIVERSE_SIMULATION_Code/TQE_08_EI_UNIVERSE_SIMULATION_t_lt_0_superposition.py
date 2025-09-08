@@ -200,7 +200,9 @@ def _compute_information_for_population(N: int, cfg: dict, seed: Optional[int]) 
 # -----------------------------------------------------------------------------------
 # Public API
 # -----------------------------------------------------------------------------------
-def run_superposition(E: Optional[np.ndarray] = None, cfg: dict = ACTIVE, seed: Optional[int] = None) -> Dict[str, str]:
+def run_superposition_stage(active_cfg: Dict = ACTIVE, **kwargs) -> Dict:
+    """Wrapper to be called by Master Control, passing through relevant data."""
+    return run_superposition(active_cfg=active_cfg, **kwargs)
     """
     Compute superposition/information metrics and couple to energy E if provided.
     Uses the cached RUN_DIR/FIG_DIR/PATHS for consistent run IDs across the pipeline.
