@@ -901,7 +901,7 @@ summary = {
     "figures": {
         "stability_curve": with_variant(os.path.join(FIG_DIR, "stability_curve.png")),
         "scatter_EI": with_variant(os.path.join(FIG_DIR, "scatter_EI.png")),
-        "stability_distribution": with_variant(os.path.join(FIG_DIR, "stability_distribution.png"))
+        "stability_distribution": with_variant(os.path.join(FIG_DIR, "stability_distribution.png")),  # <-- vessző
         "fl_superposition": with_variant(os.path.join(FIG_DIR, "fl_superposition.png")),
         "fl_collapse":      with_variant(os.path.join(FIG_DIR, "fl_collapse.png")),
         "fl_expansion":     with_variant(os.path.join(FIG_DIR, "fl_expansion.png")),
@@ -911,7 +911,7 @@ summary = {
         "universe_seeds_csv": with_variant(os.path.join(SAVE_DIR, "universe_seeds.csv")),
         "pre_fluctuation_pairs_csv": with_variant(os.path.join(SAVE_DIR, "pre_fluctuation_pairs.csv")),
         "stability_by_I_zero_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_zero.csv")),
-        "stability_by_I_eps_sweep_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv"))
+        "stability_by_I_eps_sweep_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv")),  # <-- vessző
         "fl_superposition_csv": with_variant(os.path.join(SAVE_DIR, "fl_superposition_timeseries.csv")),
         "fl_collapse_csv":      with_variant(os.path.join(SAVE_DIR, "fl_collapse_timeseries.csv")),
         "fl_expansion_csv":     with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv")),
