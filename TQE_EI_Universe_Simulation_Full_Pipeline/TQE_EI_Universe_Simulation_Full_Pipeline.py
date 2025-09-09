@@ -167,12 +167,6 @@ np.random.seed(master_seed)  # sync legacy RNG for QuTiP calls
 
 print(f"🎲 Using master seed: {master_seed}")
 
-# Output dirs
-run_id = MASTER_CTRL["RUN_ID_PREFIX"] + VARIANT + "_" + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
-SAVE_DIR = os.path.join(os.getcwd(), run_id)
-FIG_DIR  = os.path.join(SAVE_DIR, "figs")
-os.makedirs(FIG_DIR, exist_ok=True)
-
 # --- Variant tag + filename helper ---
 VARIANT = MASTER_CTRL.get("PIPELINE_VARIANT", "full")
 
@@ -183,6 +177,12 @@ def with_variant(path: str) -> str:
     """
     root, ext = os.path.splitext(path)
     return f"{root}_{VARIANT}{ext}"
+
+# Output dirs
+run_id = MASTER_CTRL["RUN_ID_PREFIX"] + VARIANT + "_" + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
+SAVE_DIR = os.path.join(os.getcwd(), run_id)
+FIG_DIR  = os.path.join(SAVE_DIR, "figs")
+os.makedirs(FIG_DIR, exist_ok=True)
 
 def savefig(path):
     """Save a figure only if SAVE_FIGS is True."""
