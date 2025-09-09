@@ -389,7 +389,7 @@ def run_mc(E_c_low=None, E_c_high=None):
     to shape noise via sigma_goldilocks; otherwise, no Goldilocks shaping.
     Returns a DataFrame with per-universe results.
     """
-    prev_state = np.random.get_state()   # mentsd a legacy RNG állapotát
+    prev_state = np.random.get_state()   # save the legacy RNG state
     try:
         rows = []
         universe_seeds = []
@@ -402,7 +402,7 @@ def run_mc(E_c_low=None, E_c_high=None):
 
             # per-universe RNG-k
             rng_uni = np.random.default_rng(uni_seed)
-            np.random.seed(uni_seed)  # libs, pl. QuTiP, a legacy RNG-t használják
+            np.random.seed(uni_seed)  # libs, e.g. QuTiP, use the legacy RNG
 
             # --- Sample energy & information parameter depending on pipeline variant ---
             E = sample_energy(rng_local=rng_uni)
