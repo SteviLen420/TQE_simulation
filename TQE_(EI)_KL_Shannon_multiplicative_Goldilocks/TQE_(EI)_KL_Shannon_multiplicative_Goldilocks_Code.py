@@ -1,23 +1,11 @@
-# =============================================================================
-# Theory of the Question of Existence (TQE)
-# Energy–Information Simulation — KL × Shannon multiplicatively
-# =============================================================================
-# Author: Stefan Len
-#
-# SUMMARY
-# Monte Carlo simulation of universes using a composite information parameter 
-# I = f(KL, Shannon). KL divergence (between random quantum states) and 
-# normalized Shannon entropy are multiplicatively fused, bounded in [0,1]. 
-# Energy E is sampled from a log-normal distribution, with X = E·I determining 
-# stabilization in a Goldilocks zone. Stability is defined as consecutive calm 
-# steps (Δ_rel < ε). Results include stability curves, E–I scatter plots, 
-# epsilon-sweep analysis for I ≈ 0, and XAI outputs (SHAP/LIME). All runs are 
-# reproducible with master + per-universe seeds, exported to CSV/JSON/PNG.
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Stefan Len
 
-# KEYWORDS: Goldilocks window; KL divergence; Shannon entropy; energy–
-# information coupling; Monte Carlo; stability detection; SHAP; LIME;
-# reproducibility; epsilon sweep
-# =============================================================================
+# ===================================================================================
+# TQE_(EI)_KL_Shannon_multiplicative_Goldilocks_Code.py
+# ===================================================================================
+# Author: Stefan Len
+# ===================================================================================
 
 import os, time, json, warnings, sys, subprocess, shutil
 import numpy as np
