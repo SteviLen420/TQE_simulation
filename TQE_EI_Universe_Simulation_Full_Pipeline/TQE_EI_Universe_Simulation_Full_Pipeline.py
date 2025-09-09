@@ -52,7 +52,7 @@ MASTER_CTRL = {
     "LOCKIN_EPOCHS":        500,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
     "SEED":                 None,   # master RNG seed (auto-generated if None)
-    "PIPELINE_VARIANT": "full",   # "full" = E+I pipeline, "energy_only" = E only (I disabled)
+    "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
 
     # --- Energy distribution ---
     "E_DISTR":              "lognormal",  # energy sampling mode (future-proof)
@@ -77,24 +77,24 @@ MASTER_CTRL = {
     "ALPHA_I":              0.8,        # coupling factor: strength of I in E·I (heuristics)
 
     # --- Stability thresholds ---
-    "REL_EPS_STABLE":       0.010,   # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       5e-3,   # relative calmness threshold for lock-in (0.2%)
-    "CALM_STEPS_STABLE":    10,      # consecutive calm steps required (stable)
-    "CALM_STEPS_LOCKIN":    12,     # consecutive calm steps required (lock-in)
-    "MIN_LOCKIN_EPOCH":     200,    # lock-in can only occur after this epoch
-    "LOCKIN_WINDOW":        10,     # rolling window size for averaging delta_rel
+    "REL_EPS_STABLE":       0.010,    # relative calmness threshold for stability
+    "REL_EPS_LOCKIN":       5e-3,     # relative calmness threshold for lock-in (0.2%)
+    "CALM_STEPS_STABLE":    10,       # consecutive calm steps required (stable)
+    "CALM_STEPS_LOCKIN":    12,       # consecutive calm steps required (lock-in)
+    "MIN_LOCKIN_EPOCH":     200,      # lock-in can only occur after this epoch
+    "LOCKIN_WINDOW":        10,       # rolling window size for averaging delta_rel
     "LOCKIN_ROLL_METRIC":   "median", # "mean" | "median" | "max" — aggregator over window
-    "LOCKIN_REQUIRES_STABLE": True, # require stable_at before checking lock-in
-    "LOCKIN_MIN_STABLE_EPOCH": 0,   # require n - stable_at >= this many epochs
+    "LOCKIN_REQUIRES_STABLE": True,   # require stable_at before checking lock-in
+    "LOCKIN_MIN_STABLE_EPOCH": 0,     # require n - stable_at >= this many epochs
 
     # --- Goldilocks zone controls ---
-    "GOLDILOCKS_MODE":      "dynamic", # "heuristic" | "dynamic"
+    "GOLDILOCKS_MODE":      "dynamic",  # "heuristic" | "dynamic"
     "E_CENTER":             4.0,    # heuristic: energy sweet-spot center (used for X window)
     "E_WIDTH":              4.0,    # heuristic: energy sweet-spot width (used for X window)
-    "GOLDILOCKS_THRESHOLD": 0.85,    # dynamic: fraction of max stability to define zone
+    "GOLDILOCKS_THRESHOLD": 0.85,   # dynamic: fraction of max stability to define zone
     "GOLDILOCKS_MARGIN":    0.10,   # dynamic fallback margin around peak (±10%)
     "SIGMA_ALPHA":          1.5,    # curvature inside Goldilocks (sigma shaping)
-    "OUTSIDE_PENALTY":      5,    # sigma multiplier outside Goldilocks zone
+    "OUTSIDE_PENALTY":      5,      # sigma multiplier outside Goldilocks zone
     "STAB_BINS":            40,     # number of bins in stability curve
     "SPLINE_K":             3,      # spline order for smoothing (3=cubic)
 
