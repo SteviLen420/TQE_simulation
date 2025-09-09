@@ -43,7 +43,7 @@ except Exception:
     from lime.lime_tabular import LimeTabularExplainer
     
 # ======================================================
-# 1) MASTER CONTROLLER — unified parameters (KL × Shannon)
+# 1) MASTER CONTROLLER
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
