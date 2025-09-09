@@ -325,7 +325,7 @@ def simulate_superposition_series(T=10.0, dt=0.05, dim=4, noise=0.03, seed=None)
     ent_list, pur_list = [], []
     for _ in times:
         # apply small random unitary kick + depolarizing-like mixing
-        U = qt.rand_unitary_haar(dim)
+        U = qt.rand_unitary(dim)
         rho = (U * rho * U.dag())
         mix = qt.qeye(dim) / dim
         rho = (1 - noise) * rho + noise * mix
