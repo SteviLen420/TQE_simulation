@@ -1,24 +1,11 @@
-# ===========================================================================
-# Theory of the Question of Existence (TQE)
-# Energy-only Simulation — Vacuum fluctuation → Collapse → Expansion → Law lock-in
-# ===========================================================================
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Stefan Len
+
+# ===================================================================================
+# TQE_(E)_LawLockin_Code.py
+# ===================================================================================
 # Author: Stefan Len
-# Description: Full model simulation of only-energy (E) dynamics
-#
-# SUMMARY
-# Monte Carlo framework modeling cosmogenesis from energy (E) alone, without 
-# informational orientation (I=0). Starting from vacuum fluctuations and 
-# quantum superposition (t < 0), the system undergoes collapse (t = 0), 
-# stabilization, and expansion (t > 0). A Goldilocks window defines critical 
-# thresholds where law lock-in emerges. Outputs include entropy/purity traces, 
-# collapse dynamics, stability fractions, law lock-in epochs, and expansion 
-# trajectories. Reproducible with master + per-universe seeds, results are 
-# saved as CSV/JSON/PNG for analysis.
-# ---------------------------------------------------------------------------
-# Keywords: Theory of the Question of Existence, TQE, Energy-only cosmogenesis,
-# Vacuum fluctuation, Quantum superposition, Collapse, Expansion, Law lock-in,
-# Monte Carlo universes, Goldilocks principle, Stability, Reproducibility
-# ===========================================================================
+# ===================================================================================
 
 # ---- Mount Google Drive ----
 from google.colab import drive
