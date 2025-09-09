@@ -1,31 +1,11 @@
-# ===========================================================================
-# Theory of the Question of Existence (TQE) — E-only
-# (E) Vacuum fluctuation → Superposition → Collapse → Expansion → Law lock-in
-# ===========================================================================
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Stefan Len
+
+# ===================================================================================
+# TQE_(E)_UniverseSimulation_LawLockin_Code.py
+# ===================================================================================
 # Author: Stefan Len
-# Description: Monte Carlo universe simulation of Energy-only (E) dynamics
-#
-# Introduction (English)
-# This notebook implements a reproducible pipeline for simulating universes
-# according to the Theory of the Question of Existence (TQE) in an Energy-only
-# setting (I = 0). 
-# The model tracks energy (E) dynamics across sequential phases:
-#   vacuum fluctuation → superposition → collapse → expansion → law lock-in.
-#
-# The simulation integrates:
-#   • QuTiP-based quantum superposition
-#   • Monte Carlo sampling of universes
-#   • Stability and law lock-in criteria
-#   • Expansion dynamics with Goldilocks constraints
-#   • Best-universe entropy analysis
-#
-# A single MASTER_CTRL dictionary governs reproducibility, parameters, and outputs.
-# Results are exported in CSV/JSON/PNG for post-analysis and publication.
-# ---------------------------------------------------------------------------
-# Keywords: TQE, Energy dynamics, universes, Monte Carlo, 
-# Quantum superposition, Collapse, Expansion, Law lock-in, Goldilocks principle, 
-# Shannon entropy
-# ===========================================================================
+# ===================================================================================
 
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
