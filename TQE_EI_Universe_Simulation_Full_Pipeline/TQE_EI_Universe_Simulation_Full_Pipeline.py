@@ -391,6 +391,7 @@ def run_mc(E_c_low=None, E_c_high=None):
     try:
         rows = []
         universe_seeds = []
+        pre_pairs = []
 
         for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
             # derive per-universe seed from master rng (Generator)
@@ -430,6 +431,7 @@ def run_mc(E_c_low=None, E_c_high=None):
             )
 
             rows.append({
+                pre_pairs.append({  
                 "universe_id": i,
                 "seed": uni_seed,
                 "E": E,
@@ -446,6 +448,13 @@ def run_mc(E_c_low=None, E_c_high=None):
         pd.DataFrame({"universe_id": np.arange(len(df_out)), "seed": universe_seeds}).to_csv(
             os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
         )
+
+        # --- SAVE THE PRE-FLUCTUATION DATA ---
+        pd.DataFrame(pre_pairs).to_csv(   
+            os.path.join(SAVE_DIR, "pre_fluctuation_pairs.csv"),
+            index=False
+        )
+              
         return df_out
     finally:
         np.random.set_state(prev_state) 
