@@ -52,6 +52,7 @@ MASTER_CTRL = {
     "LOCKIN_EPOCHS":        500,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
     "SEED":                 None,   # master RNG seed (auto-generated if None)
+    "PIPELINE_VARIANT": "full",   # "full" = E+I pipeline, "energy_only" = E only (I disabled)
 
     # --- Energy distribution ---
     "E_DISTR":              "lognormal",  # energy sampling mode (future-proof)
@@ -125,8 +126,8 @@ MASTER_CTRL = {
     "SAVE_FIGS":            True,   # save plots to disk
     "SAVE_JSON":            True,   # save summary JSON
     "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
-    "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_EI_KL_",
-    "RUN_ID_PREFIX":        "TQE_(E,I)_KL_SHANNON_",   # prefix for run_id
+    "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_EI_Universe_Simulation_Full_Pipeline",
+    "RUN_ID_PREFIX":        "TQE_EI_Universe_Simulation_Full_Pipeline_",   # prefix for run_id
     "RUN_ID_FORMAT":        "%Y%m%d_%H%M%S",          # time format for run_id
     "ALLOW_FILE_EXTS":      [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
     "MAX_FIGS_TO_SAVE":     None,   # limit number of figs (None = no limit)
@@ -185,6 +186,7 @@ def save_json(path, obj):
         json.dump(obj, f, indent=2)
 
 print(f"💾 Results saved in: {SAVE_DIR}")
+print(f"⚙️  Pipeline variant: {MASTER_CTRL.get('PIPELINE_VARIANT','full')}")
 
 # ======================================================
 # 3) Information parameter I = g(KL, Shannon) (fusion)
@@ -402,22 +404,25 @@ def run_mc(E_c_low=None, E_c_high=None):
             rng_uni = np.random.default_rng(uni_seed)
             np.random.seed(uni_seed)  # libs, pl. QuTiP, a legacy RNG-t használják
 
-            # sample energy & information
+            # --- Sample energy & information parameter depending on pipeline variant ---
             E = sample_energy(rng_local=rng_uni)
-            I = sample_information_param()
+            variant = MASTER_CTRL.get("PIPELINE_VARIANT", "full")
 
-            # X definetion
-            mode = MASTER_CTRL["X_MODE"]
-            aI = MASTER_CTRL["ALPHA_I"]
-
-            if mode == "E_plus_I":
-                X = (E + aI * I) * MASTER_CTRL["X_SCALE"]
-
-            elif mode == "E_times_I_pow":
-                X = E * ((aI * I) ** MASTER_CTRL["X_I_POWER"]) * MASTER_CTRL["X_SCALE"]
-
-            else:  # "product"
-                X = (E * (aI * I)) * MASTER_CTRL["X_SCALE"]
+            if variant == "energy_only":
+                # I disabled: force to 0.0, X depends only on E
+                I = 0.0
+                X = E * MASTER_CTRL["X_SCALE"]
+            else:
+                # Normal E+I pipeline
+                I = sample_information_param()
+                mode = MASTER_CTRL["X_MODE"]
+                aI = MASTER_CTRL["ALPHA_I"]
+                if mode == "E_plus_I":
+                    X = (E + aI * I) * MASTER_CTRL["X_SCALE"]
+                elif mode == "E_times_I_pow":
+                    X = E * ((aI * I) ** MASTER_CTRL["X_I_POWER"]) * MASTER_CTRL["X_SCALE"]
+                else:  # "product"
+                    X = (E * (aI * I)) * MASTER_CTRL["X_SCALE"]
 
             # Simulation
             stable, lockin, stable_epoch, lock_epoch = simulate_lock_in(
