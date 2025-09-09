@@ -7,7 +7,16 @@
 # Author: Stefan Len
 # ===================================================================================
 
-import os, time, json, warnings, sys, subprocess, shutil
+import os
+# Set before importing heavy numeric libs would be ideal,
+# but applying here is still helpful for thread pools.
+os.environ["PYTHONHASHSEED"] = "0"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
+import time, json, warnings, sys, subprocess, shutil
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -1000,7 +1009,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
         )
 
         # Choose which class to explain (positive=1 if available)
-        target_label = 1 if 1 in getattr(rf_cls, "classes_", [0, 1]) else 0
+        target_label = int(rf_cls.classes_[np.argmax(rf_cls.classes_)])
 
         # --- (A) Averaged LIME over multiple lock-in instances ---
         rng_local = np.random.default_rng(MASTER_CTRL.get("TEST_RANDOM_STATE", 42))
