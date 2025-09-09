@@ -805,6 +805,10 @@ print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
 # ======================================================
 # 14) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
 # ======================================================
+
+# --- Ensure classifier var exists even if RUN_XAI=False (for LIME guard) ---
+rf_cls = None
+
 def _savefig_safe(path):
     """Helper: safe figure saving with tight bounding box."""
     plt.savefig(path, dpi=220, bbox_inches="tight")
