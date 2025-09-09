@@ -782,7 +782,6 @@ zero_split_rows = [
     _stability_stats(mask_I_gt0, "I > 0"),
 ]
 zero_split_df = pd.DataFrame(zero_split_rows)
-zero_split_path = os.path.join(SAVE_DIR, "stability_by_I_zero.csv")
 zero_split_path = with_variant(os.path.join(SAVE_DIR, "stability_by_I_zero.csv"))
 zero_split_df.to_csv(zero_split_path, index=False)
 print("\n📈 Stability by I (exact zero vs positive):")
@@ -797,7 +796,6 @@ for eps in eps_list:
     eps_rows.append({**_stability_stats(df["I"] <= eps, f"I <= {eps}"), "eps": eps})
     eps_rows.append({**_stability_stats(df["I"]  > eps, f"I > {eps}"),  "eps": eps})
 eps_df = pd.DataFrame(eps_rows)
-eps_path = os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv")
 eps_path = with_variant(os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv"))
 eps_df.to_csv(eps_path, index=False)
 print("\n📈 Epsilon sweep (near-zero thresholds, preview):")
@@ -1021,7 +1019,6 @@ if (MASTER_CTRL.get("RUN_LIME", True)
                     base = feat  # fallback: keep original label
                 rows.append({"feature": base, "weight": float(weight)})
 
-        import pandas as pd
         lime_avg = (pd.DataFrame(rows)
                       .groupby("feature", as_index=False)["weight"].mean()
                       .sort_values("weight"))
@@ -1052,12 +1049,9 @@ if (MASTER_CTRL.get("RUN_LIME", True)
         plt.close(fig)
 
         print(f"[LIME] Saved PNGs: "
-              f"{os.path.join(FIG_DIR, 'lime_lockin_avg.png')} and "
-              f"{os.path.join(FIG_DIR, 'lime_lockin_example.png')}")
+              f"{with_variant(os.path.join(FIG_DIR, 'lime_lockin_avg.png'))} and "
+              f"{with_variant(os.path.join(FIG_DIR, 'lime_lockin_example.png'))}")
         
-print(f"[LIME] Saved PNGs: "
-      f"{with_variant(os.path.join(FIG_DIR, 'lime_lockin_avg.png'))} and "
-      f"{with_variant(os.path.join(FIG_DIR, 'lime_lockin_example.png'))}")
             
 # ======================================================
 # 15) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
