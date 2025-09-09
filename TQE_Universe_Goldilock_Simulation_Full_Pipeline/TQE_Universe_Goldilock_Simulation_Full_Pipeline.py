@@ -85,6 +85,25 @@ MASTER_CTRL = {
     "X_SCALE":              1.0,        # global X scaling prior to Goldilocks
     "ALPHA_I":              0.8,        # coupling factor: strength of I in E·I (heuristics)
 
+    # --- Fluctuation / superposition module toggles & params ---
+    "RUN_FLUCTUATION_BLOCK": True,     # turn on/off this entire section
+    "FL_SUPER_T":            10.0,     # duration for t<0 superposition plot (arb. units)
+    "FL_SUPER_DT":           0.05,     # time step for superposition time series
+    "FL_SUPER_DIM":          4,        # small Hilbert dim for toy density evolution
+    "FL_SUPER_NOISE":        0.03,     # depolarizing-like noise amplitude
+
+    "FL_COLLAPSE_T_PRE":     0.22,     # window before t=0 (collapse)
+    "FL_COLLAPSE_T_POST":    0.22,     # window after t=0
+    "FL_COLLAPSE_DT":        0.002,    # time step
+    "FL_COLLAPSE_PRE_SIGMA": 0.55,     # volatility before t=0
+    "FL_COLLAPSE_POST_SIGMA":0.015,    # small jitter after t=0
+    "FL_COLLAPSE_REVERT":    0.35,     # mean-reversion towards X_lock after t=0 (OU factor)
+
+    "FL_EXP_EPOCHS":         500,      # length of t>0 expansion panel
+    "FL_EXP_DRIFT":          0.45,     # upward drift for A
+    "FL_EXP_JITTER":         0.9,      # noise for A random walk
+    "FL_EXP_I_JITTER":       0.04,     # small jitter for I track
+
     # --- Stability thresholds ---
     "REL_EPS_STABLE":       0.010,    # relative calmness threshold for stability
     "REL_EPS_LOCKIN":       5e-3,     # relative calmness threshold for lock-in (0.2%)
@@ -279,6 +298,82 @@ def sample_energy(rng_local=None):
     if hi is not None:
         E = min(E, hi)
     return E
+
+# ======================================================
+# Fluctuation / Superposition diagnostics (standalone)
+# ======================================================
+
+def _save_df_safe_local(df_in, path):
+    try:
+        df_in.to_csv(path, index=False)
+    except Exception as e:
+        print(f"[ERR] CSV save failed: {path} -> {e}")
+
+def simulate_superposition_series(T=10.0, dt=0.05, dim=4, noise=0.03, seed=None):
+    """
+    t < 0 panel: generate toy entropy & purity time series from a
+    noisy density matrix evolution (very lightweight, no heavy solvers).
+    """
+    rgen = np.random.default_rng(seed)
+    n = int(np.ceil(T/dt)) + 1
+    times = np.linspace(0, T, n)
+
+    # start from random pure state
+    psi = qt.rand_ket(dim, dims=[[dim],[1]])
+    rho = psi.proj()
+
+    ent_list, pur_list = [], []
+    for _ in times:
+        # apply small random unitary kick + depolarizing-like mixing
+        U = qt.rand_unitary_haar(dim)
+        rho = (U * rho * U.dag())
+        mix = qt.qeye(dim) / dim
+        rho = (1 - noise) * rho + noise * mix
+        rho = rho.unit()  # just in case
+        # von Neumann entropy (base e) and purity Tr(rho^2)
+        S = qt.entropy_vn(rho, base=np.e)
+        P = float((rho*rho).tr().real)
+        # normalize entropy roughly to [0,1] for plotting aesthetics
+        S_norm = float(S / np.log(dim))
+        ent_list.append(S_norm)
+        pur_list.append(P)
+    return times, np.array(ent_list), np.array(pur_list)
+
+def simulate_collapse_series(X_lock, t_pre=0.2, t_post=0.2, dt=0.002,
+                             pre_sigma=0.5, post_sigma=0.02, revert=0.35, seed=None):
+    """
+    t = 0 panel: pre-collapse high-volatility OU process that snaps to X_lock at t>=0.
+    """
+    rgen = np.random.default_rng(seed)
+    t_before = np.arange(-t_pre, 0.0, dt)
+    t_after  = np.arange(0.0,  t_post+1e-12, dt)
+    # pre: zero-mean noisy fluctuations around X_lock with big sigma
+    x_pre = X_lock + rgen.normal(0, pre_sigma, size=len(t_before)) * (1 + 0.5*rgen.standard_normal(len(t_before)))
+    # post: mean-reverting OU towards X_lock with small noise
+    x = X_lock
+    xs_post = []
+    for _ in t_after:
+        x += revert*(X_lock - x)*dt + rgen.normal(0, post_sigma)
+        xs_post.append(x)
+    x_after = np.array(xs_post)
+    t = np.concatenate([t_before, t_after])
+    x = np.concatenate([x_pre, x_after])
+    return t, x
+
+def simulate_expansion_panel(epochs=500, drift=0.4, jitter=0.9, i_jitter=0.04, seed=None):
+    """
+    t > 0 panel: simple stochastic growth for A and a near-flat I track.
+    """
+    rgen = np.random.default_rng(seed)
+    A = np.empty(epochs); Itrk = np.empty(epochs)
+    a = 20.0  # start amplitude
+    i0 = 0.0
+    for k in range(epochs):
+        a = max(0.0, a + drift + rgen.normal(0, jitter))
+        i0 += rgen.normal(0, i_jitter)
+        Itrk[k] = i0
+        A[k] = a
+    return np.arange(epochs), A, Itrk
     
 # ======================================================
 # 5) Goldilocks noise function
@@ -697,6 +792,87 @@ cb.set_label("Stable (0/1)")
 savefig(with_variant(os.path.join(FIG_DIR, "scatter_EI.png")))
 
 # ======================================================
+# 9b) Fluctuation panels (t<0, t=0, t>0) + CSV exports
+# ======================================================
+if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
+    print("[FL] Generating superposition / collapse / expansion panels...")
+
+    # Choose an X_lock reference. Prefer median from the current run; otherwise heuristic.
+    if "X" in df.columns and len(df) > 0 and np.isfinite(df["X"]).any():
+        X_lock = float(np.median(df["X"]))
+    else:
+        X_lock = MASTER_CTRL.get("E_CENTER", 4.0) * MASTER_CTRL.get("ALPHA_I", 0.8)
+
+    # ---- (1) t<0 : superposition entropy & purity ----
+    tS, ent, pur = simulate_superposition_series(
+        T=MASTER_CTRL["FL_SUPER_T"],
+        dt=MASTER_CTRL["FL_SUPER_DT"],
+        dim=MASTER_CTRL["FL_SUPER_DIM"],
+        noise=MASTER_CTRL["FL_SUPER_NOISE"],
+        seed=master_seed + 11
+    )
+    # save CSV
+    sup_df = pd.DataFrame({"time": tS, "entropy": ent, "purity": pur})
+    sup_csv = with_variant(os.path.join(SAVE_DIR, "fl_superposition_timeseries.csv"))
+    _save_df_safe_local(sup_df, sup_csv)
+
+    # plot
+    plt.figure(figsize=(8,5))
+    plt.title("t < 0 : Quantum superposition")
+    plt.plot(tS, ent, label="Entropy")
+    plt.plot(tS, pur, label="Purity")
+    plt.xlabel("time"); plt.legend()
+    savefig(with_variant(os.path.join(FIG_DIR, "fl_superposition.png")))
+
+    # ---- (2) t = 0 : collapse (fluctuation -> lock-in) ----
+    tC, xC = simulate_collapse_series(
+        X_lock,
+        t_pre=MASTER_CTRL["FL_COLLAPSE_T_PRE"],
+        t_post=MASTER_CTRL["FL_COLLAPSE_T_POST"],
+        dt=MASTER_CTRL["FL_COLLAPSE_DT"],
+        pre_sigma=MASTER_CTRL["FL_COLLAPSE_PRE_SIGMA"],
+        post_sigma=MASTER_CTRL["FL_COLLAPSE_POST_SIGMA"],
+        revert=MASTER_CTRL["FL_COLLAPSE_REVERT"],
+        seed=master_seed + 22
+    )
+    col_df = pd.DataFrame({"time": tC, "X": xC, "X_lock": X_lock})
+    col_csv = with_variant(os.path.join(SAVE_DIR, "fl_collapse_timeseries.csv"))
+    _save_df_safe_local(col_df, col_csv)
+
+    plt.figure(figsize=(8,5))
+    plt.title("t = 0 : Collapse (E·I lock-in)")
+    plt.plot(tC, xC, color="gray", label="fluctuation → lock-in")
+    plt.axvline(0.0, color="red")
+    plt.axhline(X_lock, color="red", ls="--", label=f"Lock-in X={X_lock:.2f}")
+    plt.xlabel("time"); plt.ylabel("X = E·I")
+    plt.legend()
+    savefig(with_variant(os.path.join(FIG_DIR, "fl_collapse.png")))
+
+    # ---- (3) t > 0 : expansion dynamics ----
+    te, Atrack, Itrack = simulate_expansion_panel(
+        epochs=MASTER_CTRL["FL_EXP_EPOCHS"],
+        drift=MASTER_CTRL["FL_EXP_DRIFT"],
+        jitter=MASTER_CTRL["FL_EXP_JITTER"],
+        i_jitter=MASTER_CTRL["FL_EXP_I_JITTER"],
+        seed=master_seed + 33
+    )
+    exp_df = pd.DataFrame({"epoch": te, "A": Atrack, "I_track": Itrack})
+    exp_csv = with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv"))
+    _save_df_safe_local(exp_df, exp_csv)
+
+    plt.figure(figsize=(9,5))
+    plt.title("t > 0 : Expansion dynamics")
+    plt.plot(te, Atrack, label="Amplitude A")
+    plt.plot(te, Itrack, label="Orientation I")
+    # optional visual reference lines (equilibrium & lock-in epoch approx.)
+    eqA = np.percentile(Atrack, 50)
+    lock_ep = int(0.73 * len(te))
+    plt.axhline(eqA, color="gray", ls="--", alpha=0.7, label=f"Equilibrium A")
+    plt.axvline(lock_ep, color="red", ls="--", label=f"Law lock-in ≈ {lock_ep}")
+    plt.xlabel("epoch"); plt.ylabel("Parameters"); plt.legend()
+    savefig(with_variant(os.path.join(FIG_DIR, "fl_expansion.png")))
+
+# ======================================================
 # 11) Save consolidated summary (single write)
 # ======================================================
 stable_count = int(df["stable"].sum())
@@ -726,6 +902,9 @@ summary = {
         "stability_curve": with_variant(os.path.join(FIG_DIR, "stability_curve.png")),
         "scatter_EI": with_variant(os.path.join(FIG_DIR, "scatter_EI.png")),
         "stability_distribution": with_variant(os.path.join(FIG_DIR, "stability_distribution.png"))
+        "fl_superposition": with_variant(os.path.join(FIG_DIR, "fl_superposition.png")),
+        "fl_collapse":      with_variant(os.path.join(FIG_DIR, "fl_collapse.png")),
+        "fl_expansion":     with_variant(os.path.join(FIG_DIR, "fl_expansion.png")),
     },
     "artifacts": {
         "tqe_runs_csv": with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")),
@@ -733,6 +912,9 @@ summary = {
         "pre_fluctuation_pairs_csv": with_variant(os.path.join(SAVE_DIR, "pre_fluctuation_pairs.csv")),
         "stability_by_I_zero_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_zero.csv")),
         "stability_by_I_eps_sweep_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv"))
+        "fl_superposition_csv": with_variant(os.path.join(SAVE_DIR, "fl_superposition_timeseries.csv")),
+        "fl_collapse_csv":      with_variant(os.path.join(SAVE_DIR, "fl_collapse_timeseries.csv")),
+        "fl_expansion_csv":     with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv")),
     },
     "meta": {
         "code_version": "2025-09-03a",
