@@ -2,7 +2,7 @@
 # Copyright (c) 2025 Stefan Len
 
 # ===================================================================================
-# TQE_EI_KL_Shannon_multiplicative_Goldilocks_Script.py
+# TQE_EI_Universe_Simulation_Full_Pipeline.py
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
@@ -125,7 +125,7 @@ MASTER_CTRL = {
     "SAVE_FIGS":            True,   # save plots to disk
     "SAVE_JSON":            True,   # save summary JSON
     "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
-    "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_(E,I)_KL_Shannon",
+    "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_EI_KL_",
     "RUN_ID_PREFIX":        "TQE_(E,I)_KL_SHANNON_",   # prefix for run_id
     "RUN_ID_FORMAT":        "%Y%m%d_%H%M%S",          # time format for run_id
     "ALLOW_FILE_EXTS":      [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
