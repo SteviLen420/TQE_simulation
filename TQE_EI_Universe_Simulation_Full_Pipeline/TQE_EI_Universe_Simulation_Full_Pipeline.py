@@ -430,8 +430,7 @@ def run_mc(E_c_low=None, E_c_high=None):
                 rng=rng_uni
             )
 
-            rows.append({
-                pre_pairs.append({  
+            rec = {
                 "universe_id": i,
                 "seed": uni_seed,
                 "E": E,
@@ -441,7 +440,15 @@ def run_mc(E_c_low=None, E_c_high=None):
                 "lockin": lockin,
                 "stable_epoch": stable_epoch,
                 "lock_epoch": lock_epoch
-            })
+            }
+            rows.append(rec)
+
+            pre_pairs.append({
+                "universe_id": i,
+                "E": E,
+                "I": I,
+                "X": X
+             })
 
         df_out = pd.DataFrame(rows)
         # persist per-universe seeds
