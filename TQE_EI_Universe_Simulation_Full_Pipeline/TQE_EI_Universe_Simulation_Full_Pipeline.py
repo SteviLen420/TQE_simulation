@@ -168,10 +168,21 @@ np.random.seed(master_seed)  # sync legacy RNG for QuTiP calls
 print(f"🎲 Using master seed: {master_seed}")
 
 # Output dirs
-run_id = MASTER_CTRL["RUN_ID_PREFIX"] + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
+run_id = MASTER_CTRL["RUN_ID_PREFIX"] + VARIANT + "_" + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
 SAVE_DIR = os.path.join(os.getcwd(), run_id)
 FIG_DIR  = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
+
+# --- Variant tag + filename helper ---
+VARIANT = MASTER_CTRL.get("PIPELINE_VARIANT", "full")
+
+def with_variant(path: str) -> str:
+    """
+    Insert _{VARIANT} before file extension.
+    Example: figs/stability_curve.png -> figs/stability_curve_full.png
+    """
+    root, ext = os.path.splitext(path)
+    return f"{root}_{VARIANT}{ext}"
 
 def savefig(path):
     """Save a figure only if SAVE_FIGS is True."""
@@ -458,12 +469,12 @@ def run_mc(E_c_low=None, E_c_high=None):
         df_out = pd.DataFrame(rows)
         # persist per-universe seeds
         pd.DataFrame({"universe_id": np.arange(len(df_out)), "seed": universe_seeds}).to_csv(
-            os.path.join(SAVE_DIR, "universe_seeds.csv"), index=False
+            with_variant(os.path.join(SAVE_DIR, "universe_seeds.csv")), index=False
         )
 
         # --- SAVE THE PRE-FLUCTUATION DATA ---
-        pd.DataFrame(pre_pairs).to_csv(   
-            os.path.join(SAVE_DIR, "pre_fluctuation_pairs.csv"),
+        pd.DataFrame(pre_pairs).to_csv(
+            with_variant(os.path.join(SAVE_DIR, "pre_fluctuation_pairs.csv")),
             index=False
         )
               
@@ -634,7 +645,7 @@ else:
     df = run_mc(E_c_low=None, E_c_high=None)
 
 # Save main run
-df.to_csv(os.path.join(SAVE_DIR, "tqe_runs.csv"), index=False)
+df.to_csv(with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")), index=False)
 
 # ======================================================
 # 9) Stability curve (binned) + Goldilocks window plot
@@ -663,7 +674,7 @@ plt.xlabel("X = E·I (or configured)")
 plt.ylabel("P(stable)")
 plt.title("Goldilocks zone: stability curve")
 plt.legend()
-savefig(os.path.join(FIG_DIR, "stability_curve.png"))
+savefig(with_variant(os.path.join(FIG_DIR, "stability_curve.png")))
 
 # ======================================================
 # 10) Scatter E vs I
@@ -674,7 +685,7 @@ plt.xlabel("Energy (E)"); plt.ylabel("Information parameter (I: KL×Shannon)")
 plt.title("Universe outcomes in (E, I) space")
 cb = plt.colorbar(sc, ticks=[0, 1])
 cb.set_label("Stable (0/1)")
-savefig(os.path.join(FIG_DIR, "scatter_EI.png"))
+savefig(with_variant(os.path.join(FIG_DIR, "scatter_EI.png")))
 
 # ======================================================
 # 11) Save consolidated summary (single write)
@@ -703,13 +714,16 @@ summary = {
         "X_high": E_c_high if E_c_high is not None else E_c_high_plot
     },
     "figures": {
-        "stability_curve": os.path.join(FIG_DIR, "stability_curve.png"),
-        "scatter_EI": os.path.join(FIG_DIR, "scatter_EI.png"),
-        "stability_distribution": os.path.join(FIG_DIR, "stability_distribution.png")
+        "stability_curve": with_variant(os.path.join(FIG_DIR, "stability_curve.png")),
+        "scatter_EI": with_variant(os.path.join(FIG_DIR, "scatter_EI.png")),
+        "stability_distribution": with_variant(os.path.join(FIG_DIR, "stability_distribution.png"))
     },
     "artifacts": {
-        "tqe_runs_csv": os.path.join(SAVE_DIR, "tqe_runs.csv"),
-        "universe_seeds_csv": os.path.join(SAVE_DIR, "universe_seeds.csv")
+        "tqe_runs_csv": with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")),
+        "universe_seeds_csv": with_variant(os.path.join(SAVE_DIR, "universe_seeds.csv"))
+        "pre_fluctuation_pairs_csv": with_variant(os.path.join(SAVE_DIR, "pre_fluctuation_pairs.csv")),
+        "stability_by_I_zero_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_zero.csv")),
+        "stability_by_I_eps_sweep_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv"))
     },
     "meta": {
         "code_version": "2025-09-03a",
@@ -742,7 +756,7 @@ plt.bar(labels, values, color=colors, edgecolor="black")
 plt.ylabel("Number of Universes")
 plt.title("Universe Stability Distribution")
 plt.tight_layout()
-savefig(os.path.join(FIG_DIR, "stability_distribution.png"))
+savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
 
 # ======================================================
 # 13) Stability by I (exact zero vs eps sweep) — extended
@@ -769,7 +783,7 @@ zero_split_rows = [
 ]
 zero_split_df = pd.DataFrame(zero_split_rows)
 zero_split_path = os.path.join(SAVE_DIR, "stability_by_I_zero.csv")
-zero_split_df.to_csv(zero_split_path, index=False)
+zero_split_path = with_variant(os.path.join(SAVE_DIR, "stability_by_I_zero.csv"))
 print("\n📈 Stability by I (exact zero vs positive):")
 print(zero_split_df.to_string(index=False))
 if zero_split_df.loc[zero_split_df["group"] == "I == 0", "n"].iloc[0] == 0:
@@ -783,7 +797,7 @@ for eps in eps_list:
     eps_rows.append({**_stability_stats(df["I"]  > eps, f"I > {eps}"),  "eps": eps})
 eps_df = pd.DataFrame(eps_rows)
 eps_path = os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv")
-eps_df.to_csv(eps_path, index=False)
+eps_path = with_variant(os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv"))
 print("\n📈 Epsilon sweep (near-zero thresholds, preview):")
 print(eps_df.head(12).to_string(index=False))
 print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
@@ -900,11 +914,11 @@ if MASTER_CTRL.get("RUN_XAI", True):
 
             plt.figure()
             shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
-            _savefig_safe(os.path.join(FIG_DIR, "shap_summary_cls_stable.png"))
+            _savefig_safe(with_variant(os.path.join(FIG_DIR, "shap_summary_cls_stable.png")))
 
             _save_df_safe(pd.DataFrame(sv_cls, columns=X_plot.columns),
-                          os.path.join(FIG_DIR, "shap_values_classification.csv"))
-            np.save(os.path.join(FIG_DIR, "shap_values_cls.npy"), sv_cls)
+                          with_variant(os.path.join(FIG_DIR, "shap_values_classification.csv")))
+            np.save(with_variant(os.path.join(FIG_DIR, "shap_values_cls.npy")), sv_cls)
         except Exception as e:
             print(f"[XAI][ERR] SHAP classification failed: {e}")
 
@@ -946,11 +960,11 @@ if MASTER_CTRL.get("RUN_XAI", True):
                 shap.summary_plot(sv_reg, X_plot_r.values,
                                   feature_names=X_plot_r.columns.tolist(),
                                   show=False)
-                _savefig_safe(os.path.join(FIG_DIR, "shap_summary_reg_lock_epoch.png"))
+                _savefig_safe(with_variant(os.path.join(FIG_DIR, "shap_summary_reg_lock_epoch.png")))
 
             _save_df_safe(pd.DataFrame(sv_reg, columns=X_plot_r.columns),
-                          os.path.join(FIG_DIR, "shap_values_regression.csv"))
-            np.save(os.path.join(FIG_DIR, "shap_values_reg.npy"), sv_reg)
+                          with_variant(os.path.join(FIG_DIR, "shap_values_regression.csv")))
+            np.save(with_variant(os.path.join(FIG_DIR, "shap_values_reg.npy")), sv_reg)
 
         except Exception as e:
             print(f"[XAI][ERR] SHAP regression failed: {e}")
@@ -1011,7 +1025,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
                       .sort_values("weight"))
 
         # Save CSV of averaged weights
-        _save_df_safe(lime_avg, os.path.join(FIG_DIR, "lime_lockin_avg.csv"))
+        _save_df_safe(lime_avg, with_variant(os.path.join(FIG_DIR, "lime_lockin_avg.csv")))
 
         # Plot averaged horizontal bar chart (saved as PNG)
         plt.figure(figsize=(6, 4))
@@ -1020,7 +1034,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
         plt.ylabel("Feature")
         plt.title("LIME (average over lock-in universes)")
         plt.tight_layout()
-        _savefig_safe(os.path.join(FIG_DIR, "lime_lockin_avg.png"))
+        _savefig_safe(with_variant(os.path.join(FIG_DIR, "lime_lockin_avg.png")))
 
         # --- (B) Single-instance classic LIME figure (also saved as PNG) ---
         # Take one representative instance (e.g., the first of the sampled indices)
@@ -1032,7 +1046,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
         )
         fig = exp_one.as_pyplot_figure()
         fig.suptitle("LIME explanation (lock-in, single instance)", y=1.02)
-        fig.savefig(os.path.join(FIG_DIR, "lime_lockin_example.png"), dpi=220, bbox_inches="tight")
+        fig.savefig(with_variant(os.path.join(FIG_DIR, "lime_lockin_example.png")), dpi=220, bbox_inches="tight")
         plt.close(fig)
 
         print(f"[LIME] Saved PNGs: "
