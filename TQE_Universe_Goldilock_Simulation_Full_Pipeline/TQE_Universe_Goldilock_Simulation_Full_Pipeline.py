@@ -300,7 +300,7 @@ def sample_energy(rng_local=None):
     return E
 
 # ======================================================
-# Fluctuation / Superposition diagnostics (standalone)
+# 5) Fluctuation / Superposition diagnostics (standalone)
 # ======================================================
 
 def _save_df_safe_local(df_in, path):
@@ -319,7 +319,7 @@ def simulate_superposition_series(T=10.0, dt=0.05, dim=4, noise=0.03, seed=None)
     times = np.linspace(0, T, n)
 
     # start from random pure state
-    psi = qt.rand_ket(dim, dims=[[dim],[1]])
+    psi = qt.rand_ket(dim)
     rho = psi.proj()
 
     ent_list, pur_list = [], []
@@ -376,7 +376,7 @@ def simulate_expansion_panel(epochs=500, drift=0.4, jitter=0.9, i_jitter=0.04, s
     return np.arange(epochs), A, Itrk
     
 # ======================================================
-# 5) Goldilocks noise function
+# 6) Goldilocks noise function
 # ======================================================
 def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
     """Goldilocks-shaped noise: outside penalty + quadratic curvature inside."""
@@ -390,7 +390,7 @@ def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
     return sigma0 * (1 + alpha * dist**2)  # <-- use the passed-in alpha
 
 # ======================================================
-# 6) Lock-in simulation (drop-in: MASTER_CTRL-driven)
+# 7) Lock-in simulation (drop-in: MASTER_CTRL-driven)
 # ======================================================
 def simulate_lock_in(
     X, N_epoch,
@@ -496,7 +496,7 @@ def simulate_lock_in(
     return is_stable, is_lockin, (stable_at if stable_at else -1), (lockin_at if lockin_at else -1)
 
 # ======================================================
-# 7) Helpers for MC runs and dynamic Goldilocks estimation
+# 8) Helpers for MC runs and dynamic Goldilocks estimation
 # ======================================================
 def run_mc(E_c_low=None, E_c_high=None):
     """
@@ -710,7 +710,7 @@ def compute_dynamic_goldilocks(df_in):
     return E_c_low, E_c_high, xs, ys, xx, yy, df_tmp
 
 # ======================================================
-# 8) Monte Carlo universes — single or two-phase run
+# 9) Monte Carlo universes — single or two-phase run
 # ======================================================
 # Phase selection based on GOLDILOCKS_MODE:
 # - "heuristic": build window from E_CENTER/E_WIDTH, run once with shaping
@@ -752,7 +752,7 @@ else:
 df.to_csv(with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")), index=False)
 
 # ======================================================
-# 9) Stability curve (binned) + Goldilocks window plot
+# 10) Stability curve (binned) + Goldilocks window plot
 # ======================================================
 E_c_low_plot, E_c_high_plot, xs, ys, xx, yy, df_binned = compute_dynamic_goldilocks(df)
 
@@ -781,7 +781,7 @@ plt.legend()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_curve.png")))
 
 # ======================================================
-# 10) Scatter E vs I
+# 11) Scatter E vs I
 # ======================================================
 plt.figure(figsize=(7,6))
 sc = plt.scatter(df["E"], df["I"], c=df["stable"], cmap="coolwarm", s=10, alpha=0.5)
@@ -792,7 +792,7 @@ cb.set_label("Stable (0/1)")
 savefig(with_variant(os.path.join(FIG_DIR, "scatter_EI.png")))
 
 # ======================================================
-# 9b) Fluctuation panels (t<0, t=0, t>0) + CSV exports
+# 12) Fluctuation panels (t<0, t=0, t>0) + CSV exports
 # ======================================================
 if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     print("[FL] Generating superposition / collapse / expansion panels...")
@@ -873,7 +873,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     savefig(with_variant(os.path.join(FIG_DIR, "fl_expansion.png")))
 
 # ======================================================
-# 11) Save consolidated summary (single write)
+# 13) Save consolidated summary (single write)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -932,7 +932,7 @@ print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # ======================================================
-# 12) Universe Stability Distribution (bar chart)
+# 14) Universe Stability Distribution (bar chart)
 # ======================================================
 labels = [
     f"Lock-in ({lockin_count}, {lockin_count/len(df)*100:.1f}%)",
@@ -950,7 +950,7 @@ plt.tight_layout()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
 
 # ======================================================
-# 13) Stability by I (exact zero vs eps sweep) — extended
+# 15) Stability by I (exact zero vs eps sweep) — extended
 # ======================================================
 def _stability_stats(mask: pd.Series, label: str):
     total = int(mask.sum())
@@ -994,7 +994,7 @@ print(eps_df.head(12).to_string(index=False))
 print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
 
 # ======================================================
-# 14) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
+# 16) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
 # ======================================================
 
 # --- Ensure classifier var exists even if RUN_XAI=False (for LIME guard) ---
@@ -1249,7 +1249,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
         
             
 # ======================================================
-# 15) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
+# 17) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
 # ======================================================
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     try:
