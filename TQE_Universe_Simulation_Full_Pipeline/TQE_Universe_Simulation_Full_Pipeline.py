@@ -90,7 +90,9 @@ MASTER_CTRL = {
     "FL_SUPER_T":            10.0,     # duration for t<0 superposition plot (arb. units)
     "FL_SUPER_DT":           0.05,     # time step for superposition time series
     "FL_SUPER_DIM":          4,        # small Hilbert dim for toy density evolution
-    "FL_SUPER_NOISE":        0.03,     # depolarizing-like noise amplitude
+    "FL_SUPER_NOISE":        0.06,     # depolarizing-like noise amplitude
+    "FL_SUPER_NOISE": 0.06,
+    "FL_SUPER_KICK": 0.18,
 
     "FL_COLLAPSE_T_PRE":     0.22,     # window before t=0 (collapse)
     "FL_COLLAPSE_T_POST":    0.22,     # window after t=0
@@ -309,34 +311,50 @@ def _save_df_safe_local(df_in, path):
     except Exception as e:
         print(f"[ERR] CSV save failed: {path} -> {e}")
 
-def simulate_superposition_series(T=10.0, dt=0.05, dim=4, noise=0.03, seed=None):
+def simulate_superposition_series(
+    T=10.0, dt=0.05, dim=4,
+    noise=0.03,              # average depolarization strength
+    kick=0.15,               # random unitary "kick" strength (0..~0.3)
+    obs_jitter=0.02,         # observation jitter added to curves
+    seed=None
+):
     """
-    t < 0 panel: generate toy entropy & purity time series from a
-    noisy density matrix evolution (very lightweight, no heavy solvers).
+    t < 0 panel: apply small random unitary kicks + time-varying noise,
+    so entropy and purity fluctuate (not monotonic).
     """
     rgen = np.random.default_rng(seed)
     n = int(np.ceil(T/dt)) + 1
     times = np.linspace(0, T, n)
 
-    # start from random pure state
+    # start from a pure random state
     psi = qt.rand_ket(dim)
     rho = psi.proj()
 
     ent_list, pur_list = [], []
+
     for _ in times:
-        # apply small random unitary kick + depolarizing-like mixing
-        U = qt.rand_unitary(dim)
-        rho = (U * rho * U.dag())
+        # generate a small random Hermitian -> exponential -> near-identity unitary
+        H = qt.rand_herm(dim)
+        U = (1j * kick * H).expm()
+        rho = U * rho * U.dag()
+
+        # depolarizing noise with small random fluctuation
+        z = np.clip(noise + rgen.normal(0, noise/3), 0.0, 0.25)
         mix = qt.qeye(dim) / dim
-        rho = (1 - noise) * rho + noise * mix
-        rho = rho.unit()  # just in case
-        # von Neumann entropy (base e) and purity Tr(rho^2)
+        rho = (1 - z) * rho + z * mix
+        rho = rho.unit()
+
+        # compute entropy (base e) and purity
         S = qt.entropy_vn(rho, base=np.e)
         P = float((rho*rho).tr().real)
-        # normalize entropy roughly to [0,1] for plotting aesthetics
-        S_norm = float(S / np.log(dim))
-        ent_list.append(S_norm)
-        pur_list.append(P)
+
+        # normalize entropy and add observation jitter
+        S_norm = float(S / np.log(dim)) + rgen.normal(0, obs_jitter)
+        P_noisy = P + rgen.normal(0, obs_jitter)
+
+        ent_list.append(np.clip(S_norm, 0.0, 1.2))
+        pur_list.append(np.clip(P_noisy, 0.0, 1.0))
+
     return times, np.array(ent_list), np.array(pur_list)
 
 def simulate_collapse_series(X_lock, t_pre=0.2, t_post=0.2, dt=0.002,
@@ -809,6 +827,8 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
         dt=MASTER_CTRL["FL_SUPER_DT"],
         dim=MASTER_CTRL["FL_SUPER_DIM"],
         noise=MASTER_CTRL["FL_SUPER_NOISE"],
+        kick=MASTER_CTRL.get("FL_SUPER_KICK", 0.15),
+        obs_jitter=MASTER_CTRL.get("FL_SUPER_OBS_JITTER", 0.02),
         seed=master_seed + 11
     )
     # save CSV
