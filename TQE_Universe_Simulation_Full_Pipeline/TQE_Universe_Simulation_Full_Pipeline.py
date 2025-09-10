@@ -204,10 +204,16 @@ VARIANT = MASTER_CTRL.get("PIPELINE_VARIANT", "full")
 def with_variant(path: str) -> str:
     """
     Insert _{VARIANT} before file extension.
-    Example: figs/stability_curve.png -> figs/stability_curve_full.png
+    Example: figs/stability_curve.png -> figs/stability_curve_E+I.png
     """
     root, ext = os.path.splitext(path)
-    return f"{root}_{VARIANT}{ext}"
+    if VARIANT == "energy_only":
+        tag = "E-Only"
+    elif VARIANT == "full":
+        tag = "E+I"
+    else:
+        tag = VARIANT
+    return f"{root}_{tag}{ext}"
 
 # Output dirs
 run_id = MASTER_CTRL["RUN_ID_PREFIX"] + VARIANT + "_" + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
