@@ -37,7 +37,6 @@ for pkg in ["qutip", "pandas", "scipy", "scikit-learn"]:
     _ensure(pkg)
 
 import qutip as qt
-qt.settings.num_cpus = 1
 import pandas as pd
 from scipy.interpolate import make_interp_spline
 warnings.filterwarnings("ignore")
