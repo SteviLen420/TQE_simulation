@@ -172,6 +172,7 @@ MASTER_CTRL = {
     "RF_N_ESTIMATORS":      400,    # number of trees in random forest
     "RF_CLASS_WEIGHT":      None,   # e.g., "balanced" for skewed classes
     "SKLEARN_N_JOBS":       -1,     # parallelism for RF
+    "FT_MIN_PER_SLICE":     30,     # min elems inside/outside the |E-I|<=eps slice for CI plots
 
     # --- Outputs / IO ---
     "SAVE_FIGS":            True,   # save plots to disk
