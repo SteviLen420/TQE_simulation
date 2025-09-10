@@ -1048,16 +1048,6 @@ print("\n📈 Epsilon sweep (near-zero thresholds, preview):")
 print(eps_df.head(12).to_string(index=False))
 print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
 
-# --- Finetune detector (E vs E+I(+X)) ---
-ft_result = {}
-if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True):
-    print("[FT] Running finetune/ablation detector (E vs E+I(+X)) ...")
-    try:
-        ft_result = run_finetune_detector(df)
-        print("[FT] Done.")
-    except Exception as e:
-        print(f"[FT][ERR] Detector failed: {e}")
-
 # ======================================================
 # 14) Finetune Detector (E vs E+I(+X))
 # ======================================================
@@ -1242,6 +1232,16 @@ def run_finetune_detector(df_in: pd.DataFrame):
     out["files"]["delta_csv"] = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
 
     return out
+
+# --- Finetune detector (E vs E+I(+X)) ---
+ft_result = {}
+if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True):
+    print("[FT] Running finetune/ablation detector (E vs E+I(+X)) ...")
+    try:
+        ft_result = run_finetune_detector(df)
+        print("[FT] Done.")
+    except Exception as e:
+        print(f"[FT][ERR] Detector failed: {e}")
 
 # ======================================================
 # 15) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
