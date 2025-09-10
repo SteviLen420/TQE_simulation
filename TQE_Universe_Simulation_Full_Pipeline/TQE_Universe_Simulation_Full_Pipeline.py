@@ -91,8 +91,7 @@ MASTER_CTRL = {
     "FL_SUPER_DT":           0.05,     # time step for superposition time series
     "FL_SUPER_DIM":          4,        # small Hilbert dim for toy density evolution
     "FL_SUPER_NOISE":        0.06,     # depolarizing-like noise amplitude
-    "FL_SUPER_NOISE": 0.06,
-    "FL_SUPER_KICK": 0.18,
+    "FL_SUPER_KICK":         0.18,
 
     "FL_COLLAPSE_T_PRE":     0.22,     # window before t=0 (collapse)
     "FL_COLLAPSE_T_POST":    0.22,     # window after t=0
@@ -839,8 +838,8 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     # plot
     plt.figure(figsize=(8,5))
     plt.title("t < 0 : Quantum superposition")
-    plt.plot(tS, ent, label="Entropy")
-    plt.plot(tS, pur, label="Purity")
+    plt.plot(tS, ent, label="Entropy", ls="--", alpha=0.9)
+    plt.plot(tS, pur, label="Purity",  ls="--", alpha=0.9)
     plt.xlabel("time"); plt.legend()
     savefig(with_variant(os.path.join(FIG_DIR, "fl_superposition.png")))
 
