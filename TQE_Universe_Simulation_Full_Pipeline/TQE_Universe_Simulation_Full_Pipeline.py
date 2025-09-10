@@ -1997,46 +1997,76 @@ print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # ======================================================
-# 19) Universe Stability Distribution — three categories (pretty)
+# 19) Universe Stability Distribution — clean & robust
 # ======================================================
+
 def _variant_label():
-    # Build a short label for the plot title based on the pipeline variant
+    """Short label for the plot title based on the pipeline variant."""
     return "E-only" if VARIANT == "energy_only" else "E+I"
 
-# --- make categories mutually exclusive ---
-total_n = int(len(df))
-lockin_count   = int((df["lock_epoch"] >= 0).sum())
+# ---------- Recompute counts locally (no external state) ----------
+total_n        = int(len(df))
 stable_total   = int(df["stable"].sum())
-stable_only    = max(0, stable_total - lockin_count)  # stable but NOT lock-in
 unstable_count = int(total_n - stable_total)
+lockin_count   = int((df["lock_epoch"] >= 0).sum())
 
-values = np.array([lockin_count, stable_only, unstable_count], dtype=float)
-perc   = (values / max(1, total_n)) * 100.0
+# --- Disjoint categories: lock-in, stable-but-NOT-lockin, unstable ---
+stable_only = max(0, stable_total - lockin_count)
+values_disjoint = np.array([lockin_count, stable_only, unstable_count], dtype=float)
+perc_disjoint   = (values_disjoint / max(1, total_n)) * 100.0
+
+labels_disjoint = [
+    f"Lock-in\n({lockin_count}, {perc_disjoint[0]:.1f}%)",
+    f"Stable (no lock-in)\n({stable_only}, {perc_disjoint[1]:.1f}%)",
+    f"Unstable\n({unstable_count}, {perc_disjoint[2]:.1f}%)",
+]
 
 plt.figure(figsize=(8.5, 7))
-bars = plt.bar([0,1,2], values, edgecolor="black",
-               color=["#6aaed6", "#2ca02c", "#d62728"])
+bars_d = plt.bar([0, 1, 2], values_disjoint,
+                 edgecolor="black",
+                 color=["#6aaed6", "#2ca02c", "#d62728"])
 
 # counts above bars
-for i, b in enumerate(bars):
+for i, b in enumerate(bars_d):
     y = b.get_height()
-    plt.text(b.get_x()+b.get_width()/2.0, y + (0.01*total_n),
-             f"{int(values[i])}", ha="center", va="bottom", fontsize=10)
+    plt.text(b.get_x() + b.get_width() / 2.0,
+             y + (0.01 * max(1, total_n)),
+             f"{int(values_disjoint[i])}",
+             ha="center", va="bottom", fontsize=10)
 
-xtick_labels = [
-    f"Lock-in\n({lockin_count}, {perc[0]:.1f}%)",
-    f"Stable (no lock-in)\n({stable_only}, {perc[1]:.1f}%)",
-    f"Unstable\n({unstable_count}, {perc[2]:.1f}%)",
-]
-plt.xticks([0,1,2], xtick_labels, fontsize=12)
+plt.xticks([0, 1, 2], labels_disjoint, fontsize=12)
 plt.ylabel("Number of Universes")
-plt.title(f"Universe Stability Distribution ({'E-only' if VARIANT=='energy_only' else 'E+I'}) — three categories")
-plt.ylim(0, max(values)*1.12 + 1)
+plt.title(f"Universe Stability Distribution ({_variant_label()}) — three categories")
+plt.ylim(0, max(values_disjoint) * 1.12 + 1)
 plt.tight_layout()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png")))
-out_three = with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png"))
-savefig(out_three)
-print("[FIG] Wrote:", out_three)
+print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png")))
+
+# ---------- Overlapping categories: Stable total / Unstable / Lock-in ----------
+values_overlap = np.array([stable_total, unstable_count, lockin_count], dtype=float)
+labels_overlap = [
+    f"Stable (total)\n({stable_total}, {stable_total/total_n*100:.2f}%)",
+    f"Unstable\n({unstable_count}, {unstable_count/total_n*100:.2f}%)",
+    f"Lock-in\n({lockin_count}, {lockin_count/total_n*100:.2f}%)",
+]
+
+plt.figure(figsize=(8.5, 7))
+bars_o = plt.bar([0, 1, 2], values_overlap, edgecolor="black")
+
+for i, b in enumerate(bars_o):
+    y = b.get_height()
+    plt.text(b.get_x() + b.get_width() / 2.0,
+             y + (0.01 * max(1, total_n)),
+             f"{int(values_overlap[i])}",
+             ha="center", va="bottom", fontsize=10)
+
+plt.xticks([0, 1, 2], labels_overlap, fontsize=12)
+plt.ylabel("Number of Universes")
+plt.title("Universe Stability — overlapping categories (Stable / Unstable / Lock-in)")
+plt.ylim(0, max(values_overlap) * 1.12 + 1)
+plt.tight_layout()
+savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
+print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
 
 # ------------------------------------------------------
 # Compact version (kept for backward compatibility)
