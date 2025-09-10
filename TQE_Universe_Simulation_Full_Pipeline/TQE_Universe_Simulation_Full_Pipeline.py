@@ -1246,10 +1246,11 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
     st = df_in["stable"].astype(int).values[mask]
     if len(dx) == 0:
         return pd.DataFrame()
+
     qs = np.linspace(0, 1, qbins+1)
     edges = np.quantile(dx, qs)
-    # Ensure monotonic (numerical safety)
-    edges = np.unique(edges)
+    edges = np.unique(edges)  # numeric safety
+
     rows = []
     for i in range(len(edges)-1):
         lo, hi = edges[i], edges[i+1] if i+1 < len(edges) else edges[-1]
@@ -1262,27 +1263,29 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
             "n": n, "stable_n": k, "p": p_hat,
             "ci_lo": lo_ci, "ci_hi": hi_ci
         })
+
     dfq = pd.DataFrame(rows)
     if out_csv:
         dfq.to_csv(out_csv, index=False)
-if out_png:
-    plt.figure(figsize=(7,5))
-    mid = 0.5*(dfq["gap_lo"]+dfq["gap_hi"])
-    y = dfq["p"].values
-    yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
-    plt.errorbar(mid, y, yerr=yerr, fmt='-o')
 
-    if VARIANT == "energy_only":
-        plt.title("Stability vs. E (Only E)")
-        plt.xlabel("E (quantile bins)")
-    else:
-        plt.title("Stability vs. |E - I| (Energy + Information)")
-        plt.xlabel("|E - I| (quantile bins)")
+    if out_png:
+        plt.figure(figsize=(7,5))
+        mid = 0.5*(dfq["gap_lo"] + dfq["gap_hi"])
+        y = dfq["p"].values
+        yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
+        plt.errorbar(mid, y, yerr=yerr, fmt='-o')
 
-    plt.ylabel("P(stable)")
-    savefig(out_png)
+        if VARIANT == "energy_only":
+            plt.title("Stability vs. E (Only E)")
+            plt.xlabel("E (quantile bins)")
+        else:
+            plt.title("Stability vs. |E - I| (Energy + Information)")
+            plt.xlabel("|E - I| (quantile bins)")
 
-return dfq
+        plt.ylabel("P(stable)")
+        savefig(out_png)
+
+    return dfq
 
 def run_finetune_detector(df_in: pd.DataFrame):
     """
@@ -1390,13 +1393,17 @@ def run_finetune_detector(df_in: pd.DataFrame):
         out["metrics"]["reg"] = {"E": rE, "EIX": rEIX}
 
     # --- E≈I slice analysis (adaptive, with CI & full exports) ---
-    if all(c in df_in.columns for c in ["E","I"]):
+    if all(c in df_in.columns for c in ["E", "I"]):
         gaps = np.abs(df_in["E"] - df_in["I"]).values
+
         # pick epsilon so both slices have enough samples
-        eps_auto = _select_eps_by_share(gaps, target_share=0.20,
-                                        min_n=MASTER_CTRL.get("FT_MIN_PER_SLICE", 30))
+        eps_auto = _select_eps_by_share(
+            gaps, target_share=0.20,
+            min_n=MASTER_CTRL.get("FT_MIN_PER_SLICE", 30)
+        )
         eps = float(MASTER_CTRL.get("FT_EPS_EQ", eps_auto if eps_auto is not None else 1e-3))
-        # If user fixed FT_EPS_EQ but it yields empty slice, fall back to auto
+
+        # If user-fixed FT_EPS_EQ yields empty slice, fall back to auto
         m_eq_try = (np.abs(df_in["E"] - df_in["I"]) <= eps)
         if m_eq_try.sum() == 0 or (~m_eq_try).sum() == 0:
             if eps_auto is not None:
@@ -1414,45 +1421,46 @@ def run_finetune_detector(df_in: pd.DataFrame):
                 "slice": name, "eps": eps,
                 "n": n, "stable_n": st, "p_stable": p_hat,
                 "ci_lo": lo_ci, "ci_hi": hi_ci,
-                "lockin_n": lk, "p_lockin": (lk/n) if n>0 else float("nan")
+                "lockin_n": lk, "p_lockin": (lk/n) if n > 0 else float("nan")
             }
 
-    # Slice labels by variant
-    if VARIANT == "energy_only":
-        s_eq  = _slice(m_eq,  f"E ≤ {eps:.3g}")
-        s_neq = _slice(m_neq, f"E > {eps:.3g}")
+        # Slice labels by variant
+        if VARIANT == "energy_only":
+            s_eq  = _slice(m_eq,  f"E ≤ {eps:.3g}")
+            s_neq = _slice(m_neq, f"E > {eps:.3g}")
+        else:
+            s_eq  = _slice(m_eq,  f"|E-I| ≤ {eps:.3g}")
+            s_neq = _slice(m_neq, f"|E-I| > {eps:.3g}")
+
+        sl_df = pd.DataFrame([s_eq, s_neq]).sort_values("slice")
+
+        # Files
+        sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_adaptive.csv"))
+        sl_df.to_csv(sl_csv, index=False)
+        out["files"]["slice_csv"] = sl_csv
+
+        bar_png = with_variant(os.path.join(FIG_DIR, "ft_slice_adaptive.png"))
+        title = "Stability by Energy (Only E)" if VARIANT == "energy_only" else "Stability by E≈I (adaptive epsilon)"
+        _plot_two_bar_with_ci(
+            labels=sl_df["slice"].tolist(),
+            counts=sl_df["stable_n"].tolist(),
+            totals=sl_df["n"].tolist(),
+            title=title,
+            out_png=bar_png
+        )
+        out["files"]["slice_png"] = bar_png
+
+        # Stability vs |E-I| quantile curve + CSV
+        q_csv = with_variant(os.path.join(SAVE_DIR, "ft_stability_vs_gap_quantiles.csv"))
+        q_png = with_variant(os.path.join(FIG_DIR, "ft_stability_vs_gap_quantiles.png"))
+        _stability_vs_gap_quantiles(
+            df_in, qbins=MASTER_CTRL.get("FT_GAP_QBINS", 10),
+            out_csv=q_csv, out_png=q_png
+        )
+        out["files"]["gap_quantiles_csv"] = q_csv
+        out["files"]["gap_quantiles_png"] = q_png
     else:
-        s_eq  = _slice(m_eq,  f"|E-I| ≤ {eps:.3g}")
-        s_neq = _slice(m_neq, f"|E-I| > {eps:.3g}")
-
-    sl_df = pd.DataFrame([s_eq, s_neq]).sort_values("slice")
-
-    # Generic filename (avoid “EeqI” in E-only mode)
-    sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_adaptive.csv"))
-    sl_df.to_csv(sl_csv, index=False)
-    out["files"]["slice_csv"] = sl_csv
-
-    # Bar plot title by variant
-    bar_png = with_variant(os.path.join(FIG_DIR, "ft_slice_adaptive.png"))
-    title = "Stability by Energy (Only E)" if VARIANT == "energy_only" else "Stability by E≈I (adaptive epsilon)"
-    _plot_two_bar_with_ci(
-        labels=sl_df["slice"].tolist(),
-        counts=sl_df["stable_n"].tolist(),
-        totals=sl_df["n"].tolist(),
-        title=title,
-        out_png=bar_png
-    )
-    out["files"]["slice_png"] = bar_png
-
-    # Stability vs |E-I| quantile curve + CSV
-    q_csv = with_variant(os.path.join(SAVE_DIR, "ft_stability_vs_gap_quantiles.csv"))
-    q_png = with_variant(os.path.join(FIG_DIR, "ft_stability_vs_gap_quantiles.png"))
-    _stability_vs_gap_quantiles(
-        df_in, qbins=MASTER_CTRL.get("FT_GAP_QBINS", 10),
-        out_csv=q_csv, out_png=q_png
-    )
-    out["files"]["gap_quantiles_csv"] = q_csv
-    out["files"]["gap_quantiles_png"] = q_png
+        print("[FT] Skipping E≈I slice analysis (missing E or I column).")
 
     # --- delta table (EIX – E) for quick view ---
     delta = {
