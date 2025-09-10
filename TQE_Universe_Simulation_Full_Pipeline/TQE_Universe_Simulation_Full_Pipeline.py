@@ -310,51 +310,80 @@ def _save_df_safe_local(df_in, path):
     except Exception as e:
         print(f"[ERR] CSV save failed: {path} -> {e}")
 
-def simulate_superposition_series(
-    T=10.0, dt=0.05, dim=4,
-    noise=0.03,              # average depolarization strength
-    kick=0.15,               # random unitary "kick" strength (0..~0.3)
-    obs_jitter=0.02,         # observation jitter added to curves
+def _pauli_like(dim: int, axis: str = "Z"):
+    """
+    Build a simple Pauli-like observable in higher dim:
+    - "Z": diag(+1,...,+1, -1,...,-1)
+    - "X": flip-like (off-diagonal ones on super- and sub-diagonal)
+    - "rand": random Hermitian normalized to ||A|| ~ 1
+    """
+    if axis == "Z":
+        half = dim // 2
+        vals = np.array([1.0]*half + [-1.0]*(dim-half), dtype=float)
+        return qt.Qobj(np.diag(vals))
+    if axis == "X":
+        M = np.zeros((dim, dim), dtype=complex)
+        for i in range(dim-1):
+            M[i, i+1] = 1.0
+            M[i+1, i] = 1.0
+        return qt.Qobj(M)
+    # random Hermitian
+    H = qt.rand_herm(dim)
+    # scale to unit spectral norm (roughly)
+    eigs = np.linalg.eigvalsh(H.full())
+    scale = max(1.0, float(np.max(np.abs(eigs))))
+    return (1.0/scale) * H
+
+def simulate_quantum_fluctuation_series(
+    T=6.0, dt=0.02, dim=4,
+    kick=0.12, noise=0.05,
+    obs_kind="Z",
+    obs_jitter=0.0,
     seed=None
 ):
     """
-    t < 0 panel: apply small random unitary kicks + time-varying noise,
-    so entropy and purity fluctuate (not monotonic).
+    Standalone 'quantum fluctuation' panel:
+    Evolve a pure state under small random unitary kicks + weak depolarizing noise.
+    Track <A> and Var(A) for a chosen observable A.
+    Returns: times, exp_values, variances
     """
     rgen = np.random.default_rng(seed)
     n = int(np.ceil(T/dt)) + 1
     times = np.linspace(0, T, n)
 
-    # start from a pure random state
+    # initial random pure state and observable
     psi = qt.rand_ket(dim)
     rho = psi.proj()
+    A = _pauli_like(dim, obs_kind)
 
-    ent_list, pur_list = [], []
+    exp_vals, variances = [], []
 
     for _ in times:
-        # generate a small random Hermitian -> exponential -> near-identity unitary
+        # small random unitary kick
         H = qt.rand_herm(dim)
         U = (1j * kick * H).expm()
         rho = U * rho * U.dag()
 
-        # depolarizing noise with small random fluctuation
+        # weak depolarizing noise
         z = np.clip(noise + rgen.normal(0, noise/3), 0.0, 0.25)
         mix = qt.qeye(dim) / dim
         rho = (1 - z) * rho + z * mix
         rho = rho.unit()
 
-        # compute entropy (base e) and purity
-        S = qt.entropy_vn(rho, base=np.e)
-        P = float((rho*rho).tr().real)
+        # expectation and variance for observable A
+        expA = float((rho * A).tr().real)
+        expA2 = float((rho * (A*A)).tr().real)
+        varA = max(0.0, expA2 - expA**2)
 
-        # normalize entropy and add observation jitter
-        S_norm = float(S / np.log(dim)) + rgen.normal(0, obs_jitter)
-        P_noisy = P + rgen.normal(0, obs_jitter)
+        # optional tiny observation jitter
+        if obs_jitter:
+            expA += rgen.normal(0, obs_jitter)
+            varA += rgen.normal(0, obs_jitter/2)
 
-        ent_list.append(np.clip(S_norm, 0.0, 1.2))
-        pur_list.append(np.clip(P_noisy, 0.0, 1.0))
+        exp_vals.append(expA)
+        variances.append(max(0.0, varA))
 
-    return times, np.array(ent_list), np.array(pur_list)
+    return times, np.array(exp_vals), np.array(variances)
 
 def simulate_collapse_series(X_lock, t_pre=0.2, t_post=0.2, dt=0.002,
                              pre_sigma=0.5, post_sigma=0.02, revert=0.35, seed=None):
@@ -811,6 +840,34 @@ savefig(with_variant(os.path.join(FIG_DIR, "scatter_EI.png")))
 # ======================================================
 # 12) Fluctuation panels (t<0, t=0, t>0) + CSV exports
 # ======================================================
+
+# ---- (0) Quantum fluctuation (standalone) ----
+if MASTER_CTRL.get("RUN_QUANTUM_FLUCT", True):
+    tF, expA, varA = simulate_quantum_fluctuation_series(
+        T=MASTER_CTRL.get("FL_FLUCT_T", 6.0),
+        dt=MASTER_CTRL.get("FL_FLUCT_DT", 0.02),
+        dim=MASTER_CTRL.get("FL_FLUCT_DIM", 4),
+        kick=MASTER_CTRL.get("FL_FLUCT_KICK", 0.12),
+        noise=MASTER_CTRL.get("FL_FLUCT_NOISE", 0.05),
+        obs_kind=MASTER_CTRL.get("FL_FLUCT_OBS", "Z"),
+        obs_jitter=MASTER_CTRL.get("FL_SUPER_OBS_JITTER", 0.0),
+        seed=master_seed + 10
+    )
+
+    # save CSV
+    fluc_df = pd.DataFrame({"time": tF, "exp_A": expA, "var_A": varA})
+    fluc_csv = with_variant(os.path.join(SAVE_DIR, "fl_fluctuation_timeseries.csv"))
+    _save_df_safe_local(fluc_df, fluc_csv)
+
+    # plot
+    plt.figure(figsize=(8,5))
+    plt.title("Quantum fluctuation: ⟨A⟩ and Var(A)")
+    plt.plot(tF, expA, label="⟨A⟩", ls="--", alpha=0.95)
+    plt.plot(tF, varA, label="Var(A)", alpha=0.95)
+    plt.xlabel("time")
+    plt.legend()
+    savefig(with_variant(os.path.join(FIG_DIR, "fl_fluctuation.png")))
+
 if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     print("[FL] Generating superposition / collapse / expansion panels...")
 
@@ -921,6 +978,7 @@ summary = {
         "stability_curve": with_variant(os.path.join(FIG_DIR, "stability_curve.png")),
         "scatter_EI": with_variant(os.path.join(FIG_DIR, "scatter_EI.png")),
         "stability_distribution": with_variant(os.path.join(FIG_DIR, "stability_distribution.png")),  
+        "fl_fluctuation": with_variant(os.path.join(FIG_DIR, "fl_fluctuation.png")),
         "fl_superposition": with_variant(os.path.join(FIG_DIR, "fl_superposition.png")),
         "fl_collapse":      with_variant(os.path.join(FIG_DIR, "fl_collapse.png")),
         "fl_expansion":     with_variant(os.path.join(FIG_DIR, "fl_expansion.png")),
@@ -931,6 +989,7 @@ summary = {
         "pre_fluctuation_pairs_csv": with_variant(os.path.join(SAVE_DIR, "pre_fluctuation_pairs.csv")),
         "stability_by_I_zero_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_zero.csv")),
         "stability_by_I_eps_sweep_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv")),  
+        "fl_fluctuation_csv": with_variant(os.path.join(SAVE_DIR, "fl_fluctuation_timeseries.csv")),
         "fl_superposition_csv": with_variant(os.path.join(SAVE_DIR, "fl_superposition_timeseries.csv")),
         "fl_collapse_csv":      with_variant(os.path.join(SAVE_DIR, "fl_collapse_timeseries.csv")),
         "fl_expansion_csv":     with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv")),
