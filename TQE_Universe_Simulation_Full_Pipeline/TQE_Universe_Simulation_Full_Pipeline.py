@@ -109,7 +109,7 @@ MASTER_CTRL = {
 
     # --- Stability thresholds ---
     "REL_EPS_STABLE":       0.010,    # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       5e-3,     # relative calmness threshold for lock-in (0.2%)
+    "REL_EPS_LOCKIN":       5e-3,     # relative calmness threshold for lock-in (~0.5%)
     "CALM_STEPS_STABLE":    10,       # consecutive calm steps required (stable)
     "CALM_STEPS_LOCKIN":    12,       # consecutive calm steps required (lock-in)
     "MIN_LOCKIN_EPOCH":     200,      # lock-in can only occur after this epoch
@@ -727,7 +727,7 @@ def compute_dynamic_goldilocks(df_in):
     nbins = int(max(5, MASTER_CTRL.get("STAB_BINS", 40)))
     min_per_bin = int(max(1, MASTER_CTRL.get("STAB_MIN_COUNT", 10)))
 
-    # ---------- Binning (inclusive last bin, right=True) ----------
+    # ---------- Binning (left-closed, right-open; np.digitize(..., right=False)) ----------
     x_min = np.nanmin(Xvals)
     x_max = np.nanmax(Xvals)
     if not np.isfinite(x_min) or not np.isfinite(x_max) or x_min == x_max:
@@ -1206,7 +1206,8 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
         plt.title("Stability vs. |E - I| (Energy + Information)")
         plt.xlabel("|E - I| (quantile bins)")
 
-    savefig(out_png)
+    if out_png:
+        savefig(out_png)
     return dfq
 
 def run_finetune_detector(df_in: pd.DataFrame):
@@ -1598,7 +1599,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
             X_lock = df_lock[["E"]].copy()
         else:
             X_lock = df_lock[["E", "I", "X"]].copy()
-        y_lock = df_lock["stable"].astype(int).values
+        y_lock = df_lock["stable"].astype(int).values  # kept for potential per-class analyses later
 
         lime_explainer = LimeTabularExplainer(
             training_data=X_lock.values,
@@ -2012,13 +2013,13 @@ savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png")))
 # ------------------------------------------------------
 labels_compact = [
     f"Lock-in ({lockin_count}, {perc[0]:.1f}%)",
-    f"Stable ({stable_count}, {perc[1]:.1f}%)",
+    f"Stable (no lock-in) ({stable_only}, {perc[1]:.1f}%)",
     f"Unstable ({unstable_count}, {perc[2]:.1f}%)",
 ]
 plt.figure(figsize=(7,6))
 plt.bar(labels_compact, values,
         color=["steelblue", "green", "red"], edgecolor="black")
 plt.ylabel("Number of Universes")
-plt.title("Universe Stability Distribution")
+plt.title("Universe Stability Distribution (compact)")
 plt.tight_layout()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
