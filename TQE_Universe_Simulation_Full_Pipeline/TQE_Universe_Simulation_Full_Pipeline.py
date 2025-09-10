@@ -156,6 +156,12 @@ MASTER_CTRL = {
     "BEST_SEED_OFFSET": 777,      # reproducible offset for the synthetic entropy generator
     "BEST_MAX_FIGS": 50,          # safety clamp
 
+    # --- Extra robustness / docs ---
+    "STAB_MIN_COUNT":       10,    # Minimum samples required in a stability bin; bins with fewer are ignored.
+    "REGRESSION_MIN":       10,    # Minimum number of lock-in cases required to train/evaluate the regression.
+    "MAX_SHAP_SAMPLES":     1000,  # Upper limit on samples used for SHAP plotting to keep it fast and stable.
+    "SHAP_BACKGROUND_SIZE": 200,   # Size of the SHAP background (reference) dataset for model-agnostic explainers.
+
     # --- Machine Learning / XAI ---
     "RUN_XAI":              True,   # master switch for XAI section
     "RUN_SHAP":             True,   # SHAP on/off
