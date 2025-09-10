@@ -155,8 +155,8 @@ MASTER_CTRL = {
     "SAVE_FIGS":            True,   # save plots to disk
     "SAVE_JSON":            True,   # save summary JSON
     "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
-    "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_Universe_Goldilock_Simulation_Full_Pipeline",
-    "RUN_ID_PREFIX":        "TQE_Universe_Goldilock_Simulation_Full_Pipeline_",   # prefix for run_id
+    "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline",
+    "RUN_ID_PREFIX":        "TQE_Universe_Simulation_Full_Pipeline_",   # prefix for run_id
     "RUN_ID_FORMAT":        "%Y%m%d_%H%M%S",          # time format for run_id
     "ALLOW_FILE_EXTS":      [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
     "MAX_FIGS_TO_SAVE":     None,   # limit number of figs (None = no limit)
