@@ -156,6 +156,15 @@ MASTER_CTRL = {
     "BEST_SEED_OFFSET": 777,      # reproducible offset for the synthetic entropy generator
     "BEST_MAX_FIGS": 50,          # safety clamp
 
+    # --- Noise / smoothing knobs for entropy evolution ---
+    "BEST_REGION_MU": 5.1,          # Target mean for region entropy traces
+    "BEST_REGION_SIGMA": 0.06,      # Noise amplitude for region traces (lower = smoother)
+    "BEST_GLOBAL_JITTER": 0.008,    # Small jitter added to the global entropy curve
+    "BEST_SMOOTH_WINDOW": 9,        # Rolling average window size (>=1, 1 = disabled)
+    "BEST_SHOW_REGIONS": True,      # If False, only plot the global entropy curve
+    "BEST_ANNOTATE_LOCKIN": True,   # Draw vertical lock-in marker and annotation text
+    "BEST_ANNOTATION_OFFSET": 5,    # Horizontal offset for annotation text placement
+
     # --- Extra robustness / docs ---
     "STAB_MIN_COUNT":       10,    # Minimum samples required in a stability bin; bins with fewer are ignored.
     "REGRESSION_MIN":       10,    # Minimum number of lock-in cases required to train/evaluate the regression.
@@ -1781,29 +1790,35 @@ BEST_CFG = {
     "SEED_OFFSET": int(MASTER_CTRL.get("BEST_SEED_OFFSET", 777)),
 }
 
-def _entropy_evolution(seed: int, steps: int, n_regions: int,
-                       base_mu: float = 5.1, base_sig: float = 0.12):
+def _entropy_evolution(seed: int, steps: int, n_regions: int):
     """
-    Lightweight synthetic entropy generator for plotting.
-    Deterministic w.r.t. the given seed. Produces:
-      - t: integer time steps [0..steps-1]
-      - regions: (n_regions, steps) region-level entropy tracks
-      - g: (steps,) global entropy (thick black line on the plot)
+    Synthetic entropy generator for best-universe plots.
+    All noise/smoothing parameters are taken from BEST_CFG.
     """
     r = np.random.default_rng(seed)
     t = np.arange(steps)
 
-    # Region traces: slightly mean-reverting random walks around base_mu
+    base_mu  = BEST_CFG["REGION_MU"]
+    base_sig = max(1e-6, BEST_CFG["REGION_SIGMA"])  # safety guard
+
     regions = []
     for _ in range(n_regions):
-        x = base_mu + r.normal(0, base_sig, size=steps).cumsum() / np.sqrt(steps)
+        x = np.empty(steps, dtype=float)
+        x[0] = base_mu + r.normal(0, base_sig)
         for k in range(1, steps):
+            # Mean-reverting random walk with noise
             x[k] = x[k-1] + 0.04*(base_mu - x[k-1]) + r.normal(0, base_sig*0.6)
+        # Optional rolling-average smoothing
+        w = max(1, int(BEST_CFG["SMOOTH_WINDOW"]))
+        if w > 1:
+            c = np.convolve(x, np.ones(w)/w, mode="same")
+            x = c
         regions.append(x)
-    regions = np.vstack(regions)
+    regions = np.vstack(regions) if n_regions > 0 else np.empty((0, steps))
 
-    # Global entropy: smooth, slowly increasing baseline + tiny noise
-    g = 5.6 + 0.45 * (1 - np.exp(-t / (steps/6))) + r.normal(0, 0.015, size=steps)
+    # Global entropy: smooth growth + independent jitter
+    jitter = BEST_CFG["GLOBAL_JITTER"]
+    g = 5.6 + 0.45 * (1 - np.exp(-t / (steps/6))) + r.normal(0, jitter, size=steps)
 
     return t, regions, g
 
@@ -1811,56 +1826,54 @@ def _plot_best_universe(unirec: dict, steps: int, n_regions: int,
                         save_png: str, save_csv_dir: str):
     """
     Render one figure for a selected (lock-in) universe.
-    unirec fields expected: universe_id, seed, lock_epoch, E, I, X
+    Controlled entirely by BEST_CFG parameters.
     """
     uid = int(unirec["universe_id"])
     seed = int(unirec["seed"])
     lock_ep = int(unirec["lock_epoch"])
 
-    # Use an offset seed so this visualization is reproducible but independent.
     t, regions, g = _entropy_evolution(seed + BEST_CFG["SEED_OFFSET"], steps, n_regions)
 
-    # Optionally export the per-universe time series to CSV
+    # Export per-universe time series if enabled
     if BEST_CFG["SAVE_CSV"]:
         os.makedirs(save_csv_dir, exist_ok=True)
-        df_reg = pd.DataFrame(regions.T, columns=[f"region_{i}_entropy" for i in range(n_regions)])
+        df_reg = pd.DataFrame(regions.T, columns=[f"region_{i}_entropy" for i in range(n_regions)]) if n_regions>0 else pd.DataFrame()
         df_reg.insert(0, "time_step", t)
         df_reg["global_entropy"] = g
         df_reg["lock_epoch"] = lock_ep
         df_reg.to_csv(os.path.join(save_csv_dir, f"best_uni_{uid:05d}_entropy_timeseries.csv"), index=False)
 
-    # ---- Plot ----
     plt.figure(figsize=(10, 6.2))
     title_suffix = "(E)" if VARIANT == "energy_only" else "(E,I)"
     plt.title(f"Best-universe entropy evolution {title_suffix}")
 
-    # Region curves: thin, semi-transparent
-    for i in range(n_regions):
-        plt.plot(t, regions[i], lw=1.0, alpha=0.55,
-                 label=f"Region {i} entropy" if i < 10 else None)
+    # Plot region curves if enabled
+    if BEST_CFG["SHOW_REGIONS"] and n_regions > 0:
+        for i in range(n_regions):
+            plt.plot(t, regions[i], lw=1.0, alpha=0.55, label=f"Region {i} entropy" if i < 10 else None)
 
-    # Global curve: thick black
+    # Plot global curve
     plt.plot(t, g, color="black", lw=3.0, label="Global entropy")
 
-    # Stability reference (red dashed)
+    # Stability threshold
     plt.axhline(BEST_CFG["STAB_THRESH"], color="red", ls="--", lw=1.5, label="Stability threshold")
 
-    # Lock-in vertical marker with small annotation
-    if lock_ep >= 0 and lock_ep < steps:
+    # Lock-in marker + annotation
+    if BEST_CFG["ANNOTATE_LOCKIN"] and (0 <= lock_ep < steps):
         plt.axvline(lock_ep, color="purple", ls=(0, (5, 5)), lw=2.0)
-        # place text a little to the right of the line
-        y_text = np.nanmin(g) + 0.15
-        plt.text(lock_ep + 5, y_text, f"Lock-in step ≈ {lock_ep}", color="purple")
+        y_text = float(np.nanmin(g)) + 0.15
+        plt.text(lock_ep + BEST_CFG["ANNOTATION_OFFSET"], y_text,
+                 f"Lock-in step ≈ {lock_ep}", color="purple")
 
-    plt.xlabel("Time step")
-    plt.ylabel("Entropy")
+    plt.xlabel("Time step"); plt.ylabel("Entropy")
 
-    # Compact legend: first 10 region labels + global + threshold
+    # Compact legend
     handles, labels = plt.gca().get_legend_handles_labels()
     if len(labels) > 13:
         handles = handles[:12] + handles[-2:]
         labels  = labels[:12]  + labels[-2:]
-    plt.legend(handles, labels, loc="lower left", framealpha=0.9)
+    if handles:
+        plt.legend(handles, labels, loc="lower left", framealpha=0.9)
 
     plt.tight_layout()
     savefig(save_png)
