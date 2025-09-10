@@ -884,9 +884,14 @@ elif E_c_low_plot is not None and E_c_high_plot is not None:
     plt.axvline(E_c_low_plot,  color='g', ls='--', label=_lbl(E_c_low_plot,  "E_c_low(curve)"))
     plt.axvline(E_c_high_plot, color='m', ls='--', label=_lbl(E_c_high_plot, "E_c_high(curve)"))
 
-plt.xlabel("X = E·I (or configured)")
-plt.ylabel("P(stable)")
-plt.title("Goldilocks zone: stability curve")
+
+if VARIANT == "energy_only":
+    plt.xlabel("X = E")
+    plt.title("Goldilocks zone: stability vs E")
+else:
+    plt.xlabel("X = E·I")
+    plt.title("Goldilocks zone: stability vs E·I")
+    
 plt.legend()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_curve.png")))
 
@@ -895,8 +900,13 @@ savefig(with_variant(os.path.join(FIG_DIR, "stability_curve.png")))
 # ======================================================
 plt.figure(figsize=(7,6))
 sc = plt.scatter(df["E"], df["I"], c=df["stable"], cmap="coolwarm", s=10, alpha=0.5)
-plt.xlabel("Energy (E)"); plt.ylabel("Information parameter (I: KL×Shannon)")
-plt.title("Universe outcomes in (E, I) space")
+plt.xlabel("Energy (E)")
+if VARIANT == "energy_only":
+    plt.ylabel("Information parameter I (disabled = 0)")
+    plt.title("Universe outcomes in E (I disabled)")
+else:
+    plt.ylabel("Information parameter (I: KL×Shannon)")
+    plt.title("Universe outcomes in (E, I) space")
 cb = plt.colorbar(sc, ticks=[0, 1])
 cb.set_label("Stable (0/1)")
 savefig(with_variant(os.path.join(FIG_DIR, "scatter_EI.png")))
@@ -984,7 +994,8 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     plt.plot(tC, xC, color="gray", label="fluctuation → lock-in")
     plt.axvline(0.0, color="red")
     plt.axhline(X_lock, color="red", ls="--", label=f"Lock-in X={X_lock:.2f}")
-    plt.xlabel("time"); plt.ylabel("X = E·I")
+    plt.xlabel("time")
+    plt.ylabel("X = E" if VARIANT == "energy_only" else "X = E·I")
     plt.legend()
     savefig(with_variant(os.path.join(FIG_DIR, "fl_collapse.png")))
 
