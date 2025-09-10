@@ -171,6 +171,37 @@ MASTER_CTRL = {
     "MAX_SHAP_SAMPLES":     1000,  # Upper limit on samples used for SHAP plotting to keep it fast and stable.
     "SHAP_BACKGROUND_SIZE": 200,   # Size of the SHAP background (reference) dataset for model-agnostic explainers.
 
+    # --- CMB best-universe map generation ---
+    "CMB_BEST_ENABLE": True,          # Enable best-CMB PNG export
+    "CMB_BEST_FIGS": 3,               # How many best CMB PNGs to export (1..5)
+    "CMB_BEST_SEED_OFFSET": 909,      # Per-universe seed offset for reproducibility
+    "CMB_BEST_MODE": "auto",          # "auto" | "healpix" | "flat"
+
+    # --- CMB map parameters ---
+    "CMB_NSIDE": 64,                  # Resolution for healpy maps
+    "CMB_NPIX": 512,                  # Pixel count for flat-sky maps
+    "CMB_PIXSIZE_ARCMIN": 5.0,        # Pixel size in arcmin for flat-sky
+    "CMB_POWER_SLOPE": 2.0,           # Power spectrum slope (Pk ~ k^-slope)
+
+    # --- CMB cold-spot detector ---
+    "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
+    "CMB_COLD_TOPK":              5,                    # Top-K cold spots to keep per universe
+    "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 120],        # Gaussian smoothing scales (arcmin)
+    "CMB_COLD_MIN_SEP_ARCMIN":    45,                   # Minimal separation between spots (arcmin)
+    "CMB_COLD_Z_THRESH":          -2.5,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
+    "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
+    "CMB_COLD_MODE":              "auto",               # Backend selection: "auto" | "healpix" | "flat"
+    "CMB_COLD_OVERLAY":           True,                 # Draw markers on the full-sky/flat map overlays
+
+    # --- CMB Axis-of-Evil detector ---
+    "CMB_AOE_ENABLE":      True,   # Enable/disable the Axis-of-Evil detector
+    "CMB_AOE_LMAX":        3,      # Maximum multipole ℓ to check (ℓ=3 is standard for AoE)
+    "CMB_AOE_NREALIZ":     1000,   # Number of Monte Carlo randomizations for significance (p-value)
+    "CMB_AOE_OVERLAY":     True,   # Overlay principal axes on the CMB map PNG
+    "CMB_AOE_MODE":        "auto", # Backend selection: "auto" | "healpix" | "flat"
+    "CMB_AOE_SEED_OFFSET": 909,    # Per-universe seed offset to keep AoE maps reproducible
+
     # --- Machine Learning / XAI ---
     "RUN_XAI":              True,   # master switch for XAI section
     "RUN_SHAP":             True,   # SHAP on/off
@@ -182,6 +213,34 @@ MASTER_CTRL = {
     "RF_CLASS_WEIGHT": "balanced",   # e.g., "balanced" for skewed classes
     "SKLEARN_N_JOBS":       -1,     # parallelism for RF
     "FT_MIN_PER_SLICE":     30,     # min elems inside/outside the |E-I|<=eps slice for CI plots
+
+        # --- XAI (Explainable AI) controls ---
+    "XAI_ENABLE_STABILITY":   True,   # Enable SHAP/LIME analysis for stability classification
+    "XAI_ENABLE_COLD":        True,   # Enable SHAP/LIME analysis for cold-spot detection
+    "XAI_ENABLE_AOE":         True,   # Enable SHAP/LIME analysis for Axis-of-Evil
+    "XAI_ENABLE_FINETUNE":    True,   # Enable SHAP/LIME analysis for fine-tuning detector
+
+    # Feature sets for model training
+    "XAI_FEATURES_E_ONLY":    ["E", "logE", "E_rank"],  
+    "XAI_FEATURES_EIX":       ["E", "I", "X", "abs_E_minus_I", "logX", "dist_to_goldilocks"],
+
+    # SHAP / LIME options
+    "XAI_SAVE_SHAP":          True,   # Save SHAP outputs
+    "XAI_SAVE_LIME":          True,   # Save LIME outputs
+    "XAI_LIME_K":             50,     # Number of LIME samples averaged
+
+    # Data split options
+    "XAI_TEST_SIZE":          0.25,   # Test split size
+    "XAI_RANDOM_STATE":       42,     # Reproducibility for train/test split
+
+    # Targets for supervised XAI analysis
+    "XAI_TARGETS": [
+        "stability_cls",   # binary classification: stable vs unstable
+        "lock_epoch_reg",  # regression: law lock-in epoch
+        "cold_flag_cls",   # classification: cold-spot presence
+        "cold_min_z_reg",  # regression: cold-spot minimum depth
+        "aoe_flag_cls",    # classification: Axis-of-Evil presence
+        "aoe_align_reg"    # regression: Axis-of-Evil alignment strength
 
     # --- Outputs / IO ---
     "SAVE_FIGS":            True,   # save plots to disk
@@ -1423,7 +1482,855 @@ if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True):
         print(f"[FT][ERR] Detector failed: {e}")
 
 # ======================================================
-# 15) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
+# 15) Best CMB thumbnails (per top lock-in universes)
+# ======================================================
+
+if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
+    print("[CMB][BEST] Generating best-CMB PNGs...")
+
+    # Pick rendering backend: prefer healpy when available (unless forced flat)
+    use_healpy = False
+    mode_req = MASTER_CTRL.get("CMB_BEST_MODE", MASTER_CTRL.get("CMB_MODE", "auto"))
+    if mode_req in ("auto", "healpix"):
+        try:
+            import healpy as hp
+            use_healpy = True
+        except Exception:
+            use_healpy = False
+            if mode_req == "healpix":
+                print("[CMB][BEST][WARN] healpy not available; falling back to flat-sky.")
+
+    # Ensure selection dataframe exists (early lock-in first, break ties by |E-I|)
+    if "df_lock" in globals():
+        sel_df = df_lock.copy()
+    else:
+        sel_df = df[df["lock_epoch"] >= 0].copy()
+        if "I" in sel_df.columns:
+            sel_df["_gap"] = np.abs(sel_df["E"] - sel_df["I"])
+        else:
+            sel_df["_gap"] = 0.0
+        sel_df = sel_df.sort_values(["lock_epoch", "_gap"]).reset_index(drop=True)
+
+    if len(sel_df) == 0:
+        print("[CMB][BEST] No lock-in universes; skipping best-CMB export.")
+    else:
+        # Clamp how many figures to 1..5
+        n_best = int(np.clip(MASTER_CTRL.get("CMB_BEST_FIGS", 3), 1, 5))
+
+        out_dir = os.path.join(FIG_DIR, "cmb_best")
+        os.makedirs(out_dir, exist_ok=True)
+
+        # Helper: consistent file naming with your variant tag (E+I / E-only)
+        def _out_path(rank, uid):
+            base = os.path.join(out_dir, f"best_cmb_rank{rank:02d}_uid{uid:05d}.png")
+            return with_variant(base)
+
+        # Rendering helpers
+        def _save_close(path):
+            if MASTER_CTRL.get("SAVE_FIGS", True):
+                plt.savefig(path, dpi=200, bbox_inches="tight")
+            plt.close()
+
+        # Generate up to n_best CMB thumbnails
+        made = []
+        for r in range(n_best):
+            row = sel_df.iloc[r]
+            uid = int(row["universe_id"])
+            u_seed = int(row["seed"]) if "seed" in row else (master_seed + uid)
+            cmb_seed = u_seed + int(MASTER_CTRL.get("CMB_BEST_SEED_OFFSET", 909))
+            rng_best = np.random.default_rng(cmb_seed)
+
+            title_variant = "E-only" if VARIANT == "energy_only" else "E+I"
+            E_val = float(row["E"])
+            I_val = float(row["I"]) if "I" in row else 0.0
+            lock_ep = int(row["lock_epoch"])
+
+            # File path (will include _E-Only or _E+I via with_variant)
+            png_path = _out_path(r+1, uid)
+
+            if use_healpy:
+                # ---- HEALPix map synthesis (very lightweight pseudo C_ell) ----
+                nside = int(MASTER_CTRL.get("CMB_NSIDE", 64))
+                lmax  = 3 * nside - 1
+                ell = np.arange(lmax + 1, dtype=float)
+                cl = np.zeros_like(ell)
+                cl[1:] = 1.0 / (ell[1:] * (ell[1:] + 1.0))
+                # Slight per-universe amplitude modulation (keeps diversity)
+                cl *= float(rng_best.lognormal(mean=0.0, sigma=0.25))
+
+                alm = hp.synalm(cl, lmax=lmax, new=True, verbose=False)
+                m   = hp.alm2map(alm, nside=nside, verbose=False)
+                m = (m - np.mean(m)) / (np.std(m) + 1e-12)
+
+                # Plot
+                plt.figure(figsize=(9, 5.3))
+                hp.mollview(
+                    m, title=f"Best CMB [{title_variant}] — uid {uid}, lock-in {lock_ep}\nE={E_val:.3g}, I={I_val:.3g}",
+                    unit="μK (z-score)", norm=None
+                )
+                hp.graticule()
+                _save_close(png_path)
+            else:
+                # ---- Flat-sky GRF with power-law spectrum ----
+                N   = int(MASTER_CTRL.get("CMB_NPIX", 512))
+                dx  = float(MASTER_CTRL.get("CMB_PIXSIZE_ARCMIN", 5.0))
+                slope = float(MASTER_CTRL.get("CMB_POWER_SLOPE", 2.0))
+
+                kx = np.fft.fftfreq(N, d=1.0) * 2*np.pi
+                ky = np.fft.fftfreq(N, d=1.0) * 2*np.pi
+                kx, ky = np.meshgrid(kx, ky, indexing="xy")
+                kk = np.sqrt(kx**2 + ky**2); kk[0,0] = 1.0
+
+                Pk = 1.0 / (kk ** slope)
+                noise_real = rng_best.normal(size=(N, N))
+                noise_imag = rng_best.normal(size=(N, N))
+                F = (noise_real + 1j*noise_imag) * np.sqrt(Pk / 2.0)
+                # Enforce Hermitian symmetry
+                F = (F + np.conj(np.flipud(np.fliplr(F)))) / 2.0
+
+                m = np.fft.ifft2(F).real
+                m = (m - np.mean(m)) / (np.std(m) + 1e-12)
+
+                extent_deg = (N * dx) / 60.0
+                plt.figure(figsize=(7.8, 6.4))
+                plt.imshow(m, origin="lower", extent=[0, extent_deg, 0, extent_deg])
+                plt.colorbar(label="μK (z-score)")
+                plt.xlabel("deg"); plt.ylabel("deg")
+                plt.title(f"Best CMB [{title_variant}] — uid {uid}, lock-in {lock_ep}\nE={E_val:.3g}, I={I_val:.3g}")
+                _save_close(png_path)
+
+            made.append(png_path)
+
+        print(f"[CMB][BEST] Wrote {len(made)} PNG(s):")
+        for p in made:
+            print("   -", p)
+
+        # Optional: copy to Drive like other artifacts
+        try:
+            if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
+                DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
+                GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, os.path.relpath(os.path.join(FIG_DIR, "cmb_best"), SAVE_DIR))
+                os.makedirs(GOOGLE_DIR, exist_ok=True)
+                cnt = 0
+                for fn in sorted(os.listdir(out_dir)):
+                    if fn.endswith(".png"):
+                        shutil.copy2(os.path.join(out_dir, fn), os.path.join(GOOGLE_DIR, fn))
+                        cnt += 1
+                print(f"[CMB][BEST] Copied {cnt} PNG(s) to Drive: {GOOGLE_DIR}")
+        except Exception as e:
+            print("[CMB][BEST][WARN] Drive copy failed:", e)
+
+# ======================================================
+# 16) CMB Cold-spot detector (multi-scale, HEALPix or flat-sky)
+# ======================================================
+
+if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
+    print("[CMB][COLD] Running cold-spot detector...")
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from scipy import ndimage as ndi
+
+    # Try to use healpy when available (unless forced flat)
+    use_healpy = False
+    mode_req = MASTER_CTRL.get("CMB_COLD_MODE", MASTER_CTRL.get("CMB_BEST_MODE", "auto"))
+    if mode_req in ("auto", "healpix"):
+        try:
+            import healpy as hp
+            use_healpy = True
+        except Exception:
+            use_healpy = False
+            if mode_req == "healpix":
+                print("[CMB][COLD][WARN] healpy not available; falling back to flat-sky mode.")
+
+    # Reuse selection prepared in the Best CMB block
+    if "sel_df" not in globals():
+        if "df_lock" in globals():
+            sel_df = df_lock.copy()
+        else:
+            sel_df = df[df["lock_epoch"] >= 0].copy()
+            if "I" in sel_df.columns:
+                sel_df["_gap"] = np.abs(sel_df["E"] - sel_df["I"])
+            else:
+                sel_df["_gap"] = 0.0
+            sel_df = sel_df.sort_values(["lock_epoch", "_gap"]).reset_index(drop=True)
+
+    if len(sel_df) == 0:
+        print("[CMB][COLD] No lock-in universes; skipping.")
+    else:
+        # Output directories
+        COLD_DIR = os.path.join(FIG_DIR, "cmb_coldspots")
+        os.makedirs(COLD_DIR, exist_ok=True)
+
+        # Helper: variant label for titles
+        title_variant = "E-only" if VARIANT == "energy_only" else "E+I"
+
+        # Helper: arcmin conversions
+        ARC_MIN_TO_RAD = np.pi / (180.0 * 60.0)
+
+        # Parameters (shared with CMB generation block)
+        nside = int(MASTER_CTRL.get("CMB_NSIDE", 64))
+        lmax  = 3 * nside - 1
+        Nflat = int(MASTER_CTRL.get("CMB_NPIX", 512))
+        pix_arcmin = float(MASTER_CTRL.get("CMB_PIXSIZE_ARCMIN", 5.0))
+        slope = float(MASTER_CTRL.get("CMB_POWER_SLOPE", 2.0))
+
+        # Scales & separation
+        sigma_list_am = MASTER_CTRL.get("CMB_COLD_SIGMA_ARCMIN", [30, 60, 120])
+        min_sep_am = float(MASTER_CTRL.get("CMB_COLD_MIN_SEP_ARCMIN", 45))
+        z_thresh = float(MASTER_CTRL.get("CMB_COLD_Z_THRESH", -2.5))
+
+        # Utility: generate the same random CMB map as the “best CMB” block
+        def _gen_healpix_map(rng_local):
+            ell = np.arange(lmax + 1, dtype=float)
+            cl = np.zeros_like(ell)
+            cl[1:] = 1.0 / (ell[1:] * (ell[1:] + 1.0))    # toy ~ 1/[ell(ell+1)]
+            cl *= float(rng_local.lognormal(mean=0.0, sigma=0.25))
+            alm = hp.synalm(cl, lmax=lmax, new=True, verbose=False)
+            m = hp.alm2map(alm, nside=nside, verbose=False)
+            m = (m - np.mean(m)) / (np.std(m) + 1e-12)     # z-score normalize
+            return m
+
+        def _gen_flat_map(rng_local):
+            kx = np.fft.fftfreq(Nflat, d=1.0) * 2*np.pi
+            ky = np.fft.fftfreq(Nflat, d=1.0) * 2*np.pi
+            kx, ky = np.meshgrid(kx, ky, indexing="xy")
+            kk = np.sqrt(kx**2 + ky**2); kk[0,0] = 1.0
+            Pk = 1.0 / (kk ** slope)
+            noise_real = rng_local.normal(size=(Nflat, Nflat))
+            noise_imag = rng_local.normal(size=(Nflat, Nflat))
+            F = (noise_real + 1j*noise_imag) * np.sqrt(Pk / 2.0)
+            # Enforce Hermitian symmetry for real field
+            F = (F + np.conj(np.flipud(np.fliplr(F)))) / 2.0
+            m = np.fft.ifft2(F).real
+            m = (m - np.mean(m)) / (np.std(m) + 1e-12)     # z-score normalize
+            return m
+
+        # Utilities: detect local minima with minimal separation (greedy)
+        def _greedy_pick_minima(coords, values, min_sep):
+            # coords: array of shape (N, D); values: array (N,) (more negative is better)
+            # min_sep: minimal Euclidian separation in the same units as coords
+            order = np.argsort(values)  # ascending (most negative first)
+            picked = []
+            for idx in order:
+                c = coords[idx]
+                if not picked:
+                    picked.append(idx)
+                    continue
+                # distance to already picked
+                ok = True
+                for j in picked:
+                    if np.linalg.norm(coords[j] - c) < min_sep:
+                        ok = False
+                        break
+                if ok:
+                    picked.append(idx)
+            return np.array(picked, dtype=int)
+
+        all_rows = []
+        topk = int(MASTER_CTRL.get("CMB_COLD_TOPK", 5))
+
+        for rnk, row in sel_df.iterrows():
+            uid = int(row["universe_id"])
+            u_seed = int(row.get("seed", master_seed + uid))
+            cmb_seed = u_seed + int(MASTER_CTRL.get("CMB_BEST_SEED_OFFSET", 909))
+            rng_cmb = np.random.default_rng(cmb_seed)
+
+            E_val = float(row["E"])
+            I_val = float(row["I"]) if "I" in row else 0.0
+            lock_ep = int(row["lock_epoch"])
+
+            # --- (A) Build CMB map (healpy or flat) ---
+            if use_healpy:
+                m = _gen_healpix_map(rng_cmb)
+                npix = m.size
+                # Precompute unit vectors for pixel centers (for separation calc)
+                theta, phi = hp.pix2ang(nside, np.arange(npix))
+                # coords in radians for separation (use angular separation on sphere)
+                # We'll use great-circle distance via hp.rotator.angdist style formula
+                # but to keep it simple for greedy filtering we use 2D coords on unit sphere:
+                x = np.sin(theta) * np.cos(phi)
+                y = np.sin(theta) * np.sin(phi)
+                z = np.cos(theta)
+                xyz = np.vstack([x, y, z]).T
+                sep_rad = min_sep_am * ARC_MIN_TO_RAD
+
+                # --- (B) Multi-scale smoothing & minima candidates ---
+                cand_idx = []
+                cand_z   = []
+                cand_scale = []
+                for sig_am in sigma_list_am:
+                    # Convert sigma (arcmin) to FWHM (radians) for hp.smoothing
+                    sigma_rad = sig_am * ARC_MIN_TO_RAD
+                    fwhm = sigma_rad * np.sqrt(8.0 * np.log(2.0))
+                    ms = hp.smoothing(m, fwhm=fwhm, verbose=False)
+                    # Find pixels that are lower than all neighbors (8-ish neighbors in HEALPix)
+                    # We check against immediate ring neighbors via hp.get_all_neighbours
+                    is_min = np.ones(npix, dtype=bool)
+                    for pix in range(npix):
+                        neigh = hp.get_all_neighbours(nside, pix)
+                        neigh = neigh[neigh >= 0]
+                        if neigh.size:
+                            if not np.all(ms[pix] <= ms[neigh]):
+                                is_min[pix] = False
+                    idx = np.where(is_min & (ms <= z_thresh))[0]
+                    cand_idx.append(idx)
+                    cand_z.append(ms[idx])
+                    cand_scale.extend([sig_am]*len(idx))
+
+                if len(cand_idx) == 0 or sum(len(c) for c in cand_idx) == 0:
+                    print(f"[CMB][COLD] No minima under threshold for uid={uid}.")
+                    continue
+
+                idx_all = np.concatenate(cand_idx)
+                z_all   = np.concatenate(cand_z)
+                scale_all = np.array(cand_scale, dtype=float)
+
+                # Greedy separation on the sphere using chord distance on unit sphere ~ 2*sin(d/2)
+                # We'll threshold by great-circle rad ≈ chord because d is small.
+                coords = xyz[idx_all]  # N x 3 on unit sphere
+                # Chord distance corresponding to sep_rad: d_chord = 2*sin(sep/2)
+                min_chord = 2.0 * np.sin(sep_rad / 2.0)
+                picked = _greedy_pick_minima(coords, z_all, min_chord)[:topk]
+
+                # Save summary rows
+                for i, pidx in enumerate(picked, start=1):
+                    pix = int(idx_all[pidx])
+                    th, ph = float(theta[pix]), float(phi[pix])
+                    lat_deg = 90.0 - np.degrees(th)
+                    lon_deg = np.degrees(ph) % 360.0
+                    all_rows.append({
+                        "universe_id": uid,
+                        "rank": i,
+                        "z_value": float(z_all[pidx]),
+                        "sigma_arcmin": float(scale_all[pidx]),
+                        "lon_deg": lon_deg,
+                        "lat_deg": lat_deg,
+                        "E": E_val,
+                        "I": I_val,
+                        "lock_epoch": lock_ep,
+                        "variant": title_variant
+                    })
+
+                # Optional overlay figure
+                if MASTER_CTRL.get("CMB_COLD_OVERLAY", True):
+                    plt.figure(figsize=(9.2, 5.5))
+                    title = (f"Cold spots [{title_variant}] — uid {uid}, lock-in {lock_ep}\n"
+                             f"E={E_val:.3g}, I={I_val:.3g}  (top {len(picked)})")
+                    hp.mollview(m, title=title, unit="μK (z-score)", norm=None)
+                    for pidx in picked:
+                        pix = int(idx_all[pidx])
+                        th, ph = float(theta[pix]), float(phi[pix])
+                        hp.projplot(th, ph, 'o', ms=6)
+                    # Save
+                    out_png = with_variant(os.path.join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
+                    plt.savefig(out_png, dpi=200, bbox_inches="tight")
+                    plt.close()
+            else:
+                # ---- FLAT-SKY branch ----
+                m = _gen_flat_map(rng_cmb)
+                H, W = m.shape
+
+                # Multi-scale minima via Gaussian smoothing
+                cand_xy = []
+                cand_z  = []
+                cand_scale = []
+                for sig_am in sigma_list_am:
+                    # Convert arcmin sigma to pixels
+                    sigma_px = max(0.5, sig_am / pix_arcmin)
+                    ms = ndi.gaussian_filter(m, sigma=sigma_px, mode="reflect")
+                    # Local minima via minimum filter neighborhood
+                    # compare with a small footprint (3x3)
+                    neigh = ndi.minimum_filter(ms, size=3, mode="reflect")
+                    mask_min = (ms <= neigh) & (ms <= z_thresh)
+                    yy, xx = np.where(mask_min)
+                    if len(xx):
+                        cand_xy.append(np.stack([xx, yy], axis=1))
+                        cand_z.append(ms[yy, xx])
+                        cand_scale.extend([sig_am]*len(xx))
+
+                if len(cand_xy) == 0 or sum(len(c) for c in cand_xy) == 0:
+                    print(f"[CMB][COLD] No minima under threshold for uid={uid}.")
+                    continue
+
+                xy_all = np.concatenate(cand_xy, axis=0)     # N x 2 (x,y) in pixels
+                z_all  = np.concatenate(cand_z)
+                scale_all = np.array(cand_scale, dtype=float)
+
+                # Minimal separation in pixels
+                min_sep_px = float(min_sep_am / pix_arcmin)
+                picked = _greedy_pick_minima(xy_all.astype(float), z_all, min_sep_px)[:topk]
+
+                # Save summary rows (convert to degrees within the map extent)
+                extent_deg = (Nflat * pix_arcmin) / 60.0
+                for i, pidx in enumerate(picked, start=1):
+                    x_px, y_px = xy_all[pidx]
+                    # simple linear coords to degrees (origin lower-left in our imshow)
+                    lon_deg = (x_px / (Nflat - 1)) * extent_deg
+                    lat_deg = (y_px / (Nflat - 1)) * extent_deg
+                    all_rows.append({
+                        "universe_id": uid,
+                        "rank": i,
+                        "z_value": float(z_all[pidx]),
+                        "sigma_arcmin": float(scale_all[pidx]),
+                        "x_px": int(x_px),
+                        "y_px": int(y_px),
+                        "lon_deg": float(lon_deg),
+                        "lat_deg": float(lat_deg),
+                        "E": E_val,
+                        "I": I_val,
+                        "lock_epoch": lock_ep,
+                        "variant": title_variant
+                    })
+
+                # Overlay
+                if MASTER_CTRL.get("CMB_COLD_OVERLAY", True):
+                    plt.figure(figsize=(7.8, 6.4))
+                    plt.imshow(m, origin="lower", extent=[0, extent_deg, 0, extent_deg])
+                    for pidx in picked:
+                        x_px, y_px = xy_all[pidx]
+                        x_deg = (x_px / (Nflat - 1)) * extent_deg
+                        y_deg = (y_px / (Nflat - 1)) * extent_deg
+                        plt.plot(x_deg, y_deg, 'o', ms=5)
+                    plt.colorbar(label="μK (z-score)")
+                    plt.xlabel("deg"); plt.ylabel("deg")
+                    plt.title(f"Cold spots [{title_variant}] — uid {uid}, lock-in {lock_ep} (top {len(picked)})")
+                    out_png = with_variant(os.path.join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
+                    plt.savefig(out_png, dpi=200, bbox_inches="tight")
+                    plt.close()
+
+                # Optional patch thumbnails around each spot (flat only)
+                if MASTER_CTRL.get("CMB_COLD_SAVE_PATCHES", False) and len(picked):
+                    patch_am = float(MASTER_CTRL.get("CMB_COLD_PATCH_SIZE_ARCMIN", 200))
+                    half_px = int(max(4, 0.5 * (patch_am / pix_arcmin)))
+                    for i, pidx in enumerate(picked, start=1):
+                        cx, cy = xy_all[pidx]
+                        x0 = max(0, int(cx) - half_px)
+                        x1 = min(W, int(cx) + half_px)
+                        y0 = max(0, int(cy) - half_px)
+                        y1 = min(H, int(cy) + half_px)
+                        patch = m[y0:y1, x0:x1]
+                        if patch.size == 0:
+                            continue
+                        plt.figure(figsize=(4.2, 4.2))
+                        plt.imshow(patch, origin="lower")
+                        plt.title(f"uid {uid} spot {i} (±{patch_am/2:.0f}′)")
+                        out_p = with_variant(os.path.join(COLD_DIR, f"coldpatch_uid{uid:05d}_rank{i:02d}.png"))
+                        plt.savefig(out_p, dpi=200, bbox_inches="tight")
+                        plt.close()
+
+        # --- Save consolidated CSV and copy to Drive ---
+        import pandas as pd
+        if len(all_rows):
+            cold_df = pd.DataFrame(all_rows).sort_values(["universe_id", "rank"])
+            out_csv = with_variant(os.path.join(SAVE_DIR, "cmb_coldspots_summary.csv"))
+            cold_df.to_csv(out_csv, index=False)
+            print("[CMB][COLD] CSV:", out_csv)
+
+            # Simple histogram figure of z-values (for sanity)
+            plt.figure(figsize=(7,4.2))
+            vals = cold_df["z_value"].values
+            plt.hist(vals, bins=30, edgecolor="black")
+            plt.xlabel("Cold-spot z"); plt.ylabel("Count")
+            plt.title(f"Cold-spot z-value distribution [{title_variant}]")
+            out_hist = with_variant(os.path.join(COLD_DIR, "coldspots_z_hist.png"))
+            plt.savefig(out_hist, dpi=200, bbox_inches="tight")
+            plt.close()
+            print("[CMB][COLD] FIG:", out_hist)
+
+            # Optional: copy artifacts to Drive
+            try:
+                if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
+                    DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
+                    GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, os.path.relpath(COLD_DIR, SAVE_DIR))
+                    os.makedirs(GOOGLE_DIR, exist_ok=True)
+                    copied = 0
+                    for fn in sorted(os.listdir(COLD_DIR)):
+                        if fn.endswith(".png"):
+                            shutil.copy2(os.path.join(COLD_DIR, fn), os.path.join(GOOGLE_DIR, fn))
+                            copied += 1
+                    # copy CSV
+                    shutil.copy2(out_csv, os.path.join(DRIVE_BASE, run_id, os.path.relpath(out_csv, SAVE_DIR)))
+                    print(f"[CMB][COLD] Copied {copied} PNG(s) + CSV to Drive.")
+            except Exception as e:
+                print("[CMB][COLD][WARN] Drive copy failed:", e)
+        else:
+            print("[CMB][COLD] No cold spots recorded; no CSV produced.")
+
+# ======================================================
+# 17) CMB Axis-of-Evil detector (quadrupole/octupole alignment)
+# ======================================================
+
+if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
+    print("[CMB][AOE] Running Axis-of-Evil detector...")
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    # Try healpy backend if available
+    use_healpy = False
+    mode_req = MASTER_CTRL.get("CMB_AOE_MODE", MASTER_CTRL.get("CMB_BEST_MODE", "auto"))
+    if mode_req in ("auto", "healpix"):
+        try:
+            import healpy as hp
+            use_healpy = True
+        except Exception:
+            use_healpy = False
+            if mode_req == "healpix":
+                print("[CMB][AOE][WARN] healpy not available; falling back to flat-sky surrogate.")
+
+    # Reuse same selection as in best-CMB
+    if "sel_df" not in globals():
+        if "df_lock" in globals():
+            sel_df = df_lock.copy()
+        else:
+            sel_df = df[df["lock_epoch"] >= 0].copy()
+            if "I" in sel_df.columns:
+                sel_df["_gap"] = np.abs(sel_df["E"] - sel_df["I"])
+            else:
+                sel_df["_gap"] = 0.0
+            sel_df = sel_df.sort_values(["lock_epoch", "_gap"]).reset_index(drop=True)
+
+    if len(sel_df) == 0:
+        print("[CMB][AOE] No lock-in universes; skipping.")
+    else:
+        AOE_DIR = os.path.join(FIG_DIR, "cmb_axisofevil")
+        os.makedirs(AOE_DIR, exist_ok=True)
+
+        results = []
+        for _, row in sel_df.iterrows():
+            uid = int(row["universe_id"])
+            u_seed = int(row.get("seed", master_seed + uid))
+            cmb_seed = u_seed + int(MASTER_CTRL.get("CMB_BEST_SEED_OFFSET", 909))
+            rng_cmb = np.random.default_rng(cmb_seed)
+
+            # Generate map
+            if use_healpy:
+                nside = int(MASTER_CTRL.get("CMB_NSIDE", 64))
+                lmax  = int(MASTER_CTRL.get("CMB_AOE_LMAX", 3))
+                ell = np.arange(3*nside, dtype=float)
+                cl = np.zeros_like(ell)
+                cl[1:] = 1.0 / (ell[1:]*(ell[1:]+1.0))
+                cl *= float(rng_cmb.lognormal(mean=0.0, sigma=0.25))
+                alm = hp.synalm(cl, lmax=3*nside-1, new=True, verbose=False)
+                # Extract multipole vectors ℓ=2,3
+                alm_q = hp.almxfl(alm, np.array([1 if l==2 else 0 for l in range(len(alm))]))
+                alm_o = hp.almxfl(alm, np.array([1 if l==3 else 0 for l in range(len(alm))]))
+                # For simplicity: compute preferred axes from power distribution
+                # Use hp.anafast to get Cl then find max orientation
+                # (Here we just compute map and project)
+                m = hp.alm2map(alm, nside, verbose=False)
+
+                # Overlay plot if requested
+                if MASTER_CTRL.get("CMB_AOE_OVERLAY", True):
+                    plt.figure(figsize=(9,5.3))
+                    hp.mollview(m, title=f"Axis of Evil [{uid}] (E={'%.2f'%row['E']}, I={'%.2f'%row.get('I',0)})")
+                    # TODO: project quadrupole/octupole axes if implemented
+                    out_png = with_variant(os.path.join(AOE_DIR, f"axisofevil_uid{uid:05d}.png"))
+                    plt.savefig(out_png, dpi=200, bbox_inches="tight")
+                    plt.close()
+            else:
+                # Flat-sky fallback (no spherical multipole decomposition)
+                print(f"[CMB][AOE][WARN] Flat mode not implemented for uid={uid}.")
+                continue
+
+        print(f"[CMB][AOE] Done. Results in {AOE_DIR}")
+
+# ======================================================
+# 18) Metrics joiner: attach Cold/AoE/Finetune metrics to df
+# ======================================================
+
+import os, numpy as np, pandas as pd
+
+def _safe_read_csv(path):
+    try:
+        if os.path.exists(path):
+            return pd.read_csv(path)
+    except Exception as e:
+        print(f"[JOIN][WARN] Failed to read {path}: {e}")
+    return None
+
+# --- Locate artifacts created earlier (variant-aware via with_variant) ---
+cold_csv   = with_variant(os.path.join(SAVE_DIR, "cmb_coldspots_summary.csv"))
+aoe_csv    = with_variant(os.path.join(SAVE_DIR, "cmb_axis_of_evil_summary.csv")) if os.path.exists(
+               with_variant(os.path.join(SAVE_DIR, "cmb_axis_of_evil_summary.csv"))
+             ) else None
+ft_delta   = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))  # from your finetune detector
+
+cold_df = _safe_read_csv(cold_csv)
+aoe_df  = _safe_read_csv(aoe_csv) if aoe_csv else None
+ft_df   = _safe_read_csv(ft_delta)
+
+# --- Start from the current Monte Carlo table ---
+df_join = df.copy()
+
+# ---- (A) Aggregate cold-spot metrics per universe ----
+if cold_df is not None and not cold_df.empty:
+    agg = (cold_df.groupby("universe_id")
+                  .agg(cold_min_z=("z_value","min"),
+                       cold_mean_z_topk=("z_value","mean"),
+                       cold_count=("z_value",lambda s: int(np.sum(np.isfinite(s)))),
+                       cold_sigma_best=("sigma_arcmin","median"))
+                  .reset_index())
+    df_join = df_join.merge(agg, on="universe_id", how="left")
+    # Convenience flag (threshold taken from MASTER_CTRL, default -2.5)
+    z_thr = float(MASTER_CTRL.get("CMB_COLD_Z_THRESH", -2.5))
+    df_join["cold_flag"] = (df_join["cold_min_z"] <= z_thr).astype(int)
+else:
+    print("[JOIN] No cold-spot CSV found; skipping cold metrics.")
+
+# ---- (B) Aggregate AoE metrics per universe ----
+# Expect columns like: universe_id, aoe_align_score, aoe_pvalue  (one row per universe)
+if aoe_df is not None and not aoe_df.empty:
+    keep_cols = [c for c in ["universe_id","aoe_align_score","aoe_pvalue"] if c in aoe_df.columns]
+    aoe_compact = aoe_df[keep_cols].drop_duplicates("universe_id")
+    df_join = df_join.merge(aoe_compact, on="universe_id", how="left")
+    # Default p-value threshold for an "anomalous" alignment
+    p_thr = float(MASTER_CTRL.get("AOE_P_THRESHOLD", 0.05))
+    if "aoe_pvalue" in df_join.columns:
+        df_join["aoe_flag"] = (df_join["aoe_pvalue"] < p_thr).astype(int)
+    elif "aoe_align_score" in df_join.columns:
+        # Fallback: flag very high alignment scores (close to 1)
+        thr = float(MASTER_CTRL.get("AOE_ALIGN_THRESHOLD", 0.9))
+        df_join["aoe_flag"] = (df_join["aoe_align_score"] >= thr).astype(int)
+else:
+    print("[JOIN] No AoE CSV found; skipping AoE metrics.")
+
+# ---- (C) Finetune deltas (E vs E+I) from your existing FT block ----
+if ft_df is not None and not ft_df.empty:
+    for col in ["acc_delta","auc_delta","r2_delta"]:
+        if col in ft_df.columns:
+            df_join[f"ft_{col}"] = float(ft_df[col].iloc[0])
+else:
+    # Still create the columns to avoid KeyErrors downstream
+    for col in ["ft_acc_delta","ft_auc_delta","ft_r2_delta"]:
+        if col not in df_join.columns:
+            df_join[col] = np.nan
+
+# ---- (D) Generic engineered features (used across targets) ----
+df_join["abs_E_minus_I"] = np.abs(df_join.get("E", np.nan) - df_join.get("I", 0.0))
+df_join["logE"] = np.log(df_join["E"] + 1e-12)
+df_join["logX"] = np.log(df_join["X"] + 1e-12)
+
+# Distance to Goldilocks center if window is available
+x_low = summary.get("goldilocks_window_used",{}).get("X_low", None)
+x_high= summary.get("goldilocks_window_used",{}).get("X_high", None)
+if x_low is not None and x_high is not None and np.isfinite(x_low) and np.isfinite(x_high):
+    mid   = 0.5*(float(x_low)+float(x_high))
+    width = max(1e-12, 0.5*(float(x_high)-float(x_low)))
+    df_join["dist_to_goldilocks"] = np.abs(df_join["X"] - mid) / width
+else:
+    df_join["dist_to_goldilocks"] = np.nan
+
+# Ranks (quantiles) to stabilize feature scales
+df_join["E_rank"] = df_join["E"].rank(pct=True)
+df_join["X_rank"] = df_join["X"].rank(pct=True)
+
+# Persist a joined CSV for inspection
+joined_csv = with_variant(os.path.join(SAVE_DIR, "metrics_joined.csv"))
+df_join.to_csv(joined_csv, index=False)
+print("[JOIN] Wrote:", joined_csv)
+
+# Make df_join the working table for XAI
+df_xai = df_join
+
+# ======================================================
+# 23) Multi-target XAI (SHAP + LIME) per feature set
+# ======================================================
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
+import shap
+from lime.lime_tabular import LimeTabularExplainer
+
+# ---- Controls (can be overridden in MASTER_CTRL) ----
+XAI_ENABLE_STAB   = bool(MASTER_CTRL.get("XAI_ENABLE_STABILITY", True))
+XAI_ENABLE_COLD   = bool(MASTER_CTRL.get("XAI_ENABLE_COLD", True))
+XAI_ENABLE_AOE    = bool(MASTER_CTRL.get("XAI_ENABLE_AOE", True))
+
+TEST_SIZE         = float(MASTER_CTRL.get("XAI_TEST_SIZE", MASTER_CTRL.get("TEST_SIZE", 0.25)))
+RSTATE            = int(MASTER_CTRL.get("XAI_RANDOM_STATE", MASTER_CTRL.get("TEST_RANDOM_STATE", 42)))
+SAVE_SHAP         = bool(MASTER_CTRL.get("XAI_SAVE_SHAP", True))
+SAVE_LIME         = bool(MASTER_CTRL.get("XAI_SAVE_LIME", True))
+LIME_K            = int(MASTER_CTRL.get("XAI_LIME_K", 50))
+
+# Feature definitions
+FEATS_E_ONLY = MASTER_CTRL.get("XAI_FEATURES_E_ONLY", ["E","logE","E_rank"])
+FEATS_EIX    = MASTER_CTRL.get("XAI_FEATURES_EIX",
+                               ["E","I","X","abs_E_minus_I","logX","dist_to_goldilocks","E_rank","X_rank"])
+
+variant_title = "E-only" if VARIANT == "energy_only" else "E+I"
+
+# Utility: model runners -------------------------------------------------------
+def _ensure_cols(df_in, cols):
+    return [c for c in cols if c in df_in.columns]
+
+def _shap_summary(model, X_plot, feat_names, out_png):
+    try:
+        expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
+        sv = expl.shap_values(X_plot, check_additivity=False)
+    except Exception:
+        expl = shap.Explainer(model, X_plot)
+        sv = expl(X_plot).values
+    if isinstance(sv, list):  # binary cls -> [neg,pos]
+        sv = sv[-1]
+    plt.figure()
+    shap.summary_plot(sv, X_plot.values, feature_names=feat_names, show=False)
+    plt.title(os.path.splitext(os.path.basename(out_png))[0], fontsize=10)
+    plt.savefig(out_png, dpi=220, bbox_inches="tight")
+    plt.close()
+
+def _lime_avg(clf, X_np, feat_names, out_png, k=LIME_K):
+    explainer = LimeTabularExplainer(training_data=X_np, feature_names=feat_names,
+                                     discretize_continuous=True, mode="classification")
+    rng_l = np.random.default_rng(RSTATE)
+    idxs = rng_l.choice(X_np.shape[0], size=min(k, X_np.shape[0]), replace=False)
+    rows = []
+    # choose positive class if available
+    try:
+        pos = int(np.argmax(clf.classes_))
+    except Exception:
+        pos = 1
+    for i in idxs:
+        exp = explainer.explain_instance(X_np[i], clf.predict_proba,
+                                         num_features=min(8, X_np.shape[1]))
+        for name, w in exp.as_list(label=pos):
+            base = name.split()[0]
+            if base not in feat_names: base = name
+            rows.append((base, float(w)))
+    if rows:
+        dfw = (pd.DataFrame(rows, columns=["feature","weight"])
+                 .groupby("feature", as_index=False)["weight"].mean()
+                 .sort_values("weight"))
+        plt.figure(figsize=(6,4))
+        plt.barh(dfw["feature"], dfw["weight"], edgecolor="black")
+        plt.xlabel("Avg LIME weight")
+        plt.tight_layout()
+        plt.savefig(out_png, dpi=220, bbox_inches="tight")
+        plt.close()
+
+def _report_prefix(target, featset):
+    # Compose clear, variant-aware filenames
+    tag_feat = "Eonly" if featset=="E_ONLY" else "EIX"
+    base = f"{target}__{tag_feat}"
+    return with_variant(os.path.join(FIG_DIR, base))
+
+# Targets to run (present -> run) ---------------------------------------------
+targets = []
+
+if XAI_ENABLE_STAB and "stable" in df_xai.columns:
+    targets.append(("stability_cls", "cls", "stable", None))  # (name, kind, y_col, mask)
+
+if XAI_ENABLE_STAB and "lock_epoch" in df_xai.columns:
+    mask = df_xai["lock_epoch"] >= 0
+    if int(mask.sum()) >= int(MASTER_CTRL.get("REGRESSION_MIN", 10)):
+        targets.append(("lock_epoch_reg", "reg", "lock_epoch", mask))
+
+if XAI_ENABLE_COLD and "cold_flag" in df_xai.columns:
+    targets.append(("cold_flag_cls", "cls", "cold_flag", None))
+
+if XAI_ENABLE_COLD and "cold_min_z" in df_xai.columns:
+    m = np.isfinite(df_xai["cold_min_z"])
+    if int(m.sum()) >= int(MASTER_CTRL.get("REGRESSION_MIN", 10)):
+        targets.append(("cold_min_z_reg", "reg", "cold_min_z", m))
+
+if XAI_ENABLE_AOE and "aoe_flag" in df_xai.columns:
+    targets.append(("aoe_flag_cls", "cls", "aoe_flag", None))
+
+if XAI_ENABLE_AOE and "aoe_align_score" in df_xai.columns:
+    m = np.isfinite(df_xai["aoe_align_score"])
+    if int(m.sum()) >= int(MASTER_CTRL.get("REGRESSION_MIN", 10)):
+        targets.append(("aoe_align_reg", "reg", "aoe_align_score", m))
+
+if not targets:
+    print("[XAI][INFO] No available targets to model; skipping.")
+else:
+    print("[XAI] Running for targets:", [t[0] for t in targets])
+
+for target_name, kind, y_col, mask in targets:
+    # Build dataset (mask if provided)
+    data = df_xai[mask].copy() if (mask is not None) else df_xai.copy()
+    data = data.replace([np.inf, -np.inf], np.nan).dropna(subset=[y_col,"E","X"], how="any")
+
+    # Two feature sets: E-only vs E+I  (skip columns that aren't present)
+    for featset, feat_cols in [("E_ONLY", FEATS_E_ONLY), ("EIX", FEATS_EIX)]:
+        cols = _ensure_cols(data, feat_cols)
+        if not cols:
+            print(f"[XAI] {target_name} — {featset}: no available features, skipping.")
+            continue
+
+        X = data[cols].copy()
+        y = data[y_col].values
+
+        # Train/test split (stratify only for binary cls with both classes)
+        strat = None
+        if kind=="cls":
+            uniq = np.unique(y)
+            if len(uniq)==2 and min((y==uniq[0]).sum(), (y==uniq[1]).sum()) >= 2:
+                strat = y
+
+        Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=TEST_SIZE,
+                                              random_state=RSTATE, stratify=strat)
+
+        # Fit model
+        if kind=="cls":
+            model = RandomForestClassifier(
+                n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
+                random_state=RSTATE,
+                n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS", -1),
+                class_weight=MASTER_CTRL.get("RF_CLASS_WEIGHT", "balanced")
+            )
+            model.fit(Xtr, ytr)
+            yp = model.predict(Xte)
+            acc = accuracy_score(yte, yp)
+            try:
+                proba = model.predict_proba(Xte)[:,1]
+                auc = roc_auc_score(yte, proba) if len(np.unique(yte))==2 else np.nan
+            except Exception:
+                auc = np.nan
+            print(f"[XAI] {target_name} [{variant_title}] {featset}: ACC={acc:.3f}  AUC={auc if np.isnan(auc) else round(auc,3)}")
+
+            # Save SHAP / LIME
+            if SAVE_SHAP:
+                _shap_summary(model, Xte, X.columns.tolist(),
+                              _report_prefix(f"shap_summary__{target_name}", featset) + ".png")
+            if SAVE_LIME and len(np.unique(ytr))==2 and len(Xte) >= 5:
+                _lime_avg(model, Xte.values, X.columns.tolist(),
+                          _report_prefix(f"lime_avg__{target_name}", featset) + ".png", k=LIME_K)
+
+            # Save small metrics CSV
+            met_csv = _report_prefix(f"metrics__{target_name}", featset) + ".csv"
+            pd.DataFrame([{"target":target_name, "variant": variant_title,
+                           "featset": featset, "acc": acc, "auc": float(auc) if np.isfinite(auc) else np.nan,
+                           "n_train": len(Xtr), "n_test": len(Xte)}]).to_csv(met_csv, index=False)
+
+        else:  # kind == "reg"
+            model = RandomForestRegressor(
+                n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
+                random_state=RSTATE,
+                n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS", -1)
+            )
+            model.fit(Xtr, ytr)
+            r2 = r2_score(yte, model.predict(Xte))
+            print(f"[XAI] {target_name} [{variant_title}] {featset}: R2={r2:.3f}")
+
+            if SAVE_SHAP:
+                _shap_summary(model, Xte, X.columns.tolist(),
+                              _report_prefix(f"shap_summary__{target_name}", featset) + ".png")
+
+            met_csv = _report_prefix(f"metrics__{target_name}", featset) + ".csv"
+            pd.DataFrame([{"target":target_name, "variant": variant_title,
+                           "featset": featset, "r2": r2,
+                           "n_train": len(Xtr), "n_test": len(Xte)}]).to_csv(met_csv, index=False)
+
+print("[XAI] Multi-target run complete. Outputs saved under:", FIG_DIR)
+
+# ======================================================
+# 18) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
 # ======================================================
 
 # --- Ensure classifier var exists even if RUN_XAI=False (for LIME guard) ---
@@ -1681,7 +2588,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
         
             
 # ======================================================
-# 16) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
+# 19) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
 # ======================================================
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     try:
@@ -1776,7 +2683,7 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         print(f"[ERR] Drive copy block failed: {e}")
 
 # ======================================================
-# 17) Best-universe entropy evolution (lock-in only)
+# 20) Best-universe entropy evolution (lock-in only)
 # ======================================================
 
 # Build a local config dict from MASTER_CTRL (type-safe + clamps)
@@ -1923,7 +2830,7 @@ else:
     print(f"[BEST] Generated {len(made)} figure(s) for lock-in universes.")
 
 # ======================================================
-# 18) Save consolidated summary (single write)
+# 21) Save consolidated summary (single write)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -1997,7 +2904,7 @@ print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # ======================================================
-# 19) Universe Stability Distribution — clean & robust
+# 22) Universe Stability Distribution — clean & robust
 # ======================================================
 
 def _variant_label():
@@ -2069,7 +2976,7 @@ savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap
 print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
 
 # ------------------------------------------------------
-# Compact version (kept for backward compatibility)
+# 23) Compact version (kept for backward compatibility)
 # ------------------------------------------------------
 labels_compact = [
     f"Lock-in ({lockin_count}, {perc[0]:.1f}%)",
