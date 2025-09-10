@@ -167,7 +167,7 @@ MASTER_CTRL = {
     "RUN_ID_PREFIX":        "TQE_Universe_Simulation_Full_Pipeline_",   # prefix for run_id
     "RUN_ID_FORMAT":        "%Y%m%d_%H%M%S",          # time format for run_id
     "ALLOW_FILE_EXTS":      [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
-    "MAX_FIGS_TO_SAVE":     None,   # limit number of figs (None = no limit)
+    "MAX_FILES_TO_SAVE":    None,   # global cap across all allowed extensions
     "VERBOSE":              True,   # extra prints/logs
 
     # --- Plot toggles ---
@@ -1632,7 +1632,8 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         # Config from MASTER_CTRL
         DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_(E,I)_KL_Shannon")
         ALLOWED_EXTS = set(MASTER_CTRL.get("ALLOW_FILE_EXTS", [".png", ".fits", ".csv", ".json", ".txt", ".npy"]))
-        MAX_FILES = MASTER_CTRL.get("MAX_FIGS_TO_SAVE", None)  # None = no limit
+        MAX_FILES = MASTER_CTRL.get("MAX_FILES_TO_SAVE",
+                    MASTER_CTRL.get("MAX_FIGS_TO_SAVE", None))  
         VERBOSE = MASTER_CTRL.get("VERBOSE", True)
 
         # Ensure base directory exists
