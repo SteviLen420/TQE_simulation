@@ -1265,12 +1265,12 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
     dfq = pd.DataFrame(rows)
     if out_csv:
         dfq.to_csv(out_csv, index=False)
-    if out_png:
-        plt.figure(figsize=(7,5))
-        mid = 0.5*(dfq["gap_lo"]+dfq["gap_hi"])
-        y = dfq["p"].values
-        yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
-        plt.errorbar(mid, y, yerr=yerr, fmt='-o')
+if out_png:
+    plt.figure(figsize=(7,5))
+    mid = 0.5*(dfq["gap_lo"]+dfq["gap_hi"])
+    y = dfq["p"].values
+    yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
+    plt.errorbar(mid, y, yerr=yerr, fmt='-o')
 
     if VARIANT == "energy_only":
         plt.title("Stability vs. E (Only E)")
@@ -1279,9 +1279,10 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
         plt.title("Stability vs. |E - I| (Energy + Information)")
         plt.xlabel("|E - I| (quantile bins)")
 
-    if out_png:
-        savefig(out_png)
-    return dfq
+    plt.ylabel("P(stable)")
+    savefig(out_png)
+
+return dfq
 
 def run_finetune_detector(df_in: pd.DataFrame):
     """
@@ -1812,20 +1813,25 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                         "variant": title_variant
                     })
 
-                # Optional overlay figure
+                # Optional overlay figure (HEALPix)
                 if MASTER_CTRL.get("CMB_COLD_OVERLAY", True):
-                    plt.figure(figsize=(9.2, 5.5))
-                    title = (f"Cold spots [{title_variant}] — uid {uid}, lock-in {lock_ep}\n"
-                             f"E={E_val:.3g}, I={I_val:.3g}  (top {len(picked)})")
-                    hp.mollview(m, title=title, unit="μK (z-score)", norm=None)
-                    for pidx in picked:
-                        pix = int(idx_all[pidx])
-                        th, ph = float(theta[pix]), float(phi[pix])
-                        hp.projplot(th, ph, 'o', ms=6)
-                    # Save
-                    out_png = with_variant(os.path.join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
-                    plt.savefig(out_png, dpi=200, bbox_inches="tight")
-                    plt.close()
+                        fig = plt.figure(figsize=(9.2, 5.5))
+                        title = (f"Cold spots [{title_variant}] — uid {uid}, lock-in {lock_ep}\n"
+                                 f"E={E_val:.3g}, I={I_val:.3g}  (top {len(picked)})")
+
+                        # Attach mollview to the created figure
+                        hp.mollview(m, title=title, unit="μK (z-score)", norm=None, fig=fig.number)
+                        hp.graticule()
+
+                        # Overlay cold spot markers
+                        for pidx in picked:
+                                pix = int(idx_all[pidx])
+                                th, ph = float(theta[pix]), float(phi[pix])
+                                hp.projplot(th, ph, 'o', ms=6)
+
+                        out_png = with_variant(os.path.join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
+                        plt.savefig(out_png, dpi=200, bbox_inches="tight")
+                        plt.close(fig)
             else:
                 # ---- FLAT-SKY branch ----
                 m = _gen_flat_map(rng_cmb)
@@ -2013,9 +2019,7 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
                 cl[1:] = 1.0 / (ell[1:]*(ell[1:]+1.0))
                 cl *= float(rng_cmb.lognormal(mean=0.0, sigma=0.25))
                 alm = hp.synalm(cl, lmax=3*nside-1, new=True, verbose=False)
-                # Extract multipole vectors ℓ=2,3
-                alm_q = hp.almxfl(alm, np.array([1 if l==2 else 0 for l in range(len(alm))]))
-                alm_o = hp.almxfl(alm, np.array([1 if l==3 else 0 for l in range(len(alm))]))
+
                 # For simplicity: compute preferred axes from power distribution
                 # Use hp.anafast to get Cl then find max orientation
                 # (Here we just compute map and project)
