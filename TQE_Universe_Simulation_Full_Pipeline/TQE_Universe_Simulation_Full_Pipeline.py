@@ -990,7 +990,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     _save_df_safe_local(col_df, col_csv)
 
     plt.figure(figsize=(8,5))
-    plt.title("t = 0 : Collapse (E·I lock-in)")
+    plt.title("t = 0 : Collapse (lock-in of X)")
     plt.plot(tC, xC, color="gray", label="fluctuation → lock-in")
     plt.axvline(0.0, color="red")
     plt.axhline(X_lock, color="red", ls="--", label=f"Lock-in X={X_lock:.2f}")
@@ -1328,23 +1328,32 @@ def run_finetune_detector(df_in: pd.DataFrame):
                 "lockin_n": lk, "p_lockin": (lk/n) if n>0 else float("nan")
             }
 
+    # Slice labels by variant
+    if VARIANT == "energy_only":
+        s_eq  = _slice(m_eq,  f"E ≤ {eps:.3g}")
+        s_neq = _slice(m_neq, f"E > {eps:.3g}")
+    else:
         s_eq  = _slice(m_eq,  f"|E-I| ≤ {eps:.3g}")
         s_neq = _slice(m_neq, f"|E-I| > {eps:.3g}")
-        sl_df = pd.DataFrame([s_eq, s_neq]).sort_values("slice")
-        sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_EeqI_adaptive.csv"))
-        sl_df.to_csv(sl_csv, index=False)
-        out["files"]["slice_csv"] = sl_csv
 
-        # Two-bar plot with Wilson CI
-        bar_png = with_variant(os.path.join(FIG_DIR, "ft_slice_EeqI_adaptive.png"))
-        _plot_two_bar_with_ci(
-            labels=sl_df["slice"].tolist(),
-            counts=sl_df["stable_n"].tolist(),
-            totals=sl_df["n"].tolist(),
-            title="Stability by E≈I (adaptive epsilon)",
-            out_png=bar_png
-        )
-        out["files"]["slice_png"] = bar_png
+    sl_df = pd.DataFrame([s_eq, s_neq]).sort_values("slice")
+
+    # Generic filename (avoid “EeqI” in E-only mode)
+    sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_adaptive.csv"))
+    sl_df.to_csv(sl_csv, index=False)
+    out["files"]["slice_csv"] = sl_csv
+
+    # Bar plot title by variant
+    bar_png = with_variant(os.path.join(FIG_DIR, "ft_slice_adaptive.png"))
+    title = "Stability by Energy (Only E)" if VARIANT == "energy_only" else "Stability by E≈I (adaptive epsilon)"
+    _plot_two_bar_with_ci(
+        labels=sl_df["slice"].tolist(),
+        counts=sl_df["stable_n"].tolist(),
+        totals=sl_df["n"].tolist(),
+        title=title,
+        out_png=bar_png
+    )
+    out["files"]["slice_png"] = bar_png
 
         # Stability vs |E-I| quantile curve + CSV
         q_csv = with_variant(os.path.join(SAVE_DIR, "ft_stability_vs_gap_quantiles.csv"))
