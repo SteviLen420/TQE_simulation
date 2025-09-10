@@ -721,13 +721,21 @@ def compute_dynamic_goldilocks(df_in):
         # Degenerate X range -> cannot bin
         return None, None, np.array([]), np.array([]), np.array([]), np.array([]), df_in
 
-    eps_max = 1e-12
-    bins = np.linspace(x_min, x_max + eps_max, nbins)
+    # Create nbins+1 equally spaced edges
+    bins = np.linspace(x_min, x_max, nbins + 1)
     df_tmp = df_in.copy()
-    df_tmp["bin"] = np.digitize(df_tmp["X"].values, bins, right=True)
 
-    # Drop out-of-range / zero-bin
-    df_tmp = df_tmp[(df_tmp["bin"] > 0) & np.isfinite(df_tmp["bin"])]
+    # Digitize values: interval is (bins[i-1], bins[i]]
+    idx = np.digitize(df_tmp["X"].values, bins, right=False)
+
+    # Special fix: include x == x_min in the first bin
+    idx[idx == 0] = 1
+
+    # Assign bins back to DataFrame
+    df_tmp["bin"] = idx
+
+    # Drop out-of-range bins (shouldn't happen except for NaN)
+    df_tmp = df_tmp[(df_tmp["bin"] > 0) & (df_tmp["bin"] <= nbins)]
 
     # ---------- Aggregate per bin ----------
     bin_stats = df_tmp.groupby("bin").agg(
