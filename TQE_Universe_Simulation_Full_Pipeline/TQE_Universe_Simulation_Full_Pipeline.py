@@ -1143,7 +1143,10 @@ def _save_df_safe(df_in, path):
 
 if MASTER_CTRL.get("RUN_XAI", True):
     # -------------------- Features & targets --------------------
-    X_feat = df[["E", "I", "X"]].copy()
+    if VARIANT == "energy_only":
+        X_feat = df[["E"]].copy()
+    else:
+        X_feat = df[["E", "I", "X"]].copy()
     y_cls  = df["stable"].astype(int).values
     reg_mask = df["lock_epoch"] >= 0
     X_reg = X_feat[reg_mask]
