@@ -241,7 +241,8 @@ MASTER_CTRL = {
         "cold_min_z_reg",  # regression: cold-spot minimum depth
         "aoe_flag_cls",    # classification: Axis-of-Evil presence
         "aoe_align_reg"    # regression: Axis-of-Evil alignment strength
-
+    ],
+    
     # --- Outputs / IO ---
     "SAVE_FIGS":            True,   # save plots to disk
     "SAVE_JSON":            True,   # save summary JSON
