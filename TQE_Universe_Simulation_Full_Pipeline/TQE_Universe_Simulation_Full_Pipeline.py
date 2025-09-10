@@ -56,7 +56,7 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        10000,   # number of universes in Monte Carlo run
+    "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
     "TIME_STEPS":           1000,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        700,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1000,    # epochs for expansion dynamics
@@ -109,7 +109,7 @@ MASTER_CTRL = {
 
     # --- Stability thresholds ---
     "REL_EPS_STABLE":       0.014,    # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       9e-3,     # relative calmness threshold for lock-in (~0.5%)
+    "REL_EPS_LOCKIN":       4e-3,     # relative calmness threshold for lock-in (~0.5%)
     "CALM_STEPS_STABLE":    8,       # consecutive calm steps required (stable)
     "CALM_STEPS_LOCKIN":    6,       # consecutive calm steps required (lock-in)
     "MIN_LOCKIN_EPOCH":     120,      # lock-in can only occur after this epoch
@@ -130,8 +130,8 @@ MASTER_CTRL = {
     "SPLINE_K":             3,      # spline order for smoothing (3=cubic)
 
     # --- Noise shaping (lock-in loop) ---
-    "EXP_NOISE_BASE":       0.11,   # baseline noise for updates (sigma0)
-    "LL_BASE_NOISE":        5e-4,   # absolute noise floor (never go below this)
+    "EXP_NOISE_BASE":       0.10,   # baseline noise for updates (sigma0)
+    "LL_BASE_NOISE":        3e-4,   # absolute noise floor (never go below this)
     "NOISE_DECAY_TAU":      300,    # e-folding time for noise decay (epochs)
     "NOISE_FLOOR_FRAC":     0.15,   # fraction of initial sigma preserved by decay
     "NOISE_COEFF_A":        1.0,    # per-variable noise multiplier (A)
