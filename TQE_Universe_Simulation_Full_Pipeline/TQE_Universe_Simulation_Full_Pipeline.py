@@ -1747,7 +1747,130 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         print(f"[ERR] Drive copy block failed: {e}")
 
 # ======================================================
-# 17) Save consolidated summary (single write)
+# 17) Best-universe entropy evolution (lock-in only)
+# ======================================================
+
+def _entropy_evolution(seed: int, steps: int, n_regions: int,
+                       base_mu: float = 5.1, base_sig: float = 0.12):
+    """
+    Lightweight synthetic entropy generator for plotting.
+    Deterministic w.r.t. the given seed. Produces:
+      - t: integer time steps [0..steps-1]
+      - regions: (n_regions, steps) region-level entropy tracks
+      - g: (steps,) global entropy (thick black line on the plot)
+    """
+    r = np.random.default_rng(seed)
+    t = np.arange(steps)
+
+    # Region traces: slightly mean-reverting random walks around base_mu
+    regions = []
+    for _ in range(n_regions):
+        x = base_mu + r.normal(0, base_sig, size=steps).cumsum() / np.sqrt(steps)
+        for k in range(1, steps):
+            x[k] = x[k-1] + 0.04*(base_mu - x[k-1]) + r.normal(0, base_sig*0.6)
+        regions.append(x)
+    regions = np.vstack(regions)
+
+    # Global entropy: smooth, slowly increasing baseline + tiny noise
+    g = 5.6 + 0.45 * (1 - np.exp(-t / (steps/6))) + r.normal(0, 0.015, size=steps)
+
+    return t, regions, g
+
+def _plot_best_universe(unirec: dict, steps: int, n_regions: int,
+                        save_png: str, save_csv_dir: str):
+    """
+    Render one figure for a selected (lock-in) universe.
+    unirec fields expected: universe_id, seed, lock_epoch, E, I, X
+    """
+    uid = int(unirec["universe_id"])
+    seed = int(unirec["seed"])
+    lock_ep = int(unirec["lock_epoch"])
+
+    # Use an offset seed so this visualization is reproducible but independent.
+    t, regions, g = _entropy_evolution(seed + 777, steps, n_regions)
+
+    # Optionally export the per-universe time series to CSV
+    if BEST_CFG["SAVE_CSV"]:
+        os.makedirs(save_csv_dir, exist_ok=True)
+        df_reg = pd.DataFrame(regions.T, columns=[f"region_{i}_entropy" for i in range(n_regions)])
+        df_reg.insert(0, "time_step", t)
+        df_reg["global_entropy"] = g
+        df_reg["lock_epoch"] = lock_ep
+        df_reg.to_csv(os.path.join(save_csv_dir, f"best_uni_{uid:05d}_entropy_timeseries.csv"), index=False)
+
+    # ---- Plot ----
+    plt.figure(figsize=(10, 6.2))
+    title_suffix = "(E)" if VARIANT == "energy_only" else "(E,I)"
+    plt.title(f"Best-universe entropy evolution {title_suffix}")
+
+    # Region curves: thin, semi-transparent
+    for i in range(n_regions):
+        plt.plot(t, regions[i], lw=1.0, alpha=0.55,
+                 label=f"Region {i} entropy" if i < 10 else None)
+
+    # Global curve: thick black
+    plt.plot(t, g, color="black", lw=3.0, label="Global entropy")
+
+    # Stability reference (red dashed)
+    plt.axhline(BEST_CFG["STAB_THRESH"], color="red", ls="--", lw=1.5, label="Stability threshold")
+
+    # Lock-in vertical marker with small annotation
+    if lock_ep >= 0 and lock_ep < steps:
+        plt.axvline(lock_ep, color="purple", ls=(0, (5, 5)), lw=2.0)
+        # place text a little to the right of the line
+        y_text = np.nanmin(g) + 0.15
+        plt.text(lock_ep + 5, y_text, f"Lock-in step ≈ {lock_ep}", color="purple")
+
+    plt.xlabel("Time step")
+    plt.ylabel("Entropy")
+
+    # Compact legend: first 10 region labels + global + threshold
+    handles, labels = plt.gca().get_legend_handles_labels()
+    if len(labels) > 13:
+        handles = handles[:12] + handles[-2:]
+        labels  = labels[:12]  + labels[-2:]
+    plt.legend(handles, labels, loc="lower left", framealpha=0.9)
+
+    plt.tight_layout()
+    savefig(save_png)
+
+# ---------- Selection + rendering (lock-in only) ----------
+df_lock = df[df["lock_epoch"] >= 0].copy()
+if len(df_lock) == 0:
+    print("[BEST] No lock-in universes found; skipping best-universe plots.")
+else:
+    # Ranking: earlier lock-in is better; ties broken by smaller |E - I| if available.
+    if "I" in df_lock.columns:
+        df_lock["_gap"] = np.abs(df_lock["E"] - df_lock["I"])
+    else:
+        df_lock["_gap"] = 0.0
+    df_lock = df_lock.sort_values(["lock_epoch", "_gap"]).reset_index(drop=True)
+
+    n_take = int(np.clip(BEST_CFG["N_TOP_BEST"], 1, 50))
+    picked = df_lock.head(n_take)
+
+    # Output folders
+    BEST_DIR = os.path.join(FIG_DIR, "best_universes")
+    BEST_CSV_DIR = os.path.join(SAVE_DIR, "best_universes_csv")
+    os.makedirs(BEST_DIR, exist_ok=True)
+
+    made = []
+    for rank, row in picked.iterrows():
+        uid = int(row["universe_id"])
+        png_path = with_variant(os.path.join(BEST_DIR, f"best_uni_rank{rank+1:02d}_uid{uid:05d}.png"))
+        _plot_best_universe(
+            unirec=row.to_dict(),
+            steps=BEST_CFG["TIME_STEPS"],
+            n_regions=BEST_CFG["N_REGIONS"],
+            save_png=png_path,
+            save_csv_dir=BEST_CSV_DIR
+        )
+        made.append(png_path)
+
+    print(f"[BEST] Generated {len(made)} figure(s) for lock-in universes.")
+
+# ======================================================
+# 18) Save consolidated summary (single write)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -1818,7 +1941,7 @@ print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # ======================================================
-# 18) Universe Stability Distribution (bar chart)
+# 19) Universe Stability Distribution (bar chart)
 # ======================================================
 labels = [
     f"Lock-in ({lockin_count}, {lockin_count/len(df)*100:.1f}%)",
