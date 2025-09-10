@@ -57,9 +57,9 @@ except Exception:
 MASTER_CTRL = {
     # --- Core simulation ---
     "NUM_UNIVERSES":        10000,   # number of universes in Monte Carlo run
-    "TIME_STEPS":           800,    # epochs per stability run (if used elsewhere)
-    "LOCKIN_EPOCHS":        500,    # epochs for law lock-in dynamics
-    "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
+    "TIME_STEPS":           1000,    # epochs per stability run (if used elsewhere)
+    "LOCKIN_EPOCHS":        700,    # epochs for law lock-in dynamics
+    "EXPANSION_EPOCHS":     1000,    # epochs for expansion dynamics
     "SEED":                 None,   # master RNG seed (auto-generated if None)
     "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
 
@@ -108,13 +108,13 @@ MASTER_CTRL = {
     "FL_EXP_I_JITTER":       0.04,     # small jitter for I track
 
     # --- Stability thresholds ---
-    "REL_EPS_STABLE":       0.010,    # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       4e-3,     # relative calmness threshold for lock-in (~0.5%)
-    "CALM_STEPS_STABLE":    10,       # consecutive calm steps required (stable)
-    "CALM_STEPS_LOCKIN":    10,       # consecutive calm steps required (lock-in)
-    "MIN_LOCKIN_EPOCH":     200,      # lock-in can only occur after this epoch
-    "LOCKIN_WINDOW":        10,       # rolling window size for averaging delta_rel
-    "LOCKIN_ROLL_METRIC":   "median", # "mean" | "median" | "max" — aggregator over window
+    "REL_EPS_STABLE":       0.014,    # relative calmness threshold for stability
+    "REL_EPS_LOCKIN":       9e-3,     # relative calmness threshold for lock-in (~0.5%)
+    "CALM_STEPS_STABLE":    8,       # consecutive calm steps required (stable)
+    "CALM_STEPS_LOCKIN":    6,       # consecutive calm steps required (lock-in)
+    "MIN_LOCKIN_EPOCH":     120,      # lock-in can only occur after this epoch
+    "LOCKIN_WINDOW":        6,       # rolling window size for averaging delta_rel
+    "LOCKIN_ROLL_METRIC":   "mean", # "mean" | "median" | "max" — aggregator over window
     "LOCKIN_REQUIRES_STABLE": True,   # require stable_at before checking lock-in
     "LOCKIN_MIN_STABLE_EPOCH": 0,     # require n - stable_at >= this many epochs
 
@@ -122,18 +122,18 @@ MASTER_CTRL = {
     "GOLDILOCKS_MODE":      "dynamic",  # "heuristic" | "dynamic"
     "E_CENTER":             4.0,    # heuristic: energy sweet-spot center (used for X window)
     "E_WIDTH":              4.0,    # heuristic: energy sweet-spot width (used for X window)
-    "GOLDILOCKS_THRESHOLD": 0.85,   # dynamic: fraction of max stability to define zone
+    "GOLDILOCKS_THRESHOLD": 0.75,   # dynamic: fraction of max stability to define zone
     "GOLDILOCKS_MARGIN":    0.10,   # dynamic fallback margin around peak (±10%)
-    "SIGMA_ALPHA":          1.5,    # curvature inside Goldilocks (sigma shaping)
-    "OUTSIDE_PENALTY":      5,      # sigma multiplier outside Goldilocks zone
+    "SIGMA_ALPHA":          1.0,    # curvature inside Goldilocks (sigma shaping)
+    "OUTSIDE_PENALTY":      3.0,      # sigma multiplier outside Goldilocks zone
     "STAB_BINS":            40,     # number of bins in stability curve
     "SPLINE_K":             3,      # spline order for smoothing (3=cubic)
 
     # --- Noise shaping (lock-in loop) ---
-    "EXP_NOISE_BASE":       0.15,   # baseline noise for updates (sigma0)
-    "LL_BASE_NOISE":        8e-4,   # absolute noise floor (never go below this)
-    "NOISE_DECAY_TAU":      500,    # e-folding time for noise decay (epochs)
-    "NOISE_FLOOR_FRAC":     0.25,   # fraction of initial sigma preserved by decay
+    "EXP_NOISE_BASE":       0.11,   # baseline noise for updates (sigma0)
+    "LL_BASE_NOISE":        5e-4,   # absolute noise floor (never go below this)
+    "NOISE_DECAY_TAU":      300,    # e-folding time for noise decay (epochs)
+    "NOISE_FLOOR_FRAC":     0.15,   # fraction of initial sigma preserved by decay
     "NOISE_COEFF_A":        1.0,    # per-variable noise multiplier (A)
     "NOISE_COEFF_NS":       0.10,   # per-variable noise multiplier (ns)
     "NOISE_COEFF_H":        0.20,   # per-variable noise multiplier (H)
