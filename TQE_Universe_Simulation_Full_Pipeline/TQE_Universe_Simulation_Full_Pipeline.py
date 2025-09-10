@@ -216,7 +216,14 @@ def with_variant(path: str) -> str:
     return f"{root}_{tag}{ext}"
 
 # Output dirs
-run_id = MASTER_CTRL["RUN_ID_PREFIX"] + VARIANT + "_" + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
+if VARIANT == "energy_only":
+    variant_tag = "E-Only"
+elif VARIANT == "full":
+    variant_tag = "E+I"
+else:
+    variant_tag = VARIANT
+
+run_id = MASTER_CTRL["RUN_ID_PREFIX"] + variant_tag + "_" + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
 SAVE_DIR = os.path.join(os.getcwd(), run_id)
 FIG_DIR  = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
