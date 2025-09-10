@@ -1975,39 +1975,35 @@ def _variant_label():
     # Build a short label for the plot title based on the pipeline variant
     return "E-only" if VARIANT == "energy_only" else "E+I"
 
+# --- make categories mutually exclusive ---
 total_n = int(len(df))
-lockin_count = int((df["lock_epoch"] >= 0).sum())
-stable_count  = int(df["stable"].sum())
-unstable_count = int(total_n - stable_count)
+lockin_count   = int((df["lock_epoch"] >= 0).sum())
+stable_total   = int(df["stable"].sum())
+stable_only    = max(0, stable_total - lockin_count)  # stable but NOT lock-in
+unstable_count = int(total_n - stable_total)
 
-values = np.array([lockin_count, stable_count, unstable_count], dtype=float)
+values = np.array([lockin_count, stable_only, unstable_count], dtype=float)
 perc   = (values / max(1, total_n)) * 100.0
 
-# Pretty three-category chart (with counts + percents under each bar)
 plt.figure(figsize=(8.5, 7))
-bars = plt.bar([0, 1, 2], values, edgecolor="black",
-               color=["#6aaed6", "#2ca02c", "#d62728"])  # blue, green, red
+bars = plt.bar([0,1,2], values, edgecolor="black",
+               color=["#6aaed6", "#2ca02c", "#d62728"])
 
-# Put the count above each bar (optional, readable even for tiny lock-in)
+# counts above bars
 for i, b in enumerate(bars):
     y = b.get_height()
-    plt.text(b.get_x() + b.get_width()/2.0, y + (0.01*total_n),
+    plt.text(b.get_x()+b.get_width()/2.0, y + (0.01*total_n),
              f"{int(values[i])}", ha="center", va="bottom", fontsize=10)
 
-# X tick labels with two-line captions: name + (count, percent)
 xtick_labels = [
     f"Lock-in\n({lockin_count}, {perc[0]:.1f}%)",
-    f"Stable\n({stable_count}, {perc[1]:.1f}%)",
+    f"Stable (no lock-in)\n({stable_only}, {perc[1]:.1f}%)",
     f"Unstable\n({unstable_count}, {perc[2]:.1f}%)",
 ]
 plt.xticks([0,1,2], xtick_labels, fontsize=12)
-
 plt.ylabel("Number of Universes")
-plt.title(f"Universe Stability Distribution ({_variant_label()}) — three categories")
-
-# A little headroom so the numbers above bars are visible
+plt.title(f"Universe Stability Distribution ({'E-only' if VARIANT=='energy_only' else 'E+I'}) — three categories")
 plt.ylim(0, max(values)*1.12 + 1)
-
 plt.tight_layout()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png")))
 
