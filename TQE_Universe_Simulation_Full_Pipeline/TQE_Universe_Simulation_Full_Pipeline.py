@@ -86,12 +86,13 @@ MASTER_CTRL = {
     "ALPHA_I":              0.8,        # coupling factor: strength of I in E·I (heuristics)
 
     # --- Fluctuation / superposition module toggles & params ---
-    "RUN_FLUCTUATION_BLOCK": True,     # turn on/off this entire section
+    "RUN_QUANTUM_FLUCT":     True,     # turn on/off this entire section
     "FL_SUPER_T":            10.0,     # duration for t<0 superposition plot (arb. units)
     "FL_SUPER_DT":           0.05,     # time step for superposition time series
     "FL_SUPER_DIM":          4,        # small Hilbert dim for toy density evolution
     "FL_SUPER_NOISE":        0.06,     # depolarizing-like noise amplitude
-    "FL_SUPER_KICK":         0.18,
+    "FL_SUPER_KICK":         0.18,     # Strength of random unitary kicks in superposition (t<0).  
+    "FL_FLUCT_OBS":           "Z",     # Observable for quantum fluctuation panel ("Z", "X", or "rand").  
 
     "FL_COLLAPSE_T_PRE":     0.22,     # window before t=0 (collapse)
     "FL_COLLAPSE_T_POST":    0.22,     # window after t=0
