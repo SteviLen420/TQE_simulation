@@ -1173,11 +1173,15 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
         y = dfq["p"].values
         yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
         plt.errorbar(mid, y, yerr=yerr, fmt='-o')
+
+    if VARIANT == "energy_only":
+        plt.title("Stability vs. E (Only E)")
+        plt.xlabel("E (quantile bins)")
+    else:
+        plt.title("Stability vs. |E - I| (Energy + Information)")
         plt.xlabel("|E - I| (quantile bins)")
-        plt.ylabel("P(stable)")
-        plt.title("Stability vs. |E - I|")
-        plt.tight_layout()
-        savefig(out_png)
+
+    savefig(out_png)
     return dfq
 
 def run_finetune_detector(df_in: pd.DataFrame):
