@@ -334,6 +334,41 @@ def _pauli_like(dim: int, axis: str = "Z"):
     scale = max(1.0, float(np.max(np.abs(eigs))))
     return (1.0/scale) * H
 
+def simulate_superposition_series(
+    T=10.0, dt=0.05, dim=4,
+    noise=0.03,              # depolarizing-like noise
+    kick=0.15,               # random unitary kick strength
+    obs_jitter=0.02,         # tiny measurement jitter
+    seed=None
+):
+    rgen = np.random.default_rng(seed)
+    n = int(np.ceil(T/dt)) + 1
+    times = np.linspace(0, T, n)
+
+    psi = qt.rand_ket(dim)
+    rho = psi.proj()
+
+    ent_list, pur_list = [], []
+    for _ in times:
+        H = qt.rand_herm(dim)
+        U = (1j * kick * H).expm()
+        rho = U * rho * U.dag()
+
+        z = np.clip(noise + rgen.normal(0, noise/3), 0.0, 0.25)
+        mix = qt.qeye(dim) / dim
+        rho = (1 - z) * rho + z * mix
+        rho = rho.unit()
+
+        S = qt.entropy_vn(rho, base=np.e)
+        P = float((rho*rho).tr().real)
+        S_norm = float(S / np.log(dim)) + rgen.normal(0, obs_jitter)
+        P_noisy = P + rgen.normal(0, obs_jitter)
+
+        ent_list.append(np.clip(S_norm, 0.0, 1.2))
+        pur_list.append(np.clip(P_noisy, 0.0, 1.0))
+
+    return times, np.array(ent_list), np.array(pur_list)
+
 def simulate_quantum_fluctuation_series(
     T=6.0, dt=0.02, dim=4,
     kick=0.12, noise=0.05,
