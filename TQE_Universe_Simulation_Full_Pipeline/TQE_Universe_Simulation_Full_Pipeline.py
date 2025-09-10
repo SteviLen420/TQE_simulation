@@ -108,12 +108,12 @@ MASTER_CTRL = {
     "FL_EXP_I_JITTER":       0.04,     # small jitter for I track
 
     # --- Stability thresholds ---
-    "REL_EPS_STABLE":       0.014,    # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       4e-3,     # relative calmness threshold for lock-in (~0.5%)
-    "CALM_STEPS_STABLE":    8,       # consecutive calm steps required (stable)
+    "REL_EPS_STABLE":       0.012,    # relative calmness threshold for stability
+    "REL_EPS_LOCKIN":       1.5e-3,     # relative calmness threshold for lock-in (~0.5%)
+    "CALM_STEPS_STABLE":    10,       # consecutive calm steps required (stable)
     "CALM_STEPS_LOCKIN":    6,       # consecutive calm steps required (lock-in)
-    "MIN_LOCKIN_EPOCH":     120,      # lock-in can only occur after this epoch
-    "LOCKIN_WINDOW":        6,       # rolling window size for averaging delta_rel
+    "MIN_LOCKIN_EPOCH":     300,      # lock-in can only occur after this epoch
+    "LOCKIN_WINDOW":        8,       # rolling window size for averaging delta_rel
     "LOCKIN_ROLL_METRIC":   "mean", # "mean" | "median" | "max" — aggregator over window
     "LOCKIN_REQUIRES_STABLE": True,   # require stable_at before checking lock-in
     "LOCKIN_MIN_STABLE_EPOCH": 0,     # require n - stable_at >= this many epochs
@@ -130,10 +130,10 @@ MASTER_CTRL = {
     "SPLINE_K":             3,      # spline order for smoothing (3=cubic)
 
     # --- Noise shaping (lock-in loop) ---
-    "EXP_NOISE_BASE":       0.10,   # baseline noise for updates (sigma0)
-    "LL_BASE_NOISE":        3e-4,   # absolute noise floor (never go below this)
-    "NOISE_DECAY_TAU":      300,    # e-folding time for noise decay (epochs)
-    "NOISE_FLOOR_FRAC":     0.15,   # fraction of initial sigma preserved by decay
+    "EXP_NOISE_BASE":       0.12,   # baseline noise for updates (sigma0)
+    "LL_BASE_NOISE":        5e-4,   # absolute noise floor (never go below this)
+    "NOISE_DECAY_TAU":      450,    # e-folding time for noise decay (epochs)
+    "NOISE_FLOOR_FRAC":     0.25,   # fraction of initial sigma preserved by decay
     "NOISE_COEFF_A":        1.0,    # per-variable noise multiplier (A)
     "NOISE_COEFF_NS":       0.10,   # per-variable noise multiplier (ns)
     "NOISE_COEFF_H":        0.20,   # per-variable noise multiplier (H)
