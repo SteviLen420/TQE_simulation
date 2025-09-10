@@ -86,7 +86,8 @@ MASTER_CTRL = {
     "ALPHA_I":              0.8,        # coupling factor: strength of I in E·I (heuristics)
 
     # --- Fluctuation / superposition module toggles & params ---
-    "RUN_QUANTUM_FLUCT":     True,     # turn on/off this entire section
+    "RUN_FLUCTUATION_BLOCK": True,  # Show the t<0 superposition, t=0 collapse, and t>0 expansion panels.
+    "RUN_QUANTUM_FLUCT":     True,  # Generate the standalone quantum-fluctuation time-series panel.
     "FL_SUPER_T":            10.0,     # duration for t<0 superposition plot (arb. units)
     "FL_SUPER_DT":           0.05,     # time step for superposition time series
     "FL_SUPER_DIM":          4,        # small Hilbert dim for toy density evolution
