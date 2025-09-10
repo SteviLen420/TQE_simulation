@@ -1083,6 +1083,103 @@ def _cm_counts(y_true, y_pred):
     fn = int(np.sum((y_true==1)&(y_pred==0)))
     return {"tp":tp,"fp":fp,"tn":tn,"fn":fn}
 
+# ---------- Fine-tune explainability helpers (E≈I) ----------
+def _wilson_interval(k, n, z=1.96):
+    """Wilson score interval for a binomial proportion (approx 95% with z=1.96)."""
+    if n == 0:
+        return (0.0, 0.0, 0.0)
+    p = k / n
+    denom = 1 + z**2 / n
+    center = (p + z**2/(2*n)) / denom
+    half = z * np.sqrt((p*(1-p) + z**2/(4*n)) / n) / denom
+    return (max(0.0, center - half), p, min(1.0, center + half))
+
+def _select_eps_by_share(gaps, target_share=0.20, min_n=30):
+    """
+    Pick epsilon so that about 'target_share' of samples fall into |E-I| <= eps,
+    while ensuring at least min_n samples inside and outside.
+    """
+    gaps = np.asarray(gaps)
+    gaps = gaps[np.isfinite(gaps)]
+    if len(gaps) == 0:
+        return None
+    # Start from the target quantile, then widen until both sides have >= min_n
+    q = np.clip(target_share, 0.01, 0.49)
+    cand = float(np.quantile(gaps, q))
+    for mult in [1.0, 1.5, 2.0, 3.0]:
+        eps = cand * mult
+        inside = int((gaps <= eps).sum())
+        outside = int((gaps >  eps).sum())
+        if inside >= min_n and outside >= min_n:
+            return eps
+    # Fallback: smallest value that yields min_n inside (kevesebb outside rizikó árán)
+    if len(gaps) >= min_n:
+        return float(np.sort(gaps)[min_n-1])
+    return cand  # last resort
+
+def _plot_two_bar_with_ci(labels, counts, totals, title, out_png):
+    """Two bars with Wilson CI whiskers; saves PNG."""
+    import matplotlib.pyplot as plt
+    lows, ps, highs = [], [], []
+    for k, n in zip(counts, totals):
+        lo, p, hi = _wilson_interval(k, n)
+        lows.append(p - lo)
+        highs.append(hi - p)
+        ps.append(p)
+    x = np.arange(len(labels))
+    plt.figure(figsize=(6,5))
+    plt.bar(x, ps, edgecolor="black")
+    # errorbars (CI)
+    plt.errorbar(x, ps, yerr=[lows, highs], fmt='none', capsize=6)
+    plt.xticks(x, labels, rotation=0)
+    plt.ylabel("P(stable)")
+    plt.title(title)
+    plt.tight_layout()
+    savefig(out_png)
+
+def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
+    """
+    Make a quantile-binned curve of stability vs |E-I|.
+    Returns a DataFrame with columns: q_lo, q_hi, gap_lo, gap_hi, n, stable_n, p.
+    """
+    dx = np.abs(df_in["E"] - df_in["I"]).values
+    mask = np.isfinite(dx)
+    dx = dx[mask]
+    st = df_in["stable"].astype(int).values[mask]
+    if len(dx) == 0:
+        return pd.DataFrame()
+    qs = np.linspace(0, 1, qbins+1)
+    edges = np.quantile(dx, qs)
+    # Ensure monotonic (numerical safety)
+    edges = np.unique(edges)
+    rows = []
+    for i in range(len(edges)-1):
+        lo, hi = edges[i], edges[i+1] if i+1 < len(edges) else edges[-1]
+        m = (dx >= lo) & (dx <= hi if i+1 == len(edges)-1 else dx < hi)
+        n = int(m.sum()); k = int(st[m].sum())
+        lo_ci, p_hat, hi_ci = _wilson_interval(k, n)
+        rows.append({
+            "q_lo": qs[i], "q_hi": qs[i+1] if i+1 < len(qs) else 1.0,
+            "gap_lo": float(lo), "gap_hi": float(hi),
+            "n": n, "stable_n": k, "p": p_hat,
+            "ci_lo": lo_ci, "ci_hi": hi_ci
+        })
+    dfq = pd.DataFrame(rows)
+    if out_csv:
+        dfq.to_csv(out_csv, index=False)
+    if out_png:
+        plt.figure(figsize=(7,5))
+        mid = 0.5*(dfq["gap_lo"]+dfq["gap_hi"])
+        y = dfq["p"].values
+        yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
+        plt.errorbar(mid, y, yerr=yerr, fmt='-o')
+        plt.xlabel("|E - I| (quantile bins)")
+        plt.ylabel("P(stable)")
+        plt.title("Stability vs. |E - I|")
+        plt.tight_layout()
+        savefig(out_png)
+    return dfq
+
 def run_finetune_detector(df_in: pd.DataFrame):
     """
     Train/test comparator:
@@ -1187,41 +1284,59 @@ def run_finetune_detector(df_in: pd.DataFrame):
         out["files"]["metrics_reg_csv"] = reg_csv
         out["metrics"]["reg"] = {"E": rE, "EIX": rEIX}
 
-    # --- E≈I slice analysis ---
+    # --- E≈I slice analysis (adaptive, with CI & full exports) ---
     if all(c in df_in.columns for c in ["E","I"]):
-        eps = MASTER_CTRL.get("FT_EPS_EQ", 1e-3)
+        gaps = np.abs(df_in["E"] - df_in["I"]).values
+        # pick epsilon so both slices have enough samples
+        eps_auto = _select_eps_by_share(gaps, target_share=0.20,
+                                        min_n=MASTER_CTRL.get("FT_MIN_PER_SLICE", 30))
+        eps = float(MASTER_CTRL.get("FT_EPS_EQ", eps_auto if eps_auto is not None else 1e-3))
+        # If user fixed FT_EPS_EQ but it yields empty slice, fall back to auto
+        m_eq_try = (np.abs(df_in["E"] - df_in["I"]) <= eps)
+        if m_eq_try.sum() == 0 or (~m_eq_try).sum() == 0:
+            if eps_auto is not None:
+                eps = float(eps_auto)
+
         m_eq  = (np.abs(df_in["E"] - df_in["I"]) <= eps)
         m_neq = ~m_eq
+
         def _slice(mask, name):
             n = int(mask.sum())
             st = int(df_in.loc[mask, "stable"].sum())
-            lk = int((df_in.loc[mask, "lock_epoch"] >= 0).sum())
+            lo_ci, p_hat, hi_ci = _wilson_interval(st, n)
+            lk = int((df_in.loc[mask, "lock_epoch"] >= 0).sum()) if "lock_epoch" in df_in.columns else 0
             return {
-                "slice": name,
-                "n": n,
-                "stable_n": st,
-                "stable_ratio": (st/n) if n>0 else float("nan"),
-                "lockin_n": lk,
-                "lockin_ratio": (lk/n) if n>0 else float("nan")
+                "slice": name, "eps": eps,
+                "n": n, "stable_n": st, "p_stable": p_hat,
+                "ci_lo": lo_ci, "ci_hi": hi_ci,
+                "lockin_n": lk, "p_lockin": (lk/n) if n>0 else float("nan")
             }
-        s_eq  = _slice(m_eq,  f"|E-I| <= {eps}")
-        s_neq = _slice(m_neq, f"|E-I| >  {eps}")
-        sl_df = pd.DataFrame([s_eq, s_neq])
-        sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_EeqI.csv"))
+
+        s_eq  = _slice(m_eq,  f"|E-I| ≤ {eps:.3g}")
+        s_neq = _slice(m_neq, f"|E-I| > {eps:.3g}")
+        sl_df = pd.DataFrame([s_eq, s_neq]).sort_values("slice")
+        sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_EeqI_adaptive.csv"))
         sl_df.to_csv(sl_csv, index=False)
         out["files"]["slice_csv"] = sl_csv
 
-        # quick barplot
-        plt.figure(figsize=(6,4))
-        labels = [s_eq["slice"], s_neq["slice"]]
-        vals   = [s_eq["stable_ratio"], s_neq["stable_ratio"]]
-        plt.bar(labels, vals, edgecolor="black")
-        plt.ylabel("P(stable)")
-        plt.title("Stability by E≈I slice")
-        plt.tight_layout()
-        bar_png = with_variant(os.path.join(FIG_DIR, "ft_slice_EeqI.png"))
-        savefig(bar_png)
+        # Two-bar plot with Wilson CI
+        bar_png = with_variant(os.path.join(FIG_DIR, "ft_slice_EeqI_adaptive.png"))
+        _plot_two_bar_with_ci(
+            labels=sl_df["slice"].tolist(),
+            counts=sl_df["stable_n"].tolist(),
+            totals=sl_df["n"].tolist(),
+            title="Stability by E≈I (adaptive epsilon)",
+            out_png=bar_png
+        )
         out["files"]["slice_png"] = bar_png
+
+        # Stability vs |E-I| quantile curve + CSV
+        q_csv = with_variant(os.path.join(SAVE_DIR, "ft_stability_vs_gap_quantiles.csv"))
+        q_png = with_variant(os.path.join(FIG_DIR, "ft_stability_vs_gap_quantiles.png"))
+        _stability_vs_gap_quantiles(df_in, qbins=MASTER_CTRL.get("FT_GAP_QBINS", 10),
+                                    out_csv=q_csv, out_png=q_png)
+        out["files"]["gap_quantiles_csv"] = q_csv
+        out["files"]["gap_quantiles_png"] = q_png
 
     # --- delta table (EIX – E) for quick view ---
     delta = {
