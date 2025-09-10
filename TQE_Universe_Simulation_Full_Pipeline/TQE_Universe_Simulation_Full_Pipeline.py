@@ -142,6 +142,12 @@ MASTER_CTRL = {
     "EXP_GROWTH_BASE":      1.005,  # baseline exponential growth rate
     # (EXP_NOISE_BASE above is reused as expansion amplitude baseline)
 
+    # --- Finetune / ablation detector ---
+    "RUN_FINETUNE_DETECTOR": True,  # turn on/off the comparator block
+    "FT_EPS_EQ":             1e-3,  # threshold for E≈I slice (|E - I| <= eps)
+    "FT_TEST_SIZE":          0.25,  # test split for the detector
+    "FT_RANDOM_STATE":       42,    # reproducibility for splits
+
     # --- Machine Learning / XAI ---
     "RUN_XAI":              True,   # master switch for XAI section
     "RUN_SHAP":             True,   # SHAP on/off
@@ -1032,6 +1038,7 @@ summary = {
         "fl_superposition": with_variant(os.path.join(FIG_DIR, "fl_superposition.png")),
         "fl_collapse":      with_variant(os.path.join(FIG_DIR, "fl_collapse.png")),
         "fl_expansion":     with_variant(os.path.join(FIG_DIR, "fl_expansion.png")),
+        "ft_slice_EeqI": ft_result.get("files", {}).get("slice_png")
     },
     "artifacts": {
         "tqe_runs_csv": with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")),
@@ -1043,6 +1050,15 @@ summary = {
         "fl_superposition_csv": with_variant(os.path.join(SAVE_DIR, "fl_superposition_timeseries.csv")),
         "fl_collapse_csv":      with_variant(os.path.join(SAVE_DIR, "fl_collapse_timeseries.csv")),
         "fl_expansion_csv":     with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv")),
+        "ft_metrics_cls_csv": ft_result.get("files", {}).get("metrics_cls_csv"),
+        "ft_metrics_reg_csv": ft_result.get("files", {}).get("metrics_reg_csv"),
+        "ft_slice_EeqI_csv":  ft_result.get("files", {}).get("slice_csv"),
+        "ft_delta_summary_csv": ft_result.get("files", {}).get("delta_csv")
+    },
+        "finetune_detector": {
+        "enabled": bool(MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True)),
+        "metrics": ft_result.get("metrics", {}),
+        "artifacts": ft_result.get("files", {})
     },
     "meta": {
         "code_version": "2025-09-03a",
@@ -1121,8 +1137,203 @@ print("\n📈 Epsilon sweep (near-zero thresholds, preview):")
 print(eps_df.head(12).to_string(index=False))
 print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
 
+# --- Finetune detector (E vs E+I(+X)) ---
+ft_result = {}
+if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True):
+    print("[FT] Running finetune/ablation detector (E vs E+I(+X)) ...")
+    try:
+        ft_result = run_finetune_detector(df)
+        print("[FT] Done.")
+    except Exception as e:
+        print(f"[FT][ERR] Detector failed: {e}")
+
 # ======================================================
-# 16) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
+# 16) Finetune Detector (E vs E+I(+X))
+# ======================================================
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
+import itertools
+
+def _safe_auc(y_true, y_proba):
+    try:
+        if len(np.unique(y_true)) < 2:
+            return float("nan")
+        return float(roc_auc_score(y_true, y_proba))
+    except Exception:
+        return float("nan")
+
+def _cm_counts(y_true, y_pred):
+    # tp, fp, tn, fn simple counts
+    y_true = np.asarray(y_true).astype(int)
+    y_pred = np.asarray(y_pred).astype(int)
+    tp = int(np.sum((y_true==1)&(y_pred==1)))
+    tn = int(np.sum((y_true==0)&(y_pred==0)))
+    fp = int(np.sum((y_true==0)&(y_pred==1)))
+    fn = int(np.sum((y_true==1)&(y_pred==0)))
+    return {"tp":tp,"fp":fp,"tn":tn,"fn":fn}
+
+def run_finetune_detector(df_in: pd.DataFrame):
+    """
+    Train/test comparator:
+      - Model_E:      features = ['E']
+      - Model_EIX:    features = subset available from ['E','I','X'] in df
+    Saves: CSV metrics, ROC (ha értelmezhető), E≈I slice CSV + barplot.
+    Returns: dict (metrics + filepaths) for summary
+    """
+    out = {"metrics": {}, "files": {}}
+    if df_in is None or len(df_in)==0:
+        return out
+
+    # --- Classification target ---
+    y = df_in["stable"].astype(int).values
+    # --- Feature sets (only use cols that actually exist) ---
+    cols_e   = [c for c in ["E"] if c in df_in.columns]
+    cols_eix = [c for c in ["E","I","X"] if c in df_in.columns]
+
+    X_E   = df_in[cols_e].copy()
+    X_EIX = df_in[cols_eix].copy()
+
+    # --- Train/test split (same indices for fair compare) ---
+    idx = np.arange(len(df_in))
+    Xtr_idx, Xte_idx = train_test_split(
+        idx, test_size=MASTER_CTRL.get("FT_TEST_SIZE", 0.25),
+        random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42),
+        stratify=y if (len(np.unique(y))==2 and (y==0).sum()>=2 and (y==1).sum()>=2) else None
+    )
+
+    def _fit_cls(Xdf, label):
+        if len(np.unique(y[Xtr_idx])) < 2:
+            return {
+                "label": label, "acc": float("nan"), "auc": float("nan"),
+                "cm": {"tp":0,"fp":0,"tn":0,"fn":0}
+            }
+        clf = RandomForestClassifier(
+            n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
+            random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42),
+            n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS", -1),
+            class_weight=MASTER_CTRL.get("RF_CLASS_WEIGHT", None)
+        )
+        clf.fit(Xdf.iloc[Xtr_idx], y[Xtr_idx])
+        yp = clf.predict(Xdf.iloc[Xte_idx])
+        acc = float(accuracy_score(y[Xte_idx], yp))
+        # proba for AUC
+        try:
+            proba = clf.predict_proba(Xdf.iloc[Xte_idx])[:,1]
+        except Exception:
+            proba = yp.astype(float)  # fallback
+        auc  = _safe_auc(y[Xte_idx], proba)
+        cm   = _cm_counts(y[Xte_idx], yp)
+        # optional: save feature importances
+        fi_df = pd.DataFrame({
+            "feature": Xdf.columns, "importance": getattr(clf, "feature_importances_", np.zeros(len(Xdf.columns)))
+        }).sort_values("importance", ascending=False)
+        fi_csv = with_variant(os.path.join(FIG_DIR, f"ft_feat_importance_{label}.csv"))
+        fi_df.to_csv(fi_csv, index=False)
+        out["files"][f"feat_importance_{label}"] = fi_csv
+        return {"label":label, "acc":acc, "auc":auc, "cm":cm}
+
+    # --- Fit both classifiers ---
+    mE   = _fit_cls(X_E,   "E")
+    mEIX = _fit_cls(X_EIX, "EIX")
+    met_df = pd.DataFrame([mE, mEIX])
+    met_csv = with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.csv"))
+    met_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.json")), indent=2)
+    met_df.to_csv(met_csv, index=False)
+    out["files"]["metrics_cls_csv"] = met_csv
+    out["metrics"]["cls"] = {"E": mE, "EIX": mEIX}
+
+    # --- Optional regression on lock_epoch ---
+    reg_mask = df_in["lock_epoch"] >= 0
+    out["metrics"]["reg"] = {}
+    if reg_mask.sum() >= MASTER_CTRL.get("REGRESSION_MIN", 10):
+        yr = df_in.loc[reg_mask, "lock_epoch"].values
+        XR_E   = df_in.loc[reg_mask, cols_e].copy()
+        XR_EIX = df_in.loc[reg_mask, cols_eix].copy()
+
+        # single split for comparability
+        ridx = np.arange(len(XR_E))
+        Rtr, Rte = train_test_split(
+            ridx, test_size=MASTER_CTRL.get("FT_TEST_SIZE", 0.25),
+            random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42)
+        )
+
+        def _fit_reg(Xdf, label):
+            reg = RandomForestRegressor(
+                n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
+                random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42),
+                n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS", -1)
+            )
+            reg.fit(Xdf.iloc[Rtr], yr[Rtr])
+            r2 = float(r2_score(yr[Rte], reg.predict(Xdf.iloc[Rte])))
+            return {"label": label, "r2": r2}
+
+        rE   = _fit_reg(XR_E,   "E")
+        rEIX = _fit_reg(XR_EIX, "EIX")
+        reg_df  = pd.DataFrame([rE, rEIX])
+        reg_csv = with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.csv"))
+        reg_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.json")), indent=2)
+        reg_df.to_csv(reg_csv, index=False)
+        out["files"]["metrics_reg_csv"] = reg_csv
+        out["metrics"]["reg"] = {"E": rE, "EIX": rEIX}
+
+    # --- E≈I slice analysis ---
+    if all(c in df_in.columns for c in ["E","I"]):
+        eps = MASTER_CTRL.get("FT_EPS_EQ", 1e-3)
+        m_eq  = (np.abs(df_in["E"] - df_in["I"]) <= eps)
+        m_neq = ~m_eq
+        def _slice(mask, name):
+            n = int(mask.sum())
+            st = int(df_in.loc[mask, "stable"].sum())
+            lk = int((df_in.loc[mask, "lock_epoch"] >= 0).sum())
+            return {
+                "slice": name,
+                "n": n,
+                "stable_n": st,
+                "stable_ratio": (st/n) if n>0 else float("nan"),
+                "lockin_n": lk,
+                "lockin_ratio": (lk/n) if n>0 else float("nan")
+            }
+        s_eq  = _slice(m_eq,  f"|E-I| <= {eps}")
+        s_neq = _slice(m_neq, f"|E-I| >  {eps}")
+        sl_df = pd.DataFrame([s_eq, s_neq])
+        sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_EeqI.csv"))
+        sl_df.to_csv(sl_csv, index=False)
+        out["files"]["slice_csv"] = sl_csv
+
+        # quick barplot
+        plt.figure(figsize=(6,4))
+        labels = [s_eq["slice"], s_neq["slice"]]
+        vals   = [s_eq["stable_ratio"], s_neq["stable_ratio"]]
+        plt.bar(labels, vals, edgecolor="black")
+        plt.ylabel("P(stable)")
+        plt.title("Stability by E≈I slice")
+        plt.tight_layout()
+        bar_png = with_variant(os.path.join(FIG_DIR, "ft_slice_EeqI.png"))
+        savefig(bar_png)
+        out["files"]["slice_png"] = bar_png
+
+    # --- delta table (EIX – E) for quick view ---
+    delta = {
+        "acc_delta": (mEIX["acc"] - mE["acc"]) if np.isfinite(mEIX["acc"]) and np.isfinite(mE["acc"]) else float("nan"),
+        "auc_delta": (mEIX["auc"] - mE["auc"]) if np.isfinite(mEIX["auc"]) and np.isfinite(mE["auc"]) else float("nan"),
+    }
+    if "reg" in out["metrics"] and out["metrics"]["reg"]:
+        rE   = out["metrics"]["reg"].get("E",   {"r2": float("nan")})
+        rEIX = out["metrics"]["reg"].get("EIX", {"r2": float("nan")})
+        delta["r2_delta"] = (rEIX["r2"] - rE["r2"]) if np.isfinite(rEIX["r2"]) and np.isfinite(rE["r2"]) else float("nan")
+
+    out["metrics"]["delta"] = delta
+
+    # Save a compact CSV for deltas
+    pd.DataFrame([delta]).to_csv(with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv")), index=False)
+    out["files"]["delta_csv"] = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
+
+    return out
+
+# ======================================================
+# 17) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
 # ======================================================
 
 # --- Ensure classifier var exists even if RUN_XAI=False (for LIME guard) ---
@@ -1380,7 +1591,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
         
             
 # ======================================================
-# 17) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
+# 18) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
 # ======================================================
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     try:
