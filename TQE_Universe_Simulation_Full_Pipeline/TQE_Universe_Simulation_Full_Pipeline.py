@@ -1005,25 +1005,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     savefig(with_variant(os.path.join(FIG_DIR, "fl_expansion.png")))
 
 # ======================================================
-# 13) Universe Stability Distribution (bar chart)
-# ======================================================
-labels = [
-    f"Lock-in ({lockin_count}, {lockin_count/len(df)*100:.1f}%)",
-    f"Stable ({stable_count}, {stable_count/len(df)*100:.1f}%)",
-    f"Unstable ({unstable_count}, {unstable_count/len(df)*100:.1f}%)"
-]
-values = [lockin_count, stable_count, unstable_count]
-colors = ["blue", "green", "red"]  # fixed colors for categories
-
-plt.figure(figsize=(7,6))
-plt.bar(labels, values, color=colors, edgecolor="black")
-plt.ylabel("Number of Universes")
-plt.title("Universe Stability Distribution")
-plt.tight_layout()
-savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
-
-# ======================================================
-# 14) Stability by I (exact zero vs eps sweep) — extended
+# 13) Stability by I (exact zero vs eps sweep) — extended
 # ======================================================
 def _stability_stats(mask: pd.Series, label: str):
     total = int(mask.sum())
@@ -1077,7 +1059,7 @@ if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True):
         print(f"[FT][ERR] Detector failed: {e}")
 
 # ======================================================
-# 15) Finetune Detector (E vs E+I(+X))
+# 14) Finetune Detector (E vs E+I(+X))
 # ======================================================
 
 from sklearn.model_selection import train_test_split
@@ -1262,7 +1244,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
     return out
 
 # ======================================================
-# 16) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
+# 15) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
 # ======================================================
 
 # --- Ensure classifier var exists even if RUN_XAI=False (for LIME guard) ---
@@ -1520,7 +1502,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
         
             
 # ======================================================
-# 17) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
+# 16) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
 # ======================================================
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     try:
@@ -1614,7 +1596,7 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         print(f"[ERR] Drive copy block failed: {e}")
 
 # ======================================================
-# 18) Save consolidated summary (single write)
+# 17) Save consolidated summary (single write)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -1683,4 +1665,23 @@ print(f"Total universes: {len(df)}")
 print(f"Stable:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
 print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
+
+# ======================================================
+# 18) Universe Stability Distribution (bar chart)
+# ======================================================
+labels = [
+    f"Lock-in ({lockin_count}, {lockin_count/len(df)*100:.1f}%)",
+    f"Stable ({stable_count}, {stable_count/len(df)*100:.1f}%)",
+    f"Unstable ({unstable_count}, {unstable_count/len(df)*100:.1f}%)"
+]
+values = [lockin_count, stable_count, unstable_count]
+colors = ["blue", "green", "red"]  # fixed colors for categories
+
+plt.figure(figsize=(7,6))
+plt.bar(labels, values, color=colors, edgecolor="black")
+plt.ylabel("Number of Universes")
+plt.title("Universe Stability Distribution")
+plt.tight_layout()
+savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
+
 
