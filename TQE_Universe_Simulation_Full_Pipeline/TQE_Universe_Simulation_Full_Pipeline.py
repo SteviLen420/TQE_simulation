@@ -111,7 +111,7 @@ MASTER_CTRL = {
     "REL_EPS_STABLE":       0.010,    # relative calmness threshold for stability
     "REL_EPS_LOCKIN":       5e-3,     # relative calmness threshold for lock-in (~0.5%)
     "CALM_STEPS_STABLE":    10,       # consecutive calm steps required (stable)
-    "CALM_STEPS_LOCKIN":    12,       # consecutive calm steps required (lock-in)
+    "CALM_STEPS_LOCKIN":    8,       # consecutive calm steps required (lock-in)
     "MIN_LOCKIN_EPOCH":     200,      # lock-in can only occur after this epoch
     "LOCKIN_WINDOW":        10,       # rolling window size for averaging delta_rel
     "LOCKIN_ROLL_METRIC":   "median", # "mean" | "median" | "max" — aggregator over window
@@ -130,7 +130,7 @@ MASTER_CTRL = {
     "SPLINE_K":             3,      # spline order for smoothing (3=cubic)
 
     # --- Noise shaping (lock-in loop) ---
-    "EXP_NOISE_BASE":       0.12,   # baseline noise for updates (sigma0)
+    "EXP_NOISE_BASE":       0.15,   # baseline noise for updates (sigma0)
     "LL_BASE_NOISE":        8e-4,   # absolute noise floor (never go below this)
     "NOISE_DECAY_TAU":      500,    # e-folding time for noise decay (epochs)
     "NOISE_FLOOR_FRAC":     0.25,    # fraction of initial sigma preserved by decay
@@ -1014,7 +1014,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     plt.legend()
     savefig(with_variant(os.path.join(FIG_DIR, "fl_collapse.png")))
 
-    # ---- (3) t > 0 : expansion dynamics ----
+    # --- (3) t > 0 : expansion dynamics ----
     te, Atrack, Itrack = simulate_expansion_panel(
         epochs=MASTER_CTRL["FL_EXP_EPOCHS"],
         drift=MASTER_CTRL["FL_EXP_DRIFT"],
@@ -1030,11 +1030,15 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     plt.title("t > 0 : Expansion dynamics")
     plt.plot(te, Atrack, label="Amplitude A")
     plt.plot(te, Itrack, label="Orientation I")
-    # optional visual reference lines (equilibrium & lock-in epoch approx.)
+
+    # --- valódi lock-in jelölés, ha van adat ---
+    if "lock_epoch" in df.columns and (df["lock_epoch"] >= 0).any():
+        lock_ep = int(np.median(df.loc[df["lock_epoch"] >= 0, "lock_epoch"]))
+        plt.axvline(lock_ep, color="red", ls="--", label=f"Law lock-in ≈ {lock_ep}")
+
     eqA = np.percentile(Atrack, 50)
-    lock_ep = int(0.73 * len(te))
-    plt.axhline(eqA, color="gray", ls="--", alpha=0.7, label=f"Equilibrium A")
-    plt.axvline(lock_ep, color="red", ls="--", label=f"Law lock-in ≈ {lock_ep}")
+    plt.axhline(eqA, color="gray", ls="--", alpha=0.7, label="Equilibrium A")
+
     plt.xlabel("epoch"); plt.ylabel("Parameters"); plt.legend()
     savefig(with_variant(os.path.join(FIG_DIR, "fl_expansion.png")))
 
@@ -2008,6 +2012,9 @@ plt.title(f"Universe Stability Distribution ({'E-only' if VARIANT=='energy_only'
 plt.ylim(0, max(values)*1.12 + 1)
 plt.tight_layout()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png")))
+out_three = with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png"))
+savefig(out_three)
+print("[FIG] Wrote:", out_three)
 
 # ------------------------------------------------------
 # Compact version (kept for backward compatibility)
@@ -2024,3 +2031,6 @@ plt.ylabel("Number of Universes")
 plt.title("Universe Stability Distribution (compact)")
 plt.tight_layout()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
+out_compact = with_variant(os.path.join(FIG_DIR, "stability_distribution.png"))
+savefig(out_compact)
+print("[FIG] Wrote:", out_compact)
