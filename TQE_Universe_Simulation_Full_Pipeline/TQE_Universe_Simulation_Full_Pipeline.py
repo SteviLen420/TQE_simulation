@@ -61,7 +61,7 @@ MASTER_CTRL = {
     "LOCKIN_EPOCHS":        500,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
     "SEED":                 None,   # master RNG seed (auto-generated if None)
-    "PIPELINE_VARIANT": "energy_only",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
+    "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
 
     # --- Energy distribution ---
     "E_DISTR":              "lognormal",  # energy sampling mode (future-proof)
