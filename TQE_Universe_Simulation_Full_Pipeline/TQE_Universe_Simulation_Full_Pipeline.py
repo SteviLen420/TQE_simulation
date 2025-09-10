@@ -2113,8 +2113,12 @@ df_join["logE"] = np.log(df_join["E"] + 1e-12)
 df_join["logX"] = np.log(df_join["X"] + 1e-12)
 
 # Distance to Goldilocks center if window is available
-x_low = summary.get("goldilocks_window_used",{}).get("X_low", None)
-x_high= summary.get("goldilocks_window_used",{}).get("X_high", None)
+try:
+    x_low  = summary.get("goldilocks_window_used",{}).get("X_low", None)
+    x_high = summary.get("goldilocks_window_used",{}).get("X_high", None)
+except NameError:
+    x_low = x_high = None
+
 if x_low is not None and x_high is not None and np.isfinite(x_low) and np.isfinite(x_high):
     mid   = 0.5*(float(x_low)+float(x_high))
     width = max(1e-12, 0.5*(float(x_high)-float(x_low)))
@@ -2135,7 +2139,7 @@ print("[JOIN] Wrote:", joined_csv)
 df_xai = df_join
 
 # ======================================================
-# 23) Multi-target XAI (SHAP + LIME) per feature set
+# 19) Multi-target XAI (SHAP + LIME) per feature set
 # ======================================================
 
 import numpy as np
@@ -2330,7 +2334,7 @@ for target_name, kind, y_col, mask in targets:
 print("[XAI] Multi-target run complete. Outputs saved under:", FIG_DIR)
 
 # ======================================================
-# 18) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
+# 20) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
 # ======================================================
 
 # --- Ensure classifier var exists even if RUN_XAI=False (for LIME guard) ---
@@ -2588,7 +2592,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
         
             
 # ======================================================
-# 19) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
+# 21) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
 # ======================================================
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     try:
@@ -2683,7 +2687,7 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         print(f"[ERR] Drive copy block failed: {e}")
 
 # ======================================================
-# 20) Best-universe entropy evolution (lock-in only)
+# 22) Best-universe entropy evolution (lock-in only)
 # ======================================================
 
 # Build a local config dict from MASTER_CTRL (type-safe + clamps)
@@ -2830,7 +2834,7 @@ else:
     print(f"[BEST] Generated {len(made)} figure(s) for lock-in universes.")
 
 # ======================================================
-# 21) Save consolidated summary (single write)
+# 23) Save consolidated summary (single write)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -2904,7 +2908,7 @@ print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # ======================================================
-# 22) Universe Stability Distribution — clean & robust
+# 24) Universe Stability Distribution — clean & robust
 # ======================================================
 
 def _variant_label():
@@ -2976,23 +2980,22 @@ savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap
 print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
 
 # ------------------------------------------------------
-# 23) Compact version (kept for backward compatibility)
+# 25) Compact version (backward compatibility, fixed)
 # ------------------------------------------------------
+values = values_disjoint
+perc   = perc_disjoint
 labels_compact = [
     f"Lock-in ({lockin_count}, {perc[0]:.1f}%)",
     f"Stable (no lock-in) ({stable_only}, {perc[1]:.1f}%)",
     f"Unstable ({unstable_count}, {perc[2]:.1f}%)",
 ]
 plt.figure(figsize=(7,6))
-plt.bar(labels_compact, values,
-        color=["steelblue", "green", "red"], edgecolor="black")
+plt.bar(labels_compact, values, color=["steelblue", "green", "red"], edgecolor="black")
 plt.ylabel("Number of Universes")
 plt.title("Universe Stability Distribution (compact)")
 plt.tight_layout()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
-out_compact = with_variant(os.path.join(FIG_DIR, "stability_distribution.png"))
-savefig(out_compact)
-print("[FIG] Wrote:", out_compact)
+print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
 
 # --- FINAL COPY: Ensure 3-column chart goes to Google Drive ---
 try:
