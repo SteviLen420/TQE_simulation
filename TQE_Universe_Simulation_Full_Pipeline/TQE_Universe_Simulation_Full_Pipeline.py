@@ -148,6 +148,14 @@ MASTER_CTRL = {
     "FT_TEST_SIZE":          0.25,  # test split for the detector
     "FT_RANDOM_STATE":       42,    # reproducibility for splits
 
+    # --- Best-universe visualization (lock-in only) ---
+    "BEST_UNIVERSE_FIGS": 1,      # how many figures to export (typical: 1 or 5)
+    "BEST_N_REGIONS": 10,         # number of region-level entropy traces
+    "BEST_STAB_THRESHOLD": 3.5,   # horizontal reference line on plots
+    "BEST_SAVE_CSV": True,        # also export per-universe time series as CSV
+    "BEST_SEED_OFFSET": 777,      # reproducible offset for the synthetic entropy generator
+    "BEST_MAX_FIGS": 50,          # safety clamp
+
     # --- Machine Learning / XAI ---
     "RUN_XAI":              True,   # master switch for XAI section
     "RUN_SHAP":             True,   # SHAP on/off
@@ -1750,6 +1758,17 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
 # 17) Best-universe entropy evolution (lock-in only)
 # ======================================================
 
+# Build a local config dict from MASTER_CTRL (type-safe + clamps)
+BEST_CFG = {
+    "N_TOP_BEST": int(np.clip(MASTER_CTRL.get("BEST_UNIVERSE_FIGS", 1),
+                              1, MASTER_CTRL.get("BEST_MAX_FIGS", 50))),
+    "TIME_STEPS": int(MASTER_CTRL.get("TIME_STEPS", 1000)),
+    "N_REGIONS":  int(MASTER_CTRL.get("BEST_N_REGIONS", 10)),
+    "STAB_THRESH": float(MASTER_CTRL.get("BEST_STAB_THRESHOLD", 3.5)),
+    "SAVE_CSV": bool(MASTER_CTRL.get("BEST_SAVE_CSV", True)),
+    "SEED_OFFSET": int(MASTER_CTRL.get("BEST_SEED_OFFSET", 777)),
+}
+
 def _entropy_evolution(seed: int, steps: int, n_regions: int,
                        base_mu: float = 5.1, base_sig: float = 0.12):
     """
@@ -1787,7 +1806,7 @@ def _plot_best_universe(unirec: dict, steps: int, n_regions: int,
     lock_ep = int(unirec["lock_epoch"])
 
     # Use an offset seed so this visualization is reproducible but independent.
-    t, regions, g = _entropy_evolution(seed + 777, steps, n_regions)
+    t, regions, g = _entropy_evolution(seed + BEST_CFG["SEED_OFFSET"], steps, n_regions)
 
     # Optionally export the per-universe time series to CSV
     if BEST_CFG["SAVE_CSV"]:
@@ -1903,7 +1922,8 @@ summary = {
         "fl_superposition": with_variant(os.path.join(FIG_DIR, "fl_superposition.png")),
         "fl_collapse":      with_variant(os.path.join(FIG_DIR, "fl_collapse.png")),
         "fl_expansion":     with_variant(os.path.join(FIG_DIR, "fl_expansion.png")),
-        "ft_slice_EeqI": ft_result.get("files", {}).get("slice_png")
+        "ft_slice_EeqI": ft_result.get("files", {}).get("slice_png"),
+        "best_universes_dir": os.path.join(FIG_DIR, "best_universes"),
     },
     "artifacts": {
         "tqe_runs_csv": with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")),
@@ -1918,7 +1938,8 @@ summary = {
         "ft_metrics_cls_csv": ft_result.get("files", {}).get("metrics_cls_csv"),
         "ft_metrics_reg_csv": ft_result.get("files", {}).get("metrics_reg_csv"),
         "ft_slice_EeqI_csv":  ft_result.get("files", {}).get("slice_csv"),
-        "ft_delta_summary_csv": ft_result.get("files", {}).get("delta_csv")
+        "ft_delta_summary_csv": ft_result.get("files", {}).get("delta_csv"),
+        "best_universes_csv_dir": os.path.join(SAVE_DIR, "best_universes_csv"),
     },
         "finetune_detector": {
         "enabled": bool(MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True)),
@@ -1941,18 +1962,59 @@ print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # ======================================================
-# 19) Universe Stability Distribution (bar chart)
+# 19) Universe Stability Distribution — three categories (pretty)
 # ======================================================
-labels = [
-    f"Lock-in ({lockin_count}, {lockin_count/len(df)*100:.1f}%)",
-    f"Stable ({stable_count}, {stable_count/len(df)*100:.1f}%)",
-    f"Unstable ({unstable_count}, {unstable_count/len(df)*100:.1f}%)"
-]
-values = [lockin_count, stable_count, unstable_count]
-colors = ["blue", "green", "red"]  # fixed colors for categories
+def _variant_label():
+    # Build a short label for the plot title based on the pipeline variant
+    return "E-only" if VARIANT == "energy_only" else "E+I"
 
+total_n = int(len(df))
+lockin_count = int((df["lock_epoch"] >= 0).sum())
+stable_count  = int(df["stable"].sum())
+unstable_count = int(total_n - stable_count)
+
+values = np.array([lockin_count, stable_count, unstable_count], dtype=float)
+perc   = (values / max(1, total_n)) * 100.0
+
+# Pretty three-category chart (with counts + percents under each bar)
+plt.figure(figsize=(8.5, 7))
+bars = plt.bar([0, 1, 2], values, edgecolor="black",
+               color=["#6aaed6", "#2ca02c", "#d62728"])  # blue, green, red
+
+# Put the count above each bar (optional, readable even for tiny lock-in)
+for i, b in enumerate(bars):
+    y = b.get_height()
+    plt.text(b.get_x() + b.get_width()/2.0, y + (0.01*total_n),
+             f"{int(values[i])}", ha="center", va="bottom", fontsize=10)
+
+# X tick labels with two-line captions: name + (count, percent)
+xtick_labels = [
+    f"Lock-in\n({lockin_count}, {perc[0]:.1f}%)",
+    f"Stable\n({stable_count}, {perc[1]:.1f}%)",
+    f"Unstable\n({unstable_count}, {perc[2]:.1f}%)",
+]
+plt.xticks([0,1,2], xtick_labels, fontsize=12)
+
+plt.ylabel("Number of Universes")
+plt.title(f"Universe Stability Distribution ({_variant_label()}) — three categories")
+
+# A little headroom so the numbers above bars are visible
+plt.ylim(0, max(values)*1.12 + 1)
+
+plt.tight_layout()
+savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png")))
+
+# ------------------------------------------------------
+# Compact version (kept for backward compatibility)
+# ------------------------------------------------------
+labels_compact = [
+    f"Lock-in ({lockin_count}, {perc[0]:.1f}%)",
+    f"Stable ({stable_count}, {perc[1]:.1f}%)",
+    f"Unstable ({unstable_count}, {perc[2]:.1f}%)",
+]
 plt.figure(figsize=(7,6))
-plt.bar(labels, values, color=colors, edgecolor="black")
+plt.bar(labels_compact, values,
+        color=["steelblue", "green", "red"], edgecolor="black")
 plt.ylabel("Number of Universes")
 plt.title("Universe Stability Distribution")
 plt.tight_layout()
