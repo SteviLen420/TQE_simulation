@@ -1924,6 +1924,7 @@ summary = {
         "fl_expansion":     with_variant(os.path.join(FIG_DIR, "fl_expansion.png")),
         "ft_slice_EeqI": ft_result.get("files", {}).get("slice_png"),
         "best_universes_dir": os.path.join(FIG_DIR, "best_universes"),
+        "stability_distribution_three": with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png")),
     },
     "artifacts": {
         "tqe_runs_csv": with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")),
