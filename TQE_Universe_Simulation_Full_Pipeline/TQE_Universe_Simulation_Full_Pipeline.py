@@ -847,7 +847,7 @@ elif MASTER_CTRL["GOLDILOCKS_MODE"] == "dynamic":
 
     print(f"[MC] Estimated Goldilocks (X) window: {_fmt(E_c_low)} .. {_fmt(E_c_high)}")
 
-    # Pass 2: final run with window shaping (ha nincs érvényes ablak, fusson shaping nélkül)
+    # Pass 2: final run with window shaping (if no valid window, run without shaping)
     if (E_c_low is not None) and (E_c_high is not None):
         df = run_mc(E_c_low=E_c_low, E_c_high=E_c_high)
     else:
@@ -1123,7 +1123,7 @@ def _select_eps_by_share(gaps, target_share=0.20, min_n=30):
         outside = int((gaps >  eps).sum())
         if inside >= min_n and outside >= min_n:
             return eps
-    # Fallback: smallest value that yields min_n inside (kevesebb outside rizikó árán)
+    # Fallback: smallest value that yields min_n inside (at the risk of fewer outside samples)
     if len(gaps) >= min_n:
         return float(np.sort(gaps)[min_n-1])
     return cand  # last resort
@@ -1355,13 +1355,15 @@ def run_finetune_detector(df_in: pd.DataFrame):
     )
     out["files"]["slice_png"] = bar_png
 
-        # Stability vs |E-I| quantile curve + CSV
-        q_csv = with_variant(os.path.join(SAVE_DIR, "ft_stability_vs_gap_quantiles.csv"))
-        q_png = with_variant(os.path.join(FIG_DIR, "ft_stability_vs_gap_quantiles.png"))
-        _stability_vs_gap_quantiles(df_in, qbins=MASTER_CTRL.get("FT_GAP_QBINS", 10),
-                                    out_csv=q_csv, out_png=q_png)
-        out["files"]["gap_quantiles_csv"] = q_csv
-        out["files"]["gap_quantiles_png"] = q_png
+    # Stability vs |E-I| quantile curve + CSV
+    q_csv = with_variant(os.path.join(SAVE_DIR, "ft_stability_vs_gap_quantiles.csv"))
+    q_png = with_variant(os.path.join(FIG_DIR, "ft_stability_vs_gap_quantiles.png"))
+    _stability_vs_gap_quantiles(
+        df_in, qbins=MASTER_CTRL.get("FT_GAP_QBINS", 10),
+        out_csv=q_csv, out_png=q_png
+    )
+    out["files"]["gap_quantiles_csv"] = q_csv
+    out["files"]["gap_quantiles_png"] = q_png
 
     # --- delta table (EIX – E) for quick view ---
     delta = {
