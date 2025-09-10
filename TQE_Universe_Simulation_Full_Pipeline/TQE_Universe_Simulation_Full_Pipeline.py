@@ -37,6 +37,7 @@ for pkg in ["qutip", "pandas", "scipy", "scikit-learn"]:
     _ensure(pkg)
 
 import qutip as qt
+qt.settings.num_cpus = 1
 import pandas as pd
 from scipy.interpolate import make_interp_spline
 warnings.filterwarnings("ignore")
@@ -1444,7 +1445,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
         )
 
         # Choose which class to explain (positive=1 if available)
-        target_label = int(rf_cls.classes_[np.argmax(rf_cls.classes_)])
+        target_label = 1 if 1 in set(rf_cls.classes_) else rf_cls.classes_[0]
 
         # --- (A) Averaged LIME over multiple lock-in instances ---
         rng_local = np.random.default_rng(MASTER_CTRL.get("TEST_RANDOM_STATE", 42))
