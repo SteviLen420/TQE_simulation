@@ -1243,6 +1243,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
         fi_df.to_csv(fi_csv, index=False)
         out["files"][f"feat_importance_{label}"] = fi_csv
         return {"label":label, "acc":acc, "auc":auc, "cm":cm}
+        
 
     # --- Fit both classifiers ---
     mE   = _fit_cls(X_E,   "E")
@@ -1811,5 +1812,3 @@ plt.ylabel("Number of Universes")
 plt.title("Universe Stability Distribution")
 plt.tight_layout()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
-
-
