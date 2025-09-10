@@ -102,7 +102,7 @@ MASTER_CTRL = {
     "FL_COLLAPSE_POST_SIGMA":0.015,    # small jitter after t=0
     "FL_COLLAPSE_REVERT":    0.35,     # mean-reversion towards X_lock after t=0 (OU factor)
 
-    "FL_EXP_EPOCHS":         500,      # length of t>0 expansion panel
+    "FL_EXP_EPOCHS":         1000,      # length of t>0 expansion panel
     "FL_EXP_DRIFT":          0.45,     # upward drift for A
     "FL_EXP_JITTER":         0.9,      # noise for A random walk
     "FL_EXP_I_JITTER":       0.04,     # small jitter for I track
@@ -1788,6 +1788,15 @@ BEST_CFG = {
     "STAB_THRESH": float(MASTER_CTRL.get("BEST_STAB_THRESHOLD", 3.5)),
     "SAVE_CSV": bool(MASTER_CTRL.get("BEST_SAVE_CSV", True)),
     "SEED_OFFSET": int(MASTER_CTRL.get("BEST_SEED_OFFSET", 777)),
+
+    # --- FIX: region noise parameters ---
+    "REGION_MU": float(MASTER_CTRL.get("BEST_REGION_MU", 5.1)),
+    "REGION_SIGMA": float(MASTER_CTRL.get("BEST_REGION_SIGMA", 0.06)),
+    "GLOBAL_JITTER": float(MASTER_CTRL.get("BEST_GLOBAL_JITTER", 0.008)),
+    "SMOOTH_WINDOW": int(MASTER_CTRL.get("BEST_SMOOTH_WINDOW", 9)),
+    "SHOW_REGIONS": bool(MASTER_CTRL.get("BEST_SHOW_REGIONS", True)),
+    "ANNOTATE_LOCKIN": bool(MASTER_CTRL.get("BEST_ANNOTATE_LOCKIN", True)),
+    "ANNOTATION_OFFSET": int(MASTER_CTRL.get("BEST_ANNOTATION_OFFSET", 5)),
 }
 
 def _entropy_evolution(seed: int, steps: int, n_regions: int):
