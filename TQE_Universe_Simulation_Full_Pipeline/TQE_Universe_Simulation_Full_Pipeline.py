@@ -1005,78 +1005,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     savefig(with_variant(os.path.join(FIG_DIR, "fl_expansion.png")))
 
 # ======================================================
-# 13) Save consolidated summary (single write)
-# ======================================================
-stable_count = int(df["stable"].sum())
-unstable_count = int(len(df) - stable_count)
-lockin_count = int((df["lock_epoch"] >= 0).sum())
-
-summary = {
-    "params": MASTER_CTRL,
-    "master_seed": master_seed,
-    "run_id": run_id,
-    "N_samples": int(len(df)),
-    "stability_summary": {
-        "total_universes": len(df),
-        "stable_universes": stable_count,
-        "unstable_universes": unstable_count,
-        "lockin_universes": lockin_count,
-        "stable_percent": float(stable_count/len(df)*100),
-        "unstable_percent": float(unstable_count/len(df)*100),
-        "lockin_percent": float(lockin_count/len(df)*100)
-    },
-    "goldilocks_window_used": {
-        "mode": MASTER_CTRL["GOLDILOCKS_MODE"],
-        "X_low": E_c_low if E_c_low is not None else E_c_low_plot,
-        "X_high": E_c_high if E_c_high is not None else E_c_high_plot
-    },
-    "figures": {
-        "stability_curve": with_variant(os.path.join(FIG_DIR, "stability_curve.png")),
-        "scatter_EI": with_variant(os.path.join(FIG_DIR, "scatter_EI.png")),
-        "stability_distribution": with_variant(os.path.join(FIG_DIR, "stability_distribution.png")),  
-        "fl_fluctuation": with_variant(os.path.join(FIG_DIR, "fl_fluctuation.png")),
-        "fl_superposition": with_variant(os.path.join(FIG_DIR, "fl_superposition.png")),
-        "fl_collapse":      with_variant(os.path.join(FIG_DIR, "fl_collapse.png")),
-        "fl_expansion":     with_variant(os.path.join(FIG_DIR, "fl_expansion.png")),
-        "ft_slice_EeqI": ft_result.get("files", {}).get("slice_png")
-    },
-    "artifacts": {
-        "tqe_runs_csv": with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")),
-        "universe_seeds_csv": with_variant(os.path.join(SAVE_DIR, "universe_seeds.csv")),
-        "pre_fluctuation_pairs_csv": with_variant(os.path.join(SAVE_DIR, "pre_fluctuation_pairs.csv")),
-        "stability_by_I_zero_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_zero.csv")),
-        "stability_by_I_eps_sweep_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv")),  
-        "fl_fluctuation_csv": with_variant(os.path.join(SAVE_DIR, "fl_fluctuation_timeseries.csv")),
-        "fl_superposition_csv": with_variant(os.path.join(SAVE_DIR, "fl_superposition_timeseries.csv")),
-        "fl_collapse_csv":      with_variant(os.path.join(SAVE_DIR, "fl_collapse_timeseries.csv")),
-        "fl_expansion_csv":     with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv")),
-        "ft_metrics_cls_csv": ft_result.get("files", {}).get("metrics_cls_csv"),
-        "ft_metrics_reg_csv": ft_result.get("files", {}).get("metrics_reg_csv"),
-        "ft_slice_EeqI_csv":  ft_result.get("files", {}).get("slice_csv"),
-        "ft_delta_summary_csv": ft_result.get("files", {}).get("delta_csv")
-    },
-        "finetune_detector": {
-        "enabled": bool(MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True)),
-        "metrics": ft_result.get("metrics", {}),
-        "artifacts": ft_result.get("files", {})
-    },
-    "meta": {
-        "code_version": "2025-09-03a",
-        "platform": sys.platform,
-        "python": sys.version.split()[0]
-    }
-}
-if MASTER_CTRL.get("SAVE_JSON", True):
-    save_json(with_variant(os.path.join(SAVE_DIR, "summary_full.json")), summary)
-
-print("\n🌌 Universe Stability Summary (final run)")
-print(f"Total universes: {len(df)}")
-print(f"Stable:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
-print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
-print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
-
-# ======================================================
-# 14) Universe Stability Distribution (bar chart)
+# 13) Universe Stability Distribution (bar chart)
 # ======================================================
 labels = [
     f"Lock-in ({lockin_count}, {lockin_count/len(df)*100:.1f}%)",
@@ -1094,7 +1023,7 @@ plt.tight_layout()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
 
 # ======================================================
-# 15) Stability by I (exact zero vs eps sweep) — extended
+# 14) Stability by I (exact zero vs eps sweep) — extended
 # ======================================================
 def _stability_stats(mask: pd.Series, label: str):
     total = int(mask.sum())
@@ -1148,7 +1077,7 @@ if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True):
         print(f"[FT][ERR] Detector failed: {e}")
 
 # ======================================================
-# 16) Finetune Detector (E vs E+I(+X))
+# 15) Finetune Detector (E vs E+I(+X))
 # ======================================================
 
 from sklearn.model_selection import train_test_split
@@ -1333,7 +1262,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
     return out
 
 # ======================================================
-# 17) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
+# 16) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
 # ======================================================
 
 # --- Ensure classifier var exists even if RUN_XAI=False (for LIME guard) ---
@@ -1514,17 +1443,17 @@ if (MASTER_CTRL.get("RUN_LIME", True)
     and rf_cls is not None
     and "lockin" in df.columns):
 
-    # Keep only universes where law-lockin happened
     df_lock = df[df["lockin"] == 1].copy()
 
     if len(df_lock) < 10:
         print(f"[LIME] Not enough lock-in samples for LIME (have {len(df_lock)}, need ≥10).")
     else:
-        # Features and labels restricted to lock-in universes
-        X_lock = df_lock[["E", "I", "X"]].copy()
+        if VARIANT == "energy_only":
+            X_lock = df_lock[["E"]].copy()
+        else:
+            X_lock = df_lock[["E", "I", "X"]].copy()
         y_lock = df_lock["stable"].astype(int).values
 
-        # Build LIME explainer on the lock-in distribution
         lime_explainer = LimeTabularExplainer(
             training_data=X_lock.values,
             feature_names=X_lock.columns.tolist(),
@@ -1591,7 +1520,7 @@ if (MASTER_CTRL.get("RUN_LIME", True)
         
             
 # ======================================================
-# 18) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
+# 17) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
 # ======================================================
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     try:
@@ -1683,3 +1612,75 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
 
     except Exception as e:
         print(f"[ERR] Drive copy block failed: {e}")
+
+# ======================================================
+# 18) Save consolidated summary (single write)
+# ======================================================
+stable_count = int(df["stable"].sum())
+unstable_count = int(len(df) - stable_count)
+lockin_count = int((df["lock_epoch"] >= 0).sum())
+
+summary = {
+    "params": MASTER_CTRL,
+    "master_seed": master_seed,
+    "run_id": run_id,
+    "N_samples": int(len(df)),
+    "stability_summary": {
+        "total_universes": len(df),
+        "stable_universes": stable_count,
+        "unstable_universes": unstable_count,
+        "lockin_universes": lockin_count,
+        "stable_percent": float(stable_count/len(df)*100),
+        "unstable_percent": float(unstable_count/len(df)*100),
+        "lockin_percent": float(lockin_count/len(df)*100)
+    },
+    "goldilocks_window_used": {
+        "mode": MASTER_CTRL["GOLDILOCKS_MODE"],
+        "X_low": E_c_low if E_c_low is not None else E_c_low_plot,
+        "X_high": E_c_high if E_c_high is not None else E_c_high_plot
+    },
+    "figures": {
+        "stability_curve": with_variant(os.path.join(FIG_DIR, "stability_curve.png")),
+        "scatter_EI": with_variant(os.path.join(FIG_DIR, "scatter_EI.png")),
+        "stability_distribution": with_variant(os.path.join(FIG_DIR, "stability_distribution.png")),  
+        "fl_fluctuation": with_variant(os.path.join(FIG_DIR, "fl_fluctuation.png")),
+        "fl_superposition": with_variant(os.path.join(FIG_DIR, "fl_superposition.png")),
+        "fl_collapse":      with_variant(os.path.join(FIG_DIR, "fl_collapse.png")),
+        "fl_expansion":     with_variant(os.path.join(FIG_DIR, "fl_expansion.png")),
+        "ft_slice_EeqI": ft_result.get("files", {}).get("slice_png")
+    },
+    "artifacts": {
+        "tqe_runs_csv": with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")),
+        "universe_seeds_csv": with_variant(os.path.join(SAVE_DIR, "universe_seeds.csv")),
+        "pre_fluctuation_pairs_csv": with_variant(os.path.join(SAVE_DIR, "pre_fluctuation_pairs.csv")),
+        "stability_by_I_zero_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_zero.csv")),
+        "stability_by_I_eps_sweep_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv")),  
+        "fl_fluctuation_csv": with_variant(os.path.join(SAVE_DIR, "fl_fluctuation_timeseries.csv")),
+        "fl_superposition_csv": with_variant(os.path.join(SAVE_DIR, "fl_superposition_timeseries.csv")),
+        "fl_collapse_csv":      with_variant(os.path.join(SAVE_DIR, "fl_collapse_timeseries.csv")),
+        "fl_expansion_csv":     with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv")),
+        "ft_metrics_cls_csv": ft_result.get("files", {}).get("metrics_cls_csv"),
+        "ft_metrics_reg_csv": ft_result.get("files", {}).get("metrics_reg_csv"),
+        "ft_slice_EeqI_csv":  ft_result.get("files", {}).get("slice_csv"),
+        "ft_delta_summary_csv": ft_result.get("files", {}).get("delta_csv")
+    },
+        "finetune_detector": {
+        "enabled": bool(MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True)),
+        "metrics": ft_result.get("metrics", {}),
+        "artifacts": ft_result.get("files", {})
+    },
+    "meta": {
+        "code_version": "2025-09-03a",
+        "platform": sys.platform,
+        "python": sys.version.split()[0]
+    }
+}
+if MASTER_CTRL.get("SAVE_JSON", True):
+    save_json(with_variant(os.path.join(SAVE_DIR, "summary_full.json")), summary)
+
+print("\n🌌 Universe Stability Summary (final run)")
+print(f"Total universes: {len(df)}")
+print(f"Stable:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
+print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
+print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
+
