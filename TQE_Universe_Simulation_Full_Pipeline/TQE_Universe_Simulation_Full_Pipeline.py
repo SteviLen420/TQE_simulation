@@ -56,7 +56,7 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
+    "NUM_UNIVERSES":        10000,   # number of universes in Monte Carlo run
     "TIME_STEPS":           800,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        500,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
@@ -65,8 +65,8 @@ MASTER_CTRL = {
 
     # --- Energy distribution ---
     "E_DISTR":              "lognormal",  # energy sampling mode (future-proof)
-    "E_LOG_MU":             2.5,    # lognormal mean for initial energy
-    "E_LOG_SIGMA":          0.8,    # lognormal sigma for initial energy
+    "E_LOG_MU":             1.8,    # lognormal mean for initial energy
+    "E_LOG_SIGMA":          0.6,    # lognormal sigma for initial energy
     "E_TRUNC_LOW":          None,   # optional post-sample clamp (low)
     "E_TRUNC_HIGH":         None,   # optional post-sample clamp (high)
 
@@ -109,9 +109,9 @@ MASTER_CTRL = {
 
     # --- Stability thresholds ---
     "REL_EPS_STABLE":       0.010,    # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       5e-3,     # relative calmness threshold for lock-in (~0.5%)
+    "REL_EPS_LOCKIN":       4e-3,     # relative calmness threshold for lock-in (~0.5%)
     "CALM_STEPS_STABLE":    10,       # consecutive calm steps required (stable)
-    "CALM_STEPS_LOCKIN":    8,       # consecutive calm steps required (lock-in)
+    "CALM_STEPS_LOCKIN":    10,       # consecutive calm steps required (lock-in)
     "MIN_LOCKIN_EPOCH":     200,      # lock-in can only occur after this epoch
     "LOCKIN_WINDOW":        10,       # rolling window size for averaging delta_rel
     "LOCKIN_ROLL_METRIC":   "median", # "mean" | "median" | "max" — aggregator over window
@@ -133,7 +133,7 @@ MASTER_CTRL = {
     "EXP_NOISE_BASE":       0.15,   # baseline noise for updates (sigma0)
     "LL_BASE_NOISE":        8e-4,   # absolute noise floor (never go below this)
     "NOISE_DECAY_TAU":      500,    # e-folding time for noise decay (epochs)
-    "NOISE_FLOOR_FRAC":     0.25,    # fraction of initial sigma preserved by decay
+    "NOISE_FLOOR_FRAC":     0.25,   # fraction of initial sigma preserved by decay
     "NOISE_COEFF_A":        1.0,    # per-variable noise multiplier (A)
     "NOISE_COEFF_NS":       0.10,   # per-variable noise multiplier (ns)
     "NOISE_COEFF_H":        0.20,   # per-variable noise multiplier (H)
@@ -170,7 +170,7 @@ MASTER_CTRL = {
     "TEST_SIZE":            0.25,   # test split ratio
     "TEST_RANDOM_STATE":    42,     # split reproducibility
     "RF_N_ESTIMATORS":      400,    # number of trees in random forest
-    "RF_CLASS_WEIGHT":      None,   # e.g., "balanced" for skewed classes
+    "RF_CLASS_WEIGHT": "balanced",   # e.g., "balanced" for skewed classes
     "SKLEARN_N_JOBS":       -1,     # parallelism for RF
     "FT_MIN_PER_SLICE":     30,     # min elems inside/outside the |E-I|<=eps slice for CI plots
 
@@ -2034,3 +2034,55 @@ savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
 out_compact = with_variant(os.path.join(FIG_DIR, "stability_distribution.png"))
 savefig(out_compact)
 print("[FIG] Wrote:", out_compact)
+
+# --- FINAL COPY: Ensure 3-column chart goes to Google Drive ---
+try:
+    if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
+        DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
+        GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id)
+        os.makedirs(GOOGLE_DIR, exist_ok=True)
+
+        three_local = with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png"))
+        three_dst   = os.path.join(GOOGLE_DIR, os.path.relpath(three_local, SAVE_DIR))
+        os.makedirs(os.path.dirname(three_dst), exist_ok=True)
+        if os.path.exists(three_local):
+            shutil.copy2(three_local, three_dst)
+            print("[FINAL COPY] 3-column chart ->", three_dst)
+        else:
+            print("[FINAL COPY][WARN] Local 3-column chart not found:", three_local)
+except Exception as e:
+    print("[FINAL COPY][ERR][three]", e)
+
+# --- FINAL COPY: Ensure best_universes PNGs are copied to Google Drive ---
+try:
+    if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
+        DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
+        GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id)
+        src_dir = os.path.join(FIG_DIR, "best_universes")
+        dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(src_dir, SAVE_DIR))
+        if os.path.isdir(src_dir):
+            os.makedirs(dst_dir, exist_ok=True)
+            copied_cnt = 0
+            for fn in sorted(os.listdir(src_dir)):
+                if fn.endswith(".png"):
+                    shutil.copy2(os.path.join(src_dir, fn), os.path.join(dst_dir, fn))
+                    copied_cnt += 1
+            print(f"[FINAL COPY] best_universes PNGs copied: {copied_cnt} -> {dst_dir}")
+        else:
+            print("[FINAL COPY][WARN] best_universes directory missing:", src_dir)
+except Exception as e:
+    print("[FINAL COPY][ERR][best]", e)
+
+# --- CHECK: Verify existence of 3-column chart ---
+pth_three = with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png"))
+print("[CHECK] 3-column chart exists:", os.path.exists(pth_three), "->", pth_three)
+
+# --- CHECK: Verify best_universes PNGs are generated ---
+best_dir = os.path.join(FIG_DIR, "best_universes")
+if os.path.isdir(best_dir):
+    pngs = [f for f in os.listdir(best_dir) if f.endswith(".png")]
+    print(f"[CHECK] best_universes PNG count: {len(pngs)} in {best_dir}")
+    for f in pngs[:5]:
+        print("   -", f)
+else:
+    print("[CHECK][WARN] best_universes directory missing:", best_dir)
