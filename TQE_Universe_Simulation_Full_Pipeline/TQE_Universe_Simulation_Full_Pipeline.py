@@ -1615,10 +1615,11 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                     q_lon, q_lat = _axis_from_lmap(alm_full, nside, 2, LMAX_AOE)
                     o_lon, o_lat = _axis_from_lmap(alm_full, nside, 3, LMAX_AOE)
 
-                    # 3) rotate so that the chosen 'common axis' is the quadrupole axis
-                    #    (this sets the quadrupole pole; octupole stays close but not exact)
-                    R = hp.rotator.Rotator(deg=True, rot=[q_lon, 90.0 - q_lat, 0.0])
-                    alm_full = hp.rotate_alm(alm_full, R)
+                    # 3) rotate so that the common axis = quadrupole axis (use Euler angles in radians)
+                    alpha = np.deg2rad(q_lon)          # Z-rotation
+                    beta  = np.deg2rad(90.0 - q_lat)   # Y-rotation (to pole)
+                    gamma = 0.0                        # final Z-rotation
+                    alm_full = hp.rotate_alm(alm_full, alpha, beta, gamma)
 
                     # 4) gently boost ℓ=2 and ℓ=3 to emphasize AoE alignment
                     boost = float(MASTER_CTRL.get("CMB_AOE_L23_BOOST", 1.5))  # 1.5–3.0
