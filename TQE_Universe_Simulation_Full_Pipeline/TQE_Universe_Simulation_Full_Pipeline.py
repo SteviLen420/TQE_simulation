@@ -1464,7 +1464,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
         print("[FT] slice ->", sl_csv)  
         out["files"]["slice_csv"] = sl_csv
 
-        bar_png = with_variant(os.path.join(SAVE_DIR, "lockin_by_eqI_bar.png"))
+        bar_png = with_variant(os.path.join(FIG_DIR, "lockin_by_eqI_bar.png"))
         print("[FT] barplot ->", bar_png) 
         title = ("Lock-in" if METRIC=="lockin" else "Stability") + \
                 (" by Energy (Only E)" if VARIANT == "energy_only" else " by E≈I (adaptive epsilon)")
@@ -1478,17 +1478,17 @@ def run_finetune_detector(df_in: pd.DataFrame):
         )
         out["files"]["slice_png"] = bar_png
 
-        q_csv     = with_variant(os.path.join(FINETUNE_DIR, "finetune_stability_vs_gap_quantiles.csv"))
+        q_csv     = with_variant(os.path.join(SAVE_DIR, "finetune_stability_vs_gap_quantiles.csv"))
         _stability_vs_gap_quantiles(
             df_in,
             qbins=MASTER_CTRL.get("FT_GAP_QBINS", 10),
             out_csv=q_csv,
-            out_dir=FINETUNE_DIR,
+            out_dir=FIG_DIR,
             bar_png=bar_png
         )
         out["files"]["gap_quantiles_csv"] = q_csv
-        out["files"]["gap_quantiles_png_curve"]    = with_variant(os.path.join(FINETUNE_DIR, "finetune_gap_curve.png"))
-        out["files"]["gap_quantiles_png_adaptive"] = with_variant(os.path.join(FINETUNE_DIR, "finetune_gap_adaptive.png"))
+        out["files"]["gap_quantiles_png_curve"]    = with_variant(os.path.join(FIG_DIR, "finetune_gap_curve.png"))
+        out["files"]["gap_quantiles_png_adaptive"] = with_variant(os.path.join(FIG_DIR, "finetune_gap_adaptive.png"))
     else:
         print("[FT] Skipping E≈I slice analysis (missing E or I column).")
 
@@ -2640,12 +2640,14 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
                     rel = os.path.join("figs", rel_under_figs)                # run_id/figs/...
                     to_copy.append((rel, src))
 
-        # --- PRIORITIZE Finetune PNGs (before sort and MAX_FILES trim) ---
+        # PRIORITIZE Fine-tune PNGs (root of FIG_DIR)
         prio_local = [
-            with_variant(os.path.join(FIG_DIR, "Finetune", "lockin_by_eqI_bar.png")),
-            with_variant(os.path.join(FIG_DIR, "Finetune", "finetune_gap_curve.png")),
-            with_variant(os.path.join(FIG_DIR, "Finetune", "finetune_gap_adaptive.png")),
+            with_variant(os.path.join(FIG_DIR, "lockin_by_eqI_bar.png")),
+            with_variant(os.path.join(FIG_DIR, "finetune_gap_curve.png")),
+            with_variant(os.path.join(FIG_DIR, "finetune_gap_adaptive.png")),
+            with_variant(os.path.join(FIG_DIR, "finetune_panel.png")),  # merged panel
         ]
+
         prio_pairs = []
         for src in prio_local:
             if os.path.exists(src):
