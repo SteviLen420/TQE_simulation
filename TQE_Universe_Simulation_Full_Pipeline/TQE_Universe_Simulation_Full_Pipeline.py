@@ -2201,49 +2201,95 @@ def _shap_summary(model, X_plot, feat_names, out_png):
     plt.savefig(out_png, dpi=220, bbox_inches="tight")
     plt.close()
 
-# --- ADD above _lime_avg ---
+# --- Helper: drop near-constant columns and keep a boolean mask ---
 def _remove_constant_features(X_np, feat_names, eps=1e-12):
-    """Drop features with (near) zero variance to avoid truncnorm(scale=0) in LIME."""
+    """
+    Remove (near) zero-variance features to avoid LIME's truncnorm(scale=0) error.
+    Returns reduced X, reduced feature names, and a boolean mask of kept columns
+    in the ORIGINAL TRAIN feature order.
+    """
+    import numpy as np
     stds = X_np.std(axis=0)
-    mask = stds > eps
-    return X_np[:, mask], [f for f, keep in zip(feat_names, mask) if keep]
+    keep = stds > eps
+    X_red = X_np[:, keep] if X_np.ndim == 2 else X_np[keep]
+    feat_red = [f for f, k in zip(feat_names, keep) if k]
+    return X_red, feat_red, keep
 
-# --- REPLACE your existing _lime_avg with this version ---
-def _lime_avg(clf, X_np, feat_names, out_png, k=LIME_K):
-    """Average LIME importances with safety against constant columns."""
-    # 1) Safety: remove (near) constant columns
-    X_np, feat_names = _remove_constant_features(X_np, feat_names)
-    if X_np.shape[1] == 0:
+# --- Safe LIME: predict on reduced inputs but rebuild to full dimension for the model ---
+def _lime_avg(clf, X_np, feat_names, out_png, k=50,
+              full_feat_names=None, full_means=None, rng_seed=42):
+    """
+    Compute averaged LIME importances safely:
+      - Build the LIME explainer on a reduced feature matrix (const cols removed).
+      - When calling the model, rebuild full-dimension vectors by filling the
+        dropped columns with training means, so clf.predict_proba() sees the
+        exact feature dimension it was trained on.
+
+    Parameters
+    ----------
+    clf : fitted classifier with predict_proba
+    X_np : np.ndarray (n_samples, n_features) from TRAIN space (same order as feat_names)
+    feat_names : list[str] names for X_np columns (TRAIN order)
+    out_png : str, output path for the barplot
+    k : int, number of instances to average
+    full_feat_names : list[str], full TRAIN feature names (defaults to feat_names)
+    full_means : np.ndarray, per-feature means in TRAIN space used to fill dropped cols
+    rng_seed : int, random seed for sampling instances
+    """
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from lime.lime_tabular import LimeTabularExplainer
+
+    # 1) Reduce constant features and get keep-mask in TRAIN order
+    X_red, feat_red, keep_mask = _remove_constant_features(X_np, feat_names)
+    if X_red.shape[1] == 0:
         print("[LIME] All features are constant — skipping.")
         return
 
-    # 2) Build explainer on training-like background
-    from lime.lime_tabular import LimeTabularExplainer
+    # 2) Prepare full-space info for reconstruction
+    if full_feat_names is None:
+        full_feat_names = feat_names[:]  # keep TRAIN order
+    if full_means is None:
+        full_means = np.zeros(len(full_feat_names), dtype=float)
+    keep_idx = np.where(keep_mask)[0]   # indices of kept TRAIN columns
+
+    # 3) Wrapper: map reduced vectors back to full space before predict_proba
+    def _predict_proba_on_reduced(Z_red):
+        Z_red = np.asarray(Z_red)
+        if Z_red.ndim == 1:
+            Z_red = Z_red.reshape(1, -1)
+        Z_full = np.tile(full_means, (Z_red.shape[0], 1))
+        Z_full[:, keep_idx] = Z_red
+        return clf.predict_proba(Z_full)
+
+    # 4) Build explainer in reduced space
     explainer = LimeTabularExplainer(
-        training_data=X_np,
-        feature_names=feat_names,
+        training_data=X_red,
+        feature_names=feat_red,
         discretize_continuous=True,
         mode="classification"
     )
 
-    # 3) Sample instances and aggregate weights
-    rng_l = np.random.default_rng(RSTATE)
-    idxs = rng_l.choice(X_np.shape[0], size=min(k, X_np.shape[0]), replace=False)
-    rows = []
+    # 5) Sample some rows and aggregate weights
+    rng = np.random.default_rng(rng_seed)
+    idxs = rng.choice(X_red.shape[0], size=min(k, X_red.shape[0]), replace=False)
+
     try:
-        pos = int(np.argmax(getattr(clf, "classes_", [0,1])))
+        pos = int(np.argmax(getattr(clf, "classes_", [0, 1])))
     except Exception:
         pos = 1
 
+    rows = []
     for i in idxs:
         exp = explainer.explain_instance(
-            X_np[i],
-            clf.predict_proba,
-            num_features=min(8, X_np.shape[1])
+            X_red[i],
+            _predict_proba_on_reduced,
+            num_features=min(8, X_red.shape[1])
         )
         for name, w in exp.as_list(label=pos):
             base = name.split()[0]
-            if base not in feat_names:
+            if base not in feat_red:
                 base = name
             rows.append((base, float(w)))
 
@@ -2251,11 +2297,11 @@ def _lime_avg(clf, X_np, feat_names, out_png, k=LIME_K):
         print("[LIME] No weights collected — skipping plot.")
         return
 
-    dfw = (pd.DataFrame(rows, columns=["feature","weight"])
+    dfw = (pd.DataFrame(rows, columns=["feature", "weight"])
              .groupby("feature", as_index=False)["weight"].mean()
              .sort_values("weight"))
 
-    plt.figure(figsize=(6,4))
+    plt.figure(figsize=(6, 4))
     plt.barh(dfw["feature"], dfw["weight"], edgecolor="black")
     plt.xlabel("Avg LIME weight")
     plt.tight_layout()
@@ -2348,8 +2394,15 @@ for target_name, kind, y_col, mask in targets:
                 _shap_summary(model, Xte, X.columns.tolist(),
                               _report_prefix(f"shap_summary__{target_name}", featset) + ".png")
             if SAVE_LIME and len(np.unique(ytr))==2 and len(Xte) >= 5:
-                _lime_avg(model, Xtr.values, X.columns.tolist(),
-                          _report_prefix(f"lime_avg__{target_name}", featset) + ".png", k=LIME_K)
+                _lime_avg(
+                    model,
+                    Xtr.values,
+                    X.columns.tolist(),
+                    _report_prefix(f"lime_avg__{target_name}", featset) + ".png",
+                    k=LIME_K,
+                    full_feat_names=X.columns.tolist(),     # full train feature order
+                    full_means=Xtr.mean(axis=0).values      # fill dropped cols with train means
+                )
 
             # Save small metrics CSV
             met_csv = _report_prefix(f"metrics__{target_name}", featset) + ".csv"
