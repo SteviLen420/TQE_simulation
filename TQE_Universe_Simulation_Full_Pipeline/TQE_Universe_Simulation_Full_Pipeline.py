@@ -1475,6 +1475,10 @@ if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True):
 # 15) Best CMB thumbnails (per top lock-in universes)
 # ======================================================
 
+global MAP_REG
+if "MAP_REG" not in globals():
+    MAP_REG = []
+
 if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
     print("[CMB][BEST] Generating best-CMB PNGs...")
 
@@ -1509,6 +1513,14 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
 
         out_dir = os.path.join(FIG_DIR, "cmb_best")
         os.makedirs(out_dir, exist_ok=True)
+
+        # --- also save raw maps + registry for later detectors ---
+        MAPS_DIR = os.path.join(FIG_DIR, "cmb_best", "maps")
+        os.makedirs(MAPS_DIR, exist_ok=True)
+
+        # Global registry of saved maps (uid, E, I, lock_epoch, mode, path)
+        if "MAP_REG" not in globals():
+            MAP_REG = []
 
         # Helper: consistent file naming with your variant tag (E+I / E-only)
         def _out_path(rank, uid):
@@ -1559,6 +1571,16 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                 if fwhm_deg > 0:
                     m_uK = hp.smoothing(m_uK, fwhm=np.deg2rad(fwhm_deg), verbose=False)
 
+                # --- save HEALPix map to FITS + register ---
+                map_fits = with_variant(os.path.join(MAPS_DIR, f"cmb_uid{uid:05d}.fits"))
+                hp.write_map(map_fits, m_uK, overwrite=True)
+                MAP_REG.append({
+                    "uid": uid,
+                    "E": E_val, "I": I_val, "lock_epoch": lock_ep,
+                    "mode": "healpix",
+                    "path": map_fits
+                })
+
                 # Robust color stretch + Planck colormap
                 vmin, vmax = np.percentile(m_uK, 1), np.percentile(m_uK, 99)
                 plt.figure(figsize=(9, 5.3))
@@ -1599,6 +1621,16 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                 m = np.fft.ifft2(F).real
                 m = (m - np.mean(m)) / (np.std(m) + 1e-12)
 
+                # --- save flat map to .npy + register ---
+                map_npy = with_variant(os.path.join(MAPS_DIR, f"cmb_uid{uid:05d}.npy"))
+                np.save(map_npy, m)
+                MAP_REG.append({
+                    "uid": uid,
+                    "E": E_val, "I": I_val, "lock_epoch": lock_ep,
+                    "mode": "flat",
+                    "path": map_npy
+                })
+
                 extent_deg = (N * dx) / 60.0
                 plt.figure(figsize=(7.8, 6.4))
                 plt.imshow(m, origin="lower", extent=[0, extent_deg, 0, extent_deg])
@@ -1627,6 +1659,9 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                 print(f"[CMB][BEST] Copied {cnt} PNG(s) to Drive: {GOOGLE_DIR}")
         except Exception as e:
             print("[CMB][BEST][WARN] Drive copy failed:", e)
+            print(f"[CMB][BEST] Saved maps in {MAPS_DIR}; MAP_REG entries:", len(MAP_REG))
+
+   
 
 # ======================================================
 # 16) CMB Cold-spot detector (use SAVED maps from MAP_REG)
