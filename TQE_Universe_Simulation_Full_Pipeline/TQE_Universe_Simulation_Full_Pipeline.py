@@ -165,7 +165,7 @@ MASTER_CTRL = {
     "BEST_SMOOTH_WINDOW": 9,        # Rolling average window size (>=1, 1 = disabled)
     "BEST_SHOW_REGIONS": True,      # If False, only plot the global entropy curve
     "BEST_ANNOTATE_LOCKIN": True,   # Draw vertical lock-in marker and annotation text
-    "BEST_ANNOTATION_OFFSET": 5,    # Horizontal offset for annotation text placement
+    "BEST_ANNOTATION_OFFSET": 3,    # Horizontal offset for annotation text placement
 
     # --- Extra robustness / docs ---
     "STAB_MIN_COUNT":       10,    # Minimum samples required in a stability bin; bins with fewer are ignored.
