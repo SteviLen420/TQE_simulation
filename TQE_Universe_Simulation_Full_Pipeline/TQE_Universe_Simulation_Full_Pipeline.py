@@ -1283,7 +1283,6 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None):
     plt.close()
 
     # after plt.savefig(out_png1) / plt.savefig(out_png2) and close()
-    print("[FT][CHECK] PNG exists:", os.path.exists(bar_png),  "->", bar_png)
     print("[FT][CHECK] PNG exists:", os.path.exists(out_png1), "->", out_png1)
     print("[FT][CHECK] PNG exists:", os.path.exists(out_png2), "->", out_png2)
 
