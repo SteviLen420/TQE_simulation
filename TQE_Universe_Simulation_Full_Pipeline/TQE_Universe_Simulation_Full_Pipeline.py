@@ -1619,13 +1619,15 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                     alpha = np.deg2rad(q_lon)          # Z-rotation
                     beta  = np.deg2rad(90.0 - q_lat)   # Y-rotation (to pole)
                     gamma = 0.0                        # final Z-rotation
-                    alm_full = hp.rotate_alm(alm_full, alpha, beta, gamma)
+                    alm_full = hp.rotate_alm(alm_full, alpha, beta, gamma, inplace=False)  # return new array
+
+                    if alm_full is None:
+                        raise RuntimeError("rotate_alm returned None – check healpy version / arguments")
 
                     # 4) gently boost ℓ=2 and ℓ=3 to emphasize AoE alignment
-                    boost = float(MASTER_CTRL.get("CMB_AOE_L23_BOOST", 1.5))  # 1.5–3.0
                     l_arr, m_arr = hp.Alm.getlm(LMAX_AOE)
-                    mask23 = (l_arr==2) | (l_arr==3)
-                    alm_full[mask23] *= boost
+                    mask23 = (l_arr == 2) | (l_arr == 3)
+                    alm_full[mask23] *= float(MASTER_CTRL.get("CMB_AOE_L23_BOOST", 1.5))
 
                     # 5) back to a map (still in μK) for saving/plot
                     m_uK = hp.alm2map(alm_full, nside=nside, verbose=False)
