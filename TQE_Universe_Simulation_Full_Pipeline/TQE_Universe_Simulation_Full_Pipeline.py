@@ -183,15 +183,15 @@ MASTER_CTRL = {
     "CMB_NSIDE": 128,                  # Resolution for healpy maps
     "CMB_NPIX": 512,                  # Pixel count for flat-sky maps
     "CMB_PIXSIZE_ARCMIN": 3.0,        # Pixel size in arcmin for flat-sky
-    "CMB_POWER_SLOPE": 1.5,           # Power spectrum slope (Pk ~ k^-slope)
-    "CMB_SMOOTH_FWHM_DEG": 0.1,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
+    "CMB_POWER_SLOPE": 1.0,           # Power spectrum slope (Pk ~ k^-slope)
+    "CMB_SMOOTH_FWHM_DEG": 0.0,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
 
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
-    "CMB_COLD_SIGMA_ARCMIN":      [120, 240, 360, 480],  # Gaussian smoothing scales (arcmin)
+    "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 120, 240],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    45,                   # Minimal separation between spots (arcmin)
-    "CMB_COLD_Z_THRESH":          -6,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_Z_THRESH":          -2,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
     "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
@@ -208,7 +208,7 @@ MASTER_CTRL = {
     "CMB_AOE_MAX_OVERLAYS": 3,          # maximum number of AoE overlay PNGs to generate
     "CMB_AOE_PHASE_LOCK":  True,   # do the quadrupole-axis rotation & boost
     "CMB_AOE_LMAX_BEST":   64,     # alm lmax during phase lock step
-    "CMB_AOE_L23_BOOST":   1.5,    # 1.5–3.0: strength of ℓ=2,3 boost
+    "CMB_AOE_L23_BOOST":   3.0,    # 1.5–3.0: strength of ℓ=2,3 boost
     "AOE_REF_ANGLE_DEG":   20.0,        # reference alignment angle (Planck/WMAP ~20°)
     
 
