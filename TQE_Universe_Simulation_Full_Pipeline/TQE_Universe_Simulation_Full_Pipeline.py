@@ -1171,8 +1171,9 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
 import itertools
 
-os.makedirs(os.path.join(FIG_DIR, "ft"), exist_ok=True)
-os.makedirs(FIG_DIR, exist_ok=True)
+# --- Finetune output dir ---
+FINETUNE_DIR = os.path.join(FIG_DIR, "Finetune")
+os.makedirs(FINETUNE_DIR, exist_ok=True)
 os.makedirs(SAVE_DIR, exist_ok=True)
 METRIC = MASTER_CTRL.get("FT_METRIC", "stability")  # "stability" or "lockin"
 
@@ -1221,8 +1222,7 @@ def _plot_two_bar_with_ci(labels, counts, totals, title, out_png):
     plt.savefig(out_png, dpi=220, bbox_inches="tight")
     plt.close()
 
-def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
-    # Make quantile-binned curve of P(metric) vs |E-I| and SAVE CSV/PNG
+def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None):
     dx = np.abs(df_in["E"] - df_in["I"]).values
     mask = np.isfinite(dx)
     dx = dx[mask]
@@ -1238,10 +1238,7 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
         lo, hi = edges[i], edges[i+1] if i+1 < len(edges) else edges[-1]
         m = (dx >= lo) & (dx <= hi if i+1 == len(edges)-1 else dx < hi)
         n = int(m.sum())
-        if METRIC == "lockin" and lockin_arr is not None:
-            k = int(lockin_arr[m].sum())
-        else:
-            k = int(stable_arr[m].sum())
+        k = int(lockin_arr[m].sum()) if (METRIC == "lockin" and lockin_arr is not None) else int(stable_arr[m].sum())
         lo_ci, p_hat, hi_ci = _wilson_interval(k, n)
         rows.append({
             "q_lo": qs[i], "q_hi": qs[i+1] if i+1 < len(qs) else 1.0,
@@ -1253,32 +1250,35 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
     dfq = pd.DataFrame(rows)
     if out_csv: dfq.to_csv(out_csv, index=False)
 
-    if out_png:
-        mid = 0.5*(dfq["gap_lo"] + dfq["gap_hi"])
-        y = dfq["p"].values
-        yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
+    # --- plots ---
+    if out_dir is None:
+        out_dir = FINETUNE_DIR
+    mid = 0.5*(dfq["gap_lo"] + dfq["gap_hi"])
+    y = dfq["p"].values
+    yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
 
-        # --- (A) Quantile-binned curve ---
-        plt.figure(figsize=(7,5))
-        plt.errorbar(mid, y, yerr=yerr, fmt='-o')
-        plt.title("Fine-tuning — Lock-in probability vs |E − I|")
-        plt.xlabel("|E − I| (bin mid)")
-        plt.ylabel("P(lock-in)" if METRIC=="lockin" else "P(stable)")
-        plt.tight_layout()
-        out_png1 = with_variant(os.path.join(FIG_DIR, "ft", "finetuning_lockin_probability.png"))
-        plt.savefig(out_png1, dpi=220, bbox_inches="tight")
-        plt.close()
+    # (A) fő görbe
+    plt.figure(figsize=(7,5))
+    plt.errorbar(mid, y, yerr=yerr, fmt='-o')
+    plt.title("Fine-tuning — Lock-in probability vs |E − I|")
+    plt.xlabel("|E − I| (bin mid)")
+    plt.ylabel("P(lock-in)" if METRIC=="lockin" else "P(stable)")
+    plt.tight_layout()
+    out_png1 = with_variant(os.path.join(out_dir, "finetune_gap_curve.png"))
+    plt.savefig(out_png1, dpi=220, bbox_inches="tight")
+    plt.close()
 
-        # --- (B) Adaptive split (placeholder) ---
-        plt.figure(figsize=(7,5))
-        plt.errorbar(mid, y, yerr=yerr, fmt='-o')
-        plt.title("Fine-tuning — Lock-in probability by adaptive |E − I| split")
-        plt.xlabel("|E − I| (bin mid)")
-        plt.ylabel("P(lock-in)" if METRIC=="lockin" else "P(stable)")
-        plt.tight_layout()
-        out_png2 = with_variant(os.path.join(FIG_DIR, "ft", "finetuning_lockin_adaptive.png"))
-        plt.savefig(out_png2, dpi=220, bbox_inches="tight")
-        plt.close()
+    # (B) adaptív split – ha kell külön fájlba, de NEM duplikált névvel
+    plt.figure(figsize=(7,5))
+    plt.errorbar(mid, y, yerr=yerr, fmt='-o')
+    plt.title("Fine-tuning — Lock-in probability by adaptive |E − I| split")
+    plt.xlabel("|E − I| (bin mid)")
+    plt.ylabel("P(lock-in)" if METRIC=="lockin" else "P(stable)")
+    plt.tight_layout()
+    out_png2 = with_variant(os.path.join(out_dir, "finetune_gap_adaptive.png"))
+    plt.savefig(out_png2, dpi=220, bbox_inches="tight")
+    plt.close()
+
     return dfq
 
 # ---------- Fine-tune explainability helpers (E≈I) ----------
@@ -1441,7 +1441,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
         sl_df.to_csv(sl_csv, index=False)
         out["files"]["slice_csv"] = sl_csv
 
-        bar_png = with_variant(os.path.join(FIG_DIR, "ft_slice_adaptive.png"))
+        bar_png = with_variant(os.path.join(FINETUNE_DIR, "lockin_by_eqI_bar.png"))
         title = ("Lock-in" if METRIC=="lockin" else "Stability") + \
                 (" by Energy (Only E)" if VARIANT == "energy_only" else " by E≈I (adaptive epsilon)")
         # use the chosen numerator column "k"
@@ -1454,14 +1454,16 @@ def run_finetune_detector(df_in: pd.DataFrame):
         )
         out["files"]["slice_png"] = bar_png
 
-        q_csv = with_variant(os.path.join(SAVE_DIR, "ft_stability_vs_gap_quantiles.csv"))
-        q_png = with_variant(os.path.join(FIG_DIR, "ft_stability_vs_gap_quantiles.png"))
+        q_csv = with_variant(os.path.join(SAVE_DIR, "finetune_stability_vs_gap_quantiles.csv"))
         _stability_vs_gap_quantiles(
-            df_in, qbins=MASTER_CTRL.get("FT_GAP_QBINS", 10),
-            out_csv=q_csv, out_png=q_png
+            df_in,
+            qbins=MASTER_CTRL.get("FT_GAP_QBINS", 10),
+            out_csv=q_csv,
+            out_dir=FINETUNE_DIR
         )
         out["files"]["gap_quantiles_csv"] = q_csv
-        out["files"]["gap_quantiles_png"] = q_png
+        out["files"]["gap_quantiles_png_curve"]    = with_variant(os.path.join(FINETUNE_DIR, "finetune_gap_curve.png"))
+        out["files"]["gap_quantiles_png_adaptive"] = with_variant(os.path.join(FINETUNE_DIR, "finetune_gap_adaptive.png"))
     else:
         print("[FT] Skipping E≈I slice analysis (missing E or I column).")
 
