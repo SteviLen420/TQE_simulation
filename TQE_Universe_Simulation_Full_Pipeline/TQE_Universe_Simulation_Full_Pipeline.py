@@ -182,29 +182,30 @@ MASTER_CTRL = {
     # --- CMB map parameters ---
     "CMB_NSIDE": 64,                  # Resolution for healpy maps
     "CMB_NPIX": 512,                  # Pixel count for flat-sky maps
-    "CMB_PIXSIZE_ARCMIN": 5.0,        # Pixel size in arcmin for flat-sky
+    "CMB_PIXSIZE_ARCMIN": 3.0,        # Pixel size in arcmin for flat-sky
     "CMB_POWER_SLOPE": 2.0,           # Power spectrum slope (Pk ~ k^-slope)
     "CMB_SMOOTH_FWHM_DEG": 1.0,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
 
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
-    "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 120],        # Gaussian smoothing scales (arcmin)
+    "CMB_COLD_SIGMA_ARCMIN":      [60, 120, 240, 360],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    45,                   # Minimal separation between spots (arcmin)
-    "CMB_COLD_Z_THRESH":          -2.5,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_Z_THRESH":          -4.5,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
-    "CMB_COLD_MODE":              "healpix",               # Backend selection: "auto" | "healpix" | "flat"
+    "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
     "CMB_COLD_OVERLAY":           True,                 # Draw markers on the full-sky/flat map overlays
+    "CMB_COLD_MAX_OVERLAYS":      3,                    # max. cold-spot overlay PNG
 
     # --- CMB Axis-of-Evil detector ---
-    "CMB_AOE_ENABLE":      True,   # Enable/disable the Axis-of-Evil detector
-    "CMB_AOE_LMAX":        3,      # Maximum multipole ℓ to check (ℓ=3 is standard for AoE)
-    "CMB_AOE_NREALIZ":     1000,   # Number of Monte Carlo randomizations for significance (p-value)
-    "CMB_AOE_OVERLAY":     True,   # Overlay principal axes on the CMB map PNG
-    "CMB_AOE_MODE":        "healpix", # Backend selection: "auto" | "healpix" | "flat"
-    "CMB_AOE_SEED_OFFSET": 909,    # Per-universe seed offset to keep AoE maps reproducible
-    "CMB_AOE_MAX_OVERLAYS": 5,  # maximum number of AoE overlay PNGs to generate
+    "CMB_AOE_ENABLE":      True,        # Enable/disable the Axis-of-Evil detector
+    "CMB_AOE_LMAX":        3,           # Maximum multipole ℓ to check (ℓ=3 is standard for AoE)
+    "CMB_AOE_NREALIZ":     1000,        # Number of Monte Carlo randomizations for significance (p-value)
+    "CMB_AOE_OVERLAY":     True,        # Overlay principal axes on the CMB map PNG
+    "CMB_AOE_MODE":        "healpix",   # Backend selection: "auto" | "healpix" | "flat"
+    "CMB_AOE_SEED_OFFSET": 909,         # Per-universe seed offset to keep AoE maps reproducible
+    "CMB_AOE_MAX_OVERLAYS": 3,          # maximum number of AoE overlay PNGs to generate
 
     # --- Machine Learning / XAI ---
     "RUN_XAI":              True,   # master switch for XAI section
@@ -1729,8 +1730,12 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
         print("[CMB][COLD] No MAP_REG found (no saved Best CMB maps). Skipping.")
     else:
         all_rows = []
+        max_ol = int(MASTER_CTRL.get("CMB_COLD_MAX_OVERLAYS", 3))
+        ol_cnt = 0
 
         for rec in MAP_REG:
+            if ol_cnt >= max_ol:
+                break 
             uid = int(rec["uid"])
             E_val = float(rec["E"]); I_val = float(rec["I"]); lock_ep = int(rec["lock_epoch"])
             mode = rec["mode"]; path = rec["path"]
@@ -1799,6 +1804,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                             hp.projplot(th, ph, 'o', ms=6)
                         out_png = with_variant(os.path.join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
                         plt.savefig(out_png, dpi=200, bbox_inches="tight"); plt.close(fig)
+                        ol_cnt += 1
 
             else:
                 # --- load FLAT map (.npy)
@@ -1851,6 +1857,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                         plt.title(f"Cold spots [{title_variant}] — uid {uid}, lock-in {lock_ep} (top {len(picked)})")
                         out_png = with_variant(os.path.join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
                         plt.savefig(out_png, dpi=200, bbox_inches="tight"); plt.close()
+                        ol_cnt += 1
 
         # --- outputs
         import pandas as pd
@@ -1886,7 +1893,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                 plt.imshow(H2.T, origin="lower", extent=[0, 360, -90, 90], aspect="auto")
                 plt.colorbar(label="Előfordulás")
                 plt.xlabel("Longitude (°)"); plt.ylabel("Latitude (°)")
-                plt.title("Cold Spot pozíció eloszlás (összes kiválasztott térkép)")
+                plt.title("Cold Spot position distribution (all selected maps)")
                 out_pos = with_variant(os.path.join(COLD_DIR, "coldspots_pos_heatmap.png"))
                 plt.savefig(out_pos, dpi=200, bbox_inches="tight"); plt.close()
                 print("[CMB][COLD] FIG:", out_pos)
@@ -1936,13 +1943,8 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
         print("[CMB][AOE] No MAP_REG / healpy missing. Skipping.")
     else:
         rows = []
-        max_n = int(MASTER_CTRL.get("CMB_AOE_MAX_OVERLAYS", 0))
-
-        for i, rec in enumerate(MAP_REG):
-            if max_n and i >= max_n:
-                break
-            if rec.get("mode") != "healpix":
-                continue
+        max_n = int(MASTER_CTRL.get("CMB_AOE_MAX_OVERLAYS", 3))
+        ol_cnt = 0
 
         # --- helper: extract a single-ℓ map via almxfl (safe & lmax-agnostic) ---
         def _axis_from_lmap(alm_full, nside, ell_pick, lmax_used):
@@ -1971,6 +1973,8 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             return float(np.degrees(np.arccos(c)))
 
         for rec in MAP_REG:
+            if ol_cnt >= max_ol:
+                break     
             if rec.get("mode") != "healpix":
                 continue  # AoE requires HEALPix
 
@@ -2011,6 +2015,7 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
                 out_png = with_variant(os.path.join(AOE_DIR, f"aoe_overlay_uid{uid:05d}.png"))
                 plt.savefig(out_png, dpi=200, bbox_inches="tight")
                 plt.close(fig)
+                ol_cnt += 1
 
         # Save summary
         if rows:
