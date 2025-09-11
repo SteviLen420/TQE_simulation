@@ -189,9 +189,9 @@ MASTER_CTRL = {
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
-    "CMB_COLD_SIGMA_ARCMIN":      [60, 120, 240, 360],  # Gaussian smoothing scales (arcmin)
+    "CMB_COLD_SIGMA_ARCMIN":      [120, 240, 360, 480],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    45,                   # Minimal separation between spots (arcmin)
-    "CMB_COLD_Z_THRESH":          -1.5,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_Z_THRESH":          -6,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
     "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
@@ -206,6 +206,9 @@ MASTER_CTRL = {
     "CMB_AOE_MODE":        "healpix",   # Backend selection: "auto" | "healpix" | "flat"
     "CMB_AOE_SEED_OFFSET": 909,         # Per-universe seed offset to keep AoE maps reproducible
     "CMB_AOE_MAX_OVERLAYS": 3,          # maximum number of AoE overlay PNGs to generate
+    "CMB_AOE_PHASE_LOCK":  True,   # do the quadrupole-axis rotation & boost
+    "CMB_AOE_LMAX_BEST":   64,     # alm lmax during phase lock step
+    "CMB_AOE_L23_BOOST":   1.5,    # 1.5–3.0: strength of ℓ=2,3 boost
     "AOE_REF_ANGLE_DEG":   20.0,        # reference alignment angle (Planck/WMAP ~20°)
     
 
@@ -1591,6 +1594,40 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                 fwhm_deg = float(MASTER_CTRL.get("CMB_SMOOTH_FWHM_DEG", 1.0))
                 if fwhm_deg > 0:
                     m_uK = hp.smoothing(m_uK, fwhm=np.deg2rad(fwhm_deg), verbose=False)
+
+                # --- AoE linking: optional phase-lock & boost for ℓ=2,3 BEFORE saving FITS ---
+                if MASTER_CTRL.get("CMB_AOE_PHASE_LOCK", True):
+                    LMAX_AOE = int(MASTER_CTRL.get("CMB_AOE_LMAX_BEST", 64))
+                    LMAX_AOE = min(LMAX_AOE, 3*nside-1)
+
+                    # 1) spherical harmonics of the current map
+                    alm_full = hp.map2alm(m_uK, lmax=LMAX_AOE, iter=0)
+
+                    # 2) find quadrupole & octupole principal axes (same helpers as AOE block)
+                    def _axis_from_lmap(alm, nside, ell, lmax):
+                        fl = np.zeros(lmax+1); fl[ell] = 1.0
+                        alm_l = hp.almxfl(alm, fl)
+                        m_l   = hp.alm2map(alm_l, nside=nside, verbose=False)
+                        ip    = int(np.argmax(np.abs(m_l)))
+                        th, ph = hp.pix2ang(nside, ip)
+                        return (float(np.degrees(ph) % 360.0), float(90.0 - np.degrees(th)))
+
+                    q_lon, q_lat = _axis_from_lmap(alm_full, nside, 2, LMAX_AOE)
+                    o_lon, o_lat = _axis_from_lmap(alm_full, nside, 3, LMAX_AOE)
+
+                    # 3) rotate so that the chosen 'common axis' is the quadrupole axis
+                    #    (this sets the quadrupole pole; octupole stays close but not exact)
+                    R = hp.rotator.Rotator(deg=True, rot=[q_lon, 90.0 - q_lat, 0.0])
+                    alm_full = hp.rotate_alm(alm_full, R, pol=False)
+
+                    # 4) gently boost ℓ=2 and ℓ=3 to emphasize AoE alignment
+                    boost = float(MASTER_CTRL.get("CMB_AOE_L23_BOOST", 1.5))  # 1.5–3.0
+                    l_arr, m_arr = hp.Alm.getlm(LMAX_AOE)
+                    mask23 = (l_arr==2) | (l_arr==3)
+                    alm_full[mask23] *= boost
+
+                    # 5) back to a map (still in μK) for saving/plot
+                    m_uK = hp.alm2map(alm_full, nside=nside, verbose=False)
 
                 # --- save HEALPix map to FITS + register ---
                 map_fits = with_variant(os.path.join(MAPS_DIR, f"cmb_uid{uid:05d}.fits"))
