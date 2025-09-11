@@ -188,7 +188,7 @@ MASTER_CTRL = {
 
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
-    "CMB_COLD_TOPK":              5,                    # Top-K cold spots to keep per universe
+    "CMB_COLD_TOPK":              3,                    # Top-K cold spots to keep per universe
     "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 120],        # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    45,                   # Minimal separation between spots (arcmin)
     "CMB_COLD_Z_THRESH":          -2.5,                 # Keep spots with z <= threshold (more negative = colder)
@@ -1167,6 +1167,7 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
 import itertools
 
+os.makedirs(os.path.join(FIG_DIR, "ft"), exist_ok=True)
 os.makedirs(FIG_DIR, exist_ok=True)
 os.makedirs(SAVE_DIR, exist_ok=True)
 METRIC = MASTER_CTRL.get("FT_METRIC", "stability")  # "stability" or "lockin"
@@ -1700,15 +1701,15 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
     os.makedirs(COLD_DIR, exist_ok=True)
     title_variant = "E-only" if VARIANT == "energy_only" else "E+I"
     ARC_MIN_TO_RAD = np.pi / (180.0 * 60.0)
-    pix_arcmin     = float(MASTER_CTRL.get("CMB_PIXSIZE_ARCMIN", 5.0))  # flat-skyhoz
+    pix_arcmin     = float(MASTER_CTRL.get("CMB_PIXSIZE_ARCMIN", 5.0))  
     sigma_list_am  = MASTER_CTRL.get("CMB_COLD_SIGMA_ARCMIN", [30, 60, 120])
     min_sep_am     = float(MASTER_CTRL.get("CMB_COLD_MIN_SEP_ARCMIN", 45))
     z_thresh       = float(MASTER_CTRL.get("CMB_COLD_Z_THRESH", -2.5))
-    topk           = int(MASTER_CTRL.get("CMB_COLD_TOPK", 5))  # ha nem kell Top-K: állítsd 999-re
+    topk           = int(MASTER_CTRL.get("CMB_COLD_TOPK", 5)) 
 
-    # --- helper: greedy min-picking min. távolsággal
+    # --- helper: greedy min-picking with minimum distance
     def _greedy_pick(coords, values, min_sep):
-        order = np.argsort(values)  # legnegatívabb elöl
+        order = np.argsort(values)  # most negative first
         picked = []
         for idx in order:
             c = coords[idx]
@@ -1722,7 +1723,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                 picked.append(idx)
         return np.array(picked, dtype=int)
 
-    # --- ellenőrzés
+    # --- check
     if "MAP_REG" not in globals() or len(MAP_REG) == 0:
         print("[CMB][COLD] No MAP_REG found (no saved Best CMB maps). Skipping.")
     else:
@@ -1741,7 +1742,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                 m = hp.read_map(path, verbose=False)
                 nside = hp.get_nside(m); npix = m.size
                 theta, phi = hp.pix2ang(nside, np.arange(npix))
-                # egységgömb koordináták (chord távolsághoz)
+                # unit sphere coordinates (for chord distance)
                 x = np.sin(theta) * np.cos(phi)
                 y = np.sin(theta) * np.sin(phi)
                 z = np.cos(theta)
@@ -1749,14 +1750,14 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                 sep_rad   = min_sep_am * ARC_MIN_TO_RAD
                 min_chord = 2.0 * np.sin(sep_rad / 2.0)
 
-                # --- multi-scale smoothing + lokális minimumok
+                # --- multi-scale smoothing + local minima
                 cand_idx, cand_z, cand_scale = [], [], []
                 for sig_am in sigma_list_am:
                     sigma_rad = sig_am * ARC_MIN_TO_RAD
                     fwhm = sigma_rad * np.sqrt(8.0 * np.log(2.0))
                     ms = hp.smoothing(m, fwhm=fwhm, verbose=False)
 
-                    # szomszéd-ellenőrzés
+                    # neighbor check
                     is_min = np.ones(npix, dtype=bool)
                     for p in range(npix):
                         neigh = hp.get_all_neighbours(nside, p); neigh = neigh[neigh >= 0]
@@ -1800,7 +1801,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
 
             else:
                 # --- load FLAT map (.npy)
-                m = np.load(path)  # (N,N), z-score vagy μK skála a mentésed szerint
+                m = np.load(path)  # (N,N), z-score or μK scale depending on your saving convention
                 H, W = m.shape
                 extent_deg = (H * pix_arcmin) / 60.0
 
