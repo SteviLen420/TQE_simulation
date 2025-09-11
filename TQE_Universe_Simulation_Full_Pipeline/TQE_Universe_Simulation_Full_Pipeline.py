@@ -1253,9 +1253,9 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None, bar
     dfq = pd.DataFrame(rows)
     if out_csv: dfq.to_csv(out_csv, index=False)
 
-    # --- plots ---
     if out_dir is None:
         out_dir = FINETUNE_DIR
+
     mid = 0.5*(dfq["gap_lo"] + dfq["gap_hi"])
     y = dfq["p"].values
     yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
@@ -1282,21 +1282,20 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None, bar
     plt.savefig(out_png2, dpi=220, bbox_inches="tight")
     plt.close()
 
-    # after plt.savefig(out_png1) / plt.savefig(out_png2) and close()
+    # quick sanity print
     print("[FT][CHECK] PNG exists:", os.path.exists(out_png1), "->", out_png1)
     print("[FT][CHECK] PNG exists:", os.path.exists(out_png2), "->", out_png2)
 
-    # --- after saving bar_png / out_png1 / out_png2: push directly to Drive (failsafe)
+    # optional: push to Drive
     try:
         if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
             DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
-            GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, "figs")
+            GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, "figs", "Finetune")
             os.makedirs(GOOGLE_DIR, exist_ok=True)
             for pth in [bar_png, out_png1, out_png2]:
                 if pth and os.path.exists(pth):
-                    dst = os.path.join(GOOGLE_DIR, os.path.basename(pth))
-                    shutil.copy2(pth, dst)
-                    print("[FT][PUSH] ->", dst)
+                    shutil.copy2(pth, os.path.join(GOOGLE_DIR, os.path.basename(pth)))
+                    print("[FT][PUSH] ->", os.path.join(GOOGLE_DIR, os.path.basename(pth)))
     except Exception as e:
         print("[FT][PUSH][WARN]", e)
 
