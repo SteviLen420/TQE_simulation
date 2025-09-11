@@ -1520,27 +1520,39 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
             png_path = _out_path(r+1, uid)
 
             if use_healpy:
-                # ---- HEALPix map synthesis (very lightweight pseudo C_ell) ----
-                nside = int(MASTER_CTRL.get("CMB_NSIDE", 64))
+                # ---- HEALPix full-sky, Planck-like Mollweide ----
+                nside = int(MASTER_CTRL.get("CMB_NSIDE", 128))
                 lmax  = 3 * nside - 1
-                ell = np.arange(lmax + 1, dtype=float)
-                cl = np.zeros_like(ell)
-                cl[1:] = 1.0 / (ell[1:] * (ell[1:] + 1.0))
-                # Slight per-universe amplitude modulation (keeps diversity)
-                cl *= float(rng_best.lognormal(mean=0.0, sigma=0.25))
 
-                alm = hp.synalm(cl, lmax=lmax, new=True, verbose=False)
-                m   = hp.alm2map(alm, nside=nside, verbose=False)
-                m = (m - np.mean(m)) / (np.std(m) + 1e-12)
+                # Simple power-law C_ell ~ ell^{-slope} (start from ell>=2)
+                slope = float(MASTER_CTRL.get("CMB_POWER_SLOPE", 2.0))
+                ells  = np.arange(lmax + 1, dtype=float)
+                Cl    = np.zeros_like(ells, dtype=float)
+                Cl[2:] = 1.0 / np.maximum(ells[2:], 1.0) ** slope
 
-                # Plot
+                # Small per-universe amplitude jitter (keeps diversity)
+                amp = float(np.exp(rng_best.normal(0.0, 0.2)))
+                Cl *= amp * 1e-10    # arbitrary μK^2 scale to keep values reasonable
+
+                # Simulate full-sky map and smooth a bit (beam)
+                m_uK = hp.synfast(Cl, nside=nside, lmax=lmax, new=True, verbose=False) * 1e6
+                fwhm_deg = float(MASTER_CTRL.get("CMB_SMOOTH_FWHM_DEG", 1.0))
+                if fwhm_deg > 0:
+                    m_uK = hp.smoothing(m_uK, fwhm=np.deg2rad(fwhm_deg), verbose=False)
+
+                # Robust color stretch + Planck colormap
+                vmin, vmax = np.percentile(m_uK, 1), np.percentile(m_uK, 99)
                 plt.figure(figsize=(9, 5.3))
                 hp.mollview(
-                    m, title=f"Best CMB [{title_variant}] — uid {uid}, lock-in {lock_ep}\nE={E_val:.3g}, I={I_val:.3g}",
-                    unit="μK (z-score)", norm=None
+                    m_uK,
+                    title=f"Best CMB [{title_variant}] — uid {uid}, lock-in {lock_ep}\nE={E_val:.3g}, I={I_val:.3g}",
+                    unit="μK",
+                    min=vmin, max=vmax,
+                    cmap=hp.visufunc.planck_cmap()
                 )
-                hp.graticule()
+                hp.graticule(ls=":", alpha=0.5)
                 _save_close(png_path)
+                
             else:
                 # ---- Flat-sky GRF with power-law spectrum ----
                 N   = int(MASTER_CTRL.get("CMB_NPIX", 512))
