@@ -2540,7 +2540,7 @@ print("[XAI] Multi-target XAI complete.")
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     try:
         # Config from MASTER_CTRL
-        DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_(E,I)_KL_Shannon")
+        DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
         ALLOWED_EXTS = set(MASTER_CTRL.get("ALLOW_FILE_EXTS", [".png", ".fits", ".csv", ".json", ".txt", ".npy"]))
         MAX_FILES = MASTER_CTRL.get("MAX_FILES_TO_SAVE",
                     MASTER_CTRL.get("MAX_FIGS_TO_SAVE", None))  
