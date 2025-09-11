@@ -1225,6 +1225,25 @@ def _plot_two_bar_with_ci(labels, counts, totals, title, out_png):
     plt.savefig(out_png, dpi=220, bbox_inches="tight")
     plt.close()
 
+def _select_eps_by_share(gaps, target_share=0.20, min_n=30):
+    """
+    Choose eps so that about `target_share` of samples satisfy |E-I| <= eps,
+    but at least `min_n` samples fall inside. Returns float eps or None.
+    """
+    g = np.asarray(gaps, dtype=float)
+    g = g[np.isfinite(g)]
+    if g.size == 0:
+        return None
+    g = np.abs(g)
+    g.sort()
+    target_n = max(int(np.ceil(target_share * len(g))), int(min_n))
+    target_n = min(target_n, len(g) - 1) if len(g) > 1 else 0
+    eps = float(g[target_n])
+    # ha minden 0, adjunk nagyon kicsi értéket
+    if not np.isfinite(eps) or eps == 0.0:
+        eps = float(g[-1]) if np.isfinite(g[-1]) else 0.0
+    return eps
+
 def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None, bar_png=None):
     dx = np.abs(df_in["E"] - df_in["I"]).values
     mask = np.isfinite(dx)
