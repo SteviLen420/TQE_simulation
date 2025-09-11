@@ -1619,7 +1619,8 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                     alpha = np.deg2rad(q_lon)          # Z-rotation
                     beta  = np.deg2rad(90.0 - q_lat)   # Y-rotation (to pole)
                     gamma = 0.0                        # final Z-rotation
-                    alm_full = hp.rotate_alm(alm_full, alpha, beta, gamma, inplace=False)  # return new array
+                    
+                    alm_full = hp.rotate_alm(alm_full, alpha, beta, gamma)
 
                     if alm_full is None:
                         raise RuntimeError("rotate_alm returned None – check healpy version / arguments")
