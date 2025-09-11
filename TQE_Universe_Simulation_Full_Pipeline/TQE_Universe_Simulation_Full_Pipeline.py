@@ -187,7 +187,7 @@ MASTER_CTRL = {
     "CMB_SMOOTH_FWHM_DEG": 1.0,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
 
     # --- CMB cold-spot detector ---
-    "CMB_COLD_ENABLE":            False,                 # Enable/disable the cold-spot detector
+    "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              5,                    # Top-K cold spots to keep per universe
     "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 120],        # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    45,                   # Minimal separation between spots (arcmin)
@@ -198,7 +198,7 @@ MASTER_CTRL = {
     "CMB_COLD_OVERLAY":           True,                 # Draw markers on the full-sky/flat map overlays
 
     # --- CMB Axis-of-Evil detector ---
-    "CMB_AOE_ENABLE":      False,   # Enable/disable the Axis-of-Evil detector
+    "CMB_AOE_ENABLE":      True,   # Enable/disable the Axis-of-Evil detector
     "CMB_AOE_LMAX":        3,      # Maximum multipole ℓ to check (ℓ=3 is standard for AoE)
     "CMB_AOE_NREALIZ":     1000,   # Number of Monte Carlo randomizations for significance (p-value)
     "CMB_AOE_OVERLAY":     True,   # Overlay principal axes on the CMB map PNG
@@ -219,8 +219,8 @@ MASTER_CTRL = {
 
         # --- XAI (Explainable AI) controls ---
     "XAI_ENABLE_STABILITY":   True,   # Enable SHAP/LIME analysis for stability classification
-    "XAI_ENABLE_COLD":        False,   # Enable SHAP/LIME analysis for cold-spot detection
-    "XAI_ENABLE_AOE":         False,   # Enable SHAP/LIME analysis for Axis-of-Evil
+    "XAI_ENABLE_COLD":        True,   # Enable SHAP/LIME analysis for cold-spot detection
+    "XAI_ENABLE_AOE":         True,   # Enable SHAP/LIME analysis for Axis-of-Evil
     "XAI_ENABLE_FINETUNE":    True,   # Enable SHAP/LIME analysis for fine-tuning detector
 
     # Feature sets for model training
