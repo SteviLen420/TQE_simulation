@@ -2201,34 +2201,66 @@ def _shap_summary(model, X_plot, feat_names, out_png):
     plt.savefig(out_png, dpi=220, bbox_inches="tight")
     plt.close()
 
+# --- ADD above _lime_avg ---
+def _remove_constant_features(X_np, feat_names, eps=1e-12):
+    """Drop features with (near) zero variance to avoid truncnorm(scale=0) in LIME."""
+    stds = X_np.std(axis=0)
+    mask = stds > eps
+    return X_np[:, mask], [f for f, keep in zip(feat_names, mask) if keep]
+
+# --- REPLACE your existing _lime_avg with this version ---
 def _lime_avg(clf, X_np, feat_names, out_png, k=LIME_K):
-    explainer = LimeTabularExplainer(training_data=X_np, feature_names=feat_names,
-                                     discretize_continuous=True, mode="classification")
+    """Average LIME importances with safety against constant columns."""
+    # 1) Safety: remove (near) constant columns
+    X_np, feat_names = _remove_constant_features(X_np, feat_names)
+    if X_np.shape[1] == 0:
+        print("[LIME] All features are constant — skipping.")
+        return
+
+    # 2) Build explainer on training-like background
+    from lime.lime_tabular import LimeTabularExplainer
+    explainer = LimeTabularExplainer(
+        training_data=X_np,
+        feature_names=feat_names,
+        discretize_continuous=True,
+        mode="classification"
+    )
+
+    # 3) Sample instances and aggregate weights
     rng_l = np.random.default_rng(RSTATE)
     idxs = rng_l.choice(X_np.shape[0], size=min(k, X_np.shape[0]), replace=False)
     rows = []
-    # choose positive class if available
     try:
-        pos = int(np.argmax(clf.classes_))
+        pos = int(np.argmax(getattr(clf, "classes_", [0,1])))
     except Exception:
         pos = 1
+
     for i in idxs:
-        exp = explainer.explain_instance(X_np[i], clf.predict_proba,
-                                         num_features=min(8, X_np.shape[1]))
+        exp = explainer.explain_instance(
+            X_np[i],
+            clf.predict_proba,
+            num_features=min(8, X_np.shape[1])
+        )
         for name, w in exp.as_list(label=pos):
             base = name.split()[0]
-            if base not in feat_names: base = name
+            if base not in feat_names:
+                base = name
             rows.append((base, float(w)))
-    if rows:
-        dfw = (pd.DataFrame(rows, columns=["feature","weight"])
-                 .groupby("feature", as_index=False)["weight"].mean()
-                 .sort_values("weight"))
-        plt.figure(figsize=(6,4))
-        plt.barh(dfw["feature"], dfw["weight"], edgecolor="black")
-        plt.xlabel("Avg LIME weight")
-        plt.tight_layout()
-        plt.savefig(out_png, dpi=220, bbox_inches="tight")
-        plt.close()
+
+    if not rows:
+        print("[LIME] No weights collected — skipping plot.")
+        return
+
+    dfw = (pd.DataFrame(rows, columns=["feature","weight"])
+             .groupby("feature", as_index=False)["weight"].mean()
+             .sort_values("weight"))
+
+    plt.figure(figsize=(6,4))
+    plt.barh(dfw["feature"], dfw["weight"], edgecolor="black")
+    plt.xlabel("Avg LIME weight")
+    plt.tight_layout()
+    plt.savefig(out_png, dpi=220, bbox_inches="tight")
+    plt.close()
 
 def _report_prefix(target, featset):
     # Compose clear, variant-aware filenames
@@ -2316,7 +2348,7 @@ for target_name, kind, y_col, mask in targets:
                 _shap_summary(model, Xte, X.columns.tolist(),
                               _report_prefix(f"shap_summary__{target_name}", featset) + ".png")
             if SAVE_LIME and len(np.unique(ytr))==2 and len(Xte) >= 5:
-                _lime_avg(model, Xte.values, X.columns.tolist(),
+                _lime_avg(model, Xtr.values, X.columns.tolist(),
                           _report_prefix(f"lime_avg__{target_name}", featset) + ".png", k=LIME_K)
 
             # Save small metrics CSV
