@@ -1362,6 +1362,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
     met_csv = with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.csv"))
     met_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.json")), indent=2)
     met_df.to_csv(met_csv, index=False)
+    print("[FT] metrics_cls ->", met_csv)  
     out["files"]["metrics_cls_csv"] = met_csv
     out["metrics"]["cls"] = {"E": mE, "EIX": mEIX}
 
@@ -1395,6 +1396,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
         reg_csv = with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.csv"))
         reg_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.json")), indent=2)
         reg_df.to_csv(reg_csv, index=False)
+        print("[FT] metrics_reg ->", reg_csv)  
         out["files"]["metrics_reg_csv"] = reg_csv
         out["metrics"]["reg"] = {"E": rE, "EIX": rEIX}
 
@@ -1442,9 +1444,11 @@ def run_finetune_detector(df_in: pd.DataFrame):
         sl_df = pd.DataFrame([s_eq, s_neq]).sort_values("slice")
         sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_adaptive.csv"))
         sl_df.to_csv(sl_csv, index=False)
+        print("[FT] slice ->", sl_csv)  
         out["files"]["slice_csv"] = sl_csv
 
         bar_png = with_variant(os.path.join(FINETUNE_DIR, "lockin_by_eqI_bar.png"))
+        print("[FT] barplot ->", bar_png) 
         title = ("Lock-in" if METRIC=="lockin" else "Stability") + \
                 (" by Energy (Only E)" if VARIANT == "energy_only" else " by E≈I (adaptive epsilon)")
         # use the chosen numerator column "k"
@@ -2578,10 +2582,14 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         # Sort all files by their relative path to copy deterministically
         to_copy.sort(key=lambda t: t[0])
 
-        # Apply optional MAX_FILES cap
-        if isinstance(MAX_FILES, int) and MAX_FILES >= 0:
-            to_copy = to_copy[:MAX_FILES]
+        # DEBUG
+        print("[COPY][DEBUG] total to_copy:", len(to_copy))
+        print("[COPY][DEBUG] first 15:", [r for r,_ in to_copy[:15]])
 
+        # Apply optional MAX_FILES cap
+        if isinstance(MAX_FILES, int) and MAX_FILES > 0:
+            to_copy = to_copy[:MAX_FILES]
+            
         # Perform the copy
         for rel, src in to_copy:
             dst_dir = os.path.join(GOOGLE_DIR, os.path.dirname(rel))
