@@ -1629,231 +1629,136 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
             print("[CMB][BEST][WARN] Drive copy failed:", e)
 
 # ======================================================
-# 16) CMB Cold-spot detector (multi-scale, HEALPix or flat-sky)
+# 16) CMB Cold-spot detector (use SAVED maps from MAP_REG)
 # ======================================================
 
 if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
-    print("[CMB][COLD] Running cold-spot detector...")
+    print("[CMB][COLD] Running cold-spot detector on saved maps...")
 
     import numpy as np
     import matplotlib.pyplot as plt
     from scipy import ndimage as ndi
 
-    # Try to use healpy when available (unless forced flat)
-    use_healpy = False
-    mode_req = MASTER_CTRL.get("CMB_COLD_MODE", MASTER_CTRL.get("CMB_BEST_MODE", "auto"))
-    if mode_req in ("auto", "healpix"):
-        try:
-            import healpy as hp
-            use_healpy = True
-        except Exception:
-            use_healpy = False
-            if mode_req == "healpix":
-                print("[CMB][COLD][WARN] healpy not available; falling back to flat-sky mode.")
+    # --- try HEALPix; fall back to flat branches when map mode=="flat"
+    try:
+        import healpy as hp
+        HAVE_HP = True
+    except Exception:
+        HAVE_HP = False
 
-    # Reuse selection prepared in the Best CMB block
-    if "sel_df" not in globals():
-        if "df_lock" in globals():
-            sel_df = df_lock.copy()
-        else:
-            sel_df = df[df["lock_epoch"] >= 0].copy()
-            if "I" in sel_df.columns:
-                sel_df["_gap"] = np.abs(sel_df["E"] - sel_df["I"])
-            else:
-                sel_df["_gap"] = 0.0
-            sel_df = sel_df.sort_values(["lock_epoch", "_gap"]).reset_index(drop=True)
+    # --- params
+    COLD_DIR = os.path.join(FIG_DIR, "cmb_coldspots")
+    os.makedirs(COLD_DIR, exist_ok=True)
+    title_variant = "E-only" if VARIANT == "energy_only" else "E+I"
+    ARC_MIN_TO_RAD = np.pi / (180.0 * 60.0)
+    pix_arcmin     = float(MASTER_CTRL.get("CMB_PIXSIZE_ARCMIN", 5.0))  # flat-skyhoz
+    sigma_list_am  = MASTER_CTRL.get("CMB_COLD_SIGMA_ARCMIN", [30, 60, 120])
+    min_sep_am     = float(MASTER_CTRL.get("CMB_COLD_MIN_SEP_ARCMIN", 45))
+    z_thresh       = float(MASTER_CTRL.get("CMB_COLD_Z_THRESH", -2.5))
+    topk           = int(MASTER_CTRL.get("CMB_COLD_TOPK", 5))  # ha nem kell Top-K: állítsd 999-re
 
-    if len(sel_df) == 0:
-        print("[CMB][COLD] No lock-in universes; skipping.")
+    # --- helper: greedy min-picking min. távolsággal
+    def _greedy_pick(coords, values, min_sep):
+        order = np.argsort(values)  # legnegatívabb elöl
+        picked = []
+        for idx in order:
+            c = coords[idx]
+            if not picked:
+                picked.append(idx); continue
+            ok = True
+            for j in picked:
+                if np.linalg.norm(coords[j] - c) < min_sep:
+                    ok = False; break
+            if ok:
+                picked.append(idx)
+        return np.array(picked, dtype=int)
+
+    # --- ellenőrzés
+    if "MAP_REG" not in globals() or len(MAP_REG) == 0:
+        print("[CMB][COLD] No MAP_REG found (no saved Best CMB maps). Skipping.")
     else:
-        # Output directories
-        COLD_DIR = os.path.join(FIG_DIR, "cmb_coldspots")
-        os.makedirs(COLD_DIR, exist_ok=True)
-
-        # Helper: variant label for titles
-        title_variant = "E-only" if VARIANT == "energy_only" else "E+I"
-
-        # Helper: arcmin conversions
-        ARC_MIN_TO_RAD = np.pi / (180.0 * 60.0)
-
-        # Parameters (shared with CMB generation block)
-        nside = int(MASTER_CTRL.get("CMB_NSIDE", 64))
-        lmax  = 3 * nside - 1
-        Nflat = int(MASTER_CTRL.get("CMB_NPIX", 512))
-        pix_arcmin = float(MASTER_CTRL.get("CMB_PIXSIZE_ARCMIN", 5.0))
-        slope = float(MASTER_CTRL.get("CMB_POWER_SLOPE", 2.0))
-
-        # Scales & separation
-        sigma_list_am = MASTER_CTRL.get("CMB_COLD_SIGMA_ARCMIN", [30, 60, 120])
-        min_sep_am = float(MASTER_CTRL.get("CMB_COLD_MIN_SEP_ARCMIN", 45))
-        z_thresh = float(MASTER_CTRL.get("CMB_COLD_Z_THRESH", -2.5))
-
-        # Utility: generate the same random CMB map as the “best CMB” block
-        def _gen_healpix_map(rng_local):
-            ell = np.arange(lmax + 1, dtype=float)
-            cl = np.zeros_like(ell)
-            cl[1:] = 1.0 / (ell[1:] * (ell[1:] + 1.0))    # toy ~ 1/[ell(ell+1)]
-            cl *= float(rng_local.lognormal(mean=0.0, sigma=0.25))
-            alm = hp.synalm(cl, lmax=lmax, new=True, verbose=False)
-            m = hp.alm2map(alm, nside=nside, verbose=False)
-            m = (m - np.mean(m)) / (np.std(m) + 1e-12)     # z-score normalize
-            return m
-
-        def _gen_flat_map(rng_local):
-            kx = np.fft.fftfreq(Nflat, d=1.0) * 2*np.pi
-            ky = np.fft.fftfreq(Nflat, d=1.0) * 2*np.pi
-            kx, ky = np.meshgrid(kx, ky, indexing="xy")
-            kk = np.sqrt(kx**2 + ky**2); kk[0,0] = 1.0
-            Pk = 1.0 / (kk ** slope)
-            noise_real = rng_local.normal(size=(Nflat, Nflat))
-            noise_imag = rng_local.normal(size=(Nflat, Nflat))
-            F = (noise_real + 1j*noise_imag) * np.sqrt(Pk / 2.0)
-            # Enforce Hermitian symmetry for real field
-            F = (F + np.conj(np.flipud(np.fliplr(F)))) / 2.0
-            m = np.fft.ifft2(F).real
-            m = (m - np.mean(m)) / (np.std(m) + 1e-12)     # z-score normalize
-            return m
-
-        # Utilities: detect local minima with minimal separation (greedy)
-        def _greedy_pick_minima(coords, values, min_sep):
-            # coords: array of shape (N, D); values: array (N,) (more negative is better)
-            # min_sep: minimal Euclidian separation in the same units as coords
-            order = np.argsort(values)  # ascending (most negative first)
-            picked = []
-            for idx in order:
-                c = coords[idx]
-                if not picked:
-                    picked.append(idx)
-                    continue
-                # distance to already picked
-                ok = True
-                for j in picked:
-                    if np.linalg.norm(coords[j] - c) < min_sep:
-                        ok = False
-                        break
-                if ok:
-                    picked.append(idx)
-            return np.array(picked, dtype=int)
-
         all_rows = []
-        topk = int(MASTER_CTRL.get("CMB_COLD_TOPK", 5))
 
-        for rnk, row in sel_df.iterrows():
-            uid = int(row["universe_id"])
-            u_seed = int(row.get("seed", master_seed + uid))
-            cmb_seed = u_seed + int(MASTER_CTRL.get("CMB_BEST_SEED_OFFSET", 909))
-            rng_cmb = np.random.default_rng(cmb_seed)
+        for rec in MAP_REG:
+            uid = int(rec["uid"])
+            E_val = float(rec["E"]); I_val = float(rec["I"]); lock_ep = int(rec["lock_epoch"])
+            mode = rec["mode"]; path = rec["path"]
 
-            E_val = float(row["E"])
-            I_val = float(row["I"]) if "I" in row else 0.0
-            lock_ep = int(row["lock_epoch"])
-
-            # --- (A) Build CMB map (healpy or flat) ---
-            if use_healpy:
-                m = _gen_healpix_map(rng_cmb)
-                npix = m.size
-                # Precompute unit vectors for pixel centers (for separation calc)
+            if mode == "healpix":
+                if not HAVE_HP:
+                    print(f"[CMB][COLD][WARN] healpy missing; skip uid={uid}")
+                    continue
+                # --- load HEALPix map
+                m = hp.read_map(path, verbose=False)
+                nside = hp.get_nside(m); npix = m.size
                 theta, phi = hp.pix2ang(nside, np.arange(npix))
-                # coords in radians for separation (use angular separation on sphere)
-                # We'll use great-circle distance via hp.rotator.angdist style formula
-                # but to keep it simple for greedy filtering we use 2D coords on unit sphere:
+                # egységgömb koordináták (chord távolsághoz)
                 x = np.sin(theta) * np.cos(phi)
                 y = np.sin(theta) * np.sin(phi)
                 z = np.cos(theta)
                 xyz = np.vstack([x, y, z]).T
-                sep_rad = min_sep_am * ARC_MIN_TO_RAD
+                sep_rad   = min_sep_am * ARC_MIN_TO_RAD
+                min_chord = 2.0 * np.sin(sep_rad / 2.0)
 
-                # --- (B) Multi-scale smoothing & minima candidates ---
-                cand_idx = []
-                cand_z   = []
-                cand_scale = []
+                # --- multi-scale smoothing + lokális minimumok
+                cand_idx, cand_z, cand_scale = [], [], []
                 for sig_am in sigma_list_am:
-                    # Convert sigma (arcmin) to FWHM (radians) for hp.smoothing
                     sigma_rad = sig_am * ARC_MIN_TO_RAD
                     fwhm = sigma_rad * np.sqrt(8.0 * np.log(2.0))
                     ms = hp.smoothing(m, fwhm=fwhm, verbose=False)
-                    # Find pixels that are lower than all neighbors (8-ish neighbors in HEALPix)
-                    # We check against immediate ring neighbors via hp.get_all_neighbours
+
+                    # szomszéd-ellenőrzés
                     is_min = np.ones(npix, dtype=bool)
-                    for pix in range(npix):
-                        neigh = hp.get_all_neighbours(nside, pix)
-                        neigh = neigh[neigh >= 0]
-                        if neigh.size:
-                            if not np.all(ms[pix] <= ms[neigh]):
-                                is_min[pix] = False
+                    for p in range(npix):
+                        neigh = hp.get_all_neighbours(nside, p); neigh = neigh[neigh >= 0]
+                        if neigh.size and not np.all(ms[p] <= ms[neigh]):
+                            is_min[p] = False
+
                     idx = np.where(is_min & (ms <= z_thresh))[0]
-                    cand_idx.append(idx)
-                    cand_z.append(ms[idx])
-                    cand_scale.extend([sig_am]*len(idx))
+                    if idx.size:
+                        cand_idx.append(idx)
+                        cand_z.append(ms[idx])
+                        cand_scale.extend([sig_am]*len(idx))
 
-                if len(cand_idx) == 0 or sum(len(c) for c in cand_idx) == 0:
-                    print(f"[CMB][COLD] No minima under threshold for uid={uid}.")
-                    continue
+                if len(cand_idx):
+                    idx_all   = np.concatenate(cand_idx)
+                    z_all     = np.concatenate(cand_z)
+                    scale_all = np.array(cand_scale, dtype=float)
+                    picked = _greedy_pick(xyz[idx_all], z_all, min_chord)
+                    if topk > 0: picked = picked[:topk]
 
-                idx_all = np.concatenate(cand_idx)
-                z_all   = np.concatenate(cand_z)
-                scale_all = np.array(cand_scale, dtype=float)
+                    for i, pidx in enumerate(picked, start=1):
+                        pix = int(idx_all[pidx]); th, ph = float(theta[pix]), float(phi[pix])
+                        lat_deg = 90.0 - np.degrees(th); lon_deg = (np.degrees(ph) % 360.0)
+                        all_rows.append({
+                            "universe_id": uid, "rank": i, "z_value": float(z_all[pidx]),
+                            "sigma_arcmin": float(scale_all[pidx]),
+                            "lon_deg": lon_deg, "lat_deg": lat_deg,
+                            "E": E_val, "I": I_val, "lock_epoch": lock_ep, "variant": title_variant
+                        })
 
-                # Greedy separation on the sphere using chord distance on unit sphere ~ 2*sin(d/2)
-                # We'll threshold by great-circle rad ≈ chord because d is small.
-                coords = xyz[idx_all]  # N x 3 on unit sphere
-                # Chord distance corresponding to sep_rad: d_chord = 2*sin(sep/2)
-                min_chord = 2.0 * np.sin(sep_rad / 2.0)
-                picked = _greedy_pick_minima(coords, z_all, min_chord)[:topk]
-
-                # Save summary rows
-                for i, pidx in enumerate(picked, start=1):
-                    pix = int(idx_all[pidx])
-                    th, ph = float(theta[pix]), float(phi[pix])
-                    lat_deg = 90.0 - np.degrees(th)
-                    lon_deg = np.degrees(ph) % 360.0
-                    all_rows.append({
-                        "universe_id": uid,
-                        "rank": i,
-                        "z_value": float(z_all[pidx]),
-                        "sigma_arcmin": float(scale_all[pidx]),
-                        "lon_deg": lon_deg,
-                        "lat_deg": lat_deg,
-                        "E": E_val,
-                        "I": I_val,
-                        "lock_epoch": lock_ep,
-                        "variant": title_variant
-                    })
-
-                # Optional overlay figure (HEALPix)
-                if MASTER_CTRL.get("CMB_COLD_OVERLAY", True):
+                    if MASTER_CTRL.get("CMB_COLD_OVERLAY", True) and picked.size:
                         fig = plt.figure(figsize=(9.2, 5.5))
                         title = (f"Cold spots [{title_variant}] — uid {uid}, lock-in {lock_ep}\n"
                                  f"E={E_val:.3g}, I={I_val:.3g}  (top {len(picked)})")
-
-                        # Attach mollview to the created figure
                         hp.mollview(m, title=title, unit="μK (z-score)", norm=None, fig=fig.number)
                         hp.graticule()
-
-                        # Overlay cold spot markers
                         for pidx in picked:
-                                pix = int(idx_all[pidx])
-                                th, ph = float(theta[pix]), float(phi[pix])
-                                hp.projplot(th, ph, 'o', ms=6)
-
+                            pix = int(idx_all[pidx]); th, ph = float(theta[pix]), float(phi[pix])
+                            hp.projplot(th, ph, 'o', ms=6)
                         out_png = with_variant(os.path.join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
-                        plt.savefig(out_png, dpi=200, bbox_inches="tight")
-                        plt.close(fig)
-            else:
-                # ---- FLAT-SKY branch ----
-                m = _gen_flat_map(rng_cmb)
-                H, W = m.shape
+                        plt.savefig(out_png, dpi=200, bbox_inches="tight"); plt.close(fig)
 
-                # Multi-scale minima via Gaussian smoothing
-                cand_xy = []
-                cand_z  = []
-                cand_scale = []
+            else:
+                # --- load FLAT map (.npy)
+                m = np.load(path)  # (N,N), z-score vagy μK skála a mentésed szerint
+                H, W = m.shape
+                extent_deg = (H * pix_arcmin) / 60.0
+
+                cand_xy, cand_z, cand_scale = [], [], []
                 for sig_am in sigma_list_am:
-                    # Convert arcmin sigma to pixels
                     sigma_px = max(0.5, sig_am / pix_arcmin)
                     ms = ndi.gaussian_filter(m, sigma=sigma_px, mode="reflect")
-                    # Local minima via minimum filter neighborhood
-                    # compare with a small footprint (3x3)
                     neigh = ndi.minimum_filter(ms, size=3, mode="reflect")
                     mask_min = (ms <= neigh) & (ms <= z_thresh)
                     yy, xx = np.where(mask_min)
@@ -1862,77 +1767,41 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                         cand_z.append(ms[yy, xx])
                         cand_scale.extend([sig_am]*len(xx))
 
-                if len(cand_xy) == 0 or sum(len(c) for c in cand_xy) == 0:
-                    print(f"[CMB][COLD] No minima under threshold for uid={uid}.")
-                    continue
+                if len(cand_xy):
+                    xy_all   = np.concatenate(cand_xy, axis=0)
+                    z_all    = np.concatenate(cand_z)
+                    scale_all = np.array(cand_scale, dtype=float)
+                    min_sep_px = float(min_sep_am / pix_arcmin)
+                    picked = _greedy_pick(xy_all.astype(float), z_all, min_sep_px)
+                    if topk > 0: picked = picked[:topk]
 
-                xy_all = np.concatenate(cand_xy, axis=0)     # N x 2 (x,y) in pixels
-                z_all  = np.concatenate(cand_z)
-                scale_all = np.array(cand_scale, dtype=float)
-
-                # Minimal separation in pixels
-                min_sep_px = float(min_sep_am / pix_arcmin)
-                picked = _greedy_pick_minima(xy_all.astype(float), z_all, min_sep_px)[:topk]
-
-                # Save summary rows (convert to degrees within the map extent)
-                extent_deg = (Nflat * pix_arcmin) / 60.0
-                for i, pidx in enumerate(picked, start=1):
-                    x_px, y_px = xy_all[pidx]
-                    # simple linear coords to degrees (origin lower-left in our imshow)
-                    lon_deg = (x_px / (Nflat - 1)) * extent_deg
-                    lat_deg = (y_px / (Nflat - 1)) * extent_deg
-                    all_rows.append({
-                        "universe_id": uid,
-                        "rank": i,
-                        "z_value": float(z_all[pidx]),
-                        "sigma_arcmin": float(scale_all[pidx]),
-                        "x_px": int(x_px),
-                        "y_px": int(y_px),
-                        "lon_deg": float(lon_deg),
-                        "lat_deg": float(lat_deg),
-                        "E": E_val,
-                        "I": I_val,
-                        "lock_epoch": lock_ep,
-                        "variant": title_variant
-                    })
-
-                # Overlay
-                if MASTER_CTRL.get("CMB_COLD_OVERLAY", True):
-                    plt.figure(figsize=(7.8, 6.4))
-                    plt.imshow(m, origin="lower", extent=[0, extent_deg, 0, extent_deg])
-                    for pidx in picked:
-                        x_px, y_px = xy_all[pidx]
-                        x_deg = (x_px / (Nflat - 1)) * extent_deg
-                        y_deg = (y_px / (Nflat - 1)) * extent_deg
-                        plt.plot(x_deg, y_deg, 'o', ms=5)
-                    plt.colorbar(label="μK (z-score)")
-                    plt.xlabel("deg"); plt.ylabel("deg")
-                    plt.title(f"Cold spots [{title_variant}] — uid {uid}, lock-in {lock_ep} (top {len(picked)})")
-                    out_png = with_variant(os.path.join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
-                    plt.savefig(out_png, dpi=200, bbox_inches="tight")
-                    plt.close()
-
-                # Optional patch thumbnails around each spot (flat only)
-                if MASTER_CTRL.get("CMB_COLD_SAVE_PATCHES", False) and len(picked):
-                    patch_am = float(MASTER_CTRL.get("CMB_COLD_PATCH_SIZE_ARCMIN", 200))
-                    half_px = int(max(4, 0.5 * (patch_am / pix_arcmin)))
                     for i, pidx in enumerate(picked, start=1):
-                        cx, cy = xy_all[pidx]
-                        x0 = max(0, int(cx) - half_px)
-                        x1 = min(W, int(cx) + half_px)
-                        y0 = max(0, int(cy) - half_px)
-                        y1 = min(H, int(cy) + half_px)
-                        patch = m[y0:y1, x0:x1]
-                        if patch.size == 0:
-                            continue
-                        plt.figure(figsize=(4.2, 4.2))
-                        plt.imshow(patch, origin="lower")
-                        plt.title(f"uid {uid} spot {i} (±{patch_am/2:.0f}′)")
-                        out_p = with_variant(os.path.join(COLD_DIR, f"coldpatch_uid{uid:05d}_rank{i:02d}.png"))
-                        plt.savefig(out_p, dpi=200, bbox_inches="tight")
-                        plt.close()
+                        x_px, y_px = xy_all[pidx]
+                        lon_deg = (x_px / (H - 1)) * extent_deg
+                        lat_deg = (y_px / (W - 1)) * extent_deg
+                        all_rows.append({
+                            "universe_id": uid, "rank": i, "z_value": float(z_all[pidx]),
+                            "sigma_arcmin": float(scale_all[pidx]),
+                            "x_px": int(x_px), "y_px": int(y_px),
+                            "lon_deg": float(lon_deg), "lat_deg": float(lat_deg),
+                            "E": E_val, "I": I_val, "lock_epoch": lock_ep, "variant": title_variant
+                        })
 
-        # --- Save consolidated CSV and copy to Drive ---
+                    if MASTER_CTRL.get("CMB_COLD_OVERLAY", True) and picked.size:
+                        plt.figure(figsize=(7.8, 6.4))
+                        plt.imshow(m, origin="lower", extent=[0, extent_deg, 0, extent_deg])
+                        for pidx in picked:
+                            x_px, y_px = xy_all[pidx]
+                            x_deg = (x_px / (H - 1)) * extent_deg
+                            y_deg = (y_px / (W - 1)) * extent_deg
+                            plt.plot(x_deg, y_deg, 'o', ms=5)
+                        plt.colorbar(label="μK (z-score)")
+                        plt.xlabel("deg"); plt.ylabel("deg")
+                        plt.title(f"Cold spots [{title_variant}] — uid {uid}, lock-in {lock_ep} (top {len(picked)})")
+                        out_png = with_variant(os.path.join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
+                        plt.savefig(out_png, dpi=200, bbox_inches="tight"); plt.close()
+
+        # --- outputs
         import pandas as pd
         if len(all_rows):
             cold_df = pd.DataFrame(all_rows).sort_values(["universe_id", "rank"])
@@ -1940,18 +1809,34 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
             cold_df.to_csv(out_csv, index=False)
             print("[CMB][COLD] CSV:", out_csv)
 
-            # Simple histogram figure of z-values (for sanity)
-            plt.figure(figsize=(7,4.2))
-            vals = cold_df["z_value"].values
-            plt.hist(vals, bins=30, edgecolor="black")
-            plt.xlabel("Cold-spot z"); plt.ylabel("Count")
-            plt.title(f"Cold-spot z-value distribution [{title_variant}]")
+            # Depth histogram
+            plt.figure(figsize=(7.6, 4.2))
+            plt.hist(cold_df["z_value"].values, bins=30, edgecolor="black")
+            plt.xlabel("Cold-spot z (μK vagy z-score)"); plt.ylabel("Count")
+            plt.title(f"Cold-spot depth distribution [{title_variant}]")
             out_hist = with_variant(os.path.join(COLD_DIR, "coldspots_z_hist.png"))
-            plt.savefig(out_hist, dpi=200, bbox_inches="tight")
-            plt.close()
+            plt.savefig(out_hist, dpi=200, bbox_inches="tight"); plt.close()
             print("[CMB][COLD] FIG:", out_hist)
 
-            # Optional: copy artifacts to Drive
+            # Position heatmap (lon-lat)
+            try:
+                lons = cold_df["lon_deg"].values
+                lats = cold_df["lat_deg"].values
+                plt.figure(figsize=(7.8, 6.2))
+                H2, xedges, yedges = np.histogram2d(lons, lats,
+                                                    bins=(72, 36),  # ~5°x5° felbontás
+                                                    range=[[0, 360], [-90, 90]])
+                plt.imshow(H2.T, origin="lower", extent=[0, 360, -90, 90], aspect="auto")
+                plt.colorbar(label="Előfordulás")
+                plt.xlabel("Longitude (°)"); plt.ylabel("Latitude (°)")
+                plt.title("Cold Spot pozíció eloszlás (összes kiválasztott térkép)")
+                out_pos = with_variant(os.path.join(COLD_DIR, "coldspots_pos_heatmap.png"))
+                plt.savefig(out_pos, dpi=200, bbox_inches="tight"); plt.close()
+                print("[CMB][COLD] FIG:", out_pos)
+            except Exception as e:
+                print("[CMB][COLD][WARN] Position heatmap failed:", e)
+
+            # Optional Drive copy
             try:
                 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
                     DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
@@ -1962,7 +1847,6 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                         if fn.endswith(".png"):
                             shutil.copy2(os.path.join(COLD_DIR, fn), os.path.join(GOOGLE_DIR, fn))
                             copied += 1
-                    # copy CSV
                     shutil.copy2(out_csv, os.path.join(DRIVE_BASE, run_id, os.path.relpath(out_csv, SAVE_DIR)))
                     print(f"[CMB][COLD] Copied {copied} PNG(s) + CSV to Drive.")
             except Exception as e:
@@ -1971,81 +1855,127 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
             print("[CMB][COLD] No cold spots recorded; no CSV produced.")
 
 # ======================================================
-# 17) CMB Axis-of-Evil detector (quadrupole/octupole alignment)
+# 17) CMB Axis-of-Evil detector (uses pre-made maps in MAP_REG)
 # ======================================================
 
 if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
-    print("[CMB][AOE] Running Axis-of-Evil detector...")
+    print("[CMB][AOE] Running Axis-of-Evil detector (using saved maps)...")
 
     import numpy as np
     import matplotlib.pyplot as plt
+    import pandas as pd
 
-    # Try healpy backend if available
-    use_healpy = False
-    mode_req = MASTER_CTRL.get("CMB_AOE_MODE", MASTER_CTRL.get("CMB_BEST_MODE", "auto"))
-    if mode_req in ("auto", "healpix"):
-        try:
-            import healpy as hp
-            use_healpy = True
-        except Exception:
-            use_healpy = False
-            if mode_req == "healpix":
-                print("[CMB][AOE][WARN] healpy not available; falling back to flat-sky surrogate.")
+    # healpy is required here
+    try:
+        import healpy as hp
+    except Exception as e:
+        print("[CMB][AOE][ERR] healpy is required for AoE:", e)
+        hp = None
 
-    # Reuse same selection as in best-CMB
-    if "sel_df" not in globals():
-        if "df_lock" in globals():
-            sel_df = df_lock.copy()
-        else:
-            sel_df = df[df["lock_epoch"] >= 0].copy()
-            if "I" in sel_df.columns:
-                sel_df["_gap"] = np.abs(sel_df["E"] - sel_df["I"])
-            else:
-                sel_df["_gap"] = 0.0
-            sel_df = sel_df.sort_values(["lock_epoch", "_gap"]).reset_index(drop=True)
+    AOE_DIR = os.path.join(FIG_DIR, "cmb_axisofevil")
+    os.makedirs(AOE_DIR, exist_ok=True)
 
-    if len(sel_df) == 0:
-        print("[CMB][AOE] No lock-in universes; skipping.")
+    if (hp is None) or ("MAP_REG" not in globals()) or (len(MAP_REG) == 0):
+        print("[CMB][AOE] No MAP_REG / healpy missing. Skipping.")
     else:
-        AOE_DIR = os.path.join(FIG_DIR, "cmb_axisofevil")
-        os.makedirs(AOE_DIR, exist_ok=True)
+        rows = []
 
-        results = []
-        for _, row in sel_df.iterrows():
-            uid = int(row["universe_id"])
-            u_seed = int(row.get("seed", master_seed + uid))
-            cmb_seed = u_seed + int(MASTER_CTRL.get("CMB_BEST_SEED_OFFSET", 909))
-            rng_cmb = np.random.default_rng(cmb_seed)
+        # Extract preferred axis from a single-ℓ component using max |T|
+        def _axis_from_lmap(alm_full, nside, ell_pick):
+            lmax = 3 * nside - 1
+            alm = np.zeros_like(alm_full, dtype=np.complex128)
+            for m in range(0, ell_pick + 1):
+                alm[hp.Alm.getidx(lmax, ell_pick, m)] = alm_full[hp.Alm.getidx(lmax, ell_pick, m)]
+            m_l = hp.alm2map(alm, nside=nside, verbose=False)
+            ip = int(np.argmax(np.abs(m_l)))
+            th, ph = hp.pix2ang(nside, ip)
+            return (float(np.degrees(ph) % 360.0), float(90.0 - np.degrees(th)), float(m_l[ip]))
 
-            # Generate map
-            if use_healpy:
-                nside = int(MASTER_CTRL.get("CMB_NSIDE", 64))
-                lmax  = int(MASTER_CTRL.get("CMB_AOE_LMAX", 3))
-                ell = np.arange(3*nside, dtype=float)
-                cl = np.zeros_like(ell)
-                cl[1:] = 1.0 / (ell[1:]*(ell[1:]+1.0))
-                cl *= float(rng_cmb.lognormal(mean=0.0, sigma=0.25))
-                alm = hp.synalm(cl, lmax=3*nside-1, new=True, verbose=False)
+        # Compute great-circle angle between two lon/lat points in degrees
+        def _ang(lon1, lat1, lon2, lat2):
+            th1 = np.radians(90.0 - lat1); ph1 = np.radians(lon1)
+            th2 = np.radians(90.0 - lat2); ph2 = np.radians(lon2)
+            x1 = np.sin(th1)*np.cos(ph1); y1 = np.sin(th1)*np.sin(ph1); z1 = np.cos(th1)
+            x2 = np.sin(th2)*np.cos(ph2); y2 = np.sin(th2)*np.sin(ph2); z2 = np.cos(th2)
+            c = np.clip(x1*x2 + y1*y2 + z1*z2, -1.0, 1.0)
+            return float(np.degrees(np.arccos(c)))
 
-                # For simplicity: compute preferred axes from power distribution
-                # Use hp.anafast to get Cl then find max orientation
-                # (Here we just compute map and project)
-                m = hp.alm2map(alm, nside, verbose=False)
+        for rec in MAP_REG:
+            if rec.get("mode") != "healpix":
+                continue  # AoE requires HEALPix
 
-                # Overlay plot if requested
-                if MASTER_CTRL.get("CMB_AOE_OVERLAY", True):
-                    plt.figure(figsize=(9,5.3))
-                    hp.mollview(m, title=f"Axis of Evil [{uid}] (E={'%.2f'%row['E']}, I={'%.2f'%row.get('I',0)})")
-                    # TODO: project quadrupole/octupole axes if implemented
-                    out_png = with_variant(os.path.join(AOE_DIR, f"axisofevil_uid{uid:05d}.png"))
-                    plt.savefig(out_png, dpi=200, bbox_inches="tight")
-                    plt.close()
-            else:
-                # Flat-sky fallback (no spherical multipole decomposition)
-                print(f"[CMB][AOE][WARN] Flat mode not implemented for uid={uid}.")
-                continue
+            uid = int(rec["uid"])
+            path = rec["path"]
+            E_val = float(rec["E"]); I_val = float(rec["I"]); lock_ep = int(rec["lock_epoch"])
 
-        print(f"[CMB][AOE] Done. Results in {AOE_DIR}")
+            # Load map and compute alms up to ℓ=3
+            m = hp.read_map(path, verbose=False)
+            nside = hp.get_nside(m)
+            alm = hp.map2alm(m, lmax=3, iter=0)
+
+            # Quadrupole and octupole axes
+            q_lon, q_lat, q_T = _axis_from_lmap(alm, nside, 2)
+            o_lon, o_lat, o_T = _axis_from_lmap(alm, nside, 3)
+            angle_deg = _ang(q_lon, q_lat, o_lon, o_lat)
+
+            rows.append({
+                "universe_id": uid,
+                "E": E_val, "I": I_val, "lock_epoch": lock_ep,
+                "q_lon_deg": q_lon, "q_lat_deg": q_lat, "q_T_peak": q_T,
+                "o_lon_deg": o_lon, "o_lat_deg": o_lat, "o_T_peak": o_T,
+                "angle_deg": angle_deg
+            })
+
+            # Optional overlay
+            if MASTER_CTRL.get("CMB_AOE_OVERLAY", True):
+                fig = plt.figure(figsize=(9.2, 5.5))
+                title = (f"Axis of Evil — uid {uid}  (angle={angle_deg:.1f}°)\n"
+                         f"E={E_val:.3g}, I={I_val:.3g}, lock-in {lock_ep}")
+                hp.mollview(m, title=title, unit="μK", norm=None, fig=fig.number)
+                hp.graticule(ls=":", alpha=0.5)
+                # Mark quadrupole and octupole axes + antipodes
+                for (lon, lat, mk) in [(q_lon, q_lat, 'o'), (o_lon, o_lat, 's')]:
+                    hp.projplot(lon, lat, mk, lonlat=True, ms=6)
+                    hp.projplot((lon+180.0) % 360.0, -lat, mk, lonlat=True, ms=6)
+                out_png = with_variant(os.path.join(AOE_DIR, f"aoe_overlay_uid{uid:05d}.png"))
+                plt.savefig(out_png, dpi=200, bbox_inches="tight")
+                plt.close(fig)
+
+        # Save summary
+        if rows:
+            df_aoe = pd.DataFrame(rows).sort_values("universe_id")
+            csv_path = with_variant(os.path.join(SAVE_DIR, "cmb_aoe_summary.csv"))
+            df_aoe.to_csv(csv_path, index=False)
+            print("[CMB][AOE] CSV:", csv_path)
+
+            # Angle histogram
+            plt.figure(figsize=(7, 4.2))
+            plt.hist(df_aoe["angle_deg"].values, bins=24, edgecolor="black")
+            plt.xlabel("Quadrupole–Octupole angle (deg)")
+            plt.ylabel("Count")
+            plt.title("Axis-of-Evil alignment angle distribution")
+            hist_path = with_variant(os.path.join(AOE_DIR, "aoe_angle_hist.png"))
+            plt.savefig(hist_path, dpi=200, bbox_inches="tight")
+            plt.close()
+            print("[CMB][AOE] FIG:", hist_path)
+
+            # Optional Drive copy
+            try:
+                if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
+                    DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
+                    GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, os.path.relpath(AOE_DIR, SAVE_DIR))
+                    os.makedirs(GOOGLE_DIR, exist_ok=True)
+                    copied = 0
+                    for fn in sorted(os.listdir(AOE_DIR)):
+                        if fn.endswith(".png"):
+                            shutil.copy2(os.path.join(AOE_DIR, fn), os.path.join(GOOGLE_DIR, fn))
+                            copied += 1
+                    shutil.copy2(csv_path, os.path.join(DRIVE_BASE, run_id, os.path.relpath(csv_path, SAVE_DIR)))
+                    print(f"[CMB][AOE] Copied {copied} PNG(s) + CSV to Drive.")
+            except Exception as e:
+                print("[CMB][AOE][WARN] Drive copy failed:", e)
+        else:
+            print("[CMB][AOE] No AoE rows collected; nothing to save.")
 
 # ======================================================
 # 18) Metrics joiner: attach Cold/AoE/Finetune metrics to df
