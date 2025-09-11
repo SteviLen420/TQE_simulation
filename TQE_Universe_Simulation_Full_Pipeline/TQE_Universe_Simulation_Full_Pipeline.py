@@ -56,7 +56,7 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        2500,   # number of universes in Monte Carlo run
+    "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
     "TIME_STEPS":           800,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        700,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
