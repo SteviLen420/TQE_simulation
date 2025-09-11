@@ -1718,7 +1718,7 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                 print(f"[CMB][BEST] Copied {cnt} PNG(s) to Drive: {GOOGLE_DIR}")
         except Exception as e:
             print("[CMB][BEST][WARN] Drive copy failed:", e)
-            print(f"[CMB][BEST] Saved maps in {MAPS_DIR}; MAP_REG entries:", len(MAP_REG))
+            print(f"[CMB][BEST] MAP_REG entries now: {len(MAP_REG)}")
 
    
 
@@ -1727,7 +1727,7 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
 # ======================================================
 
 if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
-    print("[CMB][COLD] Running cold-spot detector on saved maps...")
+    print("[CMB][COLD] MAP_REG length:", len(MAP_REG))
 
     import numpy as np
     import matplotlib.pyplot as plt
@@ -1946,7 +1946,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
             try:
                 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
                     DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
-                    GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, os.path.relpath(COLD_DIR, SAVE_DIR))
+                    GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, "figs", "cmb_coldspots")
                     os.makedirs(GOOGLE_DIR, exist_ok=True)
                     copied = 0
                     for fn in sorted(os.listdir(COLD_DIR)):
@@ -2088,7 +2088,7 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             try:
                 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
                     DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
-                    GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, os.path.relpath(AOE_DIR, SAVE_DIR))
+                    GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, "figs", "cmb_axisofevil")
                     os.makedirs(GOOGLE_DIR, exist_ok=True)
                     copied = 0
                     for fn in sorted(os.listdir(AOE_DIR)):
@@ -2565,6 +2565,14 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
                 if any(file.endswith(ext) for ext in ALLOWED_EXTS):
                     src = os.path.join(root, file)
                     rel = os.path.relpath(src, SAVE_DIR)
+                    to_copy.append((rel, src))
+
+        for root, dirs, files in os.walk(FIG_DIR):
+            for file in files:
+                if any(file.endswith(ext) for ext in ALLOWED_EXTS):
+                    src = os.path.join(root, file)
+                    rel_under_figs = os.path.relpath(src, FIG_DIR)           # pl. "cmb_best/xxx.png"
+                    rel = os.path.join("figs", rel_under_figs)                # run_id/figs/...
                     to_copy.append((rel, src))
 
         # Sort all files by their relative path to copy deterministically
