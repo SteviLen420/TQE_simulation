@@ -60,6 +60,7 @@ MASTER_CTRL = {
     "TIME_STEPS":           800,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        700,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
+    "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
     "SEED":                 None,   # master RNG seed (auto-generated if None)
     "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
 
@@ -102,15 +103,14 @@ MASTER_CTRL = {
     "FL_COLLAPSE_POST_SIGMA":0.015,    # small jitter after t=0
     "FL_COLLAPSE_REVERT":    0.35,     # mean-reversion towards X_lock after t=0 (OU factor)
 
-    "FL_EXP_EPOCHS":         1000,      # length of t>0 expansion panel
     "FL_EXP_DRIFT":          0.45,     # upward drift for A
     "FL_EXP_JITTER":         0.9,      # noise for A random walk
     "FL_EXP_I_JITTER":       0.04,     # small jitter for I track
 
     # --- Stability thresholds ---
-    "REL_EPS_STABLE":       0.012,    # relative calmness threshold for stability
-    "REL_EPS_LOCKIN":       1.5e-3,     # relative calmness threshold for lock-in (~0.5%)
-    "CALM_STEPS_STABLE":    10,       # consecutive calm steps required (stable)
+    "REL_EPS_STABLE":       0.010,    # relative calmness threshold for stability
+    "REL_EPS_LOCKIN":       5e-3,     # relative calmness threshold for lock-in (~0.5%)
+    "CALM_STEPS_STABLE":    8,       # consecutive calm steps required (stable)
     "CALM_STEPS_LOCKIN":    6,       # consecutive calm steps required (lock-in)
     "MIN_LOCKIN_EPOCH":     300,      # lock-in can only occur after this epoch
     "LOCKIN_WINDOW":        8,       # rolling window size for averaging delta_rel
@@ -123,16 +123,16 @@ MASTER_CTRL = {
     "E_CENTER":             4.0,    # heuristic: energy sweet-spot center (used for X window)
     "E_WIDTH":              4.0,    # heuristic: energy sweet-spot width (used for X window)
     "GOLDILOCKS_THRESHOLD": 0.75,   # dynamic: fraction of max stability to define zone
-    "GOLDILOCKS_MARGIN":    0.10,   # dynamic fallback margin around peak (±10%)
-    "SIGMA_ALPHA":          1.0,    # curvature inside Goldilocks (sigma shaping)
-    "OUTSIDE_PENALTY":      3.0,      # sigma multiplier outside Goldilocks zone
+    "GOLDILOCKS_MARGIN":    0.12,   # dynamic fallback margin around peak (±10%)
+    "SIGMA_ALPHA":          1.5,    # curvature inside Goldilocks (sigma shaping)
+    "OUTSIDE_PENALTY":      5.0,     # sigma multiplier outside Goldilocks zone
     "STAB_BINS":            40,     # number of bins in stability curve
     "SPLINE_K":             3,      # spline order for smoothing (3=cubic)
 
     # --- Noise shaping (lock-in loop) ---
     "EXP_NOISE_BASE":       0.12,   # baseline noise for updates (sigma0)
-    "LL_BASE_NOISE":        5e-4,   # absolute noise floor (never go below this)
-    "NOISE_DECAY_TAU":      450,    # e-folding time for noise decay (epochs)
+    "LL_BASE_NOISE":        8e-4,   # absolute noise floor (never go below this)
+    "NOISE_DECAY_TAU":      500,    # e-folding time for noise decay (epochs)
     "NOISE_FLOOR_FRAC":     0.25,   # fraction of initial sigma preserved by decay
     "NOISE_COEFF_A":        1.0,    # per-variable noise multiplier (A)
     "NOISE_COEFF_NS":       0.10,   # per-variable noise multiplier (ns)
