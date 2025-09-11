@@ -1620,10 +1620,7 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                     beta  = np.deg2rad(90.0 - q_lat)   # Y-rotation (to pole)
                     gamma = 0.0                        # final Z-rotation
                     
-                    alm_full = hp.rotate_alm(alm_full, alpha, beta, gamma)
-
-                    if alm_full is None:
-                        raise RuntimeError("rotate_alm returned None – check healpy version / arguments")
+                    hp.rotate_alm(alm_full, alpha, beta, gamma)
 
                     # 4) gently boost ℓ=2 and ℓ=3 to emphasize AoE alignment
                     l_arr, m_arr = hp.Alm.getlm(LMAX_AOE)
