@@ -2414,6 +2414,26 @@ if not targets:
 else:
     print("[XAI] Targets:", [t[0] for t in targets])
 
+# --- Add Fine-tune delta as extra XAI target (if available) ---
+ft_delta_path = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
+if os.path.exists(ft_delta_path):
+    try:
+        ft_delta_df = pd.read_csv(ft_delta_path)
+        if not ft_delta_df.empty:
+            # Treat acc_delta as classification-like, r2_delta as regression-like
+            if "acc_delta" in ft_delta_df.columns:
+                df_xai["ft_acc_delta"] = ft_delta_df["acc_delta"].iloc[0]
+                targets.append(("finetune_acc_delta", "reg", "ft_acc_delta", None))
+            if "auc_delta" in ft_delta_df.columns:
+                df_xai["ft_auc_delta"] = ft_delta_df["auc_delta"].iloc[0]
+                targets.append(("finetune_auc_delta", "reg", "ft_auc_delta", None))
+            if "r2_delta" in ft_delta_df.columns:
+                df_xai["ft_r2_delta"] = ft_delta_df["r2_delta"].iloc[0]
+                targets.append(("finetune_r2_delta", "reg", "ft_r2_delta", None))
+            print("[XAI] Added Fine-tune deltas as XAI targets")
+    except Exception as e:
+        print("[XAI][WARN] Could not add Fine-tune deltas:", e)
+
 # -------------------- Main loop: each target, E-only & EIX --------------------
 for target_name, kind, y_col, mask in targets:
     # Build per-target directories
@@ -2530,6 +2550,8 @@ for target_name, kind, y_col, mask in targets:
                 "n_train": len(Xtr),
                 "n_test": len(Xte)
             }]).to_csv(met_csv, index=False)
+
+
 
 print("[XAI] Multi-target XAI complete.")
         
