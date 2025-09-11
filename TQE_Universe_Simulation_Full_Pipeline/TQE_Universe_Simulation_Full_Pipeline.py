@@ -1359,7 +1359,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
     mE   = _fit_cls(X_E,   "E")
     mEIX = _fit_cls(X_EIX, "EIX")
     met_df = pd.DataFrame([mE, mEIX])
-    met_csv = with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.csv"))
+    met_csv   = with_variant(os.path.join(FINETUNE_DIR, "ft_metrics_cls.csv"))
     met_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.json")), indent=2)
     met_df.to_csv(met_csv, index=False)
     print("[FT] metrics_cls ->", met_csv)  
@@ -1393,7 +1393,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
         rE   = _fit_reg(XR_E,   "E")
         rEIX = _fit_reg(XR_EIX, "EIX")
         reg_df  = pd.DataFrame([rE, rEIX])
-        reg_csv = with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.csv"))
+       reg_csv   = with_variant(os.path.join(FINETUNE_DIR, "ft_metrics_reg.csv"))
         reg_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.json")), indent=2)
         reg_df.to_csv(reg_csv, index=False)
         print("[FT] metrics_reg ->", reg_csv)  
@@ -1442,7 +1442,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
             s_neq = _slice(m_neq, f"|E-I| > {eps:.3g}")
 
         sl_df = pd.DataFrame([s_eq, s_neq]).sort_values("slice")
-        sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_adaptive.csv"))
+        sl_csv    = with_variant(os.path.join(FINETUNE_DIR, "ft_slice_adaptive.csv"))
         sl_df.to_csv(sl_csv, index=False)
         print("[FT] slice ->", sl_csv)  
         out["files"]["slice_csv"] = sl_csv
@@ -1461,7 +1461,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
         )
         out["files"]["slice_png"] = bar_png
 
-        q_csv = with_variant(os.path.join(SAVE_DIR, "finetune_stability_vs_gap_quantiles.csv"))
+        q_csv     = with_variant(os.path.join(FINETUNE_DIR, "finetune_stability_vs_gap_quantiles.csv"))
         _stability_vs_gap_quantiles(
             df_in,
             qbins=MASTER_CTRL.get("FT_GAP_QBINS", 10),
