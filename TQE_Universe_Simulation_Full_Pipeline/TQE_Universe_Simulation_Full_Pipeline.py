@@ -1165,6 +1165,9 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
 import itertools
 
+os.makedirs(FIG_DIR, exist_ok=True)
+os.makedirs(SAVE_DIR, exist_ok=True)
+
 def _safe_auc(y_true, y_proba):
     try:
         if len(np.unique(y_true)) < 2:
@@ -1182,6 +1185,69 @@ def _cm_counts(y_true, y_pred):
     fp = int(np.sum((y_true==0)&(y_pred==1)))
     fn = int(np.sum((y_true==1)&(y_pred==0)))
     return {"tp":tp,"fp":fp,"tn":tn,"fn":fn}
+
+def _wilson_interval(k, n, z=1.96):
+    if n == 0:
+        return (0.0, 0.0, 0.0)
+    p = k / n
+    denom = 1 + z**2 / n
+    center = (p + z**2/(2*n)) / denom
+    half = z * np.sqrt((p*(1-p) + z**2/(4*n)) / n) / denom
+    return (max(0.0, center - half), p, min(1.0, center + half))
+
+def _plot_two_bar_with_ci(labels, counts, totals, title, out_png):
+    # Draw two bars with Wilson CI and SAVE the PNG
+    lows, ps, highs = [], [], []
+    for k, n in zip(counts, totals):
+        lo, p, hi = _wilson_interval(k, n)
+        lows.append(p - lo); highs.append(hi - p); ps.append(p)
+    x = np.arange(len(labels))
+    plt.figure(figsize=(6,5))
+    plt.bar(x, ps, edgecolor="black")
+    plt.errorbar(x, ps, yerr=[lows, highs], fmt='none', capsize=6)
+    plt.xticks(x, labels, rotation=0)
+    plt.ylabel("P(stable)")
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(out_png, dpi=220, bbox_inches="tight")
+    plt.close()
+
+def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
+    # Make quantile-binned curve of stability vs |E-I| and SAVE CSV/PNG
+    dx = np.abs(df_in["E"] - df_in["I"]).values
+    mask = np.isfinite(dx)
+    dx = dx[mask]; st = df_in["stable"].astype(int).values[mask]
+    if len(dx) == 0:
+        return pd.DataFrame()
+
+    qs = np.linspace(0, 1, qbins+1)
+    edges = np.unique(np.quantile(dx, qs))
+    rows = []
+    for i in range(len(edges)-1):
+        lo, hi = edges[i], edges[i+1] if i+1 < len(edges) else edges[-1]
+        m = (dx >= lo) & (dx <= hi if i+1 == len(edges)-1 else dx < hi)
+        n = int(m.sum()); k = int(st[m].sum())
+        lo_ci, p_hat, hi_ci = _wilson_interval(k, n)
+        rows.append({"q_lo": qs[i], "q_hi": qs[i+1] if i+1 < len(qs) else 1.0,
+                     "gap_lo": float(lo), "gap_hi": float(hi),
+                     "n": n, "stable_n": k, "p": p_hat,
+                     "ci_lo": lo_ci, "ci_hi": hi_ci})
+    dfq = pd.DataFrame(rows)
+    if out_csv: dfq.to_csv(out_csv, index=False)
+
+    if out_png:
+        mid = 0.5*(dfq["gap_lo"] + dfq["gap_hi"])
+        y = dfq["p"].values
+        yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
+        plt.figure(figsize=(7,5))
+        plt.errorbar(mid, y, yerr=yerr, fmt='-o')
+        plt.title("Stability vs. |E - I| (quantile bins)")
+        plt.xlabel("|E - I| (bin mid)")
+        plt.ylabel("P(stable)")
+        plt.tight_layout()
+        plt.savefig(out_png, dpi=220, bbox_inches="tight")
+        plt.close()
+    return dfq
 
 # ---------- Fine-tune explainability helpers (E≈I) ----------
 
