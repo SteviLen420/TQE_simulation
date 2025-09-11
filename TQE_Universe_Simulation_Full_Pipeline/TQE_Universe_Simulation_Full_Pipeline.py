@@ -180,11 +180,11 @@ MASTER_CTRL = {
     "CMB_BEST_MODE": "healpix",          # "auto" | "healpix" | "flat"
 
     # --- CMB map parameters ---
-    "CMB_NSIDE": 64,                  # Resolution for healpy maps
+    "CMB_NSIDE": 128,                  # Resolution for healpy maps
     "CMB_NPIX": 512,                  # Pixel count for flat-sky maps
     "CMB_PIXSIZE_ARCMIN": 3.0,        # Pixel size in arcmin for flat-sky
-    "CMB_POWER_SLOPE": 2.0,           # Power spectrum slope (Pk ~ k^-slope)
-    "CMB_SMOOTH_FWHM_DEG": 1.0,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
+    "CMB_POWER_SLOPE": 1.5,           # Power spectrum slope (Pk ~ k^-slope)
+    "CMB_SMOOTH_FWHM_DEG": 0.1,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
 
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
