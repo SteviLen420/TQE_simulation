@@ -2271,7 +2271,7 @@ SUBDIRS = {
     "cold_flag_cls": ("cold",       "XAI — Cold-spot anomaly (classification)"),
     "cold_min_z_reg":("cold",       "XAI — Cold-spot depth (regression)"),
     "aoe_flag_cls":  ("aoe",        "XAI — AoE anomaly (classification)"),
-    "aoe_align_reg": ("aoe",        "XAI — AoE alignment score (regression)")
+    "aoe_align_reg": ("aoe",        "XAI — AoE alignment score (regression)"),
     "finetune_acc_delta": ("finetune", "XAI — Fine-tune ΔACC (regression)"),
     "finetune_auc_delta": ("finetune", "XAI — Fine-tune ΔAUC (regression)"),
     "finetune_r2_delta":  ("finetune", "XAI — Fine-tune ΔR2  (regression)"),
