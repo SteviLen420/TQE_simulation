@@ -1955,10 +1955,10 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             lmax_used = 3
             alm = hp.map2alm(m, lmax=lmax_used, iter=0)
 
-           # Quadrupole and octupole axes (using the safe helper)
-           q_lon, q_lat, q_T = _axis_from_lmap(alm, nside, 2, lmax_used)
-           o_lon, o_lat, o_T = _axis_from_lmap(alm, nside, 3, lmax_used)
-           angle_deg = _ang(q_lon, q_lat, o_lon, o_lat)
+            # Quadrupole and octupole axes (using the safe helper)
+            q_lon, q_lat, q_T = _axis_from_lmap(alm, nside, 2, lmax_used)
+            o_lon, o_lat, o_T = _axis_from_lmap(alm, nside, 3, lmax_used)
+            angle_deg = _ang(q_lon, q_lat, o_lon, o_lat)
 
             rows.append({
                 "universe_id": uid,
