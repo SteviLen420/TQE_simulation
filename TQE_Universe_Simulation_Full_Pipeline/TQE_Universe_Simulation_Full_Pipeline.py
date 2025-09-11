@@ -1110,7 +1110,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     plt.plot(te, Atrack, label="Amplitude A")
     plt.plot(te, Itrack, label="Orientation I")
 
-    # --- valódi lock-in jelölés, ha van adat ---
+    # --- real lock-in marker, if data is available ---
     if "lock_epoch" in df.columns and (df["lock_epoch"] >= 0).any():
         lock_ep = int(np.median(df.loc[df["lock_epoch"] >= 0, "lock_epoch"]))
         plt.axvline(lock_ep, color="red", ls="--", label=f"Law lock-in ≈ {lock_ep}")
@@ -1260,7 +1260,7 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None):
     y = dfq["p"].values
     yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
 
-    # (A) fő görbe
+    # (A) main curve
     plt.figure(figsize=(7,5))
     plt.errorbar(mid, y, yerr=yerr, fmt='-o')
     plt.title("Fine-tuning — Lock-in probability vs |E − I|")
@@ -1271,7 +1271,7 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None):
     plt.savefig(out_png1, dpi=220, bbox_inches="tight")
     plt.close()
 
-    # (B) adaptív split – ha kell külön fájlba, de NEM duplikált névvel
+    # (B) adaptive split
     plt.figure(figsize=(7,5))
     plt.errorbar(mid, y, yerr=yerr, fmt='-o')
     plt.title("Fine-tuning — Lock-in probability by adaptive |E − I| split")
@@ -1393,7 +1393,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
         rE   = _fit_reg(XR_E,   "E")
         rEIX = _fit_reg(XR_EIX, "EIX")
         reg_df  = pd.DataFrame([rE, rEIX])
-       reg_csv   = with_variant(os.path.join(FINETUNE_DIR, "ft_metrics_reg.csv"))
+        reg_csv   = with_variant(os.path.join(FINETUNE_DIR, "ft_metrics_reg.csv"))
         reg_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.json")), indent=2)
         reg_df.to_csv(reg_csv, index=False)
         print("[FT] metrics_reg ->", reg_csv)  
