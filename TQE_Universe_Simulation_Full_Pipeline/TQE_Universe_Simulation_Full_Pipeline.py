@@ -1864,6 +1864,12 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
             plt.hist(cold_df["z_value"].values, bins=30, edgecolor="black")
             plt.xlabel("Cold-spot z (μK vagy z-score)"); plt.ylabel("Count")
             plt.title(f"Cold-spot depth distribution [{title_variant}]")
+
+            # --- add red dashed line for our deepest cold spot ---
+            z_star = float(np.nanmin(cold_df["z_value"].values))  # our cold-spot depth (most negative)
+            plt.axvline(z_star, color="red", linestyle="--", linewidth=2, label=f"min z = {z_star:.2f}")
+            plt.legend()
+            
             out_hist = with_variant(os.path.join(COLD_DIR, "coldspots_z_hist.png"))
             plt.savefig(out_hist, dpi=200, bbox_inches="tight"); plt.close()
             print("[CMB][COLD] FIG:", out_hist)
@@ -2008,6 +2014,13 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             # Angle histogram
             plt.figure(figsize=(7, 4.2))
             plt.hist(df_aoe["angle_deg"].values, bins=24, edgecolor="black")
+
+            # --- ADD: reference line at expected Planck/WMAP alignment angle ---
+            AOE_REF = float(MASTER_CTRL.get("AOE_REF_ANGLE_DEG", 10.0))  # degrees
+            plt.axvline(AOE_REF, color="red", linestyle="--", linewidth=2,
+                        label=f"Reference alignment ≈ {AOE_REF:.0f}°")
+            plt.legend()  # show legend for the red dashed line
+            
             plt.xlabel("Quadrupole–Octupole angle (deg)")
             plt.ylabel("Count")
             plt.title("Axis-of-Evil alignment angle distribution")
