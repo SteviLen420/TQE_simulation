@@ -2622,6 +2622,29 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
                     rel = os.path.join("figs", rel_under_figs)                # run_id/figs/...
                     to_copy.append((rel, src))
 
+        # --- PRIORITIZE Finetune PNGs (before sort and MAX_FILES trim) ---
+        prio_local = [
+            with_variant(os.path.join(FIG_DIR, "Finetune", "lockin_by_eqI_bar.png")),
+            with_variant(os.path.join(FIG_DIR, "Finetune", "finetune_gap_curve.png")),
+            with_variant(os.path.join(FIG_DIR, "Finetune", "finetune_gap_adaptive.png")),
+        ]
+        prio_pairs = []
+        for src in prio_local:
+            if os.path.exists(src):
+                rel_under_figs = os.path.relpath(src, FIG_DIR)   # e.g. "Finetune/xxx.png"
+                rel = os.path.join("figs", rel_under_figs)        # run_id/figs/Finetune/xxx.png
+                prio_pairs.append((rel, src))
+
+        # Put priorities in front and deduplicate by rel
+        rel_seen = set()
+        to_copy = prio_pairs + to_copy
+        tmp = []
+        for rel, src in to_copy:
+            if rel not in rel_seen:
+                tmp.append((rel, src))
+                rel_seen.add(rel)
+        to_copy = tmp
+
         # Sort all files by their relative path to copy deterministically
         to_copy.sort(key=lambda t: t[0])
 
