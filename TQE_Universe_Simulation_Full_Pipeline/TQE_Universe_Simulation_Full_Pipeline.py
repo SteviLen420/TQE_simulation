@@ -33,7 +33,7 @@ def _ensure(pkg):
     except ImportError:
         subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
 
-for pkg in ["qutip", "pandas", "scipy", "scikit-learn"]:
+for pkg in ["qutip", "pandas", "scipy", "scikit-learn", "healpy"]:
     _ensure(pkg)
 
 import qutip as qt
@@ -177,7 +177,7 @@ MASTER_CTRL = {
     "CMB_BEST_ENABLE": True,          # Enable best-CMB PNG export
     "CMB_BEST_FIGS": 3,               # How many best CMB PNGs to export (1..5)
     "CMB_BEST_SEED_OFFSET": 909,      # Per-universe seed offset for reproducibility
-    "CMB_BEST_MODE": "auto",          # "auto" | "healpix" | "flat"
+    "CMB_BEST_MODE": "healpix",          # "auto" | "healpix" | "flat"
 
     # --- CMB map parameters ---
     "CMB_NSIDE": 64,                  # Resolution for healpy maps
@@ -194,7 +194,7 @@ MASTER_CTRL = {
     "CMB_COLD_Z_THRESH":          -2.5,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
-    "CMB_COLD_MODE":              "auto",               # Backend selection: "auto" | "healpix" | "flat"
+    "CMB_COLD_MODE":              "healpix",               # Backend selection: "auto" | "healpix" | "flat"
     "CMB_COLD_OVERLAY":           True,                 # Draw markers on the full-sky/flat map overlays
 
     # --- CMB Axis-of-Evil detector ---
@@ -202,7 +202,7 @@ MASTER_CTRL = {
     "CMB_AOE_LMAX":        3,      # Maximum multipole ℓ to check (ℓ=3 is standard for AoE)
     "CMB_AOE_NREALIZ":     1000,   # Number of Monte Carlo randomizations for significance (p-value)
     "CMB_AOE_OVERLAY":     True,   # Overlay principal axes on the CMB map PNG
-    "CMB_AOE_MODE":        "auto", # Backend selection: "auto" | "healpix" | "flat"
+    "CMB_AOE_MODE":        "healpix", # Backend selection: "auto" | "healpix" | "flat"
     "CMB_AOE_SEED_OFFSET": 909,    # Per-universe seed offset to keep AoE maps reproducible
 
     # --- Machine Learning / XAI ---
