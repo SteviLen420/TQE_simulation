@@ -1175,7 +1175,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
 import itertools
 
 # --- Finetune output dir ---
-FINETUNE_DIR = os.path.join(FIG_DIR, "Finetune")
+FINETUNE_DIR = FIG_DIR
 os.makedirs(FINETUNE_DIR, exist_ok=True)
 os.makedirs(SAVE_DIR, exist_ok=True)
 METRIC = MASTER_CTRL.get("FT_METRIC", "stability")  # "stability" or "lockin"
@@ -1225,7 +1225,7 @@ def _plot_two_bar_with_ci(labels, counts, totals, title, out_png):
     plt.savefig(out_png, dpi=220, bbox_inches="tight")
     plt.close()
 
-def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None):
+def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None, bar_png=None):
     dx = np.abs(df_in["E"] - df_in["I"]).values
     mask = np.isfinite(dx)
     dx = dx[mask]
@@ -1290,12 +1290,13 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None):
     try:
         if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
             DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
-            GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, "figs", "Finetune")
+            GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, "figs")
             os.makedirs(GOOGLE_DIR, exist_ok=True)
             for pth in [bar_png, out_png1, out_png2]:
                 if pth and os.path.exists(pth):
-                    shutil.copy2(pth, os.path.join(GOOGLE_DIR, os.path.basename(pth)))
-                    print("[FT][PUSH] ->", os.path.join(GOOGLE_DIR, os.path.basename(pth)))
+                    dst = os.path.join(GOOGLE_DIR, os.path.basename(pth))
+                    shutil.copy2(pth, dst)
+                    print("[FT][PUSH] ->", dst)
     except Exception as e:
         print("[FT][PUSH][WARN]", e)
 
@@ -1376,7 +1377,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
     mE   = _fit_cls(X_E,   "E")
     mEIX = _fit_cls(X_EIX, "EIX")
     met_df = pd.DataFrame([mE, mEIX])
-    met_csv   = with_variant(os.path.join(FINETUNE_DIR, "ft_metrics_cls.csv"))
+    met_csv   = with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.csv"))
     met_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.json")), indent=2)
     met_df.to_csv(met_csv, index=False)
     print("[FT] metrics_cls ->", met_csv)  
@@ -1410,7 +1411,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
         rE   = _fit_reg(XR_E,   "E")
         rEIX = _fit_reg(XR_EIX, "EIX")
         reg_df  = pd.DataFrame([rE, rEIX])
-        reg_csv   = with_variant(os.path.join(FINETUNE_DIR, "ft_metrics_reg.csv"))
+        reg_csv   = with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.csv"))
         reg_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.json")), indent=2)
         reg_df.to_csv(reg_csv, index=False)
         print("[FT] metrics_reg ->", reg_csv)  
@@ -1459,12 +1460,12 @@ def run_finetune_detector(df_in: pd.DataFrame):
             s_neq = _slice(m_neq, f"|E-I| > {eps:.3g}")
 
         sl_df = pd.DataFrame([s_eq, s_neq]).sort_values("slice")
-        sl_csv    = with_variant(os.path.join(FINETUNE_DIR, "ft_slice_adaptive.csv"))
+        sl_csv    = with_variant(os.path.join(SAVE_DIR, "ft_slice_adaptive.csv"))
         sl_df.to_csv(sl_csv, index=False)
         print("[FT] slice ->", sl_csv)  
         out["files"]["slice_csv"] = sl_csv
 
-        bar_png = with_variant(os.path.join(FINETUNE_DIR, "lockin_by_eqI_bar.png"))
+        bar_png = with_variant(os.path.join(SAVE_DIR, "lockin_by_eqI_bar.png"))
         print("[FT] barplot ->", bar_png) 
         title = ("Lock-in" if METRIC=="lockin" else "Stability") + \
                 (" by Energy (Only E)" if VARIANT == "energy_only" else " by E≈I (adaptive epsilon)")
@@ -1483,7 +1484,8 @@ def run_finetune_detector(df_in: pd.DataFrame):
             df_in,
             qbins=MASTER_CTRL.get("FT_GAP_QBINS", 10),
             out_csv=q_csv,
-            out_dir=FINETUNE_DIR
+            out_dir=FINETUNE_DIR,
+            bar_png=bar_png
         )
         out["files"]["gap_quantiles_csv"] = q_csv
         out["files"]["gap_quantiles_png_curve"]    = with_variant(os.path.join(FINETUNE_DIR, "finetune_gap_curve.png"))
