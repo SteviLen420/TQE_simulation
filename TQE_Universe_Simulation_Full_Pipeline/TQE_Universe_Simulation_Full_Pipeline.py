@@ -188,7 +188,7 @@ MASTER_CTRL = {
 
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
-    "CMB_COLD_TOPK":              3,                    # Top-K cold spots to keep per universe
+    "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
     "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 120],        # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    45,                   # Minimal separation between spots (arcmin)
     "CMB_COLD_Z_THRESH":          -2.5,                 # Keep spots with z <= threshold (more negative = colder)
@@ -204,6 +204,7 @@ MASTER_CTRL = {
     "CMB_AOE_OVERLAY":     True,   # Overlay principal axes on the CMB map PNG
     "CMB_AOE_MODE":        "healpix", # Backend selection: "auto" | "healpix" | "flat"
     "CMB_AOE_SEED_OFFSET": 909,    # Per-universe seed offset to keep AoE maps reproducible
+    "CMB_AOE_MAX_OVERLAYS": 5,  # maximum number of AoE overlay PNGs to generate
 
     # --- Machine Learning / XAI ---
     "RUN_XAI":              True,   # master switch for XAI section
@@ -1935,6 +1936,13 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
         print("[CMB][AOE] No MAP_REG / healpy missing. Skipping.")
     else:
         rows = []
+        max_n = int(MASTER_CTRL.get("CMB_AOE_MAX_OVERLAYS", 0))
+
+        for i, rec in enumerate(MAP_REG):
+            if max_n and i >= max_n:
+                break
+            if rec.get("mode") != "healpix":
+                continue
 
         # --- helper: extract a single-ℓ map via almxfl (safe & lmax-agnostic) ---
         def _axis_from_lmap(alm_full, nside, ell_pick, lmax_used):
