@@ -66,8 +66,8 @@ MASTER_CTRL = {
 
     # --- Energy distribution ---
     "E_DISTR":              "lognormal",  # energy sampling mode (future-proof)
-    "E_LOG_MU":             1.8,    # lognormal mean for initial energy
-    "E_LOG_SIGMA":          0.6,    # lognormal sigma for initial energy
+    "E_LOG_MU":             2.5,    # lognormal mean for initial energy
+    "E_LOG_SIGMA":          0.8,    # lognormal sigma for initial energy
     "E_TRUNC_LOW":          None,   # optional post-sample clamp (low)
     "E_TRUNC_HIGH":         None,   # optional post-sample clamp (high)
 
@@ -147,6 +147,7 @@ MASTER_CTRL = {
     "FT_EPS_EQ":             1e-3,  # threshold for E≈I slice (|E - I| <= eps)
     "FT_TEST_SIZE":          0.25,  # test split for the detector
     "FT_RANDOM_STATE":       42,    # reproducibility for splits
+    "FT_ONLY_LOCKIN": True,         # If True, fine-tune detector uses only lock-in universes (lock_epoch >= 0)
 
     # --- Best-universe visualization (lock-in only) ---
     "BEST_UNIVERSE_FIGS": 1,      # how many figures to export (typical: 1 or 5)
@@ -1183,146 +1184,49 @@ def _cm_counts(y_true, y_pred):
     return {"tp":tp,"fp":fp,"tn":tn,"fn":fn}
 
 # ---------- Fine-tune explainability helpers (E≈I) ----------
-def _wilson_interval(k, n, z=1.96):
-    """Wilson score interval for a binomial proportion (approx 95% with z=1.96)."""
-    if n == 0:
-        return (0.0, 0.0, 0.0)
-    p = k / n
-    denom = 1 + z**2 / n
-    center = (p + z**2/(2*n)) / denom
-    half = z * np.sqrt((p*(1-p) + z**2/(4*n)) / n) / denom
-    return (max(0.0, center - half), p, min(1.0, center + half))
-
-def _select_eps_by_share(gaps, target_share=0.20, min_n=30):
-    """
-    Pick epsilon so that about 'target_share' of samples fall into |E-I| <= eps,
-    while ensuring at least min_n samples inside and outside.
-    """
-    gaps = np.asarray(gaps)
-    gaps = gaps[np.isfinite(gaps)]
-    if len(gaps) == 0:
-        return None
-    # Start from the target quantile, then widen until both sides have >= min_n
-    q = np.clip(target_share, 0.01, 0.49)
-    cand = float(np.quantile(gaps, q))
-    for mult in [1.0, 1.5, 2.0, 3.0]:
-        eps = cand * mult
-        inside = int((gaps <= eps).sum())
-        outside = int((gaps >  eps).sum())
-        if inside >= min_n and outside >= min_n:
-            return eps
-    # Fallback: smallest value that yields min_n inside (at the risk of fewer outside samples)
-    if len(gaps) >= min_n:
-        return float(np.sort(gaps)[min_n-1])
-    return cand  # last resort
-
-def _plot_two_bar_with_ci(labels, counts, totals, title, out_png):
-    """Two bars with Wilson CI whiskers; saves PNG."""
-    import matplotlib.pyplot as plt
-    lows, ps, highs = [], [], []
-    for k, n in zip(counts, totals):
-        lo, p, hi = _wilson_interval(k, n)
-        lows.append(p - lo)
-        highs.append(hi - p)
-        ps.append(p)
-    x = np.arange(len(labels))
-    plt.figure(figsize=(6,5))
-    plt.bar(x, ps, edgecolor="black")
-    # errorbars (CI)
-    plt.errorbar(x, ps, yerr=[lows, highs], fmt='none', capsize=6)
-    plt.xticks(x, labels, rotation=0)
-    plt.ylabel("P(stable)")
-    plt.title(title)
-    plt.tight_layout()
-    savefig(out_png)
-
-def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
-    """
-    Make a quantile-binned curve of stability vs |E-I|.
-    Returns a DataFrame with columns: q_lo, q_hi, gap_lo, gap_hi, n, stable_n, p.
-    """
-    dx = np.abs(df_in["E"] - df_in["I"]).values
-    mask = np.isfinite(dx)
-    dx = dx[mask]
-    st = df_in["stable"].astype(int).values[mask]
-    if len(dx) == 0:
-        return pd.DataFrame()
-
-    qs = np.linspace(0, 1, qbins+1)
-    edges = np.quantile(dx, qs)
-    edges = np.unique(edges)  # numeric safety
-
-    rows = []
-    for i in range(len(edges)-1):
-        lo, hi = edges[i], edges[i+1] if i+1 < len(edges) else edges[-1]
-        m = (dx >= lo) & (dx <= hi if i+1 == len(edges)-1 else dx < hi)
-        n = int(m.sum()); k = int(st[m].sum())
-        lo_ci, p_hat, hi_ci = _wilson_interval(k, n)
-        rows.append({
-            "q_lo": qs[i], "q_hi": qs[i+1] if i+1 < len(qs) else 1.0,
-            "gap_lo": float(lo), "gap_hi": float(hi),
-            "n": n, "stable_n": k, "p": p_hat,
-            "ci_lo": lo_ci, "ci_hi": hi_ci
-        })
-
-    dfq = pd.DataFrame(rows)
-    if out_csv:
-        dfq.to_csv(out_csv, index=False)
-
-    if out_png:
-        plt.figure(figsize=(7,5))
-        mid = 0.5*(dfq["gap_lo"] + dfq["gap_hi"])
-        y = dfq["p"].values
-        yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
-        plt.errorbar(mid, y, yerr=yerr, fmt='-o')
-
-        if VARIANT == "energy_only":
-            plt.title("Stability vs. E (Only E)")
-            plt.xlabel("E (quantile bins)")
-        else:
-            plt.title("Stability vs. |E - I| (Energy + Information)")
-            plt.xlabel("|E - I| (quantile bins)")
-
-        plt.ylabel("P(stable)")
-        savefig(out_png)
-
-    return dfq
 
 def run_finetune_detector(df_in: pd.DataFrame):
     """
     Train/test comparator:
-      - Model_E:      features = ['E']
-      - Model_EIX:    features = subset available from ['E','I','X'] in df
-    Saves: CSV metrics, ROC (ha értelmezhető), E≈I slice CSV + barplot.
-    Returns: dict (metrics + filepaths) for summary
+      - Model_E:   features = ['E']
+      - Model_EIX: features = subset available from ['E','I','X'] in df
+    Saves: CSV metrics, ROC (if applicable), E≈I slice CSV + barplot.
+    Returns: dict (metrics + filepaths) for summary.
     """
     out = {"metrics": {}, "files": {}}
-    if df_in is None or len(df_in)==0:
+    if df_in is None or len(df_in) == 0:
         return out
 
-    # --- Classification target ---
+    # --- Only use lock-in universes if requested (single place; not duplicated) ---
+    if MASTER_CTRL.get("FT_ONLY_LOCKIN", False):
+        df_in = df_in[df_in.get("lock_epoch", -1) >= 0].copy()
+        if len(df_in) == 0:
+            print("[FT] No lock-in universes under FT_ONLY_LOCKIN; returning empty result.")
+            return out
+        else:
+            print(f"[FT] Using only lock-in universes: n={len(df_in)}")
+
+    # ------------------ Classification setup ------------------
     y = df_in["stable"].astype(int).values
-    # --- Feature sets (only use cols that actually exist) ---
     cols_e   = [c for c in ["E"] if c in df_in.columns]
     cols_eix = [c for c in ["E","I","X"] if c in df_in.columns]
-
     X_E   = df_in[cols_e].copy()
     X_EIX = df_in[cols_eix].copy()
 
-    # --- Train/test split (same indices for fair compare) ---
+    # Common split indices (for fair comparison)
     idx = np.arange(len(df_in))
     Xtr_idx, Xte_idx = train_test_split(
-        idx, test_size=MASTER_CTRL.get("FT_TEST_SIZE", 0.25),
+        idx,
+        test_size=MASTER_CTRL.get("FT_TEST_SIZE", 0.25),
         random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42),
         stratify=y if (len(np.unique(y))==2 and (y==0).sum()>=2 and (y==1).sum()>=2) else None
     )
 
     def _fit_cls(Xdf, label):
+        """Fit RF classifier on train split and evaluate on test split."""
         if len(np.unique(y[Xtr_idx])) < 2:
-            return {
-                "label": label, "acc": float("nan"), "auc": float("nan"),
-                "cm": {"tp":0,"fp":0,"tn":0,"fn":0}
-            }
+            return {"label": label, "acc": float("nan"), "auc": float("nan"),
+                    "cm": {"tp":0,"fp":0,"tn":0,"fn":0}}
         clf = RandomForestClassifier(
             n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
             random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42),
@@ -1332,24 +1236,25 @@ def run_finetune_detector(df_in: pd.DataFrame):
         clf.fit(Xdf.iloc[Xtr_idx], y[Xtr_idx])
         yp = clf.predict(Xdf.iloc[Xte_idx])
         acc = float(accuracy_score(y[Xte_idx], yp))
-        # proba for AUC
         try:
             proba = clf.predict_proba(Xdf.iloc[Xte_idx])[:,1]
         except Exception:
-            proba = yp.astype(float)  # fallback
+            proba = yp.astype(float)
         auc  = _safe_auc(y[Xte_idx], proba)
         cm   = _cm_counts(y[Xte_idx], yp)
-        # optional: save feature importances
+
+        # Save feature importances
         fi_df = pd.DataFrame({
-            "feature": Xdf.columns, "importance": getattr(clf, "feature_importances_", np.zeros(len(Xdf.columns)))
+            "feature": Xdf.columns,
+            "importance": getattr(clf, "feature_importances_", np.zeros(len(Xdf.columns)))
         }).sort_values("importance", ascending=False)
         fi_csv = with_variant(os.path.join(FIG_DIR, f"ft_feat_importance_{label}.csv"))
         fi_df.to_csv(fi_csv, index=False)
         out["files"][f"feat_importance_{label}"] = fi_csv
-        return {"label":label, "acc":acc, "auc":auc, "cm":cm}
-        
 
-    # --- Fit both classifiers ---
+        return {"label":label, "acc":acc, "auc":auc, "cm":cm}
+
+    # ------------------ Fit classifiers ------------------
     mE   = _fit_cls(X_E,   "E")
     mEIX = _fit_cls(X_EIX, "EIX")
     met_df = pd.DataFrame([mE, mEIX])
@@ -1359,7 +1264,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
     out["files"]["metrics_cls_csv"] = met_csv
     out["metrics"]["cls"] = {"E": mE, "EIX": mEIX}
 
-    # --- Optional regression on lock_epoch ---
+    # ------------------ Optional regression on lock_epoch ------------------
     reg_mask = df_in["lock_epoch"] >= 0
     out["metrics"]["reg"] = {}
     if reg_mask.sum() >= MASTER_CTRL.get("REGRESSION_MIN", 10):
@@ -1367,7 +1272,6 @@ def run_finetune_detector(df_in: pd.DataFrame):
         XR_E   = df_in.loc[reg_mask, cols_e].copy()
         XR_EIX = df_in.loc[reg_mask, cols_eix].copy()
 
-        # single split for comparability
         ridx = np.arange(len(XR_E))
         Rtr, Rte = train_test_split(
             ridx, test_size=MASTER_CTRL.get("FT_TEST_SIZE", 0.25),
@@ -1393,18 +1297,15 @@ def run_finetune_detector(df_in: pd.DataFrame):
         out["files"]["metrics_reg_csv"] = reg_csv
         out["metrics"]["reg"] = {"E": rE, "EIX": rEIX}
 
-    # --- E≈I slice analysis (adaptive, with CI & full exports) ---
+    # ------------------ E≈I slice analysis ------------------
     if all(c in df_in.columns for c in ["E", "I"]):
         gaps = np.abs(df_in["E"] - df_in["I"]).values
-
-        # pick epsilon so both slices have enough samples
         eps_auto = _select_eps_by_share(
             gaps, target_share=0.20,
             min_n=MASTER_CTRL.get("FT_MIN_PER_SLICE", 30)
         )
         eps = float(MASTER_CTRL.get("FT_EPS_EQ", eps_auto if eps_auto is not None else 1e-3))
 
-        # If user-fixed FT_EPS_EQ yields empty slice, fall back to auto
         m_eq_try = (np.abs(df_in["E"] - df_in["I"]) <= eps)
         if m_eq_try.sum() == 0 or (~m_eq_try).sum() == 0:
             if eps_auto is not None:
@@ -1425,7 +1326,6 @@ def run_finetune_detector(df_in: pd.DataFrame):
                 "lockin_n": lk, "p_lockin": (lk/n) if n > 0 else float("nan")
             }
 
-        # Slice labels by variant
         if VARIANT == "energy_only":
             s_eq  = _slice(m_eq,  f"E ≤ {eps:.3g}")
             s_neq = _slice(m_neq, f"E > {eps:.3g}")
@@ -1434,14 +1334,13 @@ def run_finetune_detector(df_in: pd.DataFrame):
             s_neq = _slice(m_neq, f"|E-I| > {eps:.3g}")
 
         sl_df = pd.DataFrame([s_eq, s_neq]).sort_values("slice")
-
-        # Files
         sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_adaptive.csv"))
         sl_df.to_csv(sl_csv, index=False)
         out["files"]["slice_csv"] = sl_csv
 
         bar_png = with_variant(os.path.join(FIG_DIR, "ft_slice_adaptive.png"))
-        title = "Stability by Energy (Only E)" if VARIANT == "energy_only" else "Stability by E≈I (adaptive epsilon)"
+        title = "Stability by Energy (Only E)" if VARIANT == "energy_only" \
+                else "Stability by E≈I (adaptive epsilon)"
         _plot_two_bar_with_ci(
             labels=sl_df["slice"].tolist(),
             counts=sl_df["stable_n"].tolist(),
@@ -1451,7 +1350,6 @@ def run_finetune_detector(df_in: pd.DataFrame):
         )
         out["files"]["slice_png"] = bar_png
 
-        # Stability vs |E-I| quantile curve + CSV
         q_csv = with_variant(os.path.join(SAVE_DIR, "ft_stability_vs_gap_quantiles.csv"))
         q_png = with_variant(os.path.join(FIG_DIR, "ft_stability_vs_gap_quantiles.png"))
         _stability_vs_gap_quantiles(
@@ -1463,22 +1361,19 @@ def run_finetune_detector(df_in: pd.DataFrame):
     else:
         print("[FT] Skipping E≈I slice analysis (missing E or I column).")
 
-    # --- delta table (EIX – E) for quick view ---
+    # ------------------ Delta summary ------------------
     delta = {
         "acc_delta": (mEIX["acc"] - mE["acc"]) if np.isfinite(mEIX["acc"]) and np.isfinite(mE["acc"]) else float("nan"),
         "auc_delta": (mEIX["auc"] - mE["auc"]) if np.isfinite(mEIX["auc"]) and np.isfinite(mE["auc"]) else float("nan"),
     }
-    if "reg" in out["metrics"] and out["metrics"]["reg"]:
+    if out["metrics"].get("reg"):
         rE   = out["metrics"]["reg"].get("E",   {"r2": float("nan")})
         rEIX = out["metrics"]["reg"].get("EIX", {"r2": float("nan")})
         delta["r2_delta"] = (rEIX["r2"] - rE["r2"]) if np.isfinite(rEIX["r2"]) and np.isfinite(rE["r2"]) else float("nan")
 
     out["metrics"]["delta"] = delta
-
-    # Save a compact CSV for deltas
     pd.DataFrame([delta]).to_csv(with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv")), index=False)
     out["files"]["delta_csv"] = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
-
     return out
 
 # --- Finetune detector (E vs E+I(+X)) ---
