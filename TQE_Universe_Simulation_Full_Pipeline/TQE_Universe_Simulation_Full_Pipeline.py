@@ -1618,7 +1618,7 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                     # 3) rotate so that the chosen 'common axis' is the quadrupole axis
                     #    (this sets the quadrupole pole; octupole stays close but not exact)
                     R = hp.rotator.Rotator(deg=True, rot=[q_lon, 90.0 - q_lat, 0.0])
-                    alm_full = hp.rotate_alm(alm_full, R, pol=False)
+                    alm_full = hp.rotate_alm(alm_full, R)
 
                     # 4) gently boost ℓ=2 and ℓ=3 to emphasize AoE alignment
                     boost = float(MASTER_CTRL.get("CMB_AOE_L23_BOOST", 1.5))  # 1.5–3.0
