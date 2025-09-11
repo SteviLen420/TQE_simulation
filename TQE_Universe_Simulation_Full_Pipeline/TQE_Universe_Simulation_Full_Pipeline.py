@@ -1562,12 +1562,18 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                 # Robust color stretch + Planck colormap
                 vmin, vmax = np.percentile(m_uK, 1), np.percentile(m_uK, 99)
                 plt.figure(figsize=(9, 5.3))
+                try:
+                    cmap = hp.visufunc.planck_cmap()
+                except Exception:
+                    import matplotlib.pyplot as plt
+                    cmap = plt.get_cmap("coolwarm")
+
                 hp.mollview(
                     m_uK,
                     title=f"Best CMB [{title_variant}] — uid {uid}, lock-in {lock_ep}\nE={E_val:.3g}, I={I_val:.3g}",
                     unit="μK",
                     min=vmin, max=vmax,
-                    cmap=hp.visufunc.planck_cmap()
+                    cmap=cmap  
                 )
                 hp.graticule(ls=":", alpha=0.5)
                 _save_close(png_path)
