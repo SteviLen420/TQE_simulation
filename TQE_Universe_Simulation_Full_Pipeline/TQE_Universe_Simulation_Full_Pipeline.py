@@ -2434,25 +2434,43 @@ if not targets:
 else:
     print("[XAI] Targets:", [t[0] for t in targets])
 
-# --- Add Fine-tune delta as extra XAI target (if available) ---
+# --- Add Fine-tune deltas as XAI targets BEFORE target selection ---
 ft_delta_path = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
 if os.path.exists(ft_delta_path):
     try:
         ft_delta_df = pd.read_csv(ft_delta_path)
         if not ft_delta_df.empty:
-            # Treat acc_delta as classification-like, r2_delta as regression-like
+            # broadcast single-run deltas to df_xai so models can train
             if "acc_delta" in ft_delta_df.columns:
-                df_xai["ft_acc_delta"] = ft_delta_df["acc_delta"].iloc[0]
-                targets.append(("finetune_acc_delta", "reg", "ft_acc_delta", None))
+                df_xai["ft_acc_delta"] = float(ft_delta_df["acc_delta"].iloc[0])
             if "auc_delta" in ft_delta_df.columns:
-                df_xai["ft_auc_delta"] = ft_delta_df["auc_delta"].iloc[0]
-                targets.append(("finetune_auc_delta", "reg", "ft_auc_delta", None))
+                df_xai["ft_auc_delta"] = float(ft_delta_df["auc_delta"].iloc[0])
             if "r2_delta" in ft_delta_df.columns:
-                df_xai["ft_r2_delta"] = ft_delta_df["r2_delta"].iloc[0]
-                targets.append(("finetune_r2_delta", "reg", "ft_r2_delta", None))
-            print("[XAI] Added Fine-tune deltas as XAI targets")
+                df_xai["ft_r2_delta"] = float(ft_delta_df["r2_delta"].iloc[0])
+
+            # register targets (regression-style)
+            targets_extra = []
+            if "ft_acc_delta" in df_xai.columns:
+                targets_extra.append(("finetune_acc_delta", "reg", "ft_acc_delta", None))
+            if "ft_auc_delta" in df_xai.columns:
+                targets_extra.append(("finetune_auc_delta", "reg", "ft_auc_delta", None))
+            if "ft_r2_delta" in df_xai.columns:
+                targets_extra.append(("finetune_r2_delta",  "reg", "ft_r2_delta",  None))
+
+            # make sure 'targets' exists even if moved earlier in code
+            try:
+                targets
+            except NameError:
+                targets = []
+            targets.extend(targets_extra)
+
+            print("[XAI] Fine-tune deltas added as XAI targets:", [t[0] for t in targets_extra])
+        else:
+            print("[XAI] ft_delta_summary.csv exists but empty — skipping Fine-tune XAI targets.")
     except Exception as e:
         print("[XAI][WARN] Could not add Fine-tune deltas:", e)
+else:
+    print("[XAI] No ft_delta_summary.csv — skipping Fine-tune XAI targets.")
 
 # -------------------- Main loop: each target, E-only & EIX --------------------
 for target_name, kind, y_col, mask in targets:
