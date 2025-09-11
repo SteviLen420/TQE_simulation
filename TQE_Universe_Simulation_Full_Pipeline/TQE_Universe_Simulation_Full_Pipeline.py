@@ -1287,6 +1287,19 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None):
     print("[FT][CHECK] PNG exists:", os.path.exists(out_png1), "->", out_png1)
     print("[FT][CHECK] PNG exists:", os.path.exists(out_png2), "->", out_png2)
 
+    # --- after saving bar_png / out_png1 / out_png2: push directly to Drive (failsafe)
+    try:
+        if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
+            DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
+            GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, "figs", "Finetune")
+            os.makedirs(GOOGLE_DIR, exist_ok=True)
+            for pth in [bar_png, out_png1, out_png2]:
+                if pth and os.path.exists(pth):
+                    shutil.copy2(pth, os.path.join(GOOGLE_DIR, os.path.basename(pth)))
+                    print("[FT][PUSH] ->", os.path.join(GOOGLE_DIR, os.path.basename(pth)))
+    except Exception as e:
+        print("[FT][PUSH][WARN]", e)
+
     return dfq
 
 # ---------- Fine-tune explainability helpers (E≈I) ----------
@@ -2259,6 +2272,9 @@ SUBDIRS = {
     "cold_min_z_reg":("cold",       "XAI — Cold-spot depth (regression)"),
     "aoe_flag_cls":  ("aoe",        "XAI — AoE anomaly (classification)"),
     "aoe_align_reg": ("aoe",        "XAI — AoE alignment score (regression)")
+    "finetune_acc_delta": ("finetune", "XAI — Fine-tune ΔACC (regression)"),
+    "finetune_auc_delta": ("finetune", "XAI — Fine-tune ΔAUC (regression)"),
+    "finetune_r2_delta":  ("finetune", "XAI — Fine-tune ΔR2  (regression)"),
 }
 
 def _ensure_cols(df_in, cols):
