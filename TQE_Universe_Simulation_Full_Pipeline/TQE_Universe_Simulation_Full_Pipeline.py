@@ -1252,13 +1252,27 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_png=None):
         mid = 0.5*(dfq["gap_lo"] + dfq["gap_hi"])
         y = dfq["p"].values
         yerr = np.vstack([y - dfq["ci_lo"].values, dfq["ci_hi"].values - y])
+
+        # --- (A) Quantile-binned curve ---
         plt.figure(figsize=(7,5))
         plt.errorbar(mid, y, yerr=yerr, fmt='-o')
-        plt.title(("Lock-in" if METRIC=="lockin" else "Stability") + " vs. |E - I| (quantile bins)")
-        plt.xlabel("|E - I| (bin mid)")
+        plt.title("Fine-tuning — Lock-in probability vs |E − I|")
+        plt.xlabel("|E − I| (bin mid)")
         plt.ylabel("P(lock-in)" if METRIC=="lockin" else "P(stable)")
         plt.tight_layout()
-        plt.savefig(out_png, dpi=220, bbox_inches="tight")
+        out_png1 = with_variant(os.path.join(FIG_DIR, "ft", "finetuning_lockin_probability.png"))
+        plt.savefig(out_png1, dpi=220, bbox_inches="tight")
+        plt.close()
+
+        # --- (B) Adaptive split (placeholder) ---
+        plt.figure(figsize=(7,5))
+        plt.errorbar(mid, y, yerr=yerr, fmt='-o')
+        plt.title("Fine-tuning — Lock-in probability by adaptive |E − I| split")
+        plt.xlabel("|E − I| (bin mid)")
+        plt.ylabel("P(lock-in)" if METRIC=="lockin" else "P(stable)")
+        plt.tight_layout()
+        out_png2 = with_variant(os.path.join(FIG_DIR, "ft", "finetuning_lockin_adaptive.png"))
+        plt.savefig(out_png2, dpi=220, bbox_inches="tight")
         plt.close()
     return dfq
 
@@ -2122,9 +2136,10 @@ print("[JOIN] Wrote:", joined_csv)
 df_xai = df_join
 
 # ======================================================
-# 19) Multi-target XAI (SHAP + LIME) per feature set
+# 19) Multi-target XAI (SHAP + LIME) — E-only vs E+I(+X), foldered outputs
 # ======================================================
 
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -2134,29 +2149,67 @@ from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
 import shap
 from lime.lime_tabular import LimeTabularExplainer
 
-# ---- Controls (can be overridden in MASTER_CTRL) ----
-XAI_ENABLE_STAB   = bool(MASTER_CTRL.get("XAI_ENABLE_STABILITY", True))
-XAI_ENABLE_COLD   = bool(MASTER_CTRL.get("XAI_ENABLE_COLD", True))
-XAI_ENABLE_AOE    = bool(MASTER_CTRL.get("XAI_ENABLE_AOE", True))
+# ------------ Controls (override via MASTER_CTRL) ------------
+XAI_ENABLE_STAB = bool(MASTER_CTRL.get("XAI_ENABLE_STABILITY", True))
+XAI_ENABLE_COLD = bool(MASTER_CTRL.get("XAI_ENABLE_COLD", True))
+XAI_ENABLE_AOE  = bool(MASTER_CTRL.get("XAI_ENABLE_AOE", True))
 
-TEST_SIZE         = float(MASTER_CTRL.get("XAI_TEST_SIZE", MASTER_CTRL.get("TEST_SIZE", 0.25)))
-RSTATE            = int(MASTER_CTRL.get("XAI_RANDOM_STATE", MASTER_CTRL.get("TEST_RANDOM_STATE", 42)))
-SAVE_SHAP         = bool(MASTER_CTRL.get("XAI_SAVE_SHAP", True))
-SAVE_LIME         = bool(MASTER_CTRL.get("XAI_SAVE_LIME", True))
-LIME_K            = int(MASTER_CTRL.get("XAI_LIME_K", 50))
+TEST_SIZE  = float(MASTER_CTRL.get("XAI_TEST_SIZE", MASTER_CTRL.get("TEST_SIZE", 0.25)))
+RSTATE     = int(MASTER_CTRL.get("XAI_RANDOM_STATE", MASTER_CTRL.get("TEST_RANDOM_STATE", 42)))
+SAVE_SHAP  = bool(MASTER_CTRL.get("XAI_SAVE_SHAP", True))
+SAVE_LIME  = bool(MASTER_CTRL.get("XAI_SAVE_LIME", True))
+LIME_K     = int(MASTER_CTRL.get("XAI_LIME_K", 50))
 
-# Feature definitions
-FEATS_E_ONLY = MASTER_CTRL.get("XAI_FEATURES_E_ONLY", ["E","logE","E_rank"])
+# Feature sets
+FEATS_E_ONLY = MASTER_CTRL.get("XAI_FEATURES_E_ONLY", ["E", "logE", "E_rank"])
 FEATS_EIX    = MASTER_CTRL.get("XAI_FEATURES_EIX",
                                ["E","I","X","abs_E_minus_I","logX","dist_to_goldilocks","E_rank","X_rank"])
 
-variant_title = "E-only" if VARIANT == "energy_only" else "E+I"
+# Variant label for plot titles
+variant_title = "E-only" if VARIANT == "energy_only" else "E+I(+X)"
 
-# Utility: model runners -------------------------------------------------------
+# ------------ Output directory helpers ------------
+XAI_FIG_DIR  = os.path.join(FIG_DIR, "xai")
+XAI_SAVE_DIR = os.path.join(SAVE_DIR, "xai")
+os.makedirs(XAI_FIG_DIR,  exist_ok=True)
+os.makedirs(XAI_SAVE_DIR, exist_ok=True)
+
+SUBDIRS = {
+    "stability_cls": ("stability",  "XAI — Stability (classification)"),
+    "lock_epoch_reg": ("lockin",    "XAI — Lock-in epoch (regression)"),
+    "cold_flag_cls": ("cold",       "XAI — Cold-spot anomaly (classification)"),
+    "cold_min_z_reg":("cold",       "XAI — Cold-spot depth (regression)"),
+    "aoe_flag_cls":  ("aoe",        "XAI — AoE anomaly (classification)"),
+    "aoe_align_reg": ("aoe",        "XAI — AoE alignment score (regression)")
+}
+
 def _ensure_cols(df_in, cols):
+    """Keep only columns that exist in df_in."""
     return [c for c in cols if c in df_in.columns]
 
-def _shap_summary(model, X_plot, feat_names, out_png):
+def _mk_dirs_for_target(tname):
+    """Create per-target folders under FIG_DIR/xai and SAVE_DIR/xai."""
+    sub = SUBDIRS.get(tname, ("misc", tname))[0]
+    fig_dir  = os.path.join(XAI_FIG_DIR,  sub)
+    save_dir = os.path.join(XAI_SAVE_DIR, sub)
+    os.makedirs(fig_dir,  exist_ok=True)
+    os.makedirs(save_dir, exist_ok=True)
+    return fig_dir, save_dir
+
+def _file_prefix(fig_dir, save_dir, target_name, featset):
+    """Base file prefix (with variant) for a target + feature set."""
+    tag_feat = "Eonly" if featset == "E_ONLY" else "EIX"
+    base_png = with_variant(os.path.join(fig_dir,  f"{target_name}__{tag_feat}"))
+    base_csv = with_variant(os.path.join(save_dir, f"{target_name}__{tag_feat}"))
+    return base_png, base_csv
+
+def _title_with_feat(base_title, featset):
+    """Compose human-readable figure title."""
+    return f"{base_title} [{ 'E-only' if featset=='E_ONLY' else 'E+I(+X)' }]"
+
+# ---------------- SHAP summary helper ----------------
+def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
+    """Save SHAP beeswarm summary plot for a tree model (robust fallback)."""
     try:
         expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
         sv = expl.shap_values(X_plot, check_additivity=False)
@@ -2167,64 +2220,42 @@ def _shap_summary(model, X_plot, feat_names, out_png):
         sv = sv[-1]
     plt.figure()
     shap.summary_plot(sv, X_plot.values, feature_names=feat_names, show=False)
-    plt.title(os.path.splitext(os.path.basename(out_png))[0], fontsize=10)
+    if fig_title:
+        plt.title(fig_title)
     plt.savefig(out_png, dpi=220, bbox_inches="tight")
     plt.close()
 
-# --- Helper: drop near-constant columns and keep a boolean mask ---
+# ------------- LIME stability helpers (robust) -------------
 def _remove_constant_features(X_np, feat_names, eps=1e-12):
-    """
-    Remove (near) zero-variance features to avoid LIME's truncnorm(scale=0) error.
-    Returns reduced X, reduced feature names, and a boolean mask of kept columns
-    in the ORIGINAL TRAIN feature order.
-    """
-    import numpy as np
+    """Remove near-constant columns (LIME may fail on zero-variance)."""
     stds = X_np.std(axis=0)
     keep = stds > eps
     X_red = X_np[:, keep] if X_np.ndim == 2 else X_np[keep]
     feat_red = [f for f, k in zip(feat_names, keep) if k]
     return X_red, feat_red, keep
 
-# --- Safe LIME: predict on reduced inputs but rebuild to full dimension for the model ---
 def _lime_avg(clf, X_np, feat_names, out_png, k=50,
-              full_feat_names=None, full_means=None, rng_seed=42):
+              full_feat_names=None, full_means=None, rng_seed=42, fig_title=None):
     """
-    Compute averaged LIME importances safely:
-      - Build the LIME explainer on a reduced feature matrix (const cols removed).
-      - When calling the model, rebuild full-dimension vectors by filling the
-        dropped columns with training means, so clf.predict_proba() sees the
-        exact feature dimension it was trained on.
-
-    Parameters
-    ----------
-    clf : fitted classifier with predict_proba
-    X_np : np.ndarray (n_samples, n_features) from TRAIN space (same order as feat_names)
-    feat_names : list[str] names for X_np columns (TRAIN order)
-    out_png : str, output path for the barplot
-    k : int, number of instances to average
-    full_feat_names : list[str], full TRAIN feature names (defaults to feat_names)
-    full_means : np.ndarray, per-feature means in TRAIN space used to fill dropped cols
-    rng_seed : int, random seed for sampling instances
+    Average LIME importances safely by:
+      (1) building LIME on reduced features (const cols removed),
+      (2) reconstructing full-dimension vectors for predict_proba by
+          filling dropped columns with train means.
     """
-    import numpy as np
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    from lime.lime_tabular import LimeTabularExplainer
-
-    # 1) Reduce constant features and get keep-mask in TRAIN order
+    # 1) reduce
     X_red, feat_red, keep_mask = _remove_constant_features(X_np, feat_names)
     if X_red.shape[1] == 0:
-        print("[LIME] All features are constant — skipping.")
+        print("[LIME] All features constant — skip.")
         return
 
-    # 2) Prepare full-space info for reconstruction
+    # 2) prepare full info
     if full_feat_names is None:
-        full_feat_names = feat_names[:]  # keep TRAIN order
+        full_feat_names = feat_names[:]
     if full_means is None:
         full_means = np.zeros(len(full_feat_names), dtype=float)
-    keep_idx = np.where(keep_mask)[0]   # indices of kept TRAIN columns
+    keep_idx = np.where(keep_mask)[0]
 
-    # 3) Wrapper: map reduced vectors back to full space before predict_proba
+    # 3) wrapper to rebuild full before predict
     def _predict_proba_on_reduced(Z_red):
         Z_red = np.asarray(Z_red)
         if Z_red.ndim == 1:
@@ -2233,7 +2264,7 @@ def _lime_avg(clf, X_np, feat_names, out_png, k=50,
         Z_full[:, keep_idx] = Z_red
         return clf.predict_proba(Z_full)
 
-    # 4) Build explainer in reduced space
+    # 4) LIME on reduced space
     explainer = LimeTabularExplainer(
         training_data=X_red,
         feature_names=feat_red,
@@ -2241,10 +2272,9 @@ def _lime_avg(clf, X_np, feat_names, out_png, k=50,
         mode="classification"
     )
 
-    # 5) Sample some rows and aggregate weights
+    # 5) average over K instances
     rng = np.random.default_rng(rng_seed)
     idxs = rng.choice(X_red.shape[0], size=min(k, X_red.shape[0]), replace=False)
-
     try:
         pos = int(np.argmax(getattr(clf, "classes_", [0, 1])))
     except Exception:
@@ -2264,7 +2294,7 @@ def _lime_avg(clf, X_np, feat_names, out_png, k=50,
             rows.append((base, float(w)))
 
     if not rows:
-        print("[LIME] No weights collected — skipping plot.")
+        print("[LIME] No weights collected — skip plot.")
         return
 
     dfw = (pd.DataFrame(rows, columns=["feature", "weight"])
@@ -2274,26 +2304,21 @@ def _lime_avg(clf, X_np, feat_names, out_png, k=50,
     plt.figure(figsize=(6, 4))
     plt.barh(dfw["feature"], dfw["weight"], edgecolor="black")
     plt.xlabel("Avg LIME weight")
+    if fig_title:
+        plt.title(fig_title)
     plt.tight_layout()
     plt.savefig(out_png, dpi=220, bbox_inches="tight")
     plt.close()
 
-def _report_prefix(target, featset):
-    # Compose clear, variant-aware filenames
-    tag_feat = "Eonly" if featset=="E_ONLY" else "EIX"
-    base = f"{target}__{tag_feat}"
-    return with_variant(os.path.join(FIG_DIR, base))
-
-# Targets to run (present -> run) ---------------------------------------------
+# -------------------- Select targets to run --------------------
 targets = []
-
 if XAI_ENABLE_STAB and "stable" in df_xai.columns:
     targets.append(("stability_cls", "cls", "stable", None))  # (name, kind, y_col, mask)
 
 if XAI_ENABLE_STAB and "lock_epoch" in df_xai.columns:
-    mask = df_xai["lock_epoch"] >= 0
-    if int(mask.sum()) >= int(MASTER_CTRL.get("REGRESSION_MIN", 10)):
-        targets.append(("lock_epoch_reg", "reg", "lock_epoch", mask))
+    m = (df_xai["lock_epoch"] >= 0)
+    if int(m.sum()) >= int(MASTER_CTRL.get("REGRESSION_MIN", 10)):
+        targets.append(("lock_epoch_reg", "reg", "lock_epoch", m))
 
 if XAI_ENABLE_COLD and "cold_flag" in df_xai.columns:
     targets.append(("cold_flag_cls", "cls", "cold_flag", None))
@@ -2312,37 +2337,48 @@ if XAI_ENABLE_AOE and "aoe_align_score" in df_xai.columns:
         targets.append(("aoe_align_reg", "reg", "aoe_align_score", m))
 
 if not targets:
-    print("[XAI][INFO] No available targets to model; skipping.")
+    print("[XAI][INFO] No available XAI targets — skipping.")
 else:
-    print("[XAI] Running for targets:", [t[0] for t in targets])
+    print("[XAI] Targets:", [t[0] for t in targets])
 
+# -------------------- Main loop: each target, E-only & EIX --------------------
 for target_name, kind, y_col, mask in targets:
-    # Build dataset (mask if provided)
-    data = df_xai[mask].copy() if (mask is not None) else df_xai.copy()
-    data = data.replace([np.inf, -np.inf], np.nan).dropna(subset=[y_col,"E","X"], how="any")
+    # Build per-target directories
+    fig_dir, save_dir = _mk_dirs_for_target(target_name)
 
-    # Two feature sets: E-only vs E+I  (skip columns that aren't present)
+    # Build dataset (mask if provided), drop non-finite rows on required cols
+    data = df_xai[mask].copy() if (mask is not None) else df_xai.copy()
+    need_cols = [y_col, "E"]  # E-only always needs 'E'
+    if any(c in ["I","X"] for c in FEATS_EIX):
+        need_cols += [c for c in ["I","X"] if c in data.columns]
+    data = data.replace([np.inf, -np.inf], np.nan).dropna(subset=list(set(need_cols)), how="any")
+
+    # Two feature sets
     for featset, feat_cols in [("E_ONLY", FEATS_E_ONLY), ("EIX", FEATS_EIX)]:
         cols = _ensure_cols(data, feat_cols)
         if not cols:
-            print(f"[XAI] {target_name} — {featset}: no available features, skipping.")
+            print(f"[XAI] {target_name} — {featset}: no usable features, skipping.")
             continue
 
         X = data[cols].copy()
         y = data[y_col].values
 
-        # Train/test split (stratify only for binary cls with both classes)
+        # Stratify only for binary classification with both classes present
         strat = None
-        if kind=="cls":
+        if kind == "cls":
             uniq = np.unique(y)
-            if len(uniq)==2 and min((y==uniq[0]).sum(), (y==uniq[1]).sum()) >= 2:
+            if len(uniq) == 2 and min((y == uniq[0]).sum(), (y == uniq[1]).sum()) >= 2:
                 strat = y
 
-        Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=TEST_SIZE,
-                                              random_state=RSTATE, stratify=strat)
+        Xtr, Xte, ytr, yte = train_test_split(
+            X, y, test_size=TEST_SIZE, random_state=RSTATE, stratify=strat
+        )
 
-        # Fit model
-        if kind=="cls":
+        # File prefixes (PNG/CSV)
+        base_png, base_csv = _file_prefix(fig_dir, save_dir, target_name, featset)
+
+        # ---------------- Train & evaluate ----------------
+        if kind == "cls":
             model = RandomForestClassifier(
                 n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
                 random_state=RSTATE,
@@ -2353,32 +2389,45 @@ for target_name, kind, y_col, mask in targets:
             yp = model.predict(Xte)
             acc = accuracy_score(yte, yp)
             try:
-                proba = model.predict_proba(Xte)[:,1]
-                auc = roc_auc_score(yte, proba) if len(np.unique(yte))==2 else np.nan
+                proba = model.predict_proba(Xte)[:, 1]
+                auc = roc_auc_score(yte, proba) if len(np.unique(yte)) == 2 else np.nan
             except Exception:
                 auc = np.nan
-            print(f"[XAI] {target_name} [{variant_title}] {featset}: ACC={acc:.3f}  AUC={auc if np.isnan(auc) else round(auc,3)}")
 
-            # Save SHAP / LIME
+            print(f"[XAI] {target_name} [{variant_title}] {featset}: ACC={acc:.3f}, AUC={auc if np.isnan(auc) else round(auc,3)}")
+
+            # SHAP summary
             if SAVE_SHAP:
-                _shap_summary(model, Xte, X.columns.tolist(),
-                              _report_prefix(f"shap_summary__{target_name}", featset) + ".png")
-            if SAVE_LIME and len(np.unique(ytr))==2 and len(Xte) >= 5:
+                _shap_summary(
+                    model, Xte, X.columns.tolist(),
+                    out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
+                    fig_title=_title_with_feat(SUBDIRS[target_name][1], featset)
+                )
+
+            # LIME averaged importances (only if both classes in train and enough samples)
+            if SAVE_LIME and len(np.unique(ytr)) == 2 and len(Xte) >= 5:
                 _lime_avg(
                     model,
                     Xtr.values,
                     X.columns.tolist(),
-                    _report_prefix(f"lime_avg__{target_name}", featset) + ".png",
+                    out_png=base_png.replace(target_name, f"lime_avg__{target_name}") + ".png",
                     k=LIME_K,
-                    full_feat_names=X.columns.tolist(),     # full train feature order
-                    full_means=Xtr.mean(axis=0).values      # fill dropped cols with train means
+                    full_feat_names=X.columns.tolist(),
+                    full_means=Xtr.mean(axis=0).values,
+                    fig_title="LIME avg — " + _title_with_feat(SUBDIRS[target_name][1], featset)
                 )
 
-            # Save small metrics CSV
-            met_csv = _report_prefix(f"metrics__{target_name}", featset) + ".csv"
-            pd.DataFrame([{"target":target_name, "variant": variant_title,
-                           "featset": featset, "acc": acc, "auc": float(auc) if np.isfinite(auc) else np.nan,
-                           "n_train": len(Xtr), "n_test": len(Xte)}]).to_csv(met_csv, index=False)
+            # Metrics CSV
+            met_csv = base_csv.replace(target_name, f"metrics__{target_name}") + ".csv"
+            pd.DataFrame([{
+                "target": target_name,
+                "variant": variant_title,
+                "featset": featset,
+                "acc": acc,
+                "auc": float(auc) if np.isfinite(auc) else np.nan,
+                "n_train": len(Xtr),
+                "n_test": len(Xte)
+            }]).to_csv(met_csv, index=False)
 
         else:  # kind == "reg"
             model = RandomForestRegressor(
@@ -2390,277 +2439,30 @@ for target_name, kind, y_col, mask in targets:
             r2 = r2_score(yte, model.predict(Xte))
             print(f"[XAI] {target_name} [{variant_title}] {featset}: R2={r2:.3f}")
 
+            # SHAP summary
             if SAVE_SHAP:
-                _shap_summary(model, Xte, X.columns.tolist(),
-                              _report_prefix(f"shap_summary__{target_name}", featset) + ".png")
+                _shap_summary(
+                    model, Xte, X.columns.tolist(),
+                    out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
+                    fig_title=_title_with_feat(SUBDIRS[target_name][1], featset)
+                )
 
-            met_csv = _report_prefix(f"metrics__{target_name}", featset) + ".csv"
-            pd.DataFrame([{"target":target_name, "variant": variant_title,
-                           "featset": featset, "r2": r2,
-                           "n_train": len(Xtr), "n_test": len(Xte)}]).to_csv(met_csv, index=False)
+            # Metrics CSV
+            met_csv = base_csv.replace(target_name, f"metrics__{target_name}") + ".csv"
+            pd.DataFrame([{
+                "target": target_name,
+                "variant": variant_title,
+                "featset": featset,
+                "r2": r2,
+                "n_train": len(Xtr),
+                "n_test": len(Xte)
+            }]).to_csv(met_csv, index=False)
 
-print("[XAI] Multi-target run complete. Outputs saved under:", FIG_DIR)
-
-# ======================================================
-# 20) XAI (SHAP + LIME) — robust, MASTER_CTRL-driven
-# ======================================================
-
-# --- Ensure classifier var exists even if RUN_XAI=False (for LIME guard) ---
-rf_cls = None
-
-def _savefig_safe(path):
-    """Helper: safe figure saving with tight bounding box."""
-    plt.savefig(path, dpi=220, bbox_inches="tight")
-    plt.close()
-
-def _save_df_safe(df_in, path):
-    """Helper: safe DataFrame saving with error handling."""
-    try:
-        df_in.to_csv(path, index=False)
-        print(f"[SAVE] CSV: {path}")
-    except Exception as e:
-        print(f"[ERR] CSV save failed: {path} -> {e}")
-
-if MASTER_CTRL.get("RUN_XAI", True):
-    # -------------------- Features & targets --------------------
-    if VARIANT == "energy_only":
-        X_feat = df[["E"]].copy()
-    else:
-        X_feat = df[["E", "I", "X"]].copy()
-    y_cls  = df["stable"].astype(int).values
-    reg_mask = df["lock_epoch"] >= 0
-    X_reg = X_feat[reg_mask]
-    y_reg = df.loc[reg_mask, "lock_epoch"].values
-
-    # --- Sanity checks ---
-    assert not np.isnan(X_feat.values).any(), "NaN in X_feat!"
-    if len(X_reg) > 0:
-        assert not np.isnan(X_reg.values).any(), "NaN in X_reg!"
-
-    from sklearn.model_selection import train_test_split
-    from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-    from sklearn.metrics import r2_score, accuracy_score
-
-    # --------- Stratify guard (only if both classes present) ----------
-    vals, cnts = np.unique(y_cls, return_counts=True)
-    can_stratify = (len(vals) == 2) and (cnts.min() >= 2)
-    stratify_arg = y_cls if can_stratify else None
-    if not can_stratify:
-        print(f"[XAI][WARN] Skipping stratify: class counts = {dict(zip(vals, cnts))}")
-
-    # -------------------- Classification split --------------------
-    Xtr_c, Xte_c, ytr_c, yte_c = train_test_split(
-        X_feat, y_cls,
-        test_size=MASTER_CTRL["TEST_SIZE"],
-        random_state=MASTER_CTRL.get("TEST_RANDOM_STATE", 42),
-        stratify=stratify_arg
-    )
-
-    # -------------------- Regression split --------------------
-    have_reg = len(X_reg) >= MASTER_CTRL.get("REGRESSION_MIN", 10)
-    if have_reg:
-        Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(
-            X_reg, y_reg,
-            test_size=MASTER_CTRL["TEST_SIZE"],
-            random_state=MASTER_CTRL.get("TEST_RANDOM_STATE", 42)
-        )
-
-    # -------------------- Train models --------------------
-    rf_cls = None
-    if len(np.unique(ytr_c)) == 2:
-        rf_cls = RandomForestClassifier(
-            n_estimators=MASTER_CTRL["RF_N_ESTIMATORS"],
-            random_state=MASTER_CTRL.get("TEST_RANDOM_STATE", 42),
-            n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS", -1),
-            class_weight=MASTER_CTRL.get("RF_CLASS_WEIGHT", None)
-        )
-        rf_cls.fit(Xtr_c, ytr_c)
-        cls_acc = accuracy_score(yte_c, rf_cls.predict(Xte_c))
-        print(f"[XAI] Classification accuracy (stable): {cls_acc:.3f}")
-    else:
-        print("[XAI][WARN] Classification skipped: training set has a single class.")
-
-    rf_reg, reg_r2 = None, None
-    if have_reg:
-        rf_reg = RandomForestRegressor(
-            n_estimators=MASTER_CTRL["RF_N_ESTIMATORS"],
-            random_state=MASTER_CTRL.get("TEST_RANDOM_STATE", 42),
-            n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS", -1)
-        )
-        rf_reg.fit(Xtr_r, ytr_r)
-        reg_r2 = r2_score(yte_r, rf_reg.predict(Xte_r))
-        print(f"[XAI] Regression R^2 (lock_epoch): {reg_r2:.3f}")
-    else:
-        print("[XAI] Not enough locked samples for regression (need ~10+).")
-
-    # -------------------- SHAP: classification --------------------
-    if MASTER_CTRL.get("RUN_SHAP", True) and rf_cls is not None:
-        try:
-            X_plot = Xte_c.copy()
-            # Prefer TreeExplainer; fallback to model-agnostic Explainer
-            try:
-                expl_cls = shap.TreeExplainer(rf_cls, feature_perturbation="interventional", model_output="raw")
-                sv_cls = expl_cls.shap_values(X_plot, check_additivity=False)
-            except Exception:
-                expl_cls = shap.Explainer(rf_cls, Xtr_c)
-                shap_res = expl_cls(X_plot)
-                sv_cls = getattr(shap_res, "values", shap_res)
-
-            # Normalize shape
-            if isinstance(sv_cls, list) and len(sv_cls) > 1:
-                sv_cls = sv_cls[1]  # positive class
-            sv_cls = np.asarray(sv_cls)
-            if sv_cls.ndim == 3:
-                if sv_cls.shape[0] == X_plot.shape[0]:
-                    sv_cls = sv_cls[:, :, 1 if sv_cls.shape[2] > 1 else 0]
-                elif sv_cls.shape[-1] == X_plot.shape[1]:
-                    sv_cls = sv_cls[1 if sv_cls.shape[0] > 1 else 0, :, :]
-
-            assert sv_cls.shape[1] == X_plot.shape[1], f"SHAP shape mismatch: {sv_cls.shape} vs {X_plot.shape}"
-
-            plt.figure()
-            shap.summary_plot(sv_cls, X_plot.values, feature_names=X_plot.columns.tolist(), show=False)
-            _savefig_safe(with_variant(os.path.join(FIG_DIR, "shap_summary_cls_stable.png")))
-
-            _save_df_safe(pd.DataFrame(sv_cls, columns=X_plot.columns),
-                          with_variant(os.path.join(FIG_DIR, "shap_values_classification.csv")))
-            np.save(with_variant(os.path.join(FIG_DIR, "shap_values_cls.npy")), sv_cls)
-        except Exception as e:
-            print(f"[XAI][ERR] SHAP classification failed: {e}")
-
-    # -------------------- SHAP: regression (robust) --------------------
-    if MASTER_CTRL.get("RUN_SHAP", True) and rf_reg is not None and have_reg:
-        try:
-            MAX_SHAP_SAMPLES = int(MASTER_CTRL.get("MAX_SHAP_SAMPLES", 1000))
-            SHAP_BG_SIZE     = int(MASTER_CTRL.get("SHAP_BACKGROUND_SIZE", 200))
-            RNG_STATE        = MASTER_CTRL.get("TEST_RANDOM_STATE", 42)
-
-            X_plot_r = Xte_r.copy()
-            if len(X_plot_r) > MAX_SHAP_SAMPLES:
-                X_plot_r = X_plot_r.sample(MAX_SHAP_SAMPLES, random_state=RNG_STATE)
-
-            sv_reg = None
-            try:
-                expl_reg = shap.TreeExplainer(rf_reg, feature_perturbation="interventional", model_output="raw")
-                sv_reg = expl_reg.shap_values(X_plot_r, check_additivity=False)
-            except Exception:
-                background = Xtr_r.sample(SHAP_BG_SIZE, random_state=RNG_STATE) if len(Xtr_r) > SHAP_BG_SIZE else Xtr_r
-                expl_reg = shap.Explainer(rf_reg, background)
-                shap_res_r = expl_reg(X_plot_r)
-                sv_reg = getattr(shap_res_r, "values", shap_res_r)
-
-            sv_reg = np.asarray(sv_reg)
-            if sv_reg.ndim == 3:
-                if sv_reg.shape[2] == 1 and sv_reg.shape[0] == len(X_plot_r):
-                    sv_reg = sv_reg[:, :, 0]
-                elif sv_reg.shape[0] == 1 and sv_reg.shape[1] == len(X_plot_r):
-                    sv_reg = sv_reg[0, :, :]
-                elif sv_reg.shape[-1] == X_plot_r.shape[1]:
-                    sv_reg = sv_reg[0, :, :]
-
-            assert sv_reg.ndim == 2 and sv_reg.shape[1] == X_plot_r.shape[1], \
-                f"SHAP shape mismatch: {sv_reg.shape} vs {X_plot_r.shape}"
-
-            if MASTER_CTRL.get("SAVE_FIGS", True):
-                plt.figure()
-                shap.summary_plot(sv_reg, X_plot_r.values,
-                                  feature_names=X_plot_r.columns.tolist(),
-                                  show=False)
-                _savefig_safe(with_variant(os.path.join(FIG_DIR, "shap_summary_reg_lock_epoch.png")))
-
-            _save_df_safe(pd.DataFrame(sv_reg, columns=X_plot_r.columns),
-                          with_variant(os.path.join(FIG_DIR, "shap_values_regression.csv")))
-            np.save(with_variant(os.path.join(FIG_DIR, "shap_values_reg.npy")), sv_reg)
-
-        except Exception as e:
-            print(f"[XAI][ERR] SHAP regression failed: {e}")
-
-    if MASTER_CTRL.get("RUN_SHAP", True) and rf_reg is None:
-        print("[XAI] Regression SHAP skipped (no regressor).")
-
-# -------------------- LIME: lock-in only + averaged importances --------------------
-if (MASTER_CTRL.get("RUN_LIME", True)
-    and rf_cls is not None
-    and "lockin" in df.columns):
-
-    df_lock = df[df["lockin"] == 1].copy()
-
-    if len(df_lock) < 10:
-        print(f"[LIME] Not enough lock-in samples for LIME (have {len(df_lock)}, need ≥10).")
-    else:
-        if VARIANT == "energy_only":
-            X_lock = df_lock[["E"]].copy()
-        else:
-            X_lock = df_lock[["E", "I", "X"]].copy()
-        y_lock = df_lock["stable"].astype(int).values  # kept for potential per-class analyses later
-
-        lime_explainer = LimeTabularExplainer(
-            training_data=X_lock.values,
-            feature_names=X_lock.columns.tolist(),
-            discretize_continuous=True,
-            mode="classification"
-        )
-
-        # Choose which class to explain (positive=1 if available)
-        target_label = 1 if 1 in set(rf_cls.classes_) else rf_cls.classes_[0]
-
-        # --- (A) Averaged LIME over multiple lock-in instances ---
-        rng_local = np.random.default_rng(MASTER_CTRL.get("TEST_RANDOM_STATE", 42))
-        K = int(min(50, len(X_lock)))  # up to 50 instances for averaging
-        idxs = rng_local.choice(len(X_lock), size=K, replace=False)
-
-        rows = []
-        for idx in idxs:
-            exp = lime_explainer.explain_instance(
-                X_lock.iloc[idx].values,
-                rf_cls.predict_proba,
-                num_features=min(MASTER_CTRL.get("LIME_NUM_FEATURES", 5), X_lock.shape[1])
-            )
-            # Collect (feature, weight) pairs for the chosen class
-            for feat, weight in exp.as_list(label=target_label):
-                # Normalize feature name to the raw column when possible
-                # (LIME may produce conditions like "X > 5.76"; we keep the prefix)
-                base = feat.split()[0]
-                if base not in X_lock.columns:
-                    base = feat  # fallback: keep original label
-                rows.append({"feature": base, "weight": float(weight)})
-
-        lime_avg = (pd.DataFrame(rows)
-                      .groupby("feature", as_index=False)["weight"].mean()
-                      .sort_values("weight"))
-
-        # Save CSV of averaged weights
-        _save_df_safe(lime_avg, with_variant(os.path.join(FIG_DIR, "lime_lockin_avg.csv")))
-
-        # Plot averaged horizontal bar chart (saved as PNG)
-        plt.figure(figsize=(6, 4))
-        plt.barh(lime_avg["feature"], lime_avg["weight"], edgecolor="black")
-        plt.xlabel("Avg LIME weight (lock-in only)")
-        plt.ylabel("Feature")
-        plt.title("LIME (average over lock-in universes)")
-        plt.tight_layout()
-        _savefig_safe(with_variant(os.path.join(FIG_DIR, "lime_lockin_avg.png")))
-
-        # --- (B) Single-instance classic LIME figure (also saved as PNG) ---
-        # Take one representative instance (e.g., the first of the sampled indices)
-        eg_idx = int(idxs[0])
-        exp_one = lime_explainer.explain_instance(
-            X_lock.iloc[eg_idx].values,
-            rf_cls.predict_proba,
-            num_features=min(MASTER_CTRL.get("LIME_NUM_FEATURES", 5), X_lock.shape[1])
-        )
-        fig = exp_one.as_pyplot_figure()
-        fig.suptitle("LIME explanation (lock-in, single instance)", y=1.02)
-        fig.savefig(with_variant(os.path.join(FIG_DIR, "lime_lockin_example.png")), dpi=220, bbox_inches="tight")
-        plt.close(fig)
-
-        print(f"[LIME] Saved PNGs: "
-              f"{with_variant(os.path.join(FIG_DIR, 'lime_lockin_avg.png'))} and "
-              f"{with_variant(os.path.join(FIG_DIR, 'lime_lockin_example.png'))}")
+print("[XAI] Multi-target XAI complete.")
         
             
 # ======================================================
-# 21) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
+# 20) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
 # ======================================================
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     try:
@@ -2755,7 +2557,7 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         print(f"[ERR] Drive copy block failed: {e}")
 
 # ======================================================
-# 22) Best-universe entropy evolution (lock-in only)
+# 21) Best-universe entropy evolution (lock-in only)
 # ======================================================
 
 # Build a local config dict from MASTER_CTRL (type-safe + clamps)
@@ -2902,7 +2704,7 @@ else:
     print(f"[BEST] Generated {len(made)} figure(s) for lock-in universes.")
 
 # ======================================================
-# 23) Save consolidated summary (single write)
+# 22) Save consolidated summary (single write)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -2976,7 +2778,7 @@ print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # ======================================================
-# 24) Universe Stability Distribution — clean & robust
+# 23) Universe Stability Distribution — clean & robust
 # ======================================================
 
 def _variant_label():
@@ -3048,7 +2850,7 @@ savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap
 print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
 
 # ------------------------------------------------------
-# 25) Compact version (backward compatibility, fixed)
+# 24) Compact version (backward compatibility, fixed)
 # ------------------------------------------------------
 values = values_disjoint
 perc   = perc_disjoint
