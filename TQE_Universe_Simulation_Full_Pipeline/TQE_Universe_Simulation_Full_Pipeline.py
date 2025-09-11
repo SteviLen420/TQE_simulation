@@ -1915,16 +1915,22 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
     else:
         rows = []
 
-        # Extract preferred axis from a single-ℓ component using max |T|
-        def _axis_from_lmap(alm_full, nside, ell_pick):
-            lmax = 3 * nside - 1
-            alm = np.zeros_like(alm_full, dtype=np.complex128)
-            for m in range(0, ell_pick + 1):
-                alm[hp.Alm.getidx(lmax, ell_pick, m)] = alm_full[hp.Alm.getidx(lmax, ell_pick, m)]
-            m_l = hp.alm2map(alm, nside=nside, verbose=False)
-            ip = int(np.argmax(np.abs(m_l)))
+        # --- helper: extract a single-ℓ map via almxfl (safe & lmax-agnostic) ---
+        def _axis_from_lmap(alm_full, nside, ell_pick, lmax_used):
+            """
+            Keep only the requested multipole ell_pick from alm_full and build a map.
+            Then return the longitude/latitude (deg) of the max |T| pixel and its value.
+            """
+            # Build an ℓ-filter: 1 at ell_pick, 0 elsewhere
+            fl = np.zeros(lmax_used + 1, dtype=float)
+            fl[ell_pick] = 1.0
+            alm_l = hp.almxfl(alm_full, fl)                 # keep only ℓ = ell_pick
+            m_l   = hp.alm2map(alm_l, nside=nside, verbose=False)
+            ip    = int(np.argmax(np.abs(m_l)))
             th, ph = hp.pix2ang(nside, ip)
-            return (float(np.degrees(ph) % 360.0), float(90.0 - np.degrees(th)), float(m_l[ip]))
+            return (float(np.degrees(ph) % 360.0),          # lon (deg)
+                    float(90.0 - np.degrees(th)),           # lat (deg)
+                    float(m_l[ip]))                         # peak value
 
         # Compute great-circle angle between two lon/lat points in degrees
         def _ang(lon1, lat1, lon2, lat2):
@@ -1946,12 +1952,13 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             # Load map and compute alms up to ℓ=3
             m = hp.read_map(path, verbose=False)
             nside = hp.get_nside(m)
-            alm = hp.map2alm(m, lmax=3, iter=0)
+            lmax_used = 3
+            alm = hp.map2alm(m, lmax=lmax_used, iter=0)
 
-            # Quadrupole and octupole axes
-            q_lon, q_lat, q_T = _axis_from_lmap(alm, nside, 2)
-            o_lon, o_lat, o_T = _axis_from_lmap(alm, nside, 3)
-            angle_deg = _ang(q_lon, q_lat, o_lon, o_lat)
+           # Quadrupole and octupole axes (using the safe helper)
+           q_lon, q_lat, q_T = _axis_from_lmap(alm, nside, 2, lmax_used)
+           o_lon, o_lat, o_T = _axis_from_lmap(alm, nside, 3, lmax_used)
+           angle_deg = _ang(q_lon, q_lat, o_lon, o_lat)
 
             rows.append({
                 "universe_id": uid,
