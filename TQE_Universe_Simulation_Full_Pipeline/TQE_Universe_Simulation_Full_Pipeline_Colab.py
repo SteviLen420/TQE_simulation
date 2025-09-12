@@ -221,7 +221,7 @@ MASTER_CTRL = {
     "XAI_ENABLE_AOE": True,         # run AoE targets
     "XAI_SAVE_SHAP": True,          # save SHAP plots
     "XAI_SAVE_LIME": True,          # save LIME plots
-    "XAI_ALLOW_CONST_FINETUNE": False,
+    "XAI_ALLOW_CONST_FINETUNE": True,
     "XAI_LIME_K": 50,               # samples for averaged LIME
     "XAI_RUN_BOTH_FEATSETS": False, # only matching feature-set per variant
     "REGRESSION_MIN": 3,            # minimum finite rows for regression targets
@@ -2184,7 +2184,7 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             print("[CMB][AOE] No AoE rows collected; nothing to save.")
 
 # ======================================================
-# 18+19) Metrics joiner + Finetune + Multi-target XAI (SHAP+LIME)
+# 18) Multi-target XAI (SHAP+LIME)
 # ======================================================
 
 import os, json, shutil, numpy as np, pandas as pd, matplotlib.pyplot as plt
@@ -2224,7 +2224,7 @@ def _plot_two_bar_with_ci(labels, counts, totals, title, out_png, ylabel="Probab
     plt.savefig(out_png, dpi=220, bbox_inches="tight"); plt.close()
 
 # ======================================================
-# (A) JOIN: attach Cold / AoE / Finetune deltas + engineered feats to df
+# (A) JOIN: attach Cold / AoE / Finetune 
 # ======================================================
 cold_csv = with_variant(os.path.join(SAVE_DIR, "cmb_coldspots_summary.csv"))
 aoe_csv = with_variant(os.path.join(SAVE_DIR, "cmb_aoe_summary.csv"))
@@ -2318,7 +2318,7 @@ print("[JOIN] Wrote:", joined_csv)
 df_xai = df_join
 
 # ======================================================
-# (B) FINETUNE detector (E vs E+I(+X))  — produces ft_delta_summary.csv if not yet present
+# (B) FINETUNE detector (E vs E+I(+X))  
 # ======================================================
 def _safe_auc(y_true, y_proba):
     try:
@@ -2366,8 +2366,6 @@ def run_finetune_detector(df_in: pd.DataFrame):
     )
 
     def _fit_cls(Xdf, label):
-        if len(np.unique(y[Xtr_idx])) < 2:
-            return {"label": label, "acc": np.nan, "auc": np.nan, "cm":{"tp":0,"fp":0,"tn":0,"fn":0}}
         clf = RandomForestClassifier(
             n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
             random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42),
@@ -2377,10 +2375,13 @@ def run_finetune_detector(df_in: pd.DataFrame):
         clf.fit(Xdf.iloc[Xtr_idx], y[Xtr_idx])
         yp = clf.predict(Xdf.iloc[Xte_idx])
         acc = float(accuracy_score(y[Xte_idx], yp))
-        try: proba = clf.predict_proba(Xdf.iloc[Xte_idx])[:,1]
-        except Exception: proba = yp.astype(float)
+        try:
+            proba = clf.predict_proba(Xdf.iloc[Xte_idx])[:, 1]
+        except Exception:
+            proba = yp.astype(float)
         auc = _safe_auc(y[Xte_idx], proba)
-        cm = _cm_counts(y[Xte_idx], yp)
+        cm  = _cm_counts(y[Xte_idx], yp)
+        return {"label": label, "acc": acc, "auc": auc, "cm": cm}, clf
         # save FI
         fi_df = pd.DataFrame({"feature": Xdf.columns,
                               "importance": getattr(clf, "feature_importances_", np.zeros(len(Xdf.columns)))}
@@ -2390,11 +2391,25 @@ def run_finetune_detector(df_in: pd.DataFrame):
         out["files"][f"feat_importance_{label}"] = fi_csv
         return {"label":label, "acc":acc, "auc":auc, "cm":cm}
 
-    mE   = _fit_cls(X_E,   "E")
-    mEIX = _fit_cls(X_EIX, "EIX")
+    mE,   clf_E   = _fit_cls(X_E,   "E")
+    mEIX, clf_EIX = _fit_cls(X_EIX, "EIX")
     met_df = pd.DataFrame([mE, mEIX])
     met_df.to_csv(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.csv")), index=False)
     met_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.json")), indent=2)
+
+    # --- Row-level finetune targets for XAI (classification) ---
+    proba_E   = clf_E.predict_proba(X_E.iloc[Xte_idx])[:,1]     
+    proba_EIX = clf_EIX.predict_proba(X_EIX.iloc[Xte_idx])[:,1]
+
+    true = y[Xte_idx].astype(int)
+    pred_E   = (proba_E   >= 0.5).astype(int)
+    pred_EIX = (proba_EIX >= 0.5).astype(int)
+
+    ft_proba_gain = np.where(true==1, proba_EIX - proba_E, (1-proba_EIX) - (1-proba_E))
+    ft_cls_gain   = (pred_EIX==true).astype(int) - (pred_E==true).astype(int)  # +1 / 0 / -1
+
+    df_xai.loc[df_xai.index[Xte_idx], "ft_proba_gain"] = ft_proba_gain
+    df_xai.loc[df_xai.index[Xte_idx], "ft_cls_gain"]   = ft_cls_gain
 
     # Optional regression on lock_epoch
     out["metrics"]["reg"] = {}
@@ -2555,11 +2570,25 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
         expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
         sv = expl.shap_values(X_plot, check_additivity=False)
     except Exception:
-        expl = shap.Explainer(model, X_plot); sv = expl(X_plot).values
-    if isinstance(sv, list): sv = sv[-1]
-    plt.figure(); shap.summary_plot(sv, X_plot.values, feature_names=feat_names, show=False)
-    if fig_title: plt.title(fig_title)
-    plt.savefig(out_png, dpi=220, bbox_inches="tight"); plt.close()
+        expl = shap.Explainer(model, X_plot)
+        sv = expl(X_plot).values
+
+    if isinstance(sv, list):  # for binary classification, shap returns [neg_class, pos_class]
+        sv = sv[-1]
+
+    # --- CLEAN TYPOGRAPHY FIX ---
+    plt.close('all')  # reset figure state to avoid overlap
+    fig = plt.figure(figsize=(9, 6))  # bigger canvas for clarity
+    shap.summary_plot(sv, X_plot.values, feature_names=feat_names, show=False)
+
+    if fig_title:
+        # use suptitle with padding to avoid overlap with the plot
+        fig.suptitle(fig_title, y=0.99, fontsize=13)
+
+    # leave room for the title
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.savefig(out_png, dpi=220, bbox_inches="tight")
+    plt.close(fig)
 
 # Target list
 targets = []
@@ -2719,7 +2748,7 @@ for target_name, kind, y_col, mask in targets:
 print("[XAI] Completed.")       
             
 # ======================================================
-# 20) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
+# 19) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
 # ======================================================
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     try:
@@ -2851,7 +2880,7 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         print(f"[ERR] Drive copy block failed: {e}")
 
 # ======================================================
-# 21) Best-universe entropy evolution (lock-in only)
+# 20) Best-universe entropy evolution (lock-in only)
 # ======================================================
 
 # Build a local config dict from MASTER_CTRL (type-safe + clamps)
@@ -2998,7 +3027,7 @@ else:
     print(f"[BEST] Generated {len(made)} figure(s) for lock-in universes.")
 
 # ======================================================
-# 22) Save consolidated summary (single write)
+# 21) Save consolidated summary (single write)
 # ======================================================
 stable_count = int(df["stable"].sum())
 unstable_count = int(len(df) - stable_count)
@@ -3072,7 +3101,7 @@ print(f"Unstable: {unstable_count} ({unstable_count/len(df)*100:.2f}%)")
 print(f"Lock-in:  {lockin_count} ({lockin_count/len(df)*100:.2f}%)")
 
 # ======================================================
-# 23) Universe Stability Distribution — clean & robust
+# 22) Universe Stability Distribution — clean & robust
 # ======================================================
 
 def _variant_label():
@@ -3144,7 +3173,7 @@ savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap
 print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
 
 # ------------------------------------------------------
-# 24) Compact version (backward compatibility, fixed)
+# 23) Compact version (backward compatibility, fixed)
 # ------------------------------------------------------
 values = values_disjoint
 perc   = perc_disjoint
