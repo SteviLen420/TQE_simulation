@@ -972,9 +972,9 @@ def _lbl(v, name):
     except Exception:
         return f"{name} = N/A"
 
-if len(xs_dense) > 0:
-    peak_x = xs_dense[np.argmax(ys_spline)]
-    peak_y = np.max(ys_spline)
+if len(xs) > 0:
+    peak_x = xs[np.argmax(ys)]
+    peak_y = np.max(ys)
     plt.plot(peak_x, peak_y, "ro", label=f"Peak = {peak_x:.2f}")
 
 
