@@ -1952,7 +1952,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
 
             # Depth histogram
             plt.figure(figsize=(7.6, 4.2))
-            plt.hist(cold_df["z_value"].values, bins=30, edgecolor="black")
+            plt.hist(cold_df["z_value"].values, bins=75, edgecolor="black")
             plt.xlabel("Cold-spot z (μK vagy z-score)"); plt.ylabel("Count")
             plt.title(f"Cold-spot depth distribution [{title_variant}]")
 
@@ -2056,7 +2056,7 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             return float(np.degrees(np.arccos(c)))
 
         for rec in MAP_REG:
-            if ol_cnt >= max_ol:
+            if ol_cnt >= max_n:
                 break     
             if rec.get("mode") != "healpix":
                 continue  # AoE requires HEALPix
@@ -2109,7 +2109,7 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
 
             # Angle histogram
             plt.figure(figsize=(7, 4.2))
-            plt.hist(df_aoe["angle_deg"].values, bins=24, edgecolor="black")
+            plt.hist(df_aoe["angle_deg"].values, bins=75, edgecolor="black")
 
             # --- ADD: reference line at expected Planck/WMAP alignment angle ---
             AOE_REF = float(MASTER_CTRL.get("AOE_REF_ANGLE_DEG", 10.0))  # degrees
