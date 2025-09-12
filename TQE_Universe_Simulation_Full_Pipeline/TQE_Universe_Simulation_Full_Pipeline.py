@@ -972,12 +972,10 @@ def _lbl(v, name):
     except Exception:
         return f"{name} = N/A"
 
-if E_c_low is not None and E_c_high is not None:
-    plt.axvline(E_c_low,  color='g', ls='--', label=_lbl(E_c_low,  "E_c_low"))
-    plt.axvline(E_c_high, color='m', ls='--', label=_lbl(E_c_high, "E_c_high"))
-elif E_c_low_plot is not None and E_c_high_plot is not None:
-    plt.axvline(E_c_low_plot,  color='g', ls='--', label=_lbl(E_c_low_plot,  "E_c_low(curve)"))
-    plt.axvline(E_c_high_plot, color='m', ls='--', label=_lbl(E_c_high_plot, "E_c_high(curve)"))
+if len(xs_dense) > 0:
+    peak_x = xs_dense[np.argmax(ys_spline)]
+    peak_y = np.max(ys_spline)
+    plt.plot(peak_x, peak_y, "ro", label=f"Peak = {peak_x:.2f}")
 
 
 if VARIANT == "energy_only":
