@@ -2183,12 +2183,16 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
         else:
             print("[CMB][AOE] No AoE rows collected; nothing to save.")
 
-# ======================================================
-# 18) Metrics joiner: attach Cold/AoE/Finetune metrics to df
+ # ======================================================
+# 18+19) Metrics joiner + Finetune + Multi-target XAI (SHAP+LIME)
 # ======================================================
 
-import os, numpy as np, pandas as pd
+import os, json, shutil, numpy as np, pandas as pd, matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
 
+# ---------- tiny helpers ----------
 def _safe_read_csv(path):
     try:
         if os.path.exists(path):
@@ -2197,21 +2201,42 @@ def _safe_read_csv(path):
         print(f"[JOIN][WARN] Failed to read {path}: {e}")
     return None
 
-# --- Locate artifacts created earlier (variant-aware via with_variant) ---
-cold_csv   = with_variant(os.path.join(SAVE_DIR, "cmb_coldspots_summary.csv"))
-aoe_csv    = with_variant(os.path.join(SAVE_DIR, "cmb_axis_of_evil_summary.csv")) if os.path.exists(
-               with_variant(os.path.join(SAVE_DIR, "cmb_axis_of_evil_summary.csv"))
-             ) else None
-ft_delta   = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))  # from your finetune detector
+def _wilson_interval(k, n, z=1.96):
+    if n <= 0: return (0.0, 0.0, 0.0)
+    p = k / n
+    denom = 1 + z**2 / n
+    center = (p + z**2/(2*n)) / denom
+    half = z * np.sqrt((p*(1-p) + z**2/(4*n)) / n) / denom
+    return (max(0.0, center - half), p, min(1.0, center + half))
+
+def _plot_two_bar_with_ci(labels, counts, totals, title, out_png, ylabel="Probability"):
+    lows, ps, highs = [], [], []
+    for k, n in zip(counts, totals):
+        lo, p, hi = _wilson_interval(k, n)
+        lows.append(p - lo); highs.append(hi - p); ps.append(p)
+    x = np.arange(len(labels))
+    plt.figure(figsize=(6,5))
+    plt.bar(x, ps, edgecolor="black")
+    plt.errorbar(x, ps, yerr=[lows, highs], fmt='none', capsize=6)
+    plt.xticks(x, labels, rotation=0)
+    plt.ylabel(ylabel)
+    plt.title(title); plt.tight_layout()
+    plt.savefig(out_png, dpi=220, bbox_inches="tight"); plt.close()
+
+# ======================================================
+# (A) JOIN: attach Cold / AoE / Finetune deltas + engineered feats to df
+# ======================================================
+cold_csv = with_variant(os.path.join(SAVE_DIR, "cmb_coldspots_summary.csv"))
+aoe_csv  = with_variant(os.path.join(SAVE_DIR, "cmb_axis_of_evil_summary.csv"))
+ft_csv   = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
 
 cold_df = _safe_read_csv(cold_csv)
-aoe_df  = _safe_read_csv(aoe_csv) if aoe_csv else None
-ft_df   = _safe_read_csv(ft_delta)
+aoe_df  = _safe_read_csv(aoe_csv)
+ft_df   = _safe_read_csv(ft_csv)
 
-# --- Start from the current Monte Carlo table ---
 df_join = df.copy()
 
-# ---- (A) Aggregate cold-spot metrics per universe ----
+# Cold aggregation
 if cold_df is not None and not cold_df.empty:
     agg = (cold_df.groupby("universe_id")
                   .agg(cold_min_z=("z_value","min"),
@@ -2220,33 +2245,24 @@ if cold_df is not None and not cold_df.empty:
                        cold_sigma_best=("sigma_arcmin","median"))
                   .reset_index())
     df_join = df_join.merge(agg, on="universe_id", how="left")
-    # Unit-aware threshold for cold_flag:
     vals = df_join["cold_min_z"].values
-    median_abs = np.nanmedian(np.abs(vals))
-    if np.isfinite(median_abs) and median_abs > 20:         # looks like µK scale
+    medabs = np.nanmedian(np.abs(vals))
+    # unit-aware threshold
+    if np.isfinite(medabs) and medabs > 20:
         z_thr = float(MASTER_CTRL.get("CMB_COLD_UK_THRESH", -70.0))
-    else:                                                   # looks like z-score
+    else:
         z_thr = float(MASTER_CTRL.get("CMB_COLD_Z_THRESH", -2.5))
     df_join["cold_flag"] = (df_join["cold_min_z"] <= z_thr).astype(int)
-
-
 else:
-    print("[JOIN] No cold-spot CSV found; skipping cold metrics.")
+    print("[JOIN] No cold summary; skipping cold metrics.")
 
-# --- AoE artifacts (READ + derive score/flag) ---
-aoe_csv = with_variant(os.path.join(SAVE_DIR, "cmb_aoe_summary.csv"))
-aoe_df  = _safe_read_csv(aoe_csv)
-
+# AoE attach (score from angle if needed)
 if aoe_df is not None and not aoe_df.empty:
-    # If no explicit score, derive it from angle (smaller angle = higher score)
     if "aoe_align_score" not in aoe_df.columns and "angle_deg" in aoe_df.columns:
         aoe_df["aoe_align_score"] = 1.0 - (aoe_df["angle_deg"].astype(float) / 180.0)
-
-    keep_cols = [c for c in ["universe_id","angle_deg","aoe_align_score","aoe_pvalue"] if c in aoe_df.columns]
-    aoe_compact = aoe_df[keep_cols].drop_duplicates("universe_id")
+    keep = [c for c in ["universe_id","angle_deg","aoe_align_score","aoe_pvalue"] if c in aoe_df.columns]
+    aoe_compact = aoe_df[keep].drop_duplicates("universe_id")
     df_join = df_join.merge(aoe_compact, on="universe_id", how="left")
-
-    # Decide anomaly flag
     p_thr = float(MASTER_CTRL.get("AOE_P_THRESHOLD", 0.05))
     if "aoe_pvalue" in df_join.columns:
         df_join["aoe_flag"] = (df_join["aoe_pvalue"] < p_thr).astype(int)
@@ -2254,478 +2270,450 @@ if aoe_df is not None and not aoe_df.empty:
         thr = float(MASTER_CTRL.get("AOE_ALIGN_THRESHOLD", 0.9))
         df_join["aoe_flag"] = (df_join["aoe_align_score"] >= thr).astype(int)
 else:
-    print("[JOIN] No AoE CSV found; skipping AoE metrics.")
+    print("[JOIN] No AoE summary; skipping AoE metrics.")
 
-# ---- (C) Finetune deltas (E vs E+I) from your existing FT block ----
+# Finetune deltas broadcast (if exists)
 if ft_df is not None and not ft_df.empty:
     for col in ["acc_delta","auc_delta","r2_delta"]:
         if col in ft_df.columns:
             df_join[f"ft_{col}"] = float(ft_df[col].iloc[0])
 else:
-    # Still create the columns to avoid KeyErrors downstream
     for col in ["ft_acc_delta","ft_auc_delta","ft_r2_delta"]:
         if col not in df_join.columns:
             df_join[col] = np.nan
 
-# ---- (D) Generic engineered features (used across targets) ----
+# Engineered features (stay compatible)
 df_join["abs_E_minus_I"] = np.abs(df_join.get("E", np.nan) - df_join.get("I", 0.0))
-df_join["logE"] = np.log(df_join["E"] + 1e-12)
-df_join["logX"] = np.log(df_join["X"] + 1e-12)
+df_join["logE"] = np.log(df_join.get("E", np.nan) + 1e-12)
+df_join["logX"] = np.log(df_join.get("X", np.nan) + 1e-12)
+df_join["E_rank"] = df_join["E"].rank(pct=True)
+df_join["X_rank"] = df_join["X"].rank(pct=True)
 
-# Distance to Goldilocks center if window is available
+# Distance to Goldilocks (if window captured in 'summary')
 try:
     x_low  = summary.get("goldilocks_window_used",{}).get("X_low", None)
     x_high = summary.get("goldilocks_window_used",{}).get("X_high", None)
-except NameError:
+except Exception:
     x_low = x_high = None
-
 if x_low is not None and x_high is not None and np.isfinite(x_low) and np.isfinite(x_high):
-    mid   = 0.5*(float(x_low)+float(x_high))
+    mid = 0.5*(float(x_low)+float(x_high))
     width = max(1e-12, 0.5*(float(x_high)-float(x_low)))
     df_join["dist_to_goldilocks"] = np.abs(df_join["X"] - mid) / width
 else:
     df_join["dist_to_goldilocks"] = np.nan
 
-# Ranks (quantiles) to stabilize feature scales
-df_join["E_rank"] = df_join["E"].rank(pct=True)
-df_join["X_rank"] = df_join["X"].rank(pct=True)
+# Fallback 'stable' if missing
+if "stable" not in df_join.columns and "lock_epoch" in df_join.columns:
+    df_join["stable"] = (df_join["lock_epoch"] >= 0).astype(int)
 
-# Persist a joined CSV for inspection
+# Persist joined view (debug)
 joined_csv = with_variant(os.path.join(SAVE_DIR, "metrics_joined.csv"))
 df_join.to_csv(joined_csv, index=False)
 print("[JOIN] Wrote:", joined_csv)
 
-# Make df_join the working table for XAI
+# Working table for XAI:
 df_xai = df_join
 
 # ======================================================
-# 19) Multi-target XAI (SHAP + LIME) — E-only vs E+I(+X), foldered outputs
+# (B) FINETUNE detector (E vs E+I(+X))  — produces ft_delta_summary.csv if not yet present
+# ======================================================
+def _safe_auc(y_true, y_proba):
+    try:
+        if len(np.unique(y_true)) < 2: return float("nan")
+        return float(roc_auc_score(y_true, y_proba))
+    except Exception:
+        return float("nan")
+
+def _cm_counts(y_true, y_pred):
+    y_true = np.asarray(y_true).astype(int)
+    y_pred = np.asarray(y_pred).astype(int)
+    tp = int(np.sum((y_true==1)&(y_pred==1)))
+    tn = int(np.sum((y_true==0)&(y_pred==0)))
+    fp = int(np.sum((y_true==0)&(y_pred==1)))
+    fn = int(np.sum((y_true==1)&(y_pred==0)))
+    return {"tp":tp,"fp":fp,"tn":tn,"fn":fn}
+
+def _select_eps_by_share(gaps, target_share=0.20, min_n=30):
+    g = np.asarray(gaps, dtype=float); g = g[np.isfinite(g)]
+    if g.size == 0: return None
+    g = np.abs(g); g.sort()
+    target_n = max(int(np.ceil(target_share * len(g))), int(min_n))
+    target_n = min(target_n, len(g)-1) if len(g) > 1 else 0
+    eps = float(g[target_n]) if len(g) else None
+    if eps is None or not np.isfinite(eps) or eps == 0.0:
+        eps = float(g[-1]) if len(g) else 1e-3
+    return eps
+
+def run_finetune_detector(df_in: pd.DataFrame):
+    out = {"metrics": {}, "files": {}}
+    if df_in is None or len(df_in) == 0: return out
+
+    METRIC = MASTER_CTRL.get("FT_METRIC", "stability")  # "stability"|"lockin"
+    y = df_in["stable"].astype(int).values
+    cols_e   = [c for c in ["E"] if c in df_in.columns]
+    cols_eix = [c for c in ["E","I","X"] if c in df_in.columns]
+    X_E, X_EIX = df_in[cols_e].copy(), df_in[cols_eix].copy()
+
+    idx = np.arange(len(df_in))
+    Xtr_idx, Xte_idx = train_test_split(
+        idx,
+        test_size=MASTER_CTRL.get("FT_TEST_SIZE", 0.25),
+        random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42),
+        stratify=y if (len(np.unique(y))==2 and (y==0).sum()>=2 and (y==1).sum()>=2) else None
+    )
+
+    def _fit_cls(Xdf, label):
+        if len(np.unique(y[Xtr_idx])) < 2:
+            return {"label": label, "acc": np.nan, "auc": np.nan, "cm":{"tp":0,"fp":0,"tn":0,"fn":0}}
+        clf = RandomForestClassifier(
+            n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
+            random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42),
+            n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS", -1),
+            class_weight=MASTER_CTRL.get("RF_CLASS_WEIGHT", None)
+        )
+        clf.fit(Xdf.iloc[Xtr_idx], y[Xtr_idx])
+        yp = clf.predict(Xdf.iloc[Xte_idx])
+        acc = float(accuracy_score(y[Xte_idx], yp))
+        try: proba = clf.predict_proba(Xdf.iloc[Xte_idx])[:,1]
+        except Exception: proba = yp.astype(float)
+        auc = _safe_auc(y[Xte_idx], proba)
+        cm = _cm_counts(y[Xte_idx], yp)
+        # save FI
+        fi_df = pd.DataFrame({"feature": Xdf.columns,
+                              "importance": getattr(clf, "feature_importances_", np.zeros(len(Xdf.columns)))}
+                             ).sort_values("importance", ascending=False)
+        fi_csv = with_variant(os.path.join(FIG_DIR, f"ft_feat_importance_{label}.csv"))
+        fi_df.to_csv(fi_csv, index=False)
+        out["files"][f"feat_importance_{label}"] = fi_csv
+        return {"label":label, "acc":acc, "auc":auc, "cm":cm}
+
+    mE   = _fit_cls(X_E,   "E")
+    mEIX = _fit_cls(X_EIX, "EIX")
+    met_df = pd.DataFrame([mE, mEIX])
+    met_df.to_csv(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.csv")), index=False)
+    met_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.json")), indent=2)
+
+    # Optional regression on lock_epoch
+    out["metrics"]["reg"] = {}
+    reg_mask = "lock_epoch" in df_in.columns and (df_in["lock_epoch"] >= 0)
+    if isinstance(reg_mask, pd.Series) and reg_mask.sum() >= MASTER_CTRL.get("REGRESSION_MIN", 10):
+        yr = df_in.loc[reg_mask, "lock_epoch"].values
+        XR_E, XR_EIX = df_in.loc[reg_mask, cols_e].copy(), df_in.loc[reg_mask, cols_eix].copy()
+        ridx = np.arange(len(XR_E))
+        Rtr, Rte = train_test_split(ridx,
+                                    test_size=MASTER_CTRL.get("FT_TEST_SIZE", 0.25),
+                                    random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42))
+        def _fit_reg(Xdf, label):
+            reg = RandomForestRegressor(
+                n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
+                random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42),
+                n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS", -1)
+            )
+            reg.fit(Xdf.iloc[Rtr], yr[Rtr]); r2 = float(r2_score(yr[Rte], reg.predict(Xdf.iloc[Rte])))
+            return {"label":label, "r2":r2}
+        rE, rEIX = _fit_reg(XR_E, "E"), _fit_reg(XR_EIX, "EIX")
+        pd.DataFrame([rE, rEIX]).to_csv(with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.csv")), index=False)
+        out["metrics"]["reg"] = {"E":rE,"EIX":rEIX}
+
+    # E≈I slice + adaptive eps
+    if all(c in df_in.columns for c in ["E","I"]):
+        gaps = np.abs(df_in["E"] - df_in["I"]).values
+        eps_auto = _select_eps_by_share(gaps, target_share=0.20,
+                                        min_n=MASTER_CTRL.get("FT_MIN_PER_SLICE", 30))
+        eps = float(MASTER_CTRL.get("FT_EPS_EQ", eps_auto if eps_auto is not None else 1e-3))
+        m_eq = (np.abs(df_in["E"] - df_in["I"]) <= eps); m_neq = ~m_eq
+        def _slice(mask, name):
+            n = int(mask.sum())
+            st = int(df_in.loc[mask, "stable"].sum()) if "stable" in df_in.columns else 0
+            lk = int((df_in.loc[mask, "lock_epoch"] >= 0).sum()) if "lock_epoch" in df_in.columns else 0
+            k = lk if MASTER_CTRL.get("FT_METRIC","stability")=="lockin" else st
+            lo,p,hi = _wilson_interval(k,n)
+            return {"slice":name,"eps":eps,"n":n,"k":k,"p":p,"ci_lo":lo,"ci_hi":hi}
+        lab_eq  = ("E ≤ " if VARIANT=="energy_only" else "|E−I| ≤ ") + f"{eps:.3g}"
+        lab_neq = ("E > " if VARIANT=="energy_only" else "|E−I| > ") + f"{eps:.3g}"
+        sl_df = pd.DataFrame([_slice(m_eq,lab_eq), _slice(m_neq,lab_neq)]).sort_values("slice")
+        sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_adaptive.csv")); sl_df.to_csv(sl_csv, index=False)
+        bar_png = with_variant(os.path.join(FIG_DIR, "lockin_by_eqI_bar.png"))
+        title = ("Lock-in" if MASTER_CTRL.get("FT_METRIC","stability")=="lockin" else "Stability") + \
+                (" by Energy (Only E)" if VARIANT=="energy_only" else " by E≈I (adaptive epsilon)")
+        _plot_two_bar_with_ci(sl_df["slice"].tolist(), sl_df["k"].tolist(), sl_df["n"].tolist(),
+                              title=title, out_png=bar_png,
+                              ylabel="P(lock-in)" if MASTER_CTRL.get("FT_METRIC","stability")=="lockin" else "P(stable)")
+        # quantile curve pngs
+        qs = np.linspace(0,1,MASTER_CTRL.get("FT_GAP_QBINS",10)+1)
+        edges = np.unique(np.quantile(np.abs(gaps[np.isfinite(gaps)]), qs))
+        mids, p, lo, hi, n = [], [], [], [], []
+        for i in range(len(edges)-1):
+            lo_e, hi_e = edges[i], edges[i+1]
+            m = (gaps >= lo_e) & (gaps < hi_e if i+1<len(edges)-1 else gaps <= hi_e)
+            nn = int(m.sum()); kk = int(df_in.loc[m, "stable"].sum()) if MASTER_CTRL.get("FT_METRIC","stability")=="stability" else int((df_in.loc[m, "lock_epoch"]>=0).sum())
+            lo_ci, p_hat, hi_ci = _wilson_interval(kk, nn)
+            mids.append(0.5*(lo_e+hi_e)); p.append(p_hat); lo.append(lo_ci); hi.append(hi_ci); n.append(nn)
+        y = np.array(p); yerr = np.vstack([y - np.array(lo), np.array(hi) - y])
+        plt.figure(figsize=(7,5)); plt.errorbar(mids, y, yerr=yerr, fmt='-o')
+        plt.title("Fine-tune — probability vs |E−I|"); plt.xlabel("|E−I| (bin mid)")
+        plt.ylabel("P(lock-in)" if MASTER_CTRL.get("FT_METRIC","stability")=="lockin" else "P(stable)")
+        plt.tight_layout(); plt.savefig(with_variant(os.path.join(FIG_DIR, "finetune_gap_curve.png")), dpi=220, bbox_inches="tight"); plt.close()
+        plt.figure(figsize=(7,5)); plt.errorbar(mids, y, yerr=yerr, fmt='-o')
+        plt.title("Fine-tune — probability by adaptive |E−I| split"); plt.xlabel("|E−I| (bin mid)")
+        plt.ylabel("P(lock-in)" if MASTER_CTRL.get("FT_METRIC","stability")=="lockin" else "P(stable)")
+        plt.tight_layout(); plt.savefig(with_variant(os.path.join(FIG_DIR, "finetune_gap_adaptive.png")), dpi=220, bbox_inches="tight"); plt.close()
+
+    # deltas JSON/CSV
+    delta = {
+        "acc_delta": (mEIX["acc"] - mE["acc"]) if np.isfinite(mEIX.get("acc",np.nan)) and np.isfinite(mE.get("acc",np.nan)) else float("nan"),
+        "auc_delta": (mEIX["auc"] - mE["auc"]) if np.isfinite(mEIX.get("auc",np.nan)) and np.isfinite(mE.get("auc",np.nan)) else float("nan"),
+    }
+    if out["metrics"].get("reg"):
+        rE   = out["metrics"]["reg"].get("E",   {"r2": np.nan})
+        rEIX = out["metrics"]["reg"].get("EIX", {"r2": np.nan})
+        delta["r2_delta"] = (rEIX["r2"] - rE["r2"]) if np.isfinite(rEIX["r2"]) and np.isfinite(rE["r2"]) else float("nan")
+    pd.DataFrame([delta]).to_csv(with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv")), index=False)
+    return delta
+
+if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True) and MASTER_CTRL.get("XAI_ENABLE_FINETUNE", True):
+    try:
+        _ = run_finetune_detector(df_join)
+        print("[FT] Finetune detector finished.")
+        # Refresh df_xai with (possibly) new ft_delta_summary
+        ft_df = _safe_read_csv(with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv")))
+        if ft_df is not None and not ft_df.empty:
+            for col in ["acc_delta","auc_delta","r2_delta"]:
+                if col in ft_df.columns:
+                    df_xai[f"ft_{col}"] = float(ft_df[col].iloc[0])
+    except Exception as e:
+        print("[FT][WARN] detector failed:", e)
+
+# ======================================================
+# (C) XAI — targets + SHAP/LIME (E-only vs E+I(+X)), foldered outputs
 # ======================================================
 
-import os
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
-import shap
-from lime.lime_tabular import LimeTabularExplainer
-
-# --- Safe SHAP/LIME availability; force-save switches ---
+# Safe SHAP/LIME availability (Colab may have numba/np mismatch)
 try:
-    import shap  # ha ez elhasal, csak LIME megy
-    SHAP_OK = True
+    import shap; SHAP_OK = True
 except Exception as e:
-    print("[XAI][WARN] SHAP disabled due to import error:", e)
-    SHAP_OK = False
-
+    print("[XAI][WARN] SHAP disabled:", e); SHAP_OK = False
 try:
-    from lime.lime_tabular import LimeTabularExplainer
-    LIME_OK = True
+    from lime.lime_tabular import LimeTabularExplainer; LIME_OK = True
 except Exception as e:
-    print("[XAI][WARN] LIME disabled due to import error:", e)
-    LIME_OK = False
+    print("[XAI][WARN] LIME disabled:", e); LIME_OK = False
 
-SAVE_SHAP = bool(MASTER_CTRL.get("XAI_SAVE_SHAP", True)) and SHAP_OK
-SAVE_LIME = bool(MASTER_CTRL.get("XAI_SAVE_LIME", True)) and LIME_OK
-
-# --- Add Fine-tune deltas as XAI targets ---
-ft_delta_path = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
-if os.path.exists(ft_delta_path):
-    try:
-        ft_delta_df = pd.read_csv(ft_delta_path)
-        if not ft_delta_df.empty:
-            if "acc_delta" in ft_delta_df.columns:
-                df_xai["ft_acc_delta"] = float(ft_delta_df["acc_delta"].iloc[0])
-            if "auc_delta" in ft_delta_df.columns:
-                df_xai["ft_auc_delta"] = float(ft_delta_df["auc_delta"].iloc[0])
-            if "r2_delta" in ft_delta_df.columns:
-                df_xai["ft_r2_delta"] = float(ft_delta_df["r2_delta"].iloc[0])
-
-            try: targets_extra
-            except NameError: targets_extra = []
-
-            if "ft_acc_delta" in df_xai.columns:
-                targets_extra.append(("finetune_acc_delta","reg","ft_acc_delta",None))
-            if "ft_auc_delta" in df_xai.columns:
-                targets_extra.append(("finetune_auc_delta","reg","ft_auc_delta",None))
-            if "ft_r2_delta" in df_xai.columns:
-                targets_extra.append(("finetune_r2_delta","reg","ft_r2_delta",None))
-
-            targets.extend(targets_extra)
-            print("[XAI] Fine-tune targets registered:", [t[0] for t in targets_extra])
-    except Exception as e:
-        print("[XAI][WARN] Could not add Fine-tune deltas:", e)
-
-# ------------ Controls (ALWAYS outside the if) ------------
+# Controls
 XAI_ENABLE_STAB = bool(MASTER_CTRL.get("XAI_ENABLE_STABILITY", True))
 XAI_ENABLE_COLD = bool(MASTER_CTRL.get("XAI_ENABLE_COLD", True))
 XAI_ENABLE_AOE  = bool(MASTER_CTRL.get("XAI_ENABLE_AOE", True))
-
-TEST_SIZE  = float(MASTER_CTRL.get("XAI_TEST_SIZE", MASTER_CTRL.get("TEST_SIZE", 0.25)))
-RSTATE     = int(MASTER_CTRL.get("XAI_RANDOM_STATE", MASTER_CTRL.get("TEST_RANDOM_STATE", 42)))
-SAVE_SHAP  = bool(MASTER_CTRL.get("XAI_SAVE_SHAP", True))
-SAVE_LIME  = bool(MASTER_CTRL.get("XAI_SAVE_LIME", True))
-LIME_K     = int(MASTER_CTRL.get("XAI_LIME_K", 50))
-
 XAI_ALLOW_CONST_FINETUNE = bool(MASTER_CTRL.get("XAI_ALLOW_CONST_FINETUNE", True))
+SAVE_SHAP = bool(MASTER_CTRL.get("XAI_SAVE_SHAP", True)) and SHAP_OK
+SAVE_LIME = bool(MASTER_CTRL.get("XAI_SAVE_LIME", True)) and LIME_OK
+TEST_SIZE = float(MASTER_CTRL.get("XAI_TEST_SIZE", MASTER_CTRL.get("TEST_SIZE", 0.25)))
+RSTATE    = int(MASTER_CTRL.get("XAI_RANDOM_STATE", MASTER_CTRL.get("TEST_RANDOM_STATE", 42)))
+LIME_K    = int(MASTER_CTRL.get("XAI_LIME_K", 50))
 REGRESSION_MIN = int(MASTER_CTRL.get("REGRESSION_MIN", MASTER_CTRL.get("XAI_REGRESSION_MIN", 10)))
-
 FEATS_E_ONLY = MASTER_CTRL.get("XAI_FEATURES_E_ONLY", ["E","logE","E_rank"])
 FEATS_EIX    = MASTER_CTRL.get("XAI_FEATURES_EIX",
                                ["E","I","X","abs_E_minus_I","logX","dist_to_goldilocks","E_rank","X_rank"])
+RUN_BOTH = bool(MASTER_CTRL.get("XAI_RUN_BOTH_FEATSETS", False))
+variant_title = "E-only" if VARIANT=="energy_only" else "E+I(+X)"
 
-variant_title = "E-only" if VARIANT == "energy_only" else "E+I(+X)"
-
-# ------------ Output directory helpers ------------
+# Directories per target
 XAI_FIG_DIR  = os.path.join(FIG_DIR, "xai")
 XAI_SAVE_DIR = os.path.join(SAVE_DIR, "xai")
-os.makedirs(XAI_FIG_DIR, exist_ok=True)
+os.makedirs(XAI_FIG_DIR,  exist_ok=True)
 os.makedirs(XAI_SAVE_DIR, exist_ok=True)
-
 SUBDIRS = {
     "stability_cls": ("stability","XAI — Stability (classification)"),
-    "lock_epoch_reg": ("lockin","XAI — Lock-in epoch (regression)"),
-    "cold_flag_cls": ("cold","XAI — Cold-spot anomaly (classification)"),
-    "cold_min_z_reg":("cold","XAI — Cold-spot depth (regression)"),
-    "aoe_flag_cls":  ("aoe","XAI — AoE anomaly (classification)"),
-    "aoe_align_reg": ("aoe","XAI — AoE alignment score (regression)"),
+    "lock_epoch_reg":("lockin",   "XAI — Lock-in epoch (regression)"),
+    "cold_flag_cls": ("cold",     "XAI — Cold-spot anomaly (classification)"),
+    "cold_min_z_reg":("cold",     "XAI — Cold-spot depth (regression)"),
+    "aoe_flag_cls":  ("aoe",      "XAI — AoE anomaly (classification)"),
+    "aoe_align_reg": ("aoe",      "XAI — AoE alignment score (regression)"),
     "finetune_acc_delta": ("finetune","XAI — Fine-tune ΔACC (regression)"),
     "finetune_auc_delta": ("finetune","XAI — Fine-tune ΔAUC (regression)"),
-    "finetune_r2_delta":  ("finetune","XAI — Fine-tune ΔR2 (regression)"),
+    "finetune_r2_delta":  ("finetune","XAI — Fine-tune ΔR2  (regression)"),
 }
-
-def _ensure_cols(df_in, cols):
-    """Keep only columns that exist in df_in."""
-    return [c for c in cols if c in df_in.columns]
-
 def _mk_dirs_for_target(tname):
-    """Create per-target folders under FIG_DIR/xai and SAVE_DIR/xai."""
     sub = SUBDIRS.get(tname, ("misc", tname))[0]
     fig_dir  = os.path.join(XAI_FIG_DIR,  sub)
     save_dir = os.path.join(XAI_SAVE_DIR, sub)
     os.makedirs(fig_dir,  exist_ok=True)
     os.makedirs(save_dir, exist_ok=True)
     return fig_dir, save_dir
-
 def _file_prefix(fig_dir, save_dir, target_name, featset):
-    """Base file prefix (with variant) for a target + feature set."""
-    tag_feat = "Eonly" if featset == "E_ONLY" else "EIX"
-    base_png = with_variant(os.path.join(fig_dir,  f"{target_name}__{tag_feat}"))
-    base_csv = with_variant(os.path.join(save_dir, f"{target_name}__{tag_feat}"))
-    return base_png, base_csv
-
+    tag = "Eonly" if featset=="E_ONLY" else "EIX"
+    return (with_variant(os.path.join(fig_dir,  f"{target_name}__{tag}")),
+            with_variant(os.path.join(save_dir, f"{target_name}__{tag}")))
 def _title_with_feat(base_title, featset):
-    """Compose human-readable figure title."""
-    return f"{base_title} [{ 'E-only' if featset=='E_ONLY' else 'E+I(+X)' }]"
+    return f"{base_title} [{'E-only' if featset=='E_ONLY' else 'E+I(+X)'}]"
 
-# ---------------- SHAP summary helper ----------------
+def _ensure_cols(df_in, cols): return [c for c in cols if c in df_in.columns]
+
 def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
-    """Save SHAP beeswarm summary plot for a tree model (robust fallback)."""
     try:
         expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
         sv = expl.shap_values(X_plot, check_additivity=False)
     except Exception:
-        expl = shap.Explainer(model, X_plot)
-        sv = expl(X_plot).values
-    if isinstance(sv, list):  # binary cls -> [neg,pos]
-        sv = sv[-1]
-    plt.figure()
-    shap.summary_plot(sv, X_plot.values, feature_names=feat_names, show=False)
-    if fig_title:
-        plt.title(fig_title)
-    plt.savefig(out_png, dpi=220, bbox_inches="tight")
-    plt.close()
+        expl = shap.Explainer(model, X_plot); sv = expl(X_plot).values
+    if isinstance(sv, list): sv = sv[-1]
+    plt.figure(); shap.summary_plot(sv, X_plot.values, feature_names=feat_names, show=False)
+    if fig_title: plt.title(fig_title)
+    plt.savefig(out_png, dpi=220, bbox_inches="tight"); plt.close()
 
-# ------------- LIME stability helpers (robust) -------------
-def _remove_constant_features(X_np, feat_names, eps=1e-12):
-    """Remove near-constant columns (LIME may fail on zero-variance)."""
-    stds = X_np.std(axis=0)
-    keep = stds > eps
-    X_red = X_np[:, keep] if X_np.ndim == 2 else X_np[keep]
-    feat_red = [f for f, k in zip(feat_names, keep) if k]
-    return X_red, feat_red, keep
-
-def _lime_avg(clf, X_np, feat_names, out_png, k=50,
-              full_feat_names=None, full_means=None, rng_seed=42, fig_title=None):
-    """
-    Average LIME importances safely by:
-      (1) building LIME on reduced features (const cols removed),
-      (2) reconstructing full-dimension vectors for predict_proba by
-          filling dropped columns with train means.
-    """
-    # 1) reduce
-    X_red, feat_red, keep_mask = _remove_constant_features(X_np, feat_names)
-    if X_red.shape[1] == 0:
-        print("[LIME] All features constant — skip.")
-        return
-
-    # 2) prepare full info
-    if full_feat_names is None:
-        full_feat_names = feat_names[:]
-    if full_means is None:
-        full_means = np.zeros(len(full_feat_names), dtype=float)
-    keep_idx = np.where(keep_mask)[0]
-
-    # 3) wrapper to rebuild full before predict
-    def _predict_proba_on_reduced(Z_red):
-        Z_red = np.asarray(Z_red)
-        if Z_red.ndim == 1:
-            Z_red = Z_red.reshape(1, -1)
-        Z_full = np.tile(full_means, (Z_red.shape[0], 1))
-        Z_full[:, keep_idx] = Z_red
-        return clf.predict_proba(Z_full)
-
-    # 4) LIME on reduced space
-    explainer = LimeTabularExplainer(
-        training_data=X_red,
-        feature_names=feat_red,
-        discretize_continuous=True,
-        mode="classification"
-    )
-
-    # 5) average over K instances
-    rng = np.random.default_rng(rng_seed)
-    idxs = rng.choice(X_red.shape[0], size=min(k, X_red.shape[0]), replace=False)
-    try:
-        pos = int(np.argmax(getattr(clf, "classes_", [0, 1])))
-    except Exception:
-        pos = 1
-
-    rows = []
-    for i in idxs:
-        exp = explainer.explain_instance(
-            X_red[i],
-            _predict_proba_on_reduced,
-            num_features=min(8, X_red.shape[1])
-        )
-        for name, w in exp.as_list(label=pos):
-            base = name.split()[0]
-            if base not in feat_red:
-                base = name
-            rows.append((base, float(w)))
-
-    if not rows:
-        print("[LIME] No weights collected — skip plot.")
-        return
-
-    dfw = (pd.DataFrame(rows, columns=["feature", "weight"])
-             .groupby("feature", as_index=False)["weight"].mean()
-             .sort_values("weight"))
-
-    plt.figure(figsize=(6, 4))
-    plt.barh(dfw["feature"], dfw["weight"], edgecolor="black")
-    plt.xlabel("Avg LIME weight")
-    if fig_title:
-        plt.title(fig_title)
-    plt.gcf().tight_layout(rect=[0, 0, 1, 0.95])
-    plt.tight_layout()
-    plt.savefig(out_png, dpi=220, bbox_inches="tight")
-    plt.close()
-
-# Fallback: create 'stable' from lock_epoch if missing
-# (classification target will then exist for XAI)
-if "stable" not in df_xai.columns and "lock_epoch" in df_xai.columns:
-    df_xai["stable"] = (df_xai["lock_epoch"] >= 0).astype(int)
-
-# -------------------- Select targets to run --------------------
+# Target list
 targets = []
-
 if XAI_ENABLE_STAB and "stable" in df_xai.columns:
-    targets.append(("stability_cls", "cls", "stable", None))  # (name, kind, y_col, mask)
-
+    targets.append(("stability_cls","cls","stable",None))
 if XAI_ENABLE_STAB and "lock_epoch" in df_xai.columns:
     m = (df_xai["lock_epoch"] >= 0)
-    if int(m.sum()) >= int(MASTER_CTRL.get("REGRESSION_MIN", 10)):
-        targets.append(("lock_epoch_reg", "reg", "lock_epoch", m))
-
+    if int(m.sum()) >= REGRESSION_MIN:
+        targets.append(("lock_epoch_reg","reg","lock_epoch",m))
 if XAI_ENABLE_COLD and "cold_flag" in df_xai.columns:
-    targets.append(("cold_flag_cls", "cls", "cold_flag", None))
-
+    targets.append(("cold_flag_cls","cls","cold_flag",None))
 if XAI_ENABLE_COLD and "cold_min_z" in df_xai.columns:
     m = np.isfinite(df_xai["cold_min_z"])
-    if int(m.sum()) >= int(MASTER_CTRL.get("REGRESSION_MIN", 10)):
-        targets.append(("cold_min_z_reg", "reg", "cold_min_z", m))
-
+    if int(m.sum()) >= REGRESSION_MIN:
+        targets.append(("cold_min_z_reg","reg","cold_min_z",m))
 if XAI_ENABLE_AOE and "aoe_flag" in df_xai.columns:
-    targets.append(("aoe_flag_cls", "cls", "aoe_flag", None))
-
+    targets.append(("aoe_flag_cls","cls","aoe_flag",None))
 if XAI_ENABLE_AOE and "aoe_align_score" in df_xai.columns:
     m = np.isfinite(df_xai["aoe_align_score"])
-    n = int(m.sum())
-    if n >= REGRESSION_MIN:
-        targets.append(("aoe_align_reg", "reg", "aoe_align_score", m))
-    else:
-        print(f"[XAI] Skipping aoe_align_reg (only {n} finite rows). "
-              f"Lower REGRESSION_MIN or produce more AoE rows.")
+    if int(m.sum()) >= REGRESSION_MIN:
+        targets.append(("aoe_align_reg","reg","aoe_align_score",m))
+
+# Finetune deltas as regression targets (added even if nearly-constant; main loop guards)
+for nm, col in [("finetune_acc_delta","ft_acc_delta"),
+                ("finetune_auc_delta","ft_auc_delta"),
+                ("finetune_r2_delta", "ft_r2_delta")]:
+    if col in df_xai.columns:
+        targets.append((nm, "reg", col, None))
 
 if not targets:
-    print("[XAI][INFO] No available XAI targets — skipping.")
-else:
-    print("[XAI] Targets:", [t[0] for t in targets])
+    print("[XAI][INFO] No XAI targets — nothing to do.")
 
-# -------------------- Main loop: each target, E-only & EIX --------------------
+# Main loop
 for target_name, kind, y_col, mask in targets:
-    # Build per-target directories
     fig_dir, save_dir = _mk_dirs_for_target(target_name)
-
-    # Build dataset (mask if provided), drop non-finite rows on required cols
     data = df_xai[mask].copy() if (mask is not None) else df_xai.copy()
-    need_cols = [y_col, "E"]  # E-only always needs 'E'
-    if any(c in ["I","X"] for c in FEATS_EIX):
-        need_cols += [c for c in ["I","X"] if c in data.columns]
-    data = data.replace([np.inf, -np.inf], np.nan).dropna(subset=list(set(need_cols)), how="any")
 
-    # --- Which feature-set(s) to run ---
-    RUN_BOTH = bool(MASTER_CTRL.get("XAI_RUN_BOTH_FEATSETS", False))  # default: only the matching one
-
-    if RUN_BOTH:
-        featsets = [("E_ONLY", FEATS_E_ONLY), ("EIX", FEATS_EIX)]
-    else:
-        featsets = [("E_ONLY", FEATS_E_ONLY)] if VARIANT == "energy_only" else [("EIX", FEATS_EIX)]
+    featsets = [("E_ONLY", FEATS_E_ONLY), ("EIX", FEATS_EIX)] if RUN_BOTH \
+               else ([("E_ONLY", FEATS_E_ONLY)] if VARIANT=="energy_only" else [("EIX", FEATS_EIX)])
 
     for featset, feat_cols in featsets:
         cols = _ensure_cols(data, feat_cols)
         if not cols:
-            print(f"[XAI] {target_name} — {featset}: no usable features, skipping.")
-            continue
+            print(f"[XAI] {target_name} — {featset}: no usable features; skip."); continue
 
-        # --- clean on exactly the columns we will use ---
+        # Clean on EXACT used columns + target to keep rows aligned
         need = [y_col] + cols
-        data = data.replace([np.inf, -np.inf], np.nan).dropna(subset=need, how="any")
+        d = data.replace([np.inf,-np.inf], np.nan).dropna(subset=need, how="any")
+        if d.empty:
+            print(f"[XAI] {target_name} — {featset}: empty after clean; skip."); continue
 
-        # build X, y, y_series only AFTER cleaning the same rows
-        X = data[cols].copy()
-        y = data[y_col].values
-        y_series = data[y_col] 
-
-        # --- safety checks ---
-        # 1) check lengths match
+        X = d[cols].copy(); y = d[y_col].values
         if len(X) != len(y):
-            print(f"[XAI][WARN] Length mismatch for {target_name} ({featset}): X={len(X)} y={len(y)} — skipping.")
-            continue
-            
-        # 2) check for constant targets
+            print(f"[XAI][WARN] length mismatch for {target_name} {featset}: X={len(X)} y={len(y)}; skip."); continue
+
+        y_series = d[y_col]
         if kind == "cls":
             if y_series.nunique() < 2:
-                print(f"[XAI] {target_name}: single class — skipping.")
-                continue
-        else:  # regression
+                print(f"[XAI] {target_name}: single class; skip."); continue
+        else:
             if (y_series.nunique() < 3) or (y_series.std() < 1e-8):
-                if target_name.startswith("finetune_") and MASTER_CTRL.get("XAI_ALLOW_CONST_FINETUNE", False):
-                    print(f"[XAI] {target_name}: nearly constant, but kept due to XAI_ALLOW_CONST_FINETUNE.")
+                if target_name.startswith("finetune_") and XAI_ALLOW_CONST_FINETUNE:
+                    print(f"[XAI] {target_name}: nearly constant, kept due to XAI_ALLOW_CONST_FINETUNE.")
                 else:
-                    print(f"[XAI] {target_name}: target nearly constant — skipping.")
-                    continue
+                    print(f"[XAI] {target_name}: nearly constant; skip."); continue
 
-        # Stratify only for binary classification with both classes present
+        # Stratify only if binary with enough each
         strat = None
         if kind == "cls":
             uniq = np.unique(y)
-            if len(uniq) == 2 and min((y == uniq[0]).sum(), (y == uniq[1]).sum()) >= 2:
+            if len(uniq)==2 and min((y==uniq[0]).sum(), (y==uniq[1]).sum()) >= 2:
                 strat = y
 
-        # Safe split with optional stratify
         try:
-            Xtr, Xte, ytr, yte = train_test_split(
-                X, y,
-                test_size=TEST_SIZE,
-                random_state=RSTATE,
-                stratify=strat if strat is not None and len(np.unique(strat)) > 1 else None
-            )
+            Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=TEST_SIZE,
+                                                  random_state=RSTATE, stratify=strat)
         except ValueError as e:
-            print(f"[XAI][WARN] train_test_split failed for {target_name} ({featset}): {e}")
-            continue
+            print(f"[XAI][WARN] split failed for {target_name} ({featset}): {e}"); continue
 
-        # File prefixes (PNG/CSV)
         base_png, base_csv = _file_prefix(fig_dir, save_dir, target_name, featset)
 
-        # ---------------- Train & evaluate ----------------
         if kind == "cls":
             model = RandomForestClassifier(
-                n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
+                n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS",400),
                 random_state=RSTATE,
-                n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS", -1),
-                class_weight=MASTER_CTRL.get("RF_CLASS_WEIGHT", "balanced")
+                n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS",-1),
+                class_weight=MASTER_CTRL.get("RF_CLASS_WEIGHT","balanced")
             )
             model.fit(Xtr, ytr)
             yp = model.predict(Xte)
             acc = accuracy_score(yte, yp)
             try:
-                proba = model.predict_proba(Xte)[:, 1]
-                auc = roc_auc_score(yte, proba) if len(np.unique(yte)) == 2 else np.nan
+                proba = model.predict_proba(Xte)[:,1]
+                auc = roc_auc_score(yte, proba) if len(np.unique(yte))==2 else np.nan
             except Exception:
                 auc = np.nan
-
             print(f"[XAI] {target_name} [{variant_title}] {featset}: ACC={acc:.3f}, AUC={auc if np.isnan(auc) else round(auc,3)}")
 
-            # SHAP summary
             if SAVE_SHAP:
-                _shap_summary(
-                    model, Xte, X.columns.tolist(),
-                    out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
-                    fig_title=_title_with_feat(SUBDIRS[target_name][1], featset)
-                )
+                _shap_summary(model, Xte, X.columns.tolist(),
+                              out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
+                              fig_title=_title_with_feat(SUBDIRS[target_name][1], featset))
+            if SAVE_LIME and len(np.unique(ytr))==2 and len(Xte) >= 5:
+                # LIME on reduced data to avoid zero-variance traps
+                X_np = Xtr.values; stds = X_np.std(axis=0); keep = stds > 1e-12
+                X_red = X_np[:, keep]; feat_red = [f for f,k in zip(Xtr.columns, keep) if k]
+                if X_red.shape[1] >= 1:
+                    from lime.lime_tabular import LimeTabularExplainer
+                    full_means = Xtr.mean(axis=0).values; keep_idx = np.where(keep)[0]
+                    def _predict_proba_on_reduced(Z_red):
+                        Z_red = np.asarray(Z_red); Z_red = Z_red.reshape(1,-1) if Z_red.ndim==1 else Z_red
+                        Z_full = np.tile(full_means, (Z_red.shape[0], 1)); Z_full[:, keep_idx] = Z_red
+                        return model.predict_proba(Z_full)
+                    expl = LimeTabularExplainer(training_data=X_red, feature_names=feat_red,
+                                                discretize_continuous=True, mode="classification")
+                    rng = np.random.default_rng(RSTATE)
+                    idxs = rng.choice(X_red.shape[0], size=min(LIME_K, X_red.shape[0]), replace=False)
+                    rows = []
+                    pos = int(np.argmax(getattr(model,"classes_", [0,1])))
+                    for i in idxs:
+                        exp = expl.explain_instance(X_red[i], _predict_proba_on_reduced,
+                                                    num_features=min(8, X_red.shape[1]))
+                        for name, w in exp.as_list(label=pos):
+                            base = name.split()[0]; rows.append((base, float(w)))
+                    if rows:
+                        dfw = (pd.DataFrame(rows, columns=["feature","weight"])
+                                 .groupby("feature", as_index=False)["weight"].mean()
+                                 .sort_values("weight"))
+                        plt.figure(figsize=(6,4)); plt.barh(dfw["feature"], dfw["weight"], edgecolor="black")
+                        plt.xlabel("Avg LIME weight"); plt.title("LIME avg — " + _title_with_feat(SUBDIRS[target_name][1], featset))
+                        plt.gcf().tight_layout(rect=[0,0,1,0.95]); plt.tight_layout()
+                        plt.savefig(base_png.replace(target_name, f"lime_avg__{target_name}") + ".png",
+                                    dpi=220, bbox_inches="tight"); plt.close()
 
-            # LIME averaged importances (only if both classes in train and enough samples)
-            if SAVE_LIME and len(np.unique(ytr)) == 2 and len(Xte) >= 5:
-                _lime_avg(
-                    model,
-                    Xtr.values,
-                    X.columns.tolist(),
-                    out_png=base_png.replace(target_name, f"lime_avg__{target_name}") + ".png",
-                    k=LIME_K,
-                    full_feat_names=X.columns.tolist(),
-                    full_means=Xtr.mean(axis=0).values,
-                    fig_title="LIME avg — " + _title_with_feat(SUBDIRS[target_name][1], featset)
-                )
-
-            # Metrics CSV
-            met_csv = base_csv.replace(target_name, f"metrics__{target_name}") + ".csv"
             pd.DataFrame([{
-                "target": target_name,
-                "variant": variant_title,
-                "featset": featset,
-                "acc": acc,
-                "auc": float(auc) if np.isfinite(auc) else np.nan,
-                "n_train": len(Xtr),
-                "n_test": len(Xte)
-            }]).to_csv(met_csv, index=False)
+                "target": target_name, "variant": variant_title, "featset": featset,
+                "acc": acc, "auc": float(auc) if np.isfinite(auc) else np.nan,
+                "n_train": len(Xtr), "n_test": len(Xte)
+            }]).to_csv(base_csv.replace(target_name, f"metrics__{target_name}") + ".csv", index=False)
 
-        else:  # kind == "reg"
+        else:  # regression
             model = RandomForestRegressor(
-                n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
-                random_state=RSTATE,
-                n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS", -1)
+                n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS",400),
+                random_state=RSTATE, n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS",-1)
             )
-            model.fit(Xtr, ytr)
-            r2 = r2_score(yte, model.predict(Xte))
+            model.fit(Xtr, ytr); r2 = r2_score(yte, model.predict(Xte))
             print(f"[XAI] {target_name} [{variant_title}] {featset}: R2={r2:.3f}")
-
-            # SHAP summary
             if SAVE_SHAP:
-                _shap_summary(
-                    model, Xte, X.columns.tolist(),
-                    out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
-                    fig_title=_title_with_feat(SUBDIRS[target_name][1], featset)
-                )
-
-            # Metrics CSV
-            met_csv = base_csv.replace(target_name, f"metrics__{target_name}") + ".csv"
+                _shap_summary(model, Xte, X.columns.tolist(),
+                              out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
+                              fig_title=_title_with_feat(SUBDIRS[target_name][1], featset))
             pd.DataFrame([{
-                "target": target_name,
-                "variant": variant_title,
-                "featset": featset,
-                "r2": r2,
-                "n_train": len(Xtr),
-                "n_test": len(Xte)
-            }]).to_csv(met_csv, index=False)
+                "target": target_name, "variant": variant_title, "featset": featset,
+                "r2": r2, "n_train": len(Xtr), "n_test": len(Xte)
+            }]).to_csv(base_csv.replace(target_name, f"metrics__{target_name}") + ".csv", index=False)
 
-
-
-print("[XAI] Multi-target XAI complete.")
-        
+print("[XAI] Completed.")       
             
 # ======================================================
 # 20) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
