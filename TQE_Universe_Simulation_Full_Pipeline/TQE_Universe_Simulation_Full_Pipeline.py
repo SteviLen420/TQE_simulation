@@ -2311,16 +2311,6 @@ from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
 import shap
 from lime.lime_tabular import LimeTabularExplainer
 
-# --- Safety: make sure these lists exist (even if code paths above were skipped)
-try:
-    targets
-except NameError:
-    targets = []
-try:
-    targets_extra
-except NameError:
-    targets_extra = []
-
 # --- Add Fine-tune deltas as XAI targets (run before selecting/looping targets)
 ft_delta_path = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
 if os.path.exists(ft_delta_path):
@@ -2522,11 +2512,6 @@ if "stable" not in df_xai.columns and "lock_epoch" in df_xai.columns:
     df_xai["stable"] = (df_xai["lock_epoch"] >= 0).astype(int)
 
 # -------------------- Select targets to run --------------------
-# keep finetune targets; don't reset
-try:
-    targets
-except NameError:
-    targets = []
 
 if XAI_ENABLE_STAB and "stable" in df_xai.columns:
     targets.append(("stability_cls", "cls", "stable", None))  # (name, kind, y_col, mask)
