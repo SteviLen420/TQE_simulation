@@ -56,11 +56,11 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
-    "TIME_STEPS":           800,    # epochs per stability run (if used elsewhere)
-    "LOCKIN_EPOCHS":        700,    # epochs for law lock-in dynamics
-    "EXPANSION_EPOCHS":     800,    # epochs for expansion dynamics
-    "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
+    "NUM_UNIVERSES":        800,   # number of universes in Monte Carlo run
+    "TIME_STEPS":           300,    # epochs per stability run (if used elsewhere)
+    "LOCKIN_EPOCHS":        300,    # epochs for law lock-in dynamics
+    "EXPANSION_EPOCHS":     300,    # epochs for expansion dynamics
+    "FL_EXP_EPOCHS":        300,    # length of t>0 expansion panel
     "SEED":                 None,   # master RNG seed (auto-generated if None)
     "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
 
@@ -2714,14 +2714,42 @@ for target_name, kind, y_col, mask in targets:
                         for name, w in exp.as_list(label=pos):
                             base = name.split()[0]; rows.append((base, float(w)))
                     if rows:
-                        dfw = (pd.DataFrame(rows, columns=["feature","weight"])
+                        import re
+
+                        # Build dataframe and average weights per feature
+                        dfw = (pd.DataFrame(rows, columns=["feature", "weight"])
                                  .groupby("feature", as_index=False)["weight"].mean()
                                  .sort_values("weight"))
-                        plt.figure(figsize=(6,4)); plt.barh(dfw["feature"], dfw["weight"], edgecolor="black")
-                        plt.xlabel("Avg LIME weight"); plt.title("LIME avg — " + _title_with_feat(SUBDIRS[target_name][1], featset))
-                        plt.gcf().tight_layout(rect=[0,0,1,0.95]); plt.tight_layout()
-                        plt.savefig(base_png.replace(target_name, f"lime_avg__{target_name}") + ".png",
-                                    dpi=220, bbox_inches="tight"); plt.close()
+
+                        # --- Pretty labels for the y-axis ---
+                        def _pretty_label(s: str) -> str:
+                            base = str(s).strip()
+                            # Drop bin boundaries or numeric parts accidentally included by LIME
+                            m = re.match(r"^([A-Za-z_]+)", base)
+                            if m:
+                                base = m.group(1)
+
+                            # Human-friendly renames
+                            base = (base
+                                    .replace("abs_E_minus_I", "|E − I|")
+                                    .replace("logX", "log X")
+                                    .replace("dist_to_goldilocks", "Goldilocks X"))
+                            return base
+
+                        dfw["feature_pretty"] = dfw["feature"].map(_pretty_label)
+
+                        # Plot with pretty labels
+                        plt.figure(figsize=(7, 4))
+                        plt.barh(dfw["feature_pretty"], dfw["weight"], edgecolor="black")
+                        plt.xlabel("Avg LIME weight")
+                        plt.title("LIME avg — " + _title_with_feat(SUBDIRS[target_name][1], featset))
+                        plt.gcf().tight_layout(rect=[0, 0, 1, 0.95])
+                        plt.tight_layout()
+                        plt.savefig(
+                            base_png.replace(target_name, f"lime_avg__{target_name}") + ".png",
+                            dpi=220, bbox_inches="tight"
+                        )
+                        plt.close()
 
             pd.DataFrame([{
                 "target": target_name, "variant": variant_title, "featset": featset,
