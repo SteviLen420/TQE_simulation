@@ -2631,8 +2631,12 @@ for target_name, kind, y_col, mask in targets:
 
     for featset, feat_cols in featsets:
         cols = _ensure_cols(data, feat_cols)
+        # drop features that are all-NaN or have (quasi) zero variance
+        cols = [c for c in cols
+                if data[c].notna().sum() >= 2 and data[c].std(skipna=True) > 1e-12]
         if not cols:
-            print(f"[XAI] {target_name} — {featset}: no usable features; skip."); continue
+            print(f"[XAI] {target_name} — {featset}: no usable (non-NaN/non-constant) features; skip.")
+            continue
 
         # Clean on EXACT used columns + target to keep rows aligned
         need = [y_col] + cols
