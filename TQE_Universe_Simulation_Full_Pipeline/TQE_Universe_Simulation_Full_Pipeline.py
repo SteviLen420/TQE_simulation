@@ -2322,6 +2322,12 @@ if os.path.exists(ft_delta_path):
 
             # make sure 'targets' exists even if moved earlier in code
             try:
+                targets_extra
+            except NameError:
+                targets = []
+
+            # make sure 'targets' exists even if moved earlier in code
+            try:
                 targets
             except NameError:
                 targets = []
