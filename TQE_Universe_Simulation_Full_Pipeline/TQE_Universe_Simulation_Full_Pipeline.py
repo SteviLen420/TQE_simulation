@@ -2297,57 +2297,9 @@ print("[JOIN] Wrote:", joined_csv)
 # Make df_join the working table for XAI
 df_xai = df_join
 
-# --- Add Fine-tune deltas as XAI targets BEFORE target selection ---
-ft_delta_path = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
-if os.path.exists(ft_delta_path):
-    try:
-        ft_delta_df = pd.read_csv(ft_delta_path)
-        if not ft_delta_df.empty:
-            # broadcast single-run deltas to df_xai so models can train
-            if "acc_delta" in ft_delta_df.columns:
-                df_xai["ft_acc_delta"] = float(ft_delta_df["acc_delta"].iloc[0])
-            if "auc_delta" in ft_delta_df.columns:
-                df_xai["ft_auc_delta"] = float(ft_delta_df["auc_delta"].iloc[0])
-            if "r2_delta" in ft_delta_df.columns:
-                df_xai["ft_r2_delta"] = float(ft_delta_df["r2_delta"].iloc[0])
-
-            # --- safety: ensure helper lists exist even if code path skipped earlier ---
-
-            # Make sure 'targets_extra' exists (fine-tune targets list)
-            try:
-                targets_extra  # just touch it
-            except NameError:
-                targets_extra = []
-
-            # Make sure 'targets' exists (main XAI targets list)
-            try:
-                targets  # just touch it
-            except NameError:
-                targets = []
-
-            # Keep fine–tune targets if the column exists and we have enough rows
-            # (relaxed filter so figures are produced even if deltas are almost constant)
-            targets_filtered = []
-            for tname, tkind, yname, ymask in targets_extra:
-                if yname in df_xai.columns:
-                    ys = df_xai[yname]
-                    if ys.notna().sum() >= int(MASTER_CTRL.get("REGRESSION_MIN", 3)):
-                        targets_filtered.append((tname, tkind, yname, ymask))
-
-            if targets_filtered:
-                targets.extend(targets_filtered)
-                print("[XAI] Fine-tune targets kept:", [t[0] for t in targets_filtered])
-            else:
-                print("[XAI] Fine-tune targets skipped (no rows).")
-
 # ======================================================
 # 19) Multi-target XAI (SHAP + LIME) — E-only vs E+I(+X), foldered outputs
 # ======================================================
-
-try:
-    targets
-except NameError:
-    targets = []
 
 import os
 import numpy as np
@@ -2358,6 +2310,56 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
 import shap
 from lime.lime_tabular import LimeTabularExplainer
+
+# --- Safety: make sure these lists exist (even if code paths above were skipped)
+try:
+    targets
+except NameError:
+    targets = []
+try:
+    targets_extra
+except NameError:
+    targets_extra = []
+
+# --- Add Fine-tune deltas as XAI targets (run before selecting/looping targets)
+ft_delta_path = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
+if os.path.exists(ft_delta_path):
+    try:
+        ft_delta_df = pd.read_csv(ft_delta_path)
+        if not ft_delta_df.empty:
+            # broadcast single-run deltas into df_xai so models can train
+            if "acc_delta" in ft_delta_df.columns:
+                df_xai["ft_acc_delta"] = float(ft_delta_df["acc_delta"].iloc[0])
+            if "auc_delta" in ft_delta_df.columns:
+                df_xai["ft_auc_delta"] = float(ft_delta_df["auc_delta"].iloc[0])
+            if "r2_delta" in ft_delta_df.columns:
+                df_xai["ft_r2_delta"] = float(ft_delta_df["r2_delta"].iloc[0])
+
+            # register fine-tune targets (regression-style) if available
+            if "ft_acc_delta" in df_xai.columns:
+                targets_extra.append(("finetune_acc_delta", "reg", "ft_acc_delta", None))
+            if "ft_auc_delta" in df_xai.columns:
+                targets_extra.append(("finetune_auc_delta", "reg", "ft_auc_delta", None))
+            if "ft_r2_delta" in df_xai.columns:
+                targets_extra.append(("finetune_r2_delta",  "reg", "ft_r2_delta",  None))
+
+            # relaxed keep: only require a few non-NaN rows (so figures are produced)
+            REG_MIN = int(MASTER_CTRL.get("REGRESSION_MIN", 3))
+            kept = []
+            for tname, tkind, yname, ymask in targets_extra:
+                if yname in df_xai.columns and df_xai[yname].notna().sum() >= REG_MIN:
+                    kept.append((tname, tkind, yname, ymask))
+            if kept:
+                targets.extend(kept)
+                print("[XAI] Fine-tune targets kept:", [t[0] for t in kept])
+            else:
+                print("[XAI] Fine-tune targets skipped (no rows).")
+        else:
+            print("[XAI] ft_delta_summary.csv exists but empty — skipping Fine-tune XAI targets.")
+    except Exception as e:
+        print("[XAI][WARN] Could not add Fine-tune deltas:", e)
+else:
+    print("[XAI] No ft_delta_summary.csv — skipping Fine-tune XAI targets.")
 
 # ------------ Controls (override via MASTER_CTRL) ------------
 XAI_ENABLE_STAB = bool(MASTER_CTRL.get("XAI_ENABLE_STABILITY", True))
