@@ -221,6 +221,7 @@ MASTER_CTRL = {
     "XAI_ENABLE_AOE": True,         # run AoE targets
     "XAI_SAVE_SHAP": True,          # save SHAP plots
     "XAI_SAVE_LIME": True,          # save LIME plots
+    "XAI_ALLOW_CONST_FINETUNE": True,
     "XAI_LIME_K": 50,               # samples for averaged LIME
     "XAI_RUN_BOTH_FEATSETS": False, # only matching feature-set per variant
     "REGRESSION_MIN": 3,            # minimum finite rows for regression targets
