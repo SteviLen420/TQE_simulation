@@ -2311,28 +2311,21 @@ if os.path.exists(ft_delta_path):
             if "r2_delta" in ft_delta_df.columns:
                 df_xai["ft_r2_delta"] = float(ft_delta_df["r2_delta"].iloc[0])
 
-            # register targets (regression-style)
-            targets_extra = []
-            if "ft_acc_delta" in df_xai.columns:
-                targets_extra.append(("finetune_acc_delta", "reg", "ft_acc_delta", None))
-            if "ft_auc_delta" in df_xai.columns:
-                targets_extra.append(("finetune_auc_delta", "reg", "ft_auc_delta", None))
-            if "ft_r2_delta" in df_xai.columns:
-                targets_extra.append(("finetune_r2_delta",  "reg", "ft_r2_delta",  None))
+            # --- safety: ensure helper lists exist even if code path skipped earlier ---
 
-            # make sure 'targets' exists even if moved earlier in code
+            # Make sure 'targets_extra' exists (fine-tune targets list)
             try:
-                targets_extra
+                targets_extra  # just touch it
+            except NameError:
+                targets_extra = []
+
+            # Make sure 'targets' exists (main XAI targets list)
+            try:
+                targets  # just touch it
             except NameError:
                 targets = []
 
-            # make sure 'targets' exists even if moved earlier in code
-            try:
-                targets
-            except NameError:
-                targets = []
-                
-            # Keep fine-tune targets if the column exists and we have enough rows
+            # Keep fine–tune targets if the column exists and we have enough rows
             # (relaxed filter so figures are produced even if deltas are almost constant)
             targets_filtered = []
             for tname, tkind, yname, ymask in targets_extra:
