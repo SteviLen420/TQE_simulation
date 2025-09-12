@@ -213,15 +213,15 @@ MASTER_CTRL = {
     "CMB_AOE_L23_BOOST":   1.0,         # 1.5–3.0: strength of ℓ=2,3 boost
     "AOE_REF_ANGLE_DEG":   10.0,        # reference alignment angle (Planck/WMAP ~20°)
     "AOE_P_THRESHOLD":      0.10,       # if you have p-values in cmb_aoe_summary.csv
-    "AOE_ALIGN_THRESHOLD":  0.92,       # fallback if only angle is present (score = 1 - angle/180)
+    "AOE_ALIGN_THRESHOLD":  0.8,       # fallback if only angle is present (score = 1 - angle/180)
 
     # --- XAI: enable targets and outputs ---
     "XAI_ENABLE_STABILITY": True,   # run stability targets
     "XAI_ENABLE_COLD": True,        # run cold-spot targets
     "XAI_ENABLE_AOE": True,         # run AoE targets
-    "XAI_SAVE_SHAP": False,          # save SHAP plots
+    "XAI_SAVE_SHAP": True,          # save SHAP plots
     "XAI_SAVE_LIME": True,          # save LIME plots
-    "XAI_ALLOW_CONST_FINETUNE": True,
+    "XAI_ALLOW_CONST_FINETUNE": False,
     "XAI_LIME_K": 50,               # samples for averaged LIME
     "XAI_RUN_BOTH_FEATSETS": False, # only matching feature-set per variant
     "REGRESSION_MIN": 3,            # minimum finite rows for regression targets
@@ -2183,7 +2183,7 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
         else:
             print("[CMB][AOE] No AoE rows collected; nothing to save.")
 
- # ======================================================
+# ======================================================
 # 18+19) Metrics joiner + Finetune + Multi-target XAI (SHAP+LIME)
 # ======================================================
 
@@ -2227,7 +2227,10 @@ def _plot_two_bar_with_ci(labels, counts, totals, title, out_png, ylabel="Probab
 # (A) JOIN: attach Cold / AoE / Finetune deltas + engineered feats to df
 # ======================================================
 cold_csv = with_variant(os.path.join(SAVE_DIR, "cmb_coldspots_summary.csv"))
-aoe_csv  = with_variant(os.path.join(SAVE_DIR, "cmb_axis_of_evil_summary.csv"))
+aoe_csv = with_variant(os.path.join(SAVE_DIR, "cmb_aoe_summary.csv"))
+if not os.path.exists(aoe_csv):
+    aoe_csv = with_variant(os.path.join(SAVE_DIR, "cmb_axis_of_evil_summary.csv"))
+
 ft_csv   = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
 
 cold_df = _safe_read_csv(cold_csv)
