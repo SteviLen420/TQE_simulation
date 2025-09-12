@@ -2326,28 +2326,20 @@ if os.path.exists(ft_delta_path):
             except NameError:
                 targets = []
                 
-            # Only add finetune targets if there is variance after broadcast
+            # Keep fine-tune targets if the column exists and we have enough rows
+            # (relaxed filter so figures are produced even if deltas are almost constant)
             targets_filtered = []
             for tname, tkind, yname, ymask in targets_extra:
                 if yname in df_xai.columns:
                     ys = df_xai[yname]
-                    if tkind == "reg" and ys.nunique() >= 3 and ys.std() >= 1e-8:
+                    if ys.notna().sum() >= int(MASTER_CTRL.get("REGRESSION_MIN", 3)):
                         targets_filtered.append((tname, tkind, yname, ymask))
-                    elif tkind == "cls" and ys.nunique() >= 2:
-                        targets_filtered.append((tname, tkind, yname, ymask))
-            if targets_filtered:
-                targets.extend(targets_filtered)
-                print("[XAI] Fine-tune targets kept:", [t[0] for t in targets_filtered])
-            else:
-                print("[XAI] Fine-tune targets skipped (constant).")
 
-            print("[XAI] Fine-tune deltas added as XAI targets:", [t[0] for t in targets_extra])
-        else:
-            print("[XAI] ft_delta_summary.csv exists but empty — skipping Fine-tune XAI targets.")
-    except Exception as e:
-        print("[XAI][WARN] Could not add Fine-tune deltas:", e)
-else:
-    print("[XAI] No ft_delta_summary.csv — skipping Fine-tune XAI targets.")
+             if targets_filtered:
+                 targets.extend(targets_filtered)
+                 print("[XAI] Fine-tune targets kept:", [t[0] for t in targets_filtered])
+             else:
+                 print("[XAI] Fine-tune targets skipped (no rows).")
 
 # ======================================================
 # 19) Multi-target XAI (SHAP + LIME) — E-only vs E+I(+X), foldered outputs
@@ -2531,6 +2523,11 @@ def _lime_avg(clf, X_np, feat_names, out_png, k=50,
     plt.tight_layout()
     plt.savefig(out_png, dpi=220, bbox_inches="tight")
     plt.close()
+
+# Fallback: create 'stable' from lock_epoch if missing
+# (classification target will then exist for XAI)
+if "stable" not in df_xai.columns and "lock_epoch" in df_xai.columns:
+    df_xai["stable"] = (df_xai["lock_epoch"] >= 0).astype(int)
 
 # -------------------- Select targets to run --------------------
 targets = []
