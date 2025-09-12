@@ -2286,6 +2286,58 @@ print("[JOIN] Wrote:", joined_csv)
 # Make df_join the working table for XAI
 df_xai = df_join
 
+# --- Add Fine-tune deltas as XAI targets BEFORE target selection ---
+ft_delta_path = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
+if os.path.exists(ft_delta_path):
+    try:
+        ft_delta_df = pd.read_csv(ft_delta_path)
+        if not ft_delta_df.empty:
+            # broadcast single-run deltas to df_xai so models can train
+            if "acc_delta" in ft_delta_df.columns:
+                df_xai["ft_acc_delta"] = float(ft_delta_df["acc_delta"].iloc[0])
+            if "auc_delta" in ft_delta_df.columns:
+                df_xai["ft_auc_delta"] = float(ft_delta_df["auc_delta"].iloc[0])
+            if "r2_delta" in ft_delta_df.columns:
+                df_xai["ft_r2_delta"] = float(ft_delta_df["r2_delta"].iloc[0])
+
+            # register targets (regression-style)
+            targets_extra = []
+            if "ft_acc_delta" in df_xai.columns:
+                targets_extra.append(("finetune_acc_delta", "reg", "ft_acc_delta", None))
+            if "ft_auc_delta" in df_xai.columns:
+                targets_extra.append(("finetune_auc_delta", "reg", "ft_auc_delta", None))
+            if "ft_r2_delta" in df_xai.columns:
+                targets_extra.append(("finetune_r2_delta",  "reg", "ft_r2_delta",  None))
+
+            # make sure 'targets' exists even if moved earlier in code
+            try:
+                targets
+            except NameError:
+                targets = []
+                
+            # Only add finetune targets if there is variance after broadcast
+            targets_filtered = []
+            for tname, tkind, yname, ymask in targets_extra:
+                if yname in df_xai.columns:
+                    ys = df_xai[yname]
+                    if tkind == "reg" and ys.nunique() >= 3 and ys.std() >= 1e-8:
+                        targets_filtered.append((tname, tkind, yname, ymask))
+                    elif tkind == "cls" and ys.nunique() >= 2:
+                        targets_filtered.append((tname, tkind, yname, ymask))
+            if targets_filtered:
+                targets.extend(targets_filtered)
+                print("[XAI] Fine-tune targets kept:", [t[0] for t in targets_filtered])
+            else:
+                print("[XAI] Fine-tune targets skipped (constant).")
+
+            print("[XAI] Fine-tune deltas added as XAI targets:", [t[0] for t in targets_extra])
+        else:
+            print("[XAI] ft_delta_summary.csv exists but empty — skipping Fine-tune XAI targets.")
+    except Exception as e:
+        print("[XAI][WARN] Could not add Fine-tune deltas:", e)
+else:
+    print("[XAI] No ft_delta_summary.csv — skipping Fine-tune XAI targets.")
+
 # ======================================================
 # 19) Multi-target XAI (SHAP + LIME) — E-only vs E+I(+X), foldered outputs
 # ======================================================
@@ -2310,6 +2362,10 @@ RSTATE     = int(MASTER_CTRL.get("XAI_RANDOM_STATE", MASTER_CTRL.get("TEST_RANDO
 SAVE_SHAP  = bool(MASTER_CTRL.get("XAI_SAVE_SHAP", True))
 SAVE_LIME  = bool(MASTER_CTRL.get("XAI_SAVE_LIME", True))
 LIME_K     = int(MASTER_CTRL.get("XAI_LIME_K", 50))
+
+# --- XAI knobs ---
+XAI_ALLOW_CONST_FINETUNE = bool(MASTER_CTRL.get("XAI_ALLOW_CONST_FINETUNE", False))
+REGRESSION_MIN = int(MASTER_CTRL.get("REGRESSION_MIN", MASTER_CTRL.get("XAI_REGRESSION_MIN", 10)))
 
 # Feature sets
 FEATS_E_ONLY = MASTER_CTRL.get("XAI_FEATURES_E_ONLY", ["E", "logE", "E_rank"])
@@ -2488,65 +2544,17 @@ if XAI_ENABLE_AOE and "aoe_flag" in df_xai.columns:
 
 if XAI_ENABLE_AOE and "aoe_align_score" in df_xai.columns:
     m = np.isfinite(df_xai["aoe_align_score"])
-    if int(m.sum()) >= int(MASTER_CTRL.get("REGRESSION_MIN", 10)):
+    n = int(m.sum())
+    if n >= REGRESSION_MIN:
         targets.append(("aoe_align_reg", "reg", "aoe_align_score", m))
+    else:
+        print(f"[XAI] Skipping aoe_align_reg (only {n} finite rows). "
+              f"Lower REGRESSION_MIN or produce more AoE rows.")
 
 if not targets:
     print("[XAI][INFO] No available XAI targets — skipping.")
 else:
     print("[XAI] Targets:", [t[0] for t in targets])
-
-# --- Add Fine-tune deltas as XAI targets BEFORE target selection ---
-ft_delta_path = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
-if os.path.exists(ft_delta_path):
-    try:
-        ft_delta_df = pd.read_csv(ft_delta_path)
-        if not ft_delta_df.empty:
-            # broadcast single-run deltas to df_xai so models can train
-            if "acc_delta" in ft_delta_df.columns:
-                df_xai["ft_acc_delta"] = float(ft_delta_df["acc_delta"].iloc[0])
-            if "auc_delta" in ft_delta_df.columns:
-                df_xai["ft_auc_delta"] = float(ft_delta_df["auc_delta"].iloc[0])
-            if "r2_delta" in ft_delta_df.columns:
-                df_xai["ft_r2_delta"] = float(ft_delta_df["r2_delta"].iloc[0])
-
-            # register targets (regression-style)
-            targets_extra = []
-            if "ft_acc_delta" in df_xai.columns:
-                targets_extra.append(("finetune_acc_delta", "reg", "ft_acc_delta", None))
-            if "ft_auc_delta" in df_xai.columns:
-                targets_extra.append(("finetune_auc_delta", "reg", "ft_auc_delta", None))
-            if "ft_r2_delta" in df_xai.columns:
-                targets_extra.append(("finetune_r2_delta",  "reg", "ft_r2_delta",  None))
-
-            # make sure 'targets' exists even if moved earlier in code
-            try:
-                targets
-            except NameError:
-                targets = []
-                
-            # Only add finetune targets if there is variance after broadcast
-            targets_filtered = []
-            for tname, tkind, yname, ymask in targets_extra:
-                if yname in df_xai.columns:
-                    ys = df_xai[yname]
-                    if tkind == "reg" and ys.nunique() >= 3 and ys.std() >= 1e-8:
-                        targets_filtered.append((tname, tkind, yname, ymask))
-                    elif tkind == "cls" and ys.nunique() >= 2:
-                        targets_filtered.append((tname, tkind, yname, ymask))
-            if targets_filtered:
-                targets.extend(targets_filtered)
-                print("[XAI] Fine-tune targets kept:", [t[0] for t in targets_filtered])
-            else:
-                print("[XAI] Fine-tune targets skipped (constant).")
-
-            print("[XAI] Fine-tune deltas added as XAI targets:", [t[0] for t in targets_extra])
-        else:
-            print("[XAI] ft_delta_summary.csv exists but empty — skipping Fine-tune XAI targets.")
-    except Exception as e:
-        print("[XAI][WARN] Could not add Fine-tune deltas:", e)
-else:
-    print("[XAI] No ft_delta_summary.csv — skipping Fine-tune XAI targets.")
 
 # -------------------- Main loop: each target, E-only & EIX --------------------
 for target_name, kind, y_col, mask in targets:
@@ -2593,10 +2601,13 @@ for target_name, kind, y_col, mask in targets:
             if y_series.nunique() < 2:
                 print(f"[XAI] {target_name}: single class — skipping.")
                 continue
-        else:  # regression
-            if (y_series.nunique() < 3) or (y_series.std() < 1e-8):
-                print(f"[XAI] {target_name}: target nearly constant — skipping.")
-                continue
+        # regression (allow finetune targets even if constant, behind a switch)
+        if (y_series.nunique() < 3) or (y_series.std() < 1e-8):
+            if target_name.startswith("finetune_") and XAI_ALLOW_CONST_FINETUNE:
+                 print(f"[XAI] {target_name}: nearly constant, but kept due to XAI_ALLOW_CONST_FINETUNE.")
+            else:
+                 print(f"[XAI] {target_name}: target nearly constant — skipping.")
+                 continue
 
         # Stratify only for binary classification with both classes present
         strat = None
