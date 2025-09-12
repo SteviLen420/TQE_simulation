@@ -2343,23 +2343,9 @@ if os.path.exists(ft_delta_path):
             if "ft_r2_delta" in df_xai.columns:
                 targets_extra.append(("finetune_r2_delta",  "reg", "ft_r2_delta",  None))
 
-            # relaxed keep: only require a few non-NaN rows (so figures are produced)
-            REG_MIN = int(MASTER_CTRL.get("REGRESSION_MIN", 3))
-            kept = []
-            for tname, tkind, yname, ymask in targets_extra:
-                if yname in df_xai.columns and df_xai[yname].notna().sum() >= REG_MIN:
-                    kept.append((tname, tkind, yname, ymask))
-            if kept:
-                targets.extend(kept)
-                print("[XAI] Fine-tune targets kept:", [t[0] for t in kept])
-            else:
-                print("[XAI] Fine-tune targets skipped (no rows).")
-        else:
-            print("[XAI] ft_delta_summary.csv exists but empty — skipping Fine-tune XAI targets.")
-    except Exception as e:
-        print("[XAI][WARN] Could not add Fine-tune deltas:", e)
-else:
-    print("[XAI] No ft_delta_summary.csv — skipping Fine-tune XAI targets.")
+            # Add all potential finetune targets; main loop will filter them
+            targets.extend(targets_extra)
+            print("[XAI] Fine-tune targets registered:", [t[0] for t in targets_extra])
 
 # ------------ Controls (override via MASTER_CTRL) ------------
 XAI_ENABLE_STAB = bool(MASTER_CTRL.get("XAI_ENABLE_STABILITY", True))
@@ -2601,26 +2587,23 @@ for target_name, kind, y_col, mask in targets:
             print(f"[XAI] {target_name} — {featset}: no usable features, skipping.")
             continue
 
-        # --- ensure target is usable: drop NaNs and skip (near-)constant targets
+        # --- clean + single robust constant check ---
         data = data.replace([np.inf, -np.inf], np.nan)
         data = data.dropna(subset=[y_col] + list(set(need_cols)), how="any")
 
-        X = data[cols].copy()
-        y = data[y_col].values
-
-        # skip targets with no signal (constant or almost constant)
         y_series = data[y_col]
         if kind == "cls":
             if y_series.nunique() < 2:
                 print(f"[XAI] {target_name}: single class — skipping.")
                 continue
-        # regression (allow finetune targets even if constant, behind a switch)
-        if (y_series.nunique() < 3) or (y_series.std() < 1e-8):
-            if target_name.startswith("finetune_") and XAI_ALLOW_CONST_FINETUNE:
-                 print(f"[XAI] {target_name}: nearly constant, but kept due to XAI_ALLOW_CONST_FINETUNE.")
-            else:
-                 print(f"[XAI] {target_name}: target nearly constant — skipping.")
-                 continue
+        else:  # regression
+            if (y_series.nunique() < 3) or (y_series.std() < 1e-8):
+                # keep finetune even if nearly-constant (behind switch)
+                if target_name.startswith("finetune_") and MASTER_CTRL.get("XAI_ALLOW_CONST_FINETUNE", False):
+                    print(f"[XAI] {target_name}: nearly constant, but kept due to XAI_ALLOW_CONST_FINETUNE.")
+                else:
+                    print(f"[XAI] {target_name}: target nearly constant — skipping.")
+                    continue
 
         # Stratify only for binary classification with both classes present
         strat = None
