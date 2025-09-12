@@ -33,7 +33,8 @@ def _ensure(pkg):
     except ImportError:
         subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
 
-for pkg in ["qutip", "pandas", "scipy", "scikit-learn", "healpy"]:
+for pkg in ["qutip", "pandas", "scipy", "scikit-learn", "healpy", 
+            "google-cloud-storage", "gcsfs"]:
     _ensure(pkg)
 
 import qutip as qt
@@ -272,7 +273,8 @@ MASTER_CTRL = {
     "SAVE_FIGS":            True,   # save plots to disk
     "SAVE_JSON":            True,   # save summary JSON
     "SAVE_DRIVE_COPY":      False,   # copy results to Google Drive
-    "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline",
+    "GCS_BASE_DIR":         "gs://a-te-vodrod-neve/TQE_simulations",
+    "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline_Cloud",
     "RUN_ID_PREFIX":        "TQE_Universe_Simulation_Full_Pipeline_",   # prefix for run_id
     "RUN_ID_FORMAT":        "%Y%m%d_%H%M%S",          # time format for run_id
     "ALLOW_FILE_EXTS":      [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
@@ -338,8 +340,9 @@ elif VARIANT == "full":
 else:
     variant_tag = VARIANT
 
+base_save_path = "/C" 
 run_id = MASTER_CTRL["RUN_ID_PREFIX"] + variant_tag + "_" + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
-SAVE_DIR = os.path.join(os.getcwd(), run_id)
+SAVE_DIR = os.path.join(base_save_path, run_id) 
 FIG_DIR  = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
 
