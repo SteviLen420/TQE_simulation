@@ -191,12 +191,13 @@ MASTER_CTRL = {
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
     "CMB_COLD_SIGMA_ARCMIN":      [ 60, 120, 240, 480],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    45,                   # Minimal separation between spots (arcmin)
-    "CMB_COLD_Z_THRESH":          -4,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_Z_THRESH":          -6,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
     "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
     "CMB_COLD_OVERLAY":           True,                 # Draw markers on the full-sky/flat map overlays
     "CMB_COLD_MAX_OVERLAYS":      3,                    # max. cold-spot overlay PNG
+    "CMB_COLD_REF_Z":             -70.0,               # Planck cold spot reference depth (µK or z-score)
 
     # --- CMB Axis-of-Evil detector ---
     "CMB_AOE_ENABLE":      True,        # Enable/disable the Axis-of-Evil detector
@@ -1958,9 +1959,16 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
             plt.xlabel("Cold-spot z (μK vagy z-score)"); plt.ylabel("Count")
             plt.title(f"Cold-spot depth distribution [{title_variant}]")
 
-            # --- add red dashed line for our deepest cold spot ---
-            z_star = float(np.nanmin(cold_df["z_value"].values))  # our cold-spot depth (most negative)
-            plt.axvline(z_star, color="red", linestyle="--", linewidth=2, label=f"min z = {z_star:.2f}")
+            # --- add red dashed line for Planck reference cold spot ---
+            planck_ref = MASTER_CTRL.get("CMB_COLD_REF_Z", None)  # e.g. -129.0 (μK vagy z-score)
+            if planck_ref is not None:
+                plt.axvline(float(planck_ref), color="red", linestyle="--", linewidth=2,
+                            label=f"Planck cold spot ≈ {float(planck_ref):.2f}")
+            else:
+                # fallback: our dataset min
+                z_star = float(np.nanmin(cold_df["z_value"].values))
+                plt.axvline(z_star, color="red", linestyle="--", linewidth=2,
+                            label=f"min z = {z_star:.2f}")
             plt.legend()
             
             out_hist = with_variant(os.path.join(COLD_DIR, "coldspots_z_hist.png"))
