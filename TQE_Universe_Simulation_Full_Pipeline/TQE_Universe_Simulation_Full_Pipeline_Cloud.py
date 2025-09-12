@@ -48,7 +48,7 @@ try:
     from lime.lime_tabular import LimeTabularExplainer
 except Exception:
     subprocess.check_call([sys.executable, "-m", "pip", "install",
-                           "shap==0.45.0", "lime==0.2.0.1", "scikit-learn==1.5.2", "-q"])
+                           "shap==0.45.0", "lime==0.2.0.1", "scikit-learn==1.5.2", "numpy<=2.1", "-q"])
     import shap
     from lime.lime_tabular import LimeTabularExplainer
     
