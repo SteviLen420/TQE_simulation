@@ -2511,6 +2511,7 @@ if "stable" not in df_xai.columns and "lock_epoch" in df_xai.columns:
     df_xai["stable"] = (df_xai["lock_epoch"] >= 0).astype(int)
 
 # -------------------- Select targets to run --------------------
+targets = []
 
 if XAI_ENABLE_STAB and "stable" in df_xai.columns:
     targets.append(("stability_cls", "cls", "stable", None))  # (name, kind, y_col, mask)
