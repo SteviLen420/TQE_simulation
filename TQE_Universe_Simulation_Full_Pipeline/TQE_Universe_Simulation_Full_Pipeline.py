@@ -122,7 +122,7 @@ MASTER_CTRL = {
     "GOLDILOCKS_MODE":      "dynamic",  # "heuristic" | "dynamic"
     "E_CENTER":             4.0,    # heuristic: energy sweet-spot center (used for X window)
     "E_WIDTH":              4.0,    # heuristic: energy sweet-spot width (used for X window)
-    "GOLDILOCKS_THRESHOLD": 0.75,   # dynamic: fraction of max stability to define zone
+    "GOLDILOCKS_THRESHOLD": 0.50,   # dynamic: fraction of max stability to define zone
     "GOLDILOCKS_MARGIN":    0.12,   # dynamic fallback margin around peak (±10%)
     "SIGMA_ALPHA":          1.5,    # curvature inside Goldilocks (sigma shaping)
     "OUTSIDE_PENALTY":      5.0,     # sigma multiplier outside Goldilocks zone
@@ -180,7 +180,7 @@ MASTER_CTRL = {
     "CMB_BEST_MODE": "healpix",          # "auto" | "healpix" | "flat"
 
     # --- CMB map parameters ---
-    "CMB_NSIDE": 128,                  # Resolution for healpy maps
+    "CMB_NSIDE": 256,                  # Resolution for healpy maps
     "CMB_NPIX": 512,                  # Pixel count for flat-sky maps
     "CMB_PIXSIZE_ARCMIN": 3.0,        # Pixel size in arcmin for flat-sky
     "CMB_POWER_SLOPE": 1.0,           # Power spectrum slope (Pk ~ k^-slope)
@@ -189,9 +189,9 @@ MASTER_CTRL = {
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
-    "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 120, 240],  # Gaussian smoothing scales (arcmin)
+    "CMB_COLD_SIGMA_ARCMIN":      [ 60, 120, 240, 480],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    45,                   # Minimal separation between spots (arcmin)
-    "CMB_COLD_Z_THRESH":          -3,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_Z_THRESH":          -4,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
     "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
@@ -208,8 +208,8 @@ MASTER_CTRL = {
     "CMB_AOE_MAX_OVERLAYS": 3,          # maximum number of AoE overlay PNGs to generate
     "CMB_AOE_PHASE_LOCK":  True,   # do the quadrupole-axis rotation & boost
     "CMB_AOE_LMAX_BEST":   64,     # alm lmax during phase lock step
-    "CMB_AOE_L23_BOOST":   3.0,    # 1.5–3.0: strength of ℓ=2,3 boost
-    "AOE_REF_ANGLE_DEG":   20.0,        # reference alignment angle (Planck/WMAP ~20°)
+    "CMB_AOE_L23_BOOST":   1.0,    # 1.5–3.0: strength of ℓ=2,3 boost
+    "AOE_REF_ANGLE_DEG":   10.0,        # reference alignment angle (Planck/WMAP ~20°)
     
 
     # --- Machine Learning / XAI ---
@@ -1637,7 +1637,7 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                     m_uK = hp.smoothing(m_uK, fwhm=np.deg2rad(fwhm_deg), verbose=False)
 
                 # --- AoE linking: optional phase-lock & boost for ℓ=2,3 BEFORE saving FITS ---
-                if MASTER_CTRL.get("CMB_AOE_PHASE_LOCK", True):
+                if MASTER_CTRL.get("CMB_AOE_PHASE_LOCK", False):
                     LMAX_AOE = int(MASTER_CTRL.get("CMB_AOE_LMAX_BEST", 64))
                     LMAX_AOE = min(LMAX_AOE, 3*nside-1)
 
