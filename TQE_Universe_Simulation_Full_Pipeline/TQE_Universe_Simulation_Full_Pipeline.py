@@ -2596,9 +2596,17 @@ for target_name, kind, y_col, mask in targets:
             if len(uniq) == 2 and min((y == uniq[0]).sum(), (y == uniq[1]).sum()) >= 2:
                 strat = y
 
-        Xtr, Xte, ytr, yte = train_test_split(
-            X, y, test_size=TEST_SIZE, random_state=RSTATE, stratify=strat
-        )
+        # Safe split with optional stratify
+        try:
+            Xtr, Xte, ytr, yte = train_test_split(
+                X, y,
+                test_size=TEST_SIZE,
+                random_state=RSTATE,
+                stratify=strat if strat is not None and len(np.unique(strat)) > 1 else None
+            )
+        except ValueError as e:
+            print(f"[XAI][WARN] train_test_split failed for {target_name} ({featset}): {e}")
+            continue
 
         # File prefixes (PNG/CSV)
         base_png, base_csv = _file_prefix(fig_dir, save_dir, target_name, featset)
