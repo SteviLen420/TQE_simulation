@@ -2536,6 +2536,12 @@ if "stable" not in df_xai.columns and "lock_epoch" in df_xai.columns:
     df_xai["stable"] = (df_xai["lock_epoch"] >= 0).astype(int)
 
 # -------------------- Select targets to run --------------------
+# keep finetune targets; don't reset
+try:
+    targets
+except NameError:
+    targets = []
+
 if XAI_ENABLE_STAB and "stable" in df_xai.columns:
     targets.append(("stability_cls", "cls", "stable", None))  # (name, kind, y_col, mask)
 
@@ -2595,18 +2601,12 @@ for target_name, kind, y_col, mask in targets:
             print(f"[XAI] {target_name} — {featset}: no usable features, skipping.")
             continue
 
-        X = data[cols].copy()
-        y = data[y_col].values
-
-        # skip constant targets (prevents vertical-zero SHAP)
-        if kind == "cls" and len(np.unique(y)) < 2:
-            print(f"[XAI] {target_name} — {featset}: target constant; skipping."); continue
-        if kind == "reg" and (pd.Series(y).nunique() < 3 or np.nanstd(y) < 1e-8):
-            print(f"[XAI] {target_name} — {featset}: target ~constant; skipping."); continue
-
         # --- ensure target is usable: drop NaNs and skip (near-)constant targets
         data = data.replace([np.inf, -np.inf], np.nan)
         data = data.dropna(subset=[y_col] + list(set(need_cols)), how="any")
+
+        X = data[cols].copy()
+        y = data[y_col].values
 
         # skip targets with no signal (constant or almost constant)
         y_series = data[y_col]
