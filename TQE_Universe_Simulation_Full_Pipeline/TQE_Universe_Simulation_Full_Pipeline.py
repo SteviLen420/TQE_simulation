@@ -2196,23 +2196,24 @@ if cold_df is not None and not cold_df.empty:
 else:
     print("[JOIN] No cold-spot CSV found; skipping cold metrics.")
 
-# --- AoE artifacts ---
-aoe_csv = with_variant(os.path.join(SAVE_DIR, "cmb_aoe_summary.csv"))  # <-- fix name
+# --- AoE artifacts (READ + derive score/flag) ---
+aoe_csv = with_variant(os.path.join(SAVE_DIR, "cmb_aoe_summary.csv"))
 aoe_df  = _safe_read_csv(aoe_csv)
 
-# ---- (B) Aggregate AoE metrics per universe ----
-# Expect columns like: universe_id, aoe_align_score, aoe_pvalue  (one row per universe)
 if aoe_df is not None and not aoe_df.empty:
-    aoe_df["aoe_align_score"] = 1.0 - (aoe_df["angle_deg"].astype(float) / 180.0)
-    keep_cols = ["universe_id", "angle_deg", "aoe_align_score"]
+    # If no explicit score, derive it from angle (smaller angle = higher score)
+    if "aoe_align_score" not in aoe_df.columns and "angle_deg" in aoe_df.columns:
+        aoe_df["aoe_align_score"] = 1.0 - (aoe_df["angle_deg"].astype(float) / 180.0)
+
+    keep_cols = [c for c in ["universe_id","angle_deg","aoe_align_score","aoe_pvalue"] if c in aoe_df.columns]
     aoe_compact = aoe_df[keep_cols].drop_duplicates("universe_id")
     df_join = df_join.merge(aoe_compact, on="universe_id", how="left")
-    # Default p-value threshold for an "anomalous" alignment
+
+    # Decide anomaly flag
     p_thr = float(MASTER_CTRL.get("AOE_P_THRESHOLD", 0.05))
     if "aoe_pvalue" in df_join.columns:
         df_join["aoe_flag"] = (df_join["aoe_pvalue"] < p_thr).astype(int)
     elif "aoe_align_score" in df_join.columns:
-        # Fallback: flag very high alignment scores (close to 1)
         thr = float(MASTER_CTRL.get("AOE_ALIGN_THRESHOLD", 0.9))
         df_join["aoe_flag"] = (df_join["aoe_align_score"] >= thr).astype(int)
 else:
