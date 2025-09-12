@@ -2333,6 +2333,12 @@ if os.path.exists(ft_delta_path):
             if "ft_r2_delta" in df_xai.columns:
                 targets_extra.append(("finetune_r2_delta",  "reg", "ft_r2_delta",  None))
 
+            # --- Safety: make sure lists exist ---
+            try:
+                targets_extra
+            except NameError:
+                targets_extra = []
+
             # Add all potential finetune targets; main loop will filter them
             targets.extend(targets_extra)
             print("[XAI] Fine-tune targets registered:", [t[0] for t in targets_extra])
