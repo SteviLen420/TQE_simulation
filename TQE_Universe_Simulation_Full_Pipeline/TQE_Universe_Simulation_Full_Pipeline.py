@@ -2344,6 +2344,11 @@ if os.path.exists(ft_delta_path):
 # 19) Multi-target XAI (SHAP + LIME) — E-only vs E+I(+X), foldered outputs
 # ======================================================
 
+try:
+    targets
+except NameError:
+    targets = []
+
 import os
 import numpy as np
 import pandas as pd
