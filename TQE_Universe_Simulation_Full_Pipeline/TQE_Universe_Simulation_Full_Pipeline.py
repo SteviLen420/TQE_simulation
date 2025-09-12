@@ -2311,13 +2311,12 @@ from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
 import shap
 from lime.lime_tabular import LimeTabularExplainer
 
-# --- Add Fine-tune deltas as XAI targets (run before selecting/looping targets)
+# --- Add Fine-tune deltas as XAI targets ---
 ft_delta_path = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
 if os.path.exists(ft_delta_path):
     try:
         ft_delta_df = pd.read_csv(ft_delta_path)
         if not ft_delta_df.empty:
-            # broadcast single-run deltas into df_xai so models can train
             if "acc_delta" in ft_delta_df.columns:
                 df_xai["ft_acc_delta"] = float(ft_delta_df["acc_delta"].iloc[0])
             if "auc_delta" in ft_delta_df.columns:
@@ -2325,25 +2324,22 @@ if os.path.exists(ft_delta_path):
             if "r2_delta" in ft_delta_df.columns:
                 df_xai["ft_r2_delta"] = float(ft_delta_df["r2_delta"].iloc[0])
 
-            # register fine-tune targets (regression-style) if available
+            try: targets_extra
+            except NameError: targets_extra = []
+
             if "ft_acc_delta" in df_xai.columns:
-                targets_extra.append(("finetune_acc_delta", "reg", "ft_acc_delta", None))
+                targets_extra.append(("finetune_acc_delta","reg","ft_acc_delta",None))
             if "ft_auc_delta" in df_xai.columns:
-                targets_extra.append(("finetune_auc_delta", "reg", "ft_auc_delta", None))
+                targets_extra.append(("finetune_auc_delta","reg","ft_auc_delta",None))
             if "ft_r2_delta" in df_xai.columns:
-                targets_extra.append(("finetune_r2_delta",  "reg", "ft_r2_delta",  None))
+                targets_extra.append(("finetune_r2_delta","reg","ft_r2_delta",None))
 
-            # --- Safety: make sure lists exist ---
-            try:
-                targets_extra
-            except NameError:
-                targets_extra = []
-
-            # Add all potential finetune targets; main loop will filter them
             targets.extend(targets_extra)
             print("[XAI] Fine-tune targets registered:", [t[0] for t in targets_extra])
+    except Exception as e:
+        print("[XAI][WARN] Could not add Fine-tune deltas:", e)
 
-# ------------ Controls (override via MASTER_CTRL) ------------
+# ------------ Controls (ALWAYS outside the if) ------------
 XAI_ENABLE_STAB = bool(MASTER_CTRL.get("XAI_ENABLE_STABILITY", True))
 XAI_ENABLE_COLD = bool(MASTER_CTRL.get("XAI_ENABLE_COLD", True))
 XAI_ENABLE_AOE  = bool(MASTER_CTRL.get("XAI_ENABLE_AOE", True))
@@ -2354,34 +2350,31 @@ SAVE_SHAP  = bool(MASTER_CTRL.get("XAI_SAVE_SHAP", True))
 SAVE_LIME  = bool(MASTER_CTRL.get("XAI_SAVE_LIME", True))
 LIME_K     = int(MASTER_CTRL.get("XAI_LIME_K", 50))
 
-# --- XAI knobs ---
 XAI_ALLOW_CONST_FINETUNE = bool(MASTER_CTRL.get("XAI_ALLOW_CONST_FINETUNE", False))
 REGRESSION_MIN = int(MASTER_CTRL.get("REGRESSION_MIN", MASTER_CTRL.get("XAI_REGRESSION_MIN", 10)))
 
-# Feature sets
-FEATS_E_ONLY = MASTER_CTRL.get("XAI_FEATURES_E_ONLY", ["E", "logE", "E_rank"])
+FEATS_E_ONLY = MASTER_CTRL.get("XAI_FEATURES_E_ONLY", ["E","logE","E_rank"])
 FEATS_EIX    = MASTER_CTRL.get("XAI_FEATURES_EIX",
                                ["E","I","X","abs_E_minus_I","logX","dist_to_goldilocks","E_rank","X_rank"])
 
-# Variant label for plot titles
 variant_title = "E-only" if VARIANT == "energy_only" else "E+I(+X)"
 
 # ------------ Output directory helpers ------------
 XAI_FIG_DIR  = os.path.join(FIG_DIR, "xai")
 XAI_SAVE_DIR = os.path.join(SAVE_DIR, "xai")
-os.makedirs(XAI_FIG_DIR,  exist_ok=True)
+os.makedirs(XAI_FIG_DIR, exist_ok=True)
 os.makedirs(XAI_SAVE_DIR, exist_ok=True)
 
 SUBDIRS = {
-    "stability_cls": ("stability",  "XAI — Stability (classification)"),
-    "lock_epoch_reg": ("lockin",    "XAI — Lock-in epoch (regression)"),
-    "cold_flag_cls": ("cold",       "XAI — Cold-spot anomaly (classification)"),
-    "cold_min_z_reg":("cold",       "XAI — Cold-spot depth (regression)"),
-    "aoe_flag_cls":  ("aoe",        "XAI — AoE anomaly (classification)"),
-    "aoe_align_reg": ("aoe",        "XAI — AoE alignment score (regression)"),
-    "finetune_acc_delta": ("finetune", "XAI — Fine-tune ΔACC (regression)"),
-    "finetune_auc_delta": ("finetune", "XAI — Fine-tune ΔAUC (regression)"),
-    "finetune_r2_delta":  ("finetune", "XAI — Fine-tune ΔR2  (regression)"),
+    "stability_cls": ("stability","XAI — Stability (classification)"),
+    "lock_epoch_reg": ("lockin","XAI — Lock-in epoch (regression)"),
+    "cold_flag_cls": ("cold","XAI — Cold-spot anomaly (classification)"),
+    "cold_min_z_reg":("cold","XAI — Cold-spot depth (regression)"),
+    "aoe_flag_cls":  ("aoe","XAI — AoE anomaly (classification)"),
+    "aoe_align_reg": ("aoe","XAI — AoE alignment score (regression)"),
+    "finetune_acc_delta": ("finetune","XAI — Fine-tune ΔACC (regression)"),
+    "finetune_auc_delta": ("finetune","XAI — Fine-tune ΔAUC (regression)"),
+    "finetune_r2_delta":  ("finetune","XAI — Fine-tune ΔR2 (regression)"),
 }
 
 def _ensure_cols(df_in, cols):
