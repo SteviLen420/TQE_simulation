@@ -2198,10 +2198,15 @@ if cold_df is not None and not cold_df.empty:
 else:
     print("[JOIN] No cold-spot CSV found; skipping cold metrics.")
 
+# --- AoE artifacts ---
+aoe_csv = with_variant(os.path.join(SAVE_DIR, "cmb_aoe_summary.csv"))  # <-- fix name
+aoe_df  = _safe_read_csv(aoe_csv)
+
 # ---- (B) Aggregate AoE metrics per universe ----
 # Expect columns like: universe_id, aoe_align_score, aoe_pvalue  (one row per universe)
 if aoe_df is not None and not aoe_df.empty:
-    keep_cols = [c for c in ["universe_id","aoe_align_score","aoe_pvalue"] if c in aoe_df.columns]
+    aoe_df["aoe_align_score"] = 1.0 - (aoe_df["angle_deg"].astype(float) / 180.0)
+    keep_cols = ["universe_id", "angle_deg", "aoe_align_score"]
     aoe_compact = aoe_df[keep_cols].drop_duplicates("universe_id")
     df_join = df_join.merge(aoe_compact, on="universe_id", how="left")
     # Default p-value threshold for an "anomalous" alignment
@@ -2431,6 +2436,7 @@ def _lime_avg(clf, X_np, feat_names, out_png, k=50,
     plt.xlabel("Avg LIME weight")
     if fig_title:
         plt.title(fig_title)
+    plt.gcf().tight_layout(rect=[0, 0, 1, 0.95])
     plt.tight_layout()
     plt.savefig(out_png, dpi=220, bbox_inches="tight")
     plt.close()
@@ -2516,8 +2522,15 @@ for target_name, kind, y_col, mask in targets:
         need_cols += [c for c in ["I","X"] if c in data.columns]
     data = data.replace([np.inf, -np.inf], np.nan).dropna(subset=list(set(need_cols)), how="any")
 
-    # Two feature sets
-    for featset, feat_cols in [("E_ONLY", FEATS_E_ONLY), ("EIX", FEATS_EIX)]:
+    # --- Which feature-set(s) to run ---
+    RUN_BOTH = bool(MASTER_CTRL.get("XAI_RUN_BOTH_FEATSETS", False))  # default: only the matching one
+
+    if RUN_BOTH:
+        featsets = [("E_ONLY", FEATS_E_ONLY), ("EIX", FEATS_EIX)]
+    else:
+        featsets = [("E_ONLY", FEATS_E_ONLY)] if VARIANT == "energy_only" else [("EIX", FEATS_EIX)]
+
+    for featset, feat_cols in featsets:
         cols = _ensure_cols(data, feat_cols)
         if not cols:
             print(f"[XAI] {target_name} — {featset}: no usable features, skipping.")
