@@ -189,9 +189,9 @@ MASTER_CTRL = {
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
-    "CMB_COLD_SIGMA_ARCMIN":      [ 60, 120, 240, 480],  # Gaussian smoothing scales (arcmin)
-    "CMB_COLD_MIN_SEP_ARCMIN":    45,                   # Minimal separation between spots (arcmin)
-    "CMB_COLD_Z_THRESH":          -3,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_SIGMA_ARCMIN":      30,                   # Gaussian smoothing scales (arcmin)
+    "CMB_COLD_MIN_SEP_ARCMIN":    30,                   # Minimal separation between spots (arcmin)
+    "CMB_COLD_Z_THRESH":          -2.0,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
     "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
@@ -211,6 +211,8 @@ MASTER_CTRL = {
     "CMB_AOE_LMAX_BEST":   64,     # alm lmax during phase lock step
     "CMB_AOE_L23_BOOST":   1.0,    # 1.5–3.0: strength of ℓ=2,3 boost
     "AOE_REF_ANGLE_DEG":   10.0,        # reference alignment angle (Planck/WMAP ~20°)
+    "AOE_P_THRESHOLD":      0.10,   # if you have p-values in cmb_aoe_summary.csv
+    "AOE_ALIGN_THRESHOLD":  0.92,   # fallback if only angle is present (score = 1 - angle/180)
     
 
     # --- Machine Learning / XAI ---
