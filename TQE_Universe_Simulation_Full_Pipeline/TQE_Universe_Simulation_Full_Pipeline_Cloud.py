@@ -291,16 +291,6 @@ MASTER_CTRL = {
     "PER_UNIVERSE_SEED_MODE": "rng" # "rng" | "np_random" — how per-universe seeds are derived
 }
 
-# --- Strict determinism knobs (optional but recommended) ---
-if MASTER_CTRL.get("USE_STRICT_SEED", True):
-    # Set before importing heavy numeric libs would be ideal,
-    # but applying here is still helpful for thread pools.
-    os.environ["PYTHONHASHSEED"] = "0"
-    os.environ["OMP_NUM_THREADS"] = "1"
-    os.environ["MKL_NUM_THREADS"] = "1"
-    os.environ["OPENBLAS_NUM_THREADS"] = "1"
-    os.environ["NUMEXPR_NUM_THREADS"] = "1"
-
 # ===== Cloud / Drive setup (Colab-safe) =====
 import os, sys, time, uuid, matplotlib
 matplotlib.use("Agg")  # headless backend for saving figures
@@ -312,30 +302,32 @@ if IN_COLAB:
     drive.mount("/content/drive", force_remount=True)
 
 # Base folder on Drive (change to where you want results!)
-DRIVE_BASE = MASTER_CTRL.get(
-    "DRIVE_BASE_DIR",
-    "/content/drive/MyDrive/C"  
-)
+DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR",
+                             "/content/drive/MyDrive/TQE_Cloud")  # <-- change if needed
 
 # Unique run folder
-RUN_ID = MASTER_CTRL.get("RUN_ID", time.strftime("%Y%m%d_%H%M%S_") + uuid.uuid4().hex[:6])
-OUT_DIR  = os.path.join(DRIVE_BASE, RUN_ID)
-FIG_DIR  = os.path.join(OUT_DIR, "figs")
-SAVE_DIR = os.path.join(OUT_DIR, "saves")
+RUN_ID  = MASTER_CTRL.get("RUN_ID", time.strftime("%Y%m%d_%H%M%S_") + uuid.uuid4().hex[:6])
+OUT_DIR = os.path.join(DRIVE_BASE, RUN_ID)
+FIG_DIR = os.path.join(OUT_DIR, "figs")
+SAVE_DIR= os.path.join(OUT_DIR, "saves")
+
 for p in [OUT_DIR, FIG_DIR, SAVE_DIR, os.path.join(FIG_DIR, "xai"), os.path.join(SAVE_DIR, "xai")]:
     os.makedirs(p, exist_ok=True)
 
+print(f"[IO] OUT_DIR = {OUT_DIR}")
+print(f"[IO] FIG_DIR = {FIG_DIR}")
+print(f"[IO] SAVE_DIR = {SAVE_DIR}")
+
 # Put outputs into E_ONLY / EIX subfolders automatically
 def with_variant(path: str) -> str:
+    # English: send every output into E_ONLY/EIX subfolders inside FIG_DIR/SAVE_DIR
     sub = "E_ONLY" if VARIANT == "energy_only" else "EIX"
     base, name = os.path.split(path)
     base = os.path.join(base, sub)
     os.makedirs(base, exist_ok=True)
     return os.path.join(base, name)
 
-
-# 3) Force-enable XAI
-# ----- Force-enable XAI modules & saving -----
+# ----- Force-enable XAI modules & saving (can still be overridden by MASTER_CTRL) -----
 MASTER_CTRL.setdefault("XAI_ENABLE_STABILITY", True)
 MASTER_CTRL.setdefault("XAI_ENABLE_COLD", True)
 MASTER_CTRL.setdefault("XAI_ENABLE_AOE", True)
@@ -344,7 +336,19 @@ MASTER_CTRL.setdefault("XAI_ENABLE_FINETUNE", True)
 MASTER_CTRL.setdefault("XAI_SAVE_SHAP", True)
 MASTER_CTRL.setdefault("XAI_SAVE_LIME", True)
 MASTER_CTRL.setdefault("XAI_ALLOW_CONST_FINETUNE", True)
+
+# Make Drive copy path visible to downstream helpers
 MASTER_CTRL.setdefault("DRIVE_BASE_DIR", DRIVE_BASE)
+
+# --- Strict determinism knobs (optional but recommended) ---
+if MASTER_CTRL.get("USE_STRICT_SEED", True):
+    # Set before importing heavy numeric libs would be ideal,
+    # but applying here is still helpful for thread pools.
+    os.environ["PYTHONHASHSEED"] = "0"
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["OPENBLAS_NUM_THREADS"] = "1"
+    os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 # ======================================================
 # 2) Master seed initialization (reproducibility)
