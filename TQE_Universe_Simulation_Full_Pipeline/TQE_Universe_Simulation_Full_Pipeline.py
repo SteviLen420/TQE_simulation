@@ -2571,15 +2571,18 @@ for target_name, kind, y_col, mask in targets:
             print(f"[XAI] {target_name} — {featset}: no usable features, skipping.")
             continue
 
-        # --- clean + single robust constant check ---
-        data = data.replace([np.inf, -np.inf], np.nan)
-        data = data.dropna(subset=[y_col] + list(set(need_cols)), how="any")
+        # --- clean on exactly the columns we will use ---
+        need = [y_col] + cols
+        data = data.replace([np.inf, -np.inf], np.nan).dropna(subset=need, how="any")
 
-        y_series = data[y_col]
-        if kind == "cls":
-            if y_series.nunique() < 2:
-                print(f"[XAI] {target_name}: single class — skipping.")
-                continue
+        # build X, y only AFTER cleaning the same rows
+        X = data[cols].copy()
+        y = data[y_col].values
+
+        # safety: lengths must match
+        if len(X) != len(y):
+            print(f"[XAI][WARN] Length mismatch for {target_name} ({featset}): X={len(X)} y={len(y)} — skipping.")
+            continue
         else:  # regression
             if (y_series.nunique() < 3) or (y_series.std() < 1e-8):
                 # keep finetune even if nearly-constant (behind switch)
