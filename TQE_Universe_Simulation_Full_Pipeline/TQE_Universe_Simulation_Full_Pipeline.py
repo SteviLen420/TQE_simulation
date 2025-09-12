@@ -1789,7 +1789,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
     pix_arcmin     = float(MASTER_CTRL.get("CMB_PIXSIZE_ARCMIN", 5.0))  
     sigma_list_am  = MASTER_CTRL.get("CMB_COLD_SIGMA_ARCMIN", [30, 60, 120])
     min_sep_am     = float(MASTER_CTRL.get("CMB_COLD_MIN_SEP_ARCMIN", 45))
-    z_thresh       = float(MASTER_CTRL.get("CMB_COLD_Z_THRESH", -2.5))
+    z_thresh       = float(MASTER_CTRL.get("CMB_COLD_DETECT_THRESH", -60.0))
     topk           = int(MASTER_CTRL.get("CMB_COLD_TOPK", 5)) 
 
     # --- helper: greedy min-picking with minimum distance
@@ -2191,9 +2191,16 @@ if cold_df is not None and not cold_df.empty:
                        cold_sigma_best=("sigma_arcmin","median"))
                   .reset_index())
     df_join = df_join.merge(agg, on="universe_id", how="left")
-    # Convenience flag (threshold taken from MASTER_CTRL, default -2.5)
-    z_thr = float(MASTER_CTRL.get("CMB_COLD_Z_THRESH", -2.5))
+    # Unit-aware threshold for cold_flag:
+    vals = df_join["cold_min_z"].values
+    median_abs = np.nanmedian(np.abs(vals))
+    if np.isfinite(median_abs) and median_abs > 20:         # looks like µK scale
+        z_thr = float(MASTER_CTRL.get("CMB_COLD_UK_THRESH", -70.0))
+    else:                                                   # looks like z-score
+        z_thr = float(MASTER_CTRL.get("CMB_COLD_Z_THRESH", -2.5))
     df_join["cold_flag"] = (df_join["cold_min_z"] <= z_thr).astype(int)
+
+
 else:
     print("[JOIN] No cold-spot CSV found; skipping cold metrics.")
 
@@ -2552,6 +2559,12 @@ for target_name, kind, y_col, mask in targets:
 
         X = data[cols].copy()
         y = data[y_col].values
+
+        # skip constant targets (prevents vertical-zero SHAP)
+        if kind == "cls" and len(np.unique(y)) < 2:
+            print(f"[XAI] {target_name} — {featset}: target constant; skipping."); continue
+        if kind == "reg" and (pd.Series(y).nunique() < 3 or np.nanstd(y) < 1e-8):
+            print(f"[XAI] {target_name} — {featset}: target ~constant; skipping."); continue
 
         # --- ensure target is usable: drop NaNs and skip (near-)constant targets
         data = data.replace([np.inf, -np.inf], np.nan)
