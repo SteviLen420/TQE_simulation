@@ -110,11 +110,11 @@ MASTER_CTRL = {
     # --- Stability thresholds ---
     "REL_EPS_STABLE":       0.010,    # relative calmness threshold for stability
     "REL_EPS_LOCKIN":       5e-3,     # relative calmness threshold for lock-in (~0.5%)
-    "CALM_STEPS_STABLE":    8,       # consecutive calm steps required (stable)
-    "CALM_STEPS_LOCKIN":    6,       # consecutive calm steps required (lock-in)
+    "CALM_STEPS_STABLE":    8,        # consecutive calm steps required (stable)
+    "CALM_STEPS_LOCKIN":    6,        # consecutive calm steps required (lock-in)
     "MIN_LOCKIN_EPOCH":     300,      # lock-in can only occur after this epoch
-    "LOCKIN_WINDOW":        8,       # rolling window size for averaging delta_rel
-    "LOCKIN_ROLL_METRIC":   "mean", # "mean" | "median" | "max" — aggregator over window
+    "LOCKIN_WINDOW":        8,        # rolling window size for averaging delta_rel
+    "LOCKIN_ROLL_METRIC":   "mean",   # "mean" | "median" | "max" — aggregator over window
     "LOCKIN_REQUIRES_STABLE": True,   # require stable_at before checking lock-in
     "LOCKIN_MIN_STABLE_EPOCH": 0,     # require n - stable_at >= this many epochs
 
@@ -147,7 +147,7 @@ MASTER_CTRL = {
     "FT_EPS_EQ":             1e-3,  # threshold for E≈I slice (|E - I| <= eps)
     "FT_TEST_SIZE":          0.25,  # test split for the detector
     "FT_RANDOM_STATE":       42,    # reproducibility for splits
-    "FT_ONLY_LOCKIN": False,         # If True, fine-tune detector uses only lock-in universes (lock_epoch >= 0)
+    "FT_ONLY_LOCKIN": False,        # If True, fine-tune detector uses only lock-in universes (lock_epoch >= 0)
     "FT_METRIC": "lockin",          # Use lock-in probability (P(lock-in)) instead of stability as the main metric
 
     # --- Best-universe visualization (lock-in only) ---
@@ -177,13 +177,13 @@ MASTER_CTRL = {
     "CMB_BEST_ENABLE": True,          # Enable best-CMB PNG export
     "CMB_BEST_FIGS": 3,               # How many best CMB PNGs to export (1..5)
     "CMB_BEST_SEED_OFFSET": 909,      # Per-universe seed offset for reproducibility
-    "CMB_BEST_MODE": "healpix",          # "auto" | "healpix" | "flat"
+    "CMB_BEST_MODE": "healpix",       # "auto" | "healpix" | "flat"
 
     # --- CMB map parameters ---
     "CMB_NSIDE": 256,                  # Resolution for healpy maps
-    "CMB_NPIX": 512,                  # Pixel count for flat-sky maps
-    "CMB_PIXSIZE_ARCMIN": 3.0,        # Pixel size in arcmin for flat-sky
-    "CMB_POWER_SLOPE": 1.0,           # Power spectrum slope (Pk ~ k^-slope)
+    "CMB_NPIX": 512,                   # Pixel count for flat-sky maps
+    "CMB_PIXSIZE_ARCMIN": 3.0,         # Pixel size in arcmin for flat-sky
+    "CMB_POWER_SLOPE": 1.0,            # Power spectrum slope (Pk ~ k^-slope)
     "CMB_SMOOTH_FWHM_DEG": 0.1,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
 
     # --- CMB cold-spot detector ---
@@ -197,7 +197,8 @@ MASTER_CTRL = {
     "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
     "CMB_COLD_OVERLAY":           True,                 # Draw markers on the full-sky/flat map overlays
     "CMB_COLD_MAX_OVERLAYS":      3,                    # max. cold-spot overlay PNG
-    "CMB_COLD_REF_Z":             -70.0,               # Planck cold spot reference depth (µK or z-score)
+    "CMB_COLD_REF_Z":             -70.0,                # Planck cold spot reference depth (µK or z-score)
+    "CMB_COLD_UK_THRESH":         -70.0,                # Use µK-based flag threshold (for unit-aware cold_flag logic)
 
     # --- CMB Axis-of-Evil detector ---
     "CMB_AOE_ENABLE":      True,        # Enable/disable the Axis-of-Evil detector
@@ -207,12 +208,22 @@ MASTER_CTRL = {
     "CMB_AOE_MODE":        "healpix",   # Backend selection: "auto" | "healpix" | "flat"
     "CMB_AOE_SEED_OFFSET": 909,         # Per-universe seed offset to keep AoE maps reproducible
     "CMB_AOE_MAX_OVERLAYS": 3,          # maximum number of AoE overlay PNGs to generate
-    "CMB_AOE_PHASE_LOCK":  True,   # do the quadrupole-axis rotation & boost
-    "CMB_AOE_LMAX_BEST":   64,     # alm lmax during phase lock step
-    "CMB_AOE_L23_BOOST":   1.0,    # 1.5–3.0: strength of ℓ=2,3 boost
+    "CMB_AOE_PHASE_LOCK":  True,        # do the quadrupole-axis rotation & boost
+    "CMB_AOE_LMAX_BEST":   64,          # alm lmax during phase lock step
+    "CMB_AOE_L23_BOOST":   1.0,         # 1.5–3.0: strength of ℓ=2,3 boost
     "AOE_REF_ANGLE_DEG":   10.0,        # reference alignment angle (Planck/WMAP ~20°)
-    "AOE_P_THRESHOLD":      0.10,   # if you have p-values in cmb_aoe_summary.csv
-    "AOE_ALIGN_THRESHOLD":  0.92,   # fallback if only angle is present (score = 1 - angle/180)
+    "AOE_P_THRESHOLD":      0.10,       # if you have p-values in cmb_aoe_summary.csv
+    "AOE_ALIGN_THRESHOLD":  0.92,       # fallback if only angle is present (score = 1 - angle/180)
+
+    # --- XAI: enable targets and outputs ---
+    "XAI_ENABLE_STABILITY": True,   # run stability targets
+    "XAI_ENABLE_COLD": True,        # run cold-spot targets
+    "XAI_ENABLE_AOE": True,         # run AoE targets
+    "XAI_SAVE_SHAP": True,          # save SHAP plots
+    "XAI_SAVE_LIME": True,          # save LIME plots
+    "XAI_LIME_K": 50,               # samples for averaged LIME
+    "XAI_RUN_BOTH_FEATSETS": False, # only matching feature-set per variant
+    "REGRESSION_MIN": 3,            # minimum finite rows for regression targets
     
 
     # --- Machine Learning / XAI ---
@@ -223,7 +234,7 @@ MASTER_CTRL = {
     "TEST_SIZE":            0.25,   # test split ratio
     "TEST_RANDOM_STATE":    42,     # split reproducibility
     "RF_N_ESTIMATORS":      400,    # number of trees in random forest
-    "RF_CLASS_WEIGHT": "balanced",   # e.g., "balanced" for skewed classes
+    "RF_CLASS_WEIGHT": "balanced",  # e.g., "balanced" for skewed classes
     "SKLEARN_N_JOBS":       -1,     # parallelism for RF
     "FT_MIN_PER_SLICE":     30,     # min elems inside/outside the |E-I|<=eps slice for CI plots
 
