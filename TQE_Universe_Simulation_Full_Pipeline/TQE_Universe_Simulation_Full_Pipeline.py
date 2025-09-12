@@ -189,7 +189,7 @@ MASTER_CTRL = {
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
-    "CMB_COLD_SIGMA_ARCMIN":      30,                   # Gaussian smoothing scales (arcmin)
+    "CMB_COLD_SIGMA_ARCMIN":      [60, 120, 240, 480],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    30,                   # Minimal separation between spots (arcmin)
     "CMB_COLD_Z_THRESH":          -2.0,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
@@ -975,10 +975,25 @@ def _lbl(v, name):
         return f"{name} = N/A"
 
 if len(xs) > 0:
-    peak_x = xs[np.argmax(ys)]
-    peak_y = np.max(ys)
-    plt.plot(peak_x, peak_y, "ro", label=f"Peak = {peak_x:.2f}")  # mark peak point
-    plt.axvline(peak_x, color="red", linestyle="--", linewidth=1.8, alpha=0.85)  # vertical line at peak
+    peak_idx = np.argmax(ys)
+    peak_x = xs[peak_idx]
+    peak_y = ys[peak_idx]
+    plt.plot(peak_x, peak_y, "ro", label=f"Peak = {peak_x:.2f}")
+    plt.axvline(peak_x, color="red", linestyle="--", linewidth=1.8, alpha=0.85)
+
+    # --- Goldilocks zone boundaries (90% of peak) ---
+    thr = 0.9 * peak_y
+    left_idx = np.where(ys[:peak_idx] <= thr)[0]
+    right_idx = np.where(ys[peak_idx:] <= thr)[0]
+
+    if len(left_idx) > 0:
+        left_x = xs[left_idx[-1]]
+        plt.axvline(left_x, color="green", linestyle="--", linewidth=1.5,
+                    label=f"Goldi left = {left_x:.2f}")
+    if len(right_idx) > 0:
+        right_x = xs[peak_idx + right_idx[0]]
+        plt.axvline(right_x, color="purple", linestyle="--", linewidth=1.5,
+                    label=f"Goldi right = {right_x:.2f}")
 
 
 if VARIANT == "energy_only":
