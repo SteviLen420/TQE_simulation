@@ -2575,17 +2575,24 @@ for target_name, kind, y_col, mask in targets:
         need = [y_col] + cols
         data = data.replace([np.inf, -np.inf], np.nan).dropna(subset=need, how="any")
 
-        # build X, y only AFTER cleaning the same rows
+        # build X, y, y_series only AFTER cleaning the same rows
         X = data[cols].copy()
         y = data[y_col].values
+        y_series = data[y_col] 
 
-        # safety: lengths must match
+        # --- safety checks ---
+        # 1) check lengths match
         if len(X) != len(y):
             print(f"[XAI][WARN] Length mismatch for {target_name} ({featset}): X={len(X)} y={len(y)} — skipping.")
             continue
+            
+        # 2) check for constant targets
+        if kind == "cls":
+            if y_series.nunique() < 2:
+                print(f"[XAI] {target_name}: single class — skipping.")
+                continue
         else:  # regression
             if (y_series.nunique() < 3) or (y_series.std() < 1e-8):
-                # keep finetune even if nearly-constant (behind switch)
                 if target_name.startswith("finetune_") and MASTER_CTRL.get("XAI_ALLOW_CONST_FINETUNE", False):
                     print(f"[XAI] {target_name}: nearly constant, but kept due to XAI_ALLOW_CONST_FINETUNE.")
                 else:
