@@ -2583,7 +2583,7 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
 
     if fig_title:
         # use suptitle with padding to avoid overlap with the plot
-        fig.suptitle(fig_title, y=0.99, fontsize=13)
+        plt.title(fig_title, fontsize=13, pad=8) 
 
     # leave room for the title
     plt.tight_layout(rect=[0, 0, 1, 0.96])
@@ -2742,8 +2742,11 @@ for target_name, kind, y_col, mask in targets:
                         plt.figure(figsize=(7, 4))
                         plt.barh(dfw["feature_pretty"], dfw["weight"], edgecolor="black")
                         plt.xlabel("Avg LIME weight")
-                        plt.title("LIME avg — " + _title_with_feat(SUBDIRS[target_name][1], featset))
-                        plt.gcf().tight_layout(rect=[0, 0, 1, 0.95])
+                        plt.title(
+                            f"LIME avg — {_title_with_feat(SUBDIRS[target_name][1], featset)}",
+                            fontsize=13, pad=8
+                        )
+                        plt.gcf().tight_layout(rect=[0, 0, 1, 0.92])
                         plt.tight_layout()
                         plt.savefig(
                             base_png.replace(target_name, f"lime_avg__{target_name}") + ".png",
