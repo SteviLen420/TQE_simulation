@@ -975,7 +975,8 @@ def _lbl(v, name):
 if len(xs) > 0:
     peak_x = xs[np.argmax(ys)]
     peak_y = np.max(ys)
-    plt.plot(peak_x, peak_y, "ro", label=f"Peak = {peak_x:.2f}")
+    plt.plot(peak_x, peak_y, "ro", label=f"Peak = {peak_x:.2f}")  # mark peak point
+    plt.axvline(peak_x, color="red", linestyle="--", linewidth=1.8, alpha=0.85)  # vertical line at peak
 
 
 if VARIANT == "energy_only":
@@ -2499,7 +2500,21 @@ if os.path.exists(ft_delta_path):
                 targets
             except NameError:
                 targets = []
-            targets.extend(targets_extra)
+                
+            # Only add finetune targets if there is variance after broadcast
+            targets_filtered = []
+            for tname, tkind, yname, ymask in targets_extra:
+                if yname in df_xai.columns:
+                    ys = df_xai[yname]
+                    if tkind == "reg" and ys.nunique() >= 3 and ys.std() >= 1e-8:
+                        targets_filtered.append((tname, tkind, yname, ymask))
+                    elif tkind == "cls" and ys.nunique() >= 2:
+                        targets_filtered.append((tname, tkind, yname, ymask))
+            if targets_filtered:
+                targets.extend(targets_filtered)
+                print("[XAI] Fine-tune targets kept:", [t[0] for t in targets_filtered])
+            else:
+                print("[XAI] Fine-tune targets skipped (constant).")
 
             print("[XAI] Fine-tune deltas added as XAI targets:", [t[0] for t in targets_extra])
         else:
@@ -2537,6 +2552,21 @@ for target_name, kind, y_col, mask in targets:
 
         X = data[cols].copy()
         y = data[y_col].values
+
+        # --- ensure target is usable: drop NaNs and skip (near-)constant targets
+        data = data.replace([np.inf, -np.inf], np.nan)
+        data = data.dropna(subset=[y_col] + list(set(need_cols)), how="any")
+
+        # skip targets with no signal (constant or almost constant)
+        y_series = data[y_col]
+        if kind == "cls":
+            if y_series.nunique() < 2:
+                print(f"[XAI] {target_name}: single class — skipping.")
+                continue
+        else:  # regression
+            if (y_series.nunique() < 3) or (y_series.std() < 1e-8):
+                print(f"[XAI] {target_name}: target nearly constant — skipping.")
+                continue
 
         # Stratify only for binary classification with both classes present
         strat = None
