@@ -219,7 +219,7 @@ MASTER_CTRL = {
     "XAI_ENABLE_STABILITY": True,   # run stability targets
     "XAI_ENABLE_COLD": True,        # run cold-spot targets
     "XAI_ENABLE_AOE": True,         # run AoE targets
-    "XAI_SAVE_SHAP": True,          # save SHAP plots
+    "XAI_SAVE_SHAP": False,          # save SHAP plots
     "XAI_SAVE_LIME": True,          # save LIME plots
     "XAI_ALLOW_CONST_FINETUNE": True,
     "XAI_LIME_K": 50,               # samples for averaged LIME
@@ -2311,6 +2311,24 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import accuracy_score, roc_auc_score, r2_score
 import shap
 from lime.lime_tabular import LimeTabularExplainer
+
+# --- Safe SHAP/LIME availability; force-save switches ---
+try:
+    import shap  # ha ez elhasal, csak LIME megy
+    SHAP_OK = True
+except Exception as e:
+    print("[XAI][WARN] SHAP disabled due to import error:", e)
+    SHAP_OK = False
+
+try:
+    from lime.lime_tabular import LimeTabularExplainer
+    LIME_OK = True
+except Exception as e:
+    print("[XAI][WARN] LIME disabled due to import error:", e)
+    LIME_OK = False
+
+SAVE_SHAP = bool(MASTER_CTRL.get("XAI_SAVE_SHAP", True)) and SHAP_OK
+SAVE_LIME = bool(MASTER_CTRL.get("XAI_SAVE_LIME", True)) and LIME_OK
 
 # --- Add Fine-tune deltas as XAI targets ---
 ft_delta_path = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
