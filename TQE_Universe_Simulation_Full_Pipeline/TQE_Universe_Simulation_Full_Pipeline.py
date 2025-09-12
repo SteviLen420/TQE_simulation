@@ -1817,11 +1817,13 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
         ol_cnt = 0
 
         for rec in MAP_REG:
-            if ol_cnt >= max_ol:
-                break 
             uid = int(rec["uid"])
             E_val = float(rec["E"]); I_val = float(rec["I"]); lock_ep = int(rec["lock_epoch"])
             mode = rec["mode"]; path = rec["path"]
+
+            # --- only include lock-in universes in histograms ---
+            if lock_ep < 0:
+                continue
 
             if mode == "healpix":
                 if not HAVE_HP:
@@ -1876,7 +1878,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                             "E": E_val, "I": I_val, "lock_epoch": lock_ep, "variant": title_variant
                         })
 
-                    if MASTER_CTRL.get("CMB_COLD_OVERLAY", True) and picked.size:
+                    if MASTER_CTRL.get("CMB_COLD_OVERLAY", True) and picked.size and ol_cnt < max_ol:
                         fig = plt.figure(figsize=(9.2, 5.5))
                         title = (f"Cold spots [{title_variant}] — uid {uid}, lock-in {lock_ep}\n"
                                  f"E={E_val:.3g}, I={I_val:.3g}  (top {len(picked)})")
@@ -1927,7 +1929,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                             "E": E_val, "I": I_val, "lock_epoch": lock_ep, "variant": title_variant
                         })
 
-                    if MASTER_CTRL.get("CMB_COLD_OVERLAY", True) and picked.size:
+                    if MASTER_CTRL.get("CMB_COLD_OVERLAY", True) and picked.size and ol_cnt < max_ol:
                         plt.figure(figsize=(7.8, 6.4))
                         plt.imshow(m, origin="lower", extent=[0, extent_deg, 0, extent_deg])
                         for pidx in picked:
@@ -2055,15 +2057,17 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             c = np.clip(x1*x2 + y1*y2 + z1*z2, -1.0, 1.0)
             return float(np.degrees(np.arccos(c)))
 
-        for rec in MAP_REG:
-            if ol_cnt >= max_n:
-                break     
+        for rec in MAP_REG:    
             if rec.get("mode") != "healpix":
                 continue  # AoE requires HEALPix
 
             uid = int(rec["uid"])
             path = rec["path"]
             E_val = float(rec["E"]); I_val = float(rec["I"]); lock_ep = int(rec["lock_epoch"])
+
+            # --- only include lock-in universes in histograms ---
+            if lock_ep < 0:
+                continue
 
             # Load map and compute alms up to ℓ=3
             m = hp.read_map(path, verbose=False)
@@ -2085,7 +2089,7 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             })
 
             # Optional overlay
-            if MASTER_CTRL.get("CMB_AOE_OVERLAY", True):
+            if MASTER_CTRL.get("CMB_AOE_OVERLAY", True) and ol_cnt < max_n:
                 fig = plt.figure(figsize=(9.2, 5.5))
                 title = (f"Axis of Evil — uid {uid}  (angle={angle_deg:.1f}°)\n"
                          f"E={E_val:.3g}, I={I_val:.3g}, lock-in {lock_ep}")
