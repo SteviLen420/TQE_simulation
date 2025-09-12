@@ -2335,11 +2335,11 @@ if os.path.exists(ft_delta_path):
                     if ys.notna().sum() >= int(MASTER_CTRL.get("REGRESSION_MIN", 3)):
                         targets_filtered.append((tname, tkind, yname, ymask))
 
-             if targets_filtered:
-                 targets.extend(targets_filtered)
-                 print("[XAI] Fine-tune targets kept:", [t[0] for t in targets_filtered])
-             else:
-                 print("[XAI] Fine-tune targets skipped (no rows).")
+            if targets_filtered:
+                targets.extend(targets_filtered)
+                print("[XAI] Fine-tune targets kept:", [t[0] for t in targets_filtered])
+            else:
+                print("[XAI] Fine-tune targets skipped (no rows).")
 
 # ======================================================
 # 19) Multi-target XAI (SHAP + LIME) — E-only vs E+I(+X), foldered outputs
