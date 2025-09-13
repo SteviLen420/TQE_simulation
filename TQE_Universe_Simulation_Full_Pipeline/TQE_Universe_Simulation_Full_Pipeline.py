@@ -290,7 +290,7 @@ MASTER_CTRL = {
     # --- Outputs / IO ---
     "SAVE_FIGS":            True,   # save plots to disk
     "SAVE_JSON":            True,   # save summary JSON
-    "SAVE_DRIVE_COPY":      False,   # copy results to Google Drive
+    "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
     "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline",
     "RUN_ID_PREFIX":        "TQE_Universe_Simulation_Full_Pipeline_",   # prefix for run_id
     "RUN_ID_FORMAT":        "%Y%m%d_%H%M%S",          # time format for run_id
