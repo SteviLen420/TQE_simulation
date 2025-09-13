@@ -185,6 +185,7 @@ MASTER_CTRL = {
     "CMB_PIXSIZE_ARCMIN": 3.0,         # Pixel size in arcmin for flat-sky
     "CMB_POWER_SLOPE": 1.5,            # Power spectrum slope (Pk ~ k^-slope)
     "CMB_SMOOTH_FWHM_DEG": 0.1,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
+    "CMB_AMPLITUDE_SCALE": 3.0e-10,    # Overall amplitude of CMB fluctuations
 
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
@@ -1657,7 +1658,7 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
 
                 # Small per-universe amplitude jitter (keeps diversity)
                 amp = float(np.exp(rng_best.normal(0.0, 0.2)))
-                Cl *= amp * 1e-10    # arbitrary μK^2 scale to keep values reasonable
+                Cl *= amp * float(MASTER_CTRL.get("CMB_AMPLITUDE_SCALE", 1e-10))    # arbitrary μK^2 scale to keep values reasonable
 
                 # Simulate full-sky map and smooth a bit (beam)
                 m_uK = hp.synfast(Cl, nside=nside, lmax=lmax, new=True, verbose=False) * 1e6
