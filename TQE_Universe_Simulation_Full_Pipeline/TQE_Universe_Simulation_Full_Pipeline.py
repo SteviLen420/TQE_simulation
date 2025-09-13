@@ -26,6 +26,7 @@ if IN_COLAB:
 import os, sys, subprocess, importlib
 
 PKGS = {
+    "cython":        "<3.0", 
     "numpy":         "1.26.4",
     "numba":         "0.59.1",
     "scipy":         "1.13.1",
