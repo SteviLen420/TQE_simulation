@@ -2,7 +2,7 @@
 # Copyright (c) 2025 Stefan Len
 
 # ===================================================================================
-# TQE_Universe_Simulation_Full_Pipeline_Cloud.py
+# TQE_Universe_Simulation_Full_Pipeline.py
 # ===================================================================================
 # Author: Stefan Len
 # ===================================================================================
@@ -273,7 +273,7 @@ MASTER_CTRL = {
     # --- Outputs / IO ---
     "SAVE_FIGS":            True,   # save plots to disk
     "SAVE_JSON":            True,   # save summary JSON
-    "SAVE_DRIVE_COPY":      False,   # copy results to Google Drive
+    "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
     "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline",
     "RUN_ID_PREFIX":        "TQE_Universe_Simulation_Full_Pipeline_",   # prefix for run_id
     "RUN_ID_FORMAT":        "%Y%m%d_%H%M%S",          # time format for run_id
@@ -930,6 +930,11 @@ def compute_dynamic_goldilocks(df_in):
 
     return E_c_low, E_c_high, xs, ys, xx, yy, df_tmp
 
+from tqdm.auto import tqdm # Make sure this import is at the top of your script
+
+# --- Create the main progress bar for 12 major phases ---
+main_progress_bar = tqdm(total=12, desc="Starting full simulation pipeline")
+
 # ======================================================
 # 9) Monte Carlo universes — single or two-phase run
 # ======================================================
@@ -971,6 +976,9 @@ else:
 
 # Save main run
 df.to_csv(with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")), index=False)
+
+main_progress_bar.update(1)
+main_progress_bar.set_description("1/12: Monte Carlo run complete")
 
 # ======================================================
 # 10) Stability curve (binned) + Goldilocks window plot
@@ -1020,6 +1028,9 @@ else:
 plt.legend()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_curve.png")))
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("2/12: Stability curve plotted")
+
 # ======================================================
 # 11) Scatter E vs I
 # ======================================================
@@ -1035,6 +1046,9 @@ else:
 cb = plt.colorbar(sc, ticks=[0, 1])
 cb.set_label("Stable (0/1)")
 savefig(with_variant(os.path.join(FIG_DIR, "scatter_EI.png")))
+
+main_progress_bar.update(1)
+main_progress_bar.set_description("3/12: E-I scatter plot saved")
 
 # ======================================================
 # 12) Fluctuation panels (t<0, t=0, t>0) + CSV exports
@@ -1152,6 +1166,9 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     plt.xlabel("epoch"); plt.ylabel("Parameters"); plt.legend()
     savefig(with_variant(os.path.join(FIG_DIR, "fl_expansion.png")))
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("4/12: Fluctuation panels generated")
+
 # ======================================================
 # 13) Stability by I (exact zero vs eps sweep) — extended
 # ======================================================
@@ -1195,6 +1212,9 @@ eps_df.to_csv(eps_path, index=False)
 print("\n📈 Epsilon sweep (near-zero thresholds, preview):")
 print(eps_df.head(12).to_string(index=False))
 print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
+
+main_progress_bar.update(1)
+main_progress_bar.set_description("5/12: Stability-by-I analyzed")
 
 # ======================================================
 # 14) Finetune Detector (E vs E+I(+X))
@@ -1567,6 +1587,9 @@ if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True):
     except Exception as e:
         print(f"[FT][ERR] Detector failed: {e}")
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("6/12: Finetune detector finished")
+
 # ======================================================
 # 15) Best CMB thumbnails (per top lock-in universes)
 # ======================================================
@@ -1792,7 +1815,8 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
             print("[CMB][BEST][WARN] Drive copy failed:", e)
             print(f"[CMB][BEST] MAP_REG entries now: {len(MAP_REG)}")
 
-   
+main_progress_bar.update(1)
+main_progress_bar.set_description("7/12: Best CMB maps generated")
 
 # ======================================================
 # 16) CMB Cold-spot detector (use SAVED maps from MAP_REG)
@@ -2041,6 +2065,9 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
         else:
             print("[CMB][COLD] No cold spots recorded; no CSV produced.")
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("8/12: Cold-spot detection complete")
+
 # ======================================================
 # 17) CMB Axis-of-Evil detector (uses pre-made maps in MAP_REG)
 # ======================================================
@@ -2184,6 +2211,9 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
                 print("[CMB][AOE][WARN] Drive copy failed:", e)
         else:
             print("[CMB][AOE] No AoE rows collected; nothing to save.")
+
+main_progress_bar.update(1)
+main_progress_bar.set_description("9/12: Axis-of-Evil detection complete")
 
 # ======================================================
 # 18) Multi-target XAI (SHAP+LIME)
@@ -2931,7 +2961,10 @@ for target_name, kind, y_col, mask in targets:
                 "r2": r2, "n_train": len(Xtr), "n_test": len(Xte)
             }]).to_csv(base_csv.replace(target_name, f"metrics__{target_name}") + ".csv", index=False)
 
-print("[XAI] Completed.")       
+print("[XAI] Completed.")
+
+main_progress_bar.update(1)
+main_progress_bar.set_description("10/12: XAI analysis finished")
             
 # ======================================================
 # 19) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
@@ -3212,6 +3245,9 @@ else:
 
     print(f"[BEST] Generated {len(made)} figure(s) for lock-in universes.")
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("11/12: Best universe plots done")
+
 # ======================================================
 # 21) Save consolidated summary (single write)
 # ======================================================
@@ -3358,6 +3394,9 @@ plt.tight_layout()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
 print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("12/12: Final plots generated")
+
 # ------------------------------------------------------
 # 23) Compact version (backward compatibility, fixed)
 # ------------------------------------------------------
@@ -3427,3 +3466,4 @@ if os.path.isdir(best_dir):
         print("   -", f)
 else:
     print("[CHECK][WARN] best_universes directory missing:", best_dir)
+    main_progress_bar.close()
