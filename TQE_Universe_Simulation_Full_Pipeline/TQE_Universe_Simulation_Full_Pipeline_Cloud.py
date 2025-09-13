@@ -8,12 +8,13 @@
 # ===================================================================================
 
 # --- Environment: set thread limits before importing numeric libs ---
-import os, sys, subprocess, warnings, shutil, time, json
+import os, sys, subprocess, warnings, shutil, time, json, importlib
 os.environ["PYTHONHASHSEED"] = "0"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["MPLBACKEND"] = "Agg"  # headless plotting
 
 # --- Colab detection + optional Drive mount ---
 IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
@@ -21,24 +22,34 @@ if IN_COLAB:
     from google.colab import drive
     drive.mount("/content/drive", force_remount=True)
 
-# --- One-shot pinned install (stable with NumPy 2) ---
-subprocess.check_call([sys.executable, "-m", "pip", "install", "-q",
-    "numpy==2.0.2",
-    "numba==0.60.0",
-    "scipy==1.13.1",
-    "pandas==2.3.2",
-    "scikit-learn==1.5.2",
-    "healpy==1.18.1",
-    "qutip==5.2.0",
-    "shap==0.46.0",
-    "lime==0.2.0.1",
-    "matplotlib==3.9.2",
-    "xgboost==3.0.4",
-    "torch==2.8.0+cu126"
-])
+# --- Only install missing packages (pinned versions) ---
+pkgs = {
+    "numpy": "2.0.2",
+    "numba": "0.60.0",
+    "scipy": "1.13.1",
+    "pandas": "2.3.2",
+    "scikit-learn": "1.5.2",
+    "healpy": "1.18.1",
+    "qutip": "5.2.0",
+    "shap": "0.46.0",
+    "lime": "0.2.0.1",
+    "matplotlib": "3.9.2",
+    "xgboost": "3.0.4",
+    # NOTE: torch often needs a special index for CUDA wheels.
+    # If you need it, install manually later. Otherwise comment it out or use CPU:
+    # "torch": "2.8.0"
+}
+
+for pkg, ver in pkgs.items():
+    try:
+        importlib.import_module(pkg.replace("-", "_"))
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", f"{pkg}=={ver}"])
 
 # --- Imports (after pinned install) ---
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")  # safety if mpl was already imported somewhere
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 import qutip as qt
