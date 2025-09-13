@@ -56,7 +56,7 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        10000,   # number of universes in Monte Carlo run
+    "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
     "TIME_STEPS":           1000,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        700,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1000,    # epochs for expansion dynamics
@@ -2605,16 +2605,12 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
         # Ensure a clean slate by closing any previously opened Matplotlib figures.
         plt.close('all')
 
-        # === JAVÍTÁS 1. LÉPÉS ===
-        # Használjuk a _pretty_label segédfüggvényt a feature nevek formázására.
         pretty_feat_names = [_pretty_label(fn) for fn in feat_names]
 
         # Generate the SHAP summary plot but do not display it interactively (show=False).
         shap.summary_plot(
             sv,
             X_plot.values,
-            # === JAVÍTÁS 2. LÉPÉS ===
-            # Itt már a formázott neveket adjuk át az ábrának.
             feature_names=pretty_feat_names,
             show=False,
             plot_size=(7, 5)
@@ -2821,7 +2817,7 @@ for target_name, kind, y_col, mask in targets:
                 "n_train": len(Xtr), "n_test": len(Xte)
             }]).to_csv(base_csv.replace(target_name, f"metrics__{target_name}") + ".csv", index=False)
 
-        else:  # regression
+else:  # regression
             model = RandomForestRegressor(
                 n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS",400),
                 random_state=RSTATE, n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS",-1)
@@ -2832,6 +2828,64 @@ for target_name, kind, y_col, mask in targets:
                 _shap_summary(model, Xte, X.columns.tolist(),
                               out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
                               fig_title=_title_with_feat(SUBDIRS[target_name][1], featset))
+
+            # ADDED: LIME plot generation for regression tasks
+            if SAVE_LIME and len(Xte) >= 5:
+                X_np = Xtr.values; stds = X_np.std(axis=0); keep = stds > 1e-12
+                X_red = X_np[:, keep]; feat_red = [f for f,k in zip(Xtr.columns, keep) if k]
+                if X_red.shape[1] >= 1:
+                    from lime.lime_tabular import LimeTabularExplainer
+                    full_means = Xtr.mean(axis=0).values; keep_idx = np.where(keep)[0]
+                    
+                    def _predict_on_reduced(Z_red):
+                        Z_red = np.asarray(Z_red); Z_red = Z_red.reshape(1,-1) if Z_red.ndim==1 else Z_red
+                        Z_full = np.tile(full_means, (Z_red.shape[0], 1)); Z_full[:, keep_idx] = Z_red
+                        return model.predict(Z_full)
+
+                    expl = LimeTabularExplainer(training_data=X_red, feature_names=feat_red,
+                                                discretize_continuous=True, 
+                                                mode="regression") # Set mode for regression
+                    
+                    rng = np.random.default_rng(RSTATE)
+                    idxs = rng.choice(X_red.shape[0], size=min(LIME_K, X_red.shape[0]), replace=False)
+                    rows = []
+                    
+                    for i in idxs:
+                        exp = expl.explain_instance(X_red[i], _predict_on_reduced,
+                                                     num_features=min(8, X_red.shape[1]))
+                        
+                        for name, w in exp.as_list(): # No label needed for regression
+                            found_feat = None
+                            for f_name in feat_red:
+                                if f_name in name:
+                                    found_feat = f_name
+                                    break
+                            
+                            base_name = found_feat if found_feat is not None else name
+                            rows.append((base_name, float(w)))
+
+                    if rows:
+                        dfw = (pd.DataFrame(rows, columns=["feature", "weight"])
+                                 .groupby("feature", as_index=False)["weight"].mean()
+                                 .sort_values("weight"))
+                        
+                        dfw["feature_pretty"] = dfw["feature"].map(_pretty_label)
+
+                        plt.figure(figsize=(7, 4))
+                        plt.barh(dfw["feature_pretty"], dfw["weight"], edgecolor="black")
+                        plt.xlabel("Avg LIME weight")
+                        plt.title(
+                            f"LIME avg — {_title_with_feat(SUBDIRS[target_name][1], featset)}",
+                            fontsize=13, pad=8
+                        )
+                        plt.gcf().tight_layout(rect=[0, 0, 1, 0.92])
+                        plt.tight_layout()
+                        plt.savefig(
+                            base_png.replace(target_name, f"lime_avg__{target_name}") + ".png",
+                            dpi=220, bbox_inches="tight"
+                        )
+                        plt.close()
+
             pd.DataFrame([{
                 "target": target_name, "variant": variant_title, "featset": featset,
                 "r2": r2, "n_train": len(Xtr), "n_test": len(Xte)
