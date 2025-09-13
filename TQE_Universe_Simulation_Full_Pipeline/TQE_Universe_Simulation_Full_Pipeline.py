@@ -241,8 +241,8 @@ MASTER_CTRL = {
     "XAI_FEATURES_EIX":       ["E", "I", "X", "abs_E_minus_I", "logX", "dist_to_goldilocks"],
 
     # SHAP / LIME options
-    "XAI_SAVE_SHAP":          False,   # Save SHAP outputs
-    "XAI_SAVE_LIME":          False,   # Save LIME outputs
+    "XAI_SAVE_SHAP":          True,   # Save SHAP outputs
+    "XAI_SAVE_LIME":          True,   # Save LIME outputs
     "XAI_LIME_K":             30,     # Number of LIME samples averaged
 
     # Data split options
@@ -1262,7 +1262,7 @@ def _plot_two_bar_with_ci(labels, counts, totals, title, out_png):
     plt.title(title)
     plt.tight_layout()
     plt.savefig(out_png, dpi=220, bbox_inches="tight")
-    plt.close('all')
+    plt.close()
 
 def _select_eps_by_share(gaps, target_share=0.20, min_n=30):
     """
@@ -2646,7 +2646,6 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
                 sv = sv[-1]
 
         # 5) Plot
-        plt.close("all")
         shap.summary_plot(
             sv,
             Xsel.values,
@@ -2670,7 +2669,7 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
             fig.suptitle(fig_title, fontsize=13, y=0.98)
         fig.tight_layout(rect=[0, 0, 1, 0.96])
         fig.savefig(out_png, dpi=220, bbox_inches="tight")
-        plt.close('all')
+        plt.close(fig)
         
 
     except Exception as e:
