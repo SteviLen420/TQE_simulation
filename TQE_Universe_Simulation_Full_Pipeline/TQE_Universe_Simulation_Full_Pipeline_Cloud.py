@@ -900,13 +900,16 @@ def run_mc(E_c_low=None, E_c_high=None):
 
         df_out = pd.DataFrame(rows)
         # persist per-universe seeds
-        pd.DataFrame({"universe_id": np.arange(len(df_out)), "seed": universe_seeds}).to_csv(
-            with_variant(os.path.join(SAVE_DIR, "universe_seeds.csv")), index=False
+        smart_to_csv(
+            pd.DataFrame({"universe_id": np.arange(len(df_out)), "seed": universe_seeds}),
+            with_variant(smart_join(SAVE_DIR, "universe_seeds.csv")),
+            index=False
         )
 
         # --- SAVE THE PRE-FLUCTUATION DATA ---
-        pd.DataFrame(pre_pairs).to_csv(
-            with_variant(os.path.join(SAVE_DIR, "pre_fluctuation_pairs.csv")),
+        smart_to_csv(
+            pd.DataFrame(pre_pairs),
+            with_variant(smart_join(SAVE_DIR, "pre_fluctuation_pairs.csv")),
             index=False
         )
               
@@ -1085,7 +1088,7 @@ else:
     df = run_mc(E_c_low=None, E_c_high=None)
 
 # Save main run
-df.to_csv(with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")), index=False)
+smart_to_csv(df, with_variant(smart_join(SAVE_DIR, "tqe_runs.csv")), index=False)
 
 # ======================================================
 # 10) Stability curve (binned) + Goldilocks window plot
