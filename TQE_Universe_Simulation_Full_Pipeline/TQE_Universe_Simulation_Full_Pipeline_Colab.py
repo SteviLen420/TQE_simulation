@@ -2615,6 +2615,13 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
             show=False,
             plot_size=(7, 5)
         )
+
+        # Get figure and axis after the plot is created
+        fig = plt.gcf()
+        ax = plt.gca()
+        # Force symmetric x-axis
+        xlim = max(abs(ax.get_xlim()[0]), abs(ax.get_xlim()[1]))
+        ax.set_xlim(-xlim, xlim)
         # Get a handle to the current figure object that was created by shap.summary_plot.
         fig = plt.gcf()
         # Add a title to the figure if one was provided.
