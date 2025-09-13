@@ -25,35 +25,6 @@ if IN_COLAB:
 # --- Only install missing packages (pinned versions) ---
 import os, sys, subprocess, importlib
 
-PKGS = {
-    "cython":        "0.29.37",
-    "numpy":         "1.26.4",
-    "numba":         "0.59.1",
-    "scipy":         "1.13.1",
-    "pandas":        "2.2.2",
-    "scikit-learn":  "1.4.2",
-    "matplotlib":    "3.8.4",
-    "healpy":        "1.18.1",
-    "qutip":         "4.7.3",
-    "shap":          "0.45.0",
-    "lime":          "0.2.0.1",
-    "xgboost":       "2.0.3",
-    # Torch is optional; often requires CUDA wheel index, so install manually if needed.
-    # "torch":       "2.3.1"
-}
-
-def _ensure_exact(name, ver):
-    mod = name.replace("-", "_")
-    try:
-        # Try to import; if present but wrong version, reinstall the correct one.
-        m = importlib.import_module(mod)
-        have = getattr(m, "__version__", None)
-        if have != ver:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", f"{name}=={ver}", "-q"])
-    except Exception:
-        # If missing, install the required version
-        subprocess.check_call([sys.executable, "-m", "pip", "install", f"{name}=={ver}", "-q"])
-
 for pkg, ver in PKGS.items():
     _ensure_exact(pkg, ver)
 # --- Imports (after pinned install) ---
