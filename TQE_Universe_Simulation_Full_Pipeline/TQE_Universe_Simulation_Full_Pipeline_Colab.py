@@ -2566,42 +2566,51 @@ def _title_with_feat(base_title, featset):
 def _ensure_cols(df_in, cols): return [c for c in cols if c in df_in.columns]
 
 def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
+    """
+    Generates and saves a SHAP summary plot.
+    This function is wrapped in error handling to prevent crashes.
+    """
     try:
-        # Try TreeExplainer first (faster, model-specific)
-        expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
-        sv = expl.shap_values(X_plot, check_additivity=False)
-    except Exception:
-        # Fallback: generic Explainer (slower but safer)
-        expl = shap.Explainer(model, X_plot)
-        sv = expl(X_plot).values
+        # This inner try-except block attempts to calculate SHAP values,
+        # using a fallback method if the primary one fails.
+        try:
+            # Primary method: Use TreeExplainer for tree-based models (fast and precise).
+            expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
+            sv = expl.shap_values(X_plot, check_additivity=False)
+        except Exception:
+            # Fallback method: Use the generic Explainer if TreeExplainer fails (slower but more robust).
+            expl = shap.Explainer(model, X_plot)
+            sv = expl(X_plot).values
+        # For binary classification, SHAP returns a list of two arrays [class_0, class_1].
+        # We select the values for the positive class (the last element).
+        if isinstance(sv, list):
+            sv = sv[-1]
+        # --- Plotting and Saving ---
+        # Ensure a clean slate by closing any previously opened Matplotlib figures.
+        plt.close('all')
+        # Generate the SHAP summary plot but do not display it interactively (show=False).
+        shap.summary_plot(
+            sv,
+            X_plot.values,
+            feature_names=feat_names,
+            show=False
+        )
+        # Get a handle to the current figure object that was created by shap.summary_plot.
+        fig = plt.gcf()
+        # Add a title to the figure if one was provided.
+        if fig_title:
+            fig.suptitle(fig_title, fontsize=13, y=0.98)
+        # Adjust plot layout to prevent the title and labels from overlapping.
+        fig.tight_layout(rect=[0, 0, 1, 0.96])
+        # Save the figure to the specified output path.
+        fig.savefig(out_png, dpi=220, bbox_inches="tight")
+        # Close the figure object to free up memory.
+        plt.close(fig)
 
-    # For binary classification, SHAP returns [neg_class, pos_class]
-    if isinstance(sv, list):
-        sv = sv[-1]
-
-    # --- Draw plot ---
-    plt.close('all')  # reset figure state
-    shap.summary_plot(
-        sv,
-        X_plot.values,        # convert DataFrame to numpy
-        feature_names=feat_names,
-        show=False            # do not display, only draw
-    )
-
-    fig = plt.gcf()  # get current figure (the one shap actually used)
-
-    # Add title if provided
-    if fig_title:
-        fig.suptitle(fig_title, fontsize=13, y=0.98)
-
-    # Leave space for the title
-    fig.tight_layout(rect=[0, 0, 1, 0.96])
-
-    # Save figure to file
-    fig.savefig(out_png, dpi=220, bbox_inches="tight")
-
-    # Close figure to free memory
-    plt.close(fig)
+    except Exception as e:
+        # This outer except block catches any failure from the entire process
+        # and prints a warning instead of crashing the script.
+        print(f"[XAI][WARN] SHAP summary plot generation failed for '{out_png}': {e}")
     
 # Target list
 targets = []
