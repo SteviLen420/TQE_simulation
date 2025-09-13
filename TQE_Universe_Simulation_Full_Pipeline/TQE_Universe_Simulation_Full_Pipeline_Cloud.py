@@ -23,29 +23,38 @@ if IN_COLAB:
     drive.mount("/content/drive", force_remount=True)
 
 # --- Only install missing packages (pinned versions) ---
-pkgs = {
-    "numpy": "2.0.2",
-    "numba": "0.60.0",
-    "scipy": "1.13.1",
-    "pandas": "2.3.2",
-    "scikit-learn": "1.5.2",
-    "healpy": "1.18.1",
-    "qutip": "5.2.0",
-    "shap": "0.46.0",
-    "lime": "0.2.0.1",
-    "matplotlib": "3.9.2",
-    "xgboost": "3.0.4",
-    # NOTE: torch often needs a special index for CUDA wheels.
-    # If you need it, install manually later. Otherwise comment it out or use CPU:
-    # "torch": "2.8.0"
+import os, sys, subprocess, importlib
+
+PKGS = {
+    "numpy":         "1.26.4",
+    "numba":         "0.59.1",
+    "scipy":         "1.13.1",
+    "pandas":        "2.2.2",
+    "scikit-learn":  "1.4.2",
+    "matplotlib":    "3.8.4",
+    "healpy":        "1.18.1",
+    "qutip":         "4.7.3",
+    "shap":          "0.45.0",
+    "lime":          "0.2.0.1",
+    "xgboost":       "2.0.3",
+    # Torch is optional; often requires CUDA wheel index, so install manually if needed.
+    # "torch":       "2.3.1"
 }
 
-for pkg, ver in pkgs.items():
+def _ensure_exact(name, ver):
+    mod = name.replace("-", "_")
     try:
-        importlib.import_module(pkg.replace("-", "_"))
-    except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", f"{pkg}=={ver}"])
+        # Try to import; if present but wrong version, reinstall the correct one.
+        m = importlib.import_module(mod)
+        have = getattr(m, "__version__", None)
+        if have != ver:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", f"{name}=={ver}", "-q"])
+    except Exception:
+        # If missing, install the required version
+        subprocess.check_call([sys.executable, "-m", "pip", "install", f"{name}=={ver}", "-q"])
 
+for pkg, ver in PKGS.items():
+    _ensure_exact(pkg, ver)
 # --- Imports (after pinned install) ---
 import numpy as np
 import matplotlib
