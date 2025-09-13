@@ -19,6 +19,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 import time, json, warnings, sys, subprocess, shutil
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm.auto import tqdm
 
 # --- Colab detection + optional Drive mount ---
 IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
@@ -722,7 +723,7 @@ def run_mc(E_c_low=None, E_c_high=None):
         universe_seeds = []
         pre_pairs = []
 
-        for i in range(MASTER_CTRL["NUM_UNIVERSES"]):
+        for i in tqdm(range(MASTER_CTRL["NUM_UNIVERSES"]), desc="TQE Simulating Universes"):
             # derive per-universe seed from master rng (Generator)
             uni_seed = int(rng.integers(0, 2**32 - 1))
             universe_seeds.append(uni_seed)
