@@ -2753,9 +2753,13 @@ for target_name, kind, y_col, mask in targets:
             print(f"[XAI] {target_name} [{variant_title}] {featset}: ACC={acc:.3f}, AUC={auc if np.isnan(auc) else round(auc,3)}")
 
             if SAVE_SHAP:
-                _shap_summary(model, Xte, X.columns.tolist(),
-                              out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
-                              _title_with_feat(title_base, featset)
+                _shap_summary(
+                    model,
+                    Xte,
+                    X.columns.tolist(),
+                    out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
+                    fig_title=_title_with_feat(title_base, featset)
+                )
             if SAVE_LIME and len(np.unique(ytr))==2 and len(Xte) >= 5:
                 # LIME on reduced data to avoid zero-variance traps
                 X_np = Xtr.values; stds = X_np.std(axis=0); keep = stds > 1e-12
@@ -2844,9 +2848,13 @@ for target_name, kind, y_col, mask in targets:
             model.fit(Xtr, ytr); r2 = r2_score(yte, model.predict(Xte))
             print(f"[XAI] {target_name} [{variant_title}] {featset}: R2={r2:.3f}")
             if SAVE_SHAP:
-                _shap_summary(model, Xte, X.columns.tolist(),
-                              out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
-                              _title_with_feat(title_base, featset)
+                _shap_summary(
+                    model,
+                    Xte,
+                    X.columns.tolist(),
+                    out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
+                    fig_title=_title_with_feat(title_base, featset)
+                )
 
             # ADDED: LIME plot generation for regression tasks
             if SAVE_LIME and len(Xte) >= 5:
