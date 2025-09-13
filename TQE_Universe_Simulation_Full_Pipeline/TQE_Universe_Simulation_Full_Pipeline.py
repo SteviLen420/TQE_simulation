@@ -9,12 +9,13 @@
 
 # --- Environment: set thread limits before importing numeric libs ---
 import os, sys, subprocess, warnings, shutil, time, json, importlib
+os.environ["MPLBACKEND"] = "Agg"           
+os.environ["QT_QPA_PLATFORM"] = "offscreen"
 os.environ["PYTHONHASHSEED"] = "0"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
-os.environ["MPLBACKEND"] = "Agg"  # headless plotting
 
 # --- Colab detection + optional Drive mount ---
 IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
@@ -240,9 +241,9 @@ MASTER_CTRL = {
     "XAI_FEATURES_EIX":       ["E", "I", "X", "abs_E_minus_I", "logX", "dist_to_goldilocks"],
 
     # SHAP / LIME options
-    "XAI_SAVE_SHAP":          True,   # Save SHAP outputs
-    "XAI_SAVE_LIME":          True,   # Save LIME outputs
-    "XAI_LIME_K":             50,     # Number of LIME samples averaged
+    "XAI_SAVE_SHAP":          False,   # Save SHAP outputs
+    "XAI_SAVE_LIME":          False,   # Save LIME outputs
+    "XAI_LIME_K":             30,     # Number of LIME samples averaged
 
     # Data split options
     "XAI_TEST_SIZE":          0.25,   # Test split size
