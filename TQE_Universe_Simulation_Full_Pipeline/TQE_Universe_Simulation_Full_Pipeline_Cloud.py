@@ -7,51 +7,49 @@
 # Author: Stefan Len
 # ===================================================================================
 
-import os
-# Set before importing heavy numeric libs would be ideal,
-# but applying here is still helpful for thread pools.
+# --- Environment: set thread limits before importing numeric libs ---
+import os, sys, subprocess, warnings, shutil, time, json
 os.environ["PYTHONHASHSEED"] = "0"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
-import time, json, warnings, sys, subprocess, shutil
-import numpy as np
-import matplotlib.pyplot as plt
-from tqdm.auto import tqdm
-
 # --- Colab detection + optional Drive mount ---
 IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
 if IN_COLAB:
     from google.colab import drive
-    drive.mount('/content/drive', force_remount=True)
+    drive.mount("/content/drive", force_remount=True)
 
-# --- Core deps: ensure (no heavy extras) ---
-def _ensure(pkg):
-    try:
-        __import__(pkg)
-    except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
+# --- One-shot pinned install (stable with NumPy 2) ---
+subprocess.check_call([sys.executable, "-m", "pip", "install", "-q",
+    "numpy==2.0.2",
+    "numba==0.60.0",
+    "scipy==1.13.1",
+    "pandas==2.3.2",
+    "scikit-learn==1.5.2",
+    "healpy==1.18.1",
+    "qutip==4.7.3",
+    "shap==0.45.0",
+    "lime==0.2.0.1",
+    "matplotlib==3.10.6",
+    "xgboost==3.0.4",
+    "tensorflow==2.19.0",
+    "torch==2.8.0+cu126"
+])
 
-for pkg in ["qutip", "pandas", "scipy", "scikit-learn", "healpy"]:
-    _ensure(pkg)
-
+# --- Imports (after pinned install) ---
+import numpy as np
+import matplotlib.pyplot as plt
+from tqdm.auto import tqdm
 import qutip as qt
 import pandas as pd
 from scipy.interpolate import make_interp_spline
+import shap
+from lime.lime_tabular import LimeTabularExplainer
+
 warnings.filterwarnings("ignore")
 
-# --- XAI stack: SHAP + LIME only ---
-try:
-    import shap
-    from lime.lime_tabular import LimeTabularExplainer
-except Exception:
-    subprocess.check_call([sys.executable, "-m", "pip", "install",
-                           "shap==0.45.0", "lime==0.2.0.1", "scikit-learn==1.5.2", "-q"])
-    import shap
-    from lime.lime_tabular import LimeTabularExplainer
-    
 # ======================================================
 # 1) MASTER CONTROLLER
 # ======================================================
