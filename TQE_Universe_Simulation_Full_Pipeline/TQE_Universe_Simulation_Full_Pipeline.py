@@ -8,9 +8,7 @@
 # ===================================================================================
 
 # --- Environment: set thread limits before importing numeric libs ---
-import os, sys, subprocess, warnings, shutil, time, json, importlib
-os.environ["MPLBACKEND"] = "Agg"           
-os.environ["QT_QPA_PLATFORM"] = "offscreen"
+import os 
 os.environ["PYTHONHASHSEED"] = "0"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -24,12 +22,10 @@ if IN_COLAB:
     drive.mount("/content/drive", force_remount=True)
 
 # --- Only install missing packages (pinned versions) ---
-import os, sys, subprocess, importlib
+import sys, subprocess, warnings, shutil, time, json, importlib
 
 # --- Imports (after pinned install) ---
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")  # safety if mpl was already imported somewhere
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 import qutip as qt
@@ -219,7 +215,7 @@ MASTER_CTRL = {
     
 
     # --- Machine Learning / XAI ---
-    "RUN_XAI":              True,   # master switch for XAI section
+    "RUN_XAI":              False,   # master switch for XAI section
     "RUN_SHAP":             False,   # SHAP on/off
     "RUN_LIME":             False,   # LIME on/off
     "LIME_NUM_FEATURES":    5,      # number of features in LIME plot
