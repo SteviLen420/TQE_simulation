@@ -185,14 +185,14 @@ MASTER_CTRL = {
     "CMB_PIXSIZE_ARCMIN": 3.0,         # Pixel size in arcmin for flat-sky
     "CMB_POWER_SLOPE": 1.5,            # Power spectrum slope (Pk ~ k^-slope)
     "CMB_SMOOTH_FWHM_DEG": 0.1,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
-    "CMB_AMPLITUDE_SCALE": 3.0e-10,    # Overall amplitude of CMB fluctuations
+    "CMB_AMPLITUDE_SCALE": 1.0e-10,    # Overall amplitude of CMB fluctuations
 
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
     "CMB_COLD_SIGMA_ARCMIN":      [60, 120, 240, 480],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    30,                   # Minimal separation between spots (arcmin)
-    "CMB_COLD_Z_THRESH":          -2.0,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_Z_THRESH":          -1.0,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
     "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
@@ -204,7 +204,7 @@ MASTER_CTRL = {
     # --- CMB Axis-of-Evil detector ---
     "CMB_AOE_ENABLE":      True,        # Enable/disable the Axis-of-Evil detector
     "CMB_AOE_LMAX":        3,           # Maximum multipole ℓ to check (ℓ=3 is standard for AoE)
-    "CMB_AOE_NREALIZ":     1000,        # Number of Monte Carlo randomizations for significance (p-value)
+    "CMB_AOE_NREALIZ":     3000,        # Number of Monte Carlo randomizations for significance (p-value)
     "CMB_AOE_OVERLAY":     True,        # Overlay principal axes on the CMB map PNG
     "CMB_AOE_MODE":        "healpix",   # Backend selection: "auto" | "healpix" | "flat"
     "CMB_AOE_SEED_OFFSET": 909,         # Per-universe seed offset to keep AoE maps reproducible
@@ -214,7 +214,7 @@ MASTER_CTRL = {
     "CMB_AOE_L23_BOOST":   1.0,         # 1.5–3.0: strength of ℓ=2,3 boost
     "AOE_REF_ANGLE_DEG":   10.0,        # reference alignment angle (Planck/WMAP ~20°)
     "AOE_P_THRESHOLD":      0.10,       # if you have p-values in cmb_aoe_summary.csv
-    "AOE_ALIGN_THRESHOLD":  0.8,       # fallback if only angle is present (score = 1 - angle/180)
+    "AOE_ALIGN_THRESHOLD":  0.5,       # fallback if only angle is present (score = 1 - angle/180)
 
     # --- XAI: enable targets and outputs ---
     "XAI_ENABLE_STABILITY": True,   # run stability targets
