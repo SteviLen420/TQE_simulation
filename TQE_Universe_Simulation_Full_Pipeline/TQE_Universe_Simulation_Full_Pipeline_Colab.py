@@ -183,7 +183,7 @@ MASTER_CTRL = {
     "CMB_NSIDE": 256,                  # Resolution for healpy maps
     "CMB_NPIX": 512,                   # Pixel count for flat-sky maps
     "CMB_PIXSIZE_ARCMIN": 3.0,         # Pixel size in arcmin for flat-sky
-    "CMB_POWER_SLOPE": 1.0,            # Power spectrum slope (Pk ~ k^-slope)
+    "CMB_POWER_SLOPE": 1.5,            # Power spectrum slope (Pk ~ k^-slope)
     "CMB_SMOOTH_FWHM_DEG": 0.1,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
 
     # --- CMB cold-spot detector ---
