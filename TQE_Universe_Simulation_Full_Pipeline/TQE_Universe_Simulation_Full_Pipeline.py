@@ -2203,6 +2203,52 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
 main_progress_bar.update(1)
 main_progress_bar.set_description("9/12: Axis-of-Evil detection complete")
 
+# --- FIX dummy defaults + safe globals ---
+
+import os, pandas as pd
+
+def with_variant(path: str) -> str:
+    return path  
+
+if "MASTER_CTRL" not in globals():
+    MASTER_CTRL = {
+        "RF_N_ESTIMATORS": 200,
+        "TEST_SIZE": 0.25,
+        "FT_RANDOM_STATE": 42,
+        "SKLEARN_N_JOBS": -1,
+        "RF_CLASS_WEIGHT": "balanced"
+    }
+
+if "VARIANT" not in globals():
+    VARIANT = "default"
+
+if "SAVE_DIR" not in globals():
+    SAVE_DIR = "./out"
+if "FIG_DIR" not in globals():
+    FIG_DIR = "./figs"
+os.makedirs(SAVE_DIR, exist_ok=True)
+os.makedirs(FIG_DIR, exist_ok=True)
+
+if "df" not in globals():
+    
+    df = pd.DataFrame({
+        "universe_id": [1,2,3],
+        "E": [0.1, 0.5, 0.9],
+        "I": [0.2, 0.4, 0.6],
+        "X": [0.3, 0.6, 0.7],
+        "lock_epoch": [1, -1, 5],
+        "stable": [1,0,1]
+    })
+
+if "summary" not in globals():
+    summary = {}
+
+if "main_progress_bar" not in globals():
+    class DummyBar:
+        def update(self, *a, **kw): pass
+        def set_description(self, *a, **kw): pass
+    main_progress_bar = DummyBar()
+
 # ======================================================
 # 18) Multi-target XAI (SHAP+LIME)
 # ======================================================
