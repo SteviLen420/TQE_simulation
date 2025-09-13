@@ -2236,7 +2236,7 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             print("[CMB][AOE] No AoE rows collected; nothing to save.")
 
 # ======================================================
-# 18+19) Metrics joiner + Finetune + Multi-target XAI (SHAP+LIME)
+# 18) Multi-target XAI (SHAP+LIME)
 # ======================================================
 
 import os, json, shutil, numpy as np, pandas as pd, matplotlib.pyplot as plt
@@ -2276,10 +2276,13 @@ def _plot_two_bar_with_ci(labels, counts, totals, title, out_png, ylabel="Probab
     plt.savefig(out_png, dpi=220, bbox_inches="tight"); plt.close()
 
 # ======================================================
-# (A) JOIN: attach Cold / AoE / Finetune deltas + engineered feats to df
+# (A) JOIN: attach Cold / AoE / Finetune 
 # ======================================================
 cold_csv = with_variant(os.path.join(SAVE_DIR, "cmb_coldspots_summary.csv"))
-aoe_csv  = with_variant(os.path.join(SAVE_DIR, "cmb_axis_of_evil_summary.csv"))
+aoe_csv = with_variant(os.path.join(SAVE_DIR, "cmb_aoe_summary.csv"))
+if not os.path.exists(aoe_csv):
+    aoe_csv = with_variant(os.path.join(SAVE_DIR, "cmb_axis_of_evil_summary.csv"))
+
 ft_csv   = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
 
 cold_df = _safe_read_csv(cold_csv)
@@ -2367,7 +2370,7 @@ print("[JOIN] Wrote:", joined_csv)
 df_xai = df_join
 
 # ======================================================
-# (B) FINETUNE detector (E vs E+I(+X))  — produces ft_delta_summary.csv if not yet present
+# (B) FINETUNE detector (E vs E+I(+X))  
 # ======================================================
 def _safe_auc(y_true, y_proba):
     try:
@@ -2415,8 +2418,6 @@ def run_finetune_detector(df_in: pd.DataFrame):
     )
 
     def _fit_cls(Xdf, label):
-        if len(np.unique(y[Xtr_idx])) < 2:
-            return {"label": label, "acc": np.nan, "auc": np.nan, "cm":{"tp":0,"fp":0,"tn":0,"fn":0}}
         clf = RandomForestClassifier(
             n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS", 400),
             random_state=MASTER_CTRL.get("FT_RANDOM_STATE", 42),
@@ -2426,10 +2427,13 @@ def run_finetune_detector(df_in: pd.DataFrame):
         clf.fit(Xdf.iloc[Xtr_idx], y[Xtr_idx])
         yp = clf.predict(Xdf.iloc[Xte_idx])
         acc = float(accuracy_score(y[Xte_idx], yp))
-        try: proba = clf.predict_proba(Xdf.iloc[Xte_idx])[:,1]
-        except Exception: proba = yp.astype(float)
+        try:
+            proba = clf.predict_proba(Xdf.iloc[Xte_idx])[:, 1]
+        except Exception:
+            proba = yp.astype(float)
         auc = _safe_auc(y[Xte_idx], proba)
-        cm = _cm_counts(y[Xte_idx], yp)
+        cm  = _cm_counts(y[Xte_idx], yp)
+        return {"label": label, "acc": acc, "auc": auc, "cm": cm}, clf
         # save FI
         fi_df = pd.DataFrame({"feature": Xdf.columns,
                               "importance": getattr(clf, "feature_importances_", np.zeros(len(Xdf.columns)))}
@@ -2439,11 +2443,25 @@ def run_finetune_detector(df_in: pd.DataFrame):
         out["files"][f"feat_importance_{label}"] = fi_csv
         return {"label":label, "acc":acc, "auc":auc, "cm":cm}
 
-    mE   = _fit_cls(X_E,   "E")
-    mEIX = _fit_cls(X_EIX, "EIX")
+    mE,   clf_E   = _fit_cls(X_E,   "E")
+    mEIX, clf_EIX = _fit_cls(X_EIX, "EIX")
     met_df = pd.DataFrame([mE, mEIX])
     met_df.to_csv(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.csv")), index=False)
     met_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.json")), indent=2)
+
+    # --- Row-level finetune targets for XAI (classification) ---
+    proba_E   = clf_E.predict_proba(X_E.iloc[Xte_idx])[:,1]     
+    proba_EIX = clf_EIX.predict_proba(X_EIX.iloc[Xte_idx])[:,1]
+
+    true = y[Xte_idx].astype(int)
+    pred_E   = (proba_E   >= 0.5).astype(int)
+    pred_EIX = (proba_EIX >= 0.5).astype(int)
+
+    ft_proba_gain = np.where(true==1, proba_EIX - proba_E, (1-proba_EIX) - (1-proba_E))
+    ft_cls_gain   = (pred_EIX==true).astype(int) - (pred_E==true).astype(int)  # +1 / 0 / -1
+
+    df_xai.loc[df_xai.index[Xte_idx], "ft_proba_gain"] = ft_proba_gain
+    df_xai.loc[df_xai.index[Xte_idx], "ft_cls_gain"]   = ft_cls_gain
 
     # Optional regression on lock_epoch
     out["metrics"]["reg"] = {}
@@ -2599,17 +2617,80 @@ def _title_with_feat(base_title, featset):
 
 def _ensure_cols(df_in, cols): return [c for c in cols if c in df_in.columns]
 
-def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
-    try:
-        expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
-        sv = expl.shap_values(X_plot, check_additivity=False)
-    except Exception:
-        expl = shap.Explainer(model, X_plot); sv = expl(X_plot).values
-    if isinstance(sv, list): sv = sv[-1]
-    plt.figure(); shap.summary_plot(sv, X_plot.values, feature_names=feat_names, show=False)
-    if fig_title: plt.title(fig_title)
-    plt.savefig(out_png, dpi=220, bbox_inches="tight"); plt.close()
+import re # Place this line at the top of the section if it's not already there
 
+def _pretty_label(s: str) -> str:
+    """Converts technical feature names into human-readable labels."""
+    base = str(s).strip()
+    # Strips away numeric parts potentially added by LIME
+    m = re.match(r"^([A-Za-z_]+)", base)
+    if m:
+        base = m.group(1)
+    # Human-friendly renames
+    base = (base
+            .replace("abs_E_minus_I", "|E − I|")
+            .replace("logX", "log X")
+            .replace("dist_to_goldilocks", "Goldilocks X"))
+    return base
+
+def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
+    """
+    Generates and saves a SHAP summary plot.
+    This function is wrapped in error handling to prevent crashes.
+    """
+    try:
+        # This inner try-except block attempts to calculate SHAP values,
+        # using a fallback method if the primary one fails.
+        try:
+            # Primary method: Use TreeExplainer for tree-based models (fast and precise).
+            expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
+            sv = expl.shap_values(X_plot, check_additivity=False)
+        except Exception:
+            # Fallback method: Use the generic Explainer if TreeExplainer fails (slower but more robust).
+            expl = shap.Explainer(model, X_plot)
+            sv = expl(X_plot).values
+        # For binary classification, SHAP returns a list of two arrays [class_0, class_1].
+        # We select the values for the positive class (the last element).
+        if isinstance(sv, list):
+            sv = sv[-1]
+        # --- Plotting and Saving ---
+        # Ensure a clean slate by closing any previously opened Matplotlib figures.
+        plt.close('all')
+
+        pretty_feat_names = [_pretty_label(fn) for fn in feat_names]
+
+        # Generate the SHAP summary plot but do not display it interactively (show=False).
+        shap.summary_plot(
+            sv,
+            X_plot.values,
+            feature_names=pretty_feat_names,
+            show=False,
+            plot_size=(7, 5)
+        )
+
+        # Get figure and axis after the plot is created
+        fig = plt.gcf()
+        ax = plt.gca()
+        # Force symmetric x-axis
+        xlim = max(abs(ax.get_xlim()[0]), abs(ax.get_xlim()[1]))
+        ax.set_xlim(-xlim, xlim)
+        # Get a handle to the current figure object that was created by shap.summary_plot.
+        fig = plt.gcf()
+        # Add a title to the figure if one was provided.
+        if fig_title:
+            fig.suptitle(fig_title, fontsize=13, y=0.98)
+        # Adjust plot layout to prevent the title and labels from overlapping.
+        fig.tight_layout(rect=[0, 0, 1, 0.96])
+        # Save the figure to the specified output path.
+        fig.savefig(out_png, dpi=220, bbox_inches="tight")
+        # Close the figure object to free up memory.
+        plt.close(fig)
+
+    except Exception as e:
+        # This outer except block catches any failure from the entire process
+        # and prints a warning instead of crashing the script.
+        print(f"[XAI][WARN] SHAP summary plot generation failed for '{out_png}': {e}")
+    
 # Target list
 targets = []
 if XAI_ENABLE_STAB and "stable" in df_xai.columns:
@@ -2651,8 +2732,12 @@ for target_name, kind, y_col, mask in targets:
 
     for featset, feat_cols in featsets:
         cols = _ensure_cols(data, feat_cols)
+        # drop features that are all-NaN or have (quasi) zero variance
+        cols = [c for c in cols
+                if data[c].notna().sum() >= 2 and data[c].std(skipna=True) > 1e-12]
         if not cols:
-            print(f"[XAI] {target_name} — {featset}: no usable features; skip."); continue
+            print(f"[XAI] {target_name} — {featset}: no usable (non-NaN/non-constant) features; skip.")
+            continue
 
         # Clean on EXACT used columns + target to keep rows aligned
         need = [y_col] + cols
@@ -2730,18 +2815,60 @@ for target_name, kind, y_col, mask in targets:
                     pos = int(np.argmax(getattr(model,"classes_", [0,1])))
                     for i in idxs:
                         exp = expl.explain_instance(X_red[i], _predict_proba_on_reduced,
-                                                    num_features=min(8, X_red.shape[1]))
+                                                     num_features=min(8, X_red.shape[1]))
+                        
+                        # Iterate through the (explanation, weight) pairs from LIME
                         for name, w in exp.as_list(label=pos):
-                            base = name.split()[0]; rows.append((base, float(w)))
+                            found_feat = None
+                            # Check which of the known feature names is in the LIME explanation string
+                            for f_name in feat_red: # 'feat_red' is the list of correct feature names
+                                if f_name in name:
+                                    found_feat = f_name
+                                    break # Stop after the first match
+                            
+                            # Use the found feature name, or fall back to the original string if none was found
+                            base_name = found_feat if found_feat is not None else name
+                            rows.append((base_name, float(w)))
                     if rows:
-                        dfw = (pd.DataFrame(rows, columns=["feature","weight"])
+                        import re
+
+                        # Build dataframe and average weights per feature
+                        dfw = (pd.DataFrame(rows, columns=["feature", "weight"])
                                  .groupby("feature", as_index=False)["weight"].mean()
                                  .sort_values("weight"))
-                        plt.figure(figsize=(6,4)); plt.barh(dfw["feature"], dfw["weight"], edgecolor="black")
-                        plt.xlabel("Avg LIME weight"); plt.title("LIME avg — " + _title_with_feat(SUBDIRS[target_name][1], featset))
-                        plt.gcf().tight_layout(rect=[0,0,1,0.95]); plt.tight_layout()
-                        plt.savefig(base_png.replace(target_name, f"lime_avg__{target_name}") + ".png",
-                                    dpi=220, bbox_inches="tight"); plt.close()
+
+                        # --- Pretty labels for the y-axis ---
+                        def _pretty_label(s: str) -> str:
+                            base = str(s).strip()
+                            # Drop bin boundaries or numeric parts accidentally included by LIME
+                            m = re.match(r"^([A-Za-z_]+)", base)
+                            if m:
+                                base = m.group(1)
+
+                            # Human-friendly renames
+                            base = (base
+                                    .replace("abs_E_minus_I", "|E − I|")
+                                    .replace("logX", "log X")
+                                    .replace("dist_to_goldilocks", "Goldilocks X"))
+                            return base
+
+                        dfw["feature_pretty"] = dfw["feature"].map(_pretty_label)
+
+                        # Plot with pretty labels
+                        plt.figure(figsize=(7, 4))
+                        plt.barh(dfw["feature_pretty"], dfw["weight"], edgecolor="black")
+                        plt.xlabel("Avg LIME weight")
+                        plt.title(
+                            f"LIME avg — {_title_with_feat(SUBDIRS[target_name][1], featset)}",
+                            fontsize=13, pad=8
+                        )
+                        plt.gcf().tight_layout(rect=[0, 0, 1, 0.92])
+                        plt.tight_layout()
+                        plt.savefig(
+                            base_png.replace(target_name, f"lime_avg__{target_name}") + ".png",
+                            dpi=220, bbox_inches="tight"
+                        )
+                        plt.close()
 
             pd.DataFrame([{
                 "target": target_name, "variant": variant_title, "featset": featset,
@@ -2760,12 +2887,70 @@ for target_name, kind, y_col, mask in targets:
                 _shap_summary(model, Xte, X.columns.tolist(),
                               out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
                               fig_title=_title_with_feat(SUBDIRS[target_name][1], featset))
+
+            # ADDED: LIME plot generation for regression tasks
+            if SAVE_LIME and len(Xte) >= 5:
+                X_np = Xtr.values; stds = X_np.std(axis=0); keep = stds > 1e-12
+                X_red = X_np[:, keep]; feat_red = [f for f,k in zip(Xtr.columns, keep) if k]
+                if X_red.shape[1] >= 1:
+                    from lime.lime_tabular import LimeTabularExplainer
+                    full_means = Xtr.mean(axis=0).values; keep_idx = np.where(keep)[0]
+                    
+                    def _predict_on_reduced(Z_red):
+                        Z_red = np.asarray(Z_red); Z_red = Z_red.reshape(1,-1) if Z_red.ndim==1 else Z_red
+                        Z_full = np.tile(full_means, (Z_red.shape[0], 1)); Z_full[:, keep_idx] = Z_red
+                        return model.predict(Z_full)
+
+                    expl = LimeTabularExplainer(training_data=X_red, feature_names=feat_red,
+                                                discretize_continuous=True, 
+                                                mode="regression") # Set mode for regression
+                    
+                    rng = np.random.default_rng(RSTATE)
+                    idxs = rng.choice(X_red.shape[0], size=min(LIME_K, X_red.shape[0]), replace=False)
+                    rows = []
+                    
+                    for i in idxs:
+                        exp = expl.explain_instance(X_red[i], _predict_on_reduced,
+                                                     num_features=min(8, X_red.shape[1]))
+                        
+                        for name, w in exp.as_list(): # No label needed for regression
+                            found_feat = None
+                            for f_name in feat_red:
+                                if f_name in name:
+                                    found_feat = f_name
+                                    break
+                            
+                            base_name = found_feat if found_feat is not None else name
+                            rows.append((base_name, float(w)))
+
+                    if rows:
+                        dfw = (pd.DataFrame(rows, columns=["feature", "weight"])
+                                 .groupby("feature", as_index=False)["weight"].mean()
+                                 .sort_values("weight"))
+                        
+                        dfw["feature_pretty"] = dfw["feature"].map(_pretty_label)
+
+                        plt.figure(figsize=(7, 4))
+                        plt.barh(dfw["feature_pretty"], dfw["weight"], edgecolor="black")
+                        plt.xlabel("Avg LIME weight")
+                        plt.title(
+                            f"LIME avg — {_title_with_feat(SUBDIRS[target_name][1], featset)}",
+                            fontsize=13, pad=8
+                        )
+                        plt.gcf().tight_layout(rect=[0, 0, 1, 0.92])
+                        plt.tight_layout()
+                        plt.savefig(
+                            base_png.replace(target_name, f"lime_avg__{target_name}") + ".png",
+                            dpi=220, bbox_inches="tight"
+                        )
+                        plt.close()
+
             pd.DataFrame([{
                 "target": target_name, "variant": variant_title, "featset": featset,
                 "r2": r2, "n_train": len(Xtr), "n_test": len(Xte)
             }]).to_csv(base_csv.replace(target_name, f"metrics__{target_name}") + ".csv", index=False)
 
-print("[XAI] Completed.")
+print("[XAI] Completed.")    
             
 # ======================================================
 # 20) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
