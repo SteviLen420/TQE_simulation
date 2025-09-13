@@ -58,9 +58,9 @@ MASTER_CTRL = {
     # --- Core simulation ---
     "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
     "TIME_STEPS":           1000,    # epochs per stability run (if used elsewhere)
-    "LOCKIN_EPOCHS":        700,    # epochs for law lock-in dynamics
+    "LOCKIN_EPOCHS":        1000,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1000,    # epochs for expansion dynamics
-    "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
+    "FL_EXP_EPOCHS":        1000,    # length of t>0 expansion panel
     "SEED":                 None,   # master RNG seed (auto-generated if None)
     "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
 
@@ -2586,62 +2586,74 @@ def _pretty_label(s: str) -> str:
 
 def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
     """
-    Generates and saves a SHAP summary plot.
-    This function is wrapped in error handling to prevent crashes.
+    Make a SHAP summary plot. Prefer interaction values (TreeExplainer),
+    fall back to regular SHAP values otherwise. Keep x-axis symmetric.
     """
     try:
-        # This inner try-except block attempts to calculate SHAP values,
-        # using a fallback method if the primary one fails.
+        # 1) Try a tree explainer first (fast; supports interactions)
         try:
-            # Primary method: Use TreeExplainer for tree-based models (fast and precise).
             expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
-            sv = expl.shap_values(X_plot, check_additivity=False)
+            is_tree = True
         except Exception:
-            # Fallback method: Use the generic Explainer if TreeExplainer fails (slower but more robust).
             expl = shap.Explainer(model, X_plot)
-            sv = expl(X_plot).values
-        # For binary classification, SHAP returns a list of two arrays [class_0, class_1].
-        # We select the values for the positive class (the last element).
-        if isinstance(sv, list):
-            sv = sv[-1]
-        # --- Plotting and Saving ---
-        # Ensure a clean slate by closing any previously opened Matplotlib figures.
-        plt.close('all')
+            is_tree = False
 
-        ordered_feats = ["E", "I", "X", "dist_to_goldilocks"]
-        pretty_feat_names = ["E", "I", "X", "Goldilocks X"]
+        # 2) Pick columns in a fixed, human order, but only if they exist
+        wanted = ["E", "I", "X", "dist_to_goldilocks"]
+        cols   = [c for c in wanted if c in X_plot.columns]
+        if not cols:
+            # fall back to whatever we were given
+            cols = list(X_plot.columns)
 
-        # Generate the SHAP summary plot but do not display it interactively (show=False).
+        Xsel = X_plot[cols].copy()
+        pretty = [("Goldilocks X" if c == "dist_to_goldilocks" else c) for c in cols]
+
+        # 3) Prefer SHAP *interaction* values when possible
+        use_interactions = False
+        if is_tree and hasattr(expl, "shap_interaction_values"):
+            try:
+                sv = expl.shap_interaction_values(Xsel)
+                use_interactions = True
+            except Exception:
+                pass
+
+        # 4) If interactions not available, compute regular SHAP values
+        if not use_interactions:
+            try:
+                sv = expl.shap_values(Xsel, check_additivity=False)
+            except Exception:
+                sv = expl(Xsel).values
+            if isinstance(sv, list):  # binary cls: [neg, pos]
+                sv = sv[-1]
+
+        # 5) Plot
+        plt.close("all")
         shap.summary_plot(
             sv,
-            X_plot[["E", "I", "X", "dist_to_goldilocks"]].values,
-            feature_names=pretty_feat_names,
+            Xsel.values,
+            feature_names=pretty,
             show=False,
             plot_size=(7, 5),
-            max_display=len(pretty_feat_names)
+            max_display=len(pretty),
         )
 
-        # Get figure and axis after the plot is created
+        # 6) Symmetric x-axis
+        try:
+            ax = plt.gca()
+            lim = max(abs(ax.get_xlim()[0]), abs(ax.get_xlim()[1]))
+            ax.set_xlim(-lim, lim)
+        except Exception:
+            pass
+
+        # 7) Title + save
         fig = plt.gcf()
-        ax = plt.gca()
-        # Force symmetric x-axis
-        xlim = max(abs(ax.get_xlim()[0]), abs(ax.get_xlim()[1]))
-        ax.set_xlim(-xlim, xlim)
-        # Get a handle to the current figure object that was created by shap.summary_plot.
-        fig = plt.gcf()
-        # Add a title to the figure if one was provided.
         if fig_title:
             fig.suptitle(fig_title, fontsize=13, y=0.98)
-        # Adjust plot layout to prevent the title and labels from overlapping.
         fig.tight_layout(rect=[0, 0, 1, 0.96])
-        # Save the figure to the specified output path.
         fig.savefig(out_png, dpi=220, bbox_inches="tight")
-        # Close the figure object to free up memory.
         plt.close(fig)
 
     except Exception as e:
-        # This outer except block catches any failure from the entire process
-        # and prints a warning instead of crashing the script.
         print(f"[XAI][WARN] SHAP summary plot generation failed for '{out_png}': {e}")
     
 # Target list
