@@ -56,11 +56,11 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        100000,   # number of universes in Monte Carlo run
-    "TIME_STEPS":           10000,    # epochs per stability run (if used elsewhere)
-    "LOCKIN_EPOCHS":        7000,    # epochs for law lock-in dynamics
-    "EXPANSION_EPOCHS":     10000,    # epochs for expansion dynamics
-    "FL_EXP_EPOCHS":        8000,    # length of t>0 expansion panel
+    "NUM_UNIVERSES":        2500,   # number of universes in Monte Carlo run
+    "TIME_STEPS":           1000,    # epochs per stability run (if used elsewhere)
+    "LOCKIN_EPOCHS":        700,    # epochs for law lock-in dynamics
+    "EXPANSION_EPOCHS":     1000,    # epochs for expansion dynamics
+    "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
     "SEED":                 None,   # master RNG seed (auto-generated if None)
     "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
 
@@ -2661,11 +2661,17 @@ if XAI_ENABLE_AOE and "aoe_align_score" in df_xai.columns:
     if int(m.sum()) >= REGRESSION_MIN:
         targets.append(("aoe_align_reg","reg","aoe_align_score",m))
 
-# Finetune deltas as regression targets (added even if nearly-constant; main loop guards)
+# Prefer row-level Fine-tune targets (non-constant) for XAI
+if "ft_proba_gain" in df_xai.columns and df_xai["ft_proba_gain"].std(skipna=True) > 1e-8:
+    targets.append(("finetune_proba_gain", "reg", "ft_proba_gain", None))
+if "ft_cls_gain" in df_xai.columns and df_xai["ft_cls_gain"].std(skipna=True) > 1e-8:
+    targets.append(("finetune_cls_gain", "reg", "ft_cls_gain", None))
+
+# Optional fallback to global deltas (will be constant → usually not useful)
 for nm, col in [("finetune_acc_delta","ft_acc_delta"),
                 ("finetune_auc_delta","ft_auc_delta"),
-                ("finetune_r2_delta", "ft_r2_delta")]:
-    if col in df_xai.columns:
+                ("finetune_r2_delta","ft_r2_delta")]:
+    if col in df_xai.columns and df_xai[col].std(skipna=True) > 1e-8:
         targets.append((nm, "reg", col, None))
 
 if not targets:
