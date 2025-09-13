@@ -2615,7 +2615,7 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
             X_plot[["E", "I", "X", "dist_to_goldilocks"]].values,
             feature_names=pretty_feat_names,
             show=False,
-            plot_size=(7, 5)
+            plot_size=(7, 5),
             max_display=len(pretty_feat_names)
         )
 
