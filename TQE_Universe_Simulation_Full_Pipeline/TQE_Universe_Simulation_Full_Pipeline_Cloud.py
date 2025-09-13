@@ -29,12 +29,11 @@ subprocess.check_call([sys.executable, "-m", "pip", "install", "-q",
     "pandas==2.3.2",
     "scikit-learn==1.5.2",
     "healpy==1.18.1",
-    "qutip==4.7.3",
-    "shap==0.45.0",
+    "qutip==5.2.0",
+    "shap==0.46.0",
     "lime==0.2.0.1",
-    "matplotlib==3.10.6",
+    "matplotlib==3.9.2",
     "xgboost==3.0.4",
-    "tensorflow==2.19.0",
     "torch==2.8.0+cu126"
 ])
 
