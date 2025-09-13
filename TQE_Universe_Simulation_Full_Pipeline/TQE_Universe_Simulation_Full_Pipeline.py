@@ -2605,45 +2605,49 @@ def _pretty_label(s: str) -> str:
 
 def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None, max_rows=2000):
     """
-    Lightweight SHAP summary:
-      - No interaction values (much cheaper).
-      - Fixed feature order: X, I, E, Goldilocks X (if present).
-      - Symmetric x-axis around 0.
-      - Optional row subsample to cap memory/CPU.
+    Lightweight SHAP summary with DEBUG print statements.
     """
     try:
+        print("--- DEBUG: Entering _shap_summary function ---")
         import shap
         import numpy as np
         import matplotlib.pyplot as plt
 
-        # 0) Optional subsample to keep memory in check
+        print(f"--- DEBUG: X_plot shape before subsample: {X_plot.shape} ---")
         if max_rows is not None and len(X_plot) > max_rows:
             idx = np.random.default_rng(42).choice(len(X_plot), size=max_rows, replace=False)
             X_use = X_plot.iloc[idx].copy()
+            print(f"--- DEBUG: Subsampled to X_use shape: {X_use.shape} ---")
         else:
             X_use = X_plot.copy()
+            print("--- DEBUG: No subsampling needed ---")
 
-        # 1) Fixed, human order (only keep those that exist)
         wanted = ["X", "I", "E", "dist_to_goldilocks"]
         cols   = [c for c in wanted if c in X_use.columns]
         if not cols:
             cols = list(X_use.columns)
         Xsel = X_use[cols].copy()
         pretty = [("Goldilocks X" if c == "dist_to_goldilocks" else c) for c in cols]
+        print(f"--- DEBUG: Selected features for plot: {cols} ---")
 
-        # 2) Explainer (no interactions)
+        print("--- DEBUG: Starting SHAP explainer creation ---")
         try:
             expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
+            print("--- DEBUG: TreeExplainer created. Calculating SHAP values... ---")
             sv = expl.shap_values(Xsel, check_additivity=False)
-        except Exception:
+        except Exception as e_shap:
+            print(f"--- DEBUG: TreeExplainer failed ({e_shap}), falling back to generic Explainer... ---")
             expl = shap.Explainer(model, Xsel)
+            print("--- DEBUG: Generic Explainer created. Calculating SHAP values... ---")
             sv = expl(Xsel).values
+        
+        print("--- DEBUG: SHAP values calculated successfully. ---")
 
-        # Binary classifiers return [neg, pos] – take positive class
         if isinstance(sv, list):
             sv = sv[-1]
+            print("--- DEBUG: SHAP values list handled for classifier. ---")
 
-        # 3) Plot (no sorting; keep our order)
+        print("--- DEBUG: Preparing to plot with shap.summary_plot... ---")
         shap.summary_plot(
             sv,
             Xsel.values,
@@ -2653,21 +2657,26 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None, max_rows=2
             max_display=len(pretty),
             sort=False
         )
+        print("--- DEBUG: shap.summary_plot() command finished. ---")
 
-        # 4) Symmetric x-axis + title, save, close
         ax = plt.gca()
         lim = max(abs(ax.get_xlim()[0]), abs(ax.get_xlim()[1]))
         ax.set_xlim(-lim, lim)
+        print("--- DEBUG: X-axis symmetrized. ---")
 
         fig = plt.gcf()
         if fig_title:
             fig.suptitle(fig_title, fontsize=13, y=0.98)
         fig.tight_layout(rect=[0, 0, 1, 0.96])
+        
         fig.savefig(out_png, dpi=220, bbox_inches="tight")
+        print(f"--- DEBUG: Figure saved to {out_png}. ---")
+        
         plt.close(fig)
+        print("--- DEBUG: Figure closed. Exiting _shap_summary successfully. ---")
 
     except Exception as e:
-        print(f"[XAI][WARN] SHAP summary plot failed for '{out_png}': {e}")
+        print(f"[XAI][FATAL DEBUG] An exception occurred inside _shap_summary: {e}")
     
 # Target list
 targets = []
