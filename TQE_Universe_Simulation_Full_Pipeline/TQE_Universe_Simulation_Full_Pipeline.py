@@ -25,8 +25,6 @@ if IN_COLAB:
 # --- Only install missing packages (pinned versions) ---
 import os, sys, subprocess, importlib
 
-for pkg, ver in PKGS.items():
-    _ensure_exact(pkg, ver)
 # --- Imports (after pinned install) ---
 import numpy as np
 import matplotlib
