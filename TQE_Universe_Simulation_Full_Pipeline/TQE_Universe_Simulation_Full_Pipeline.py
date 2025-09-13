@@ -2629,12 +2629,6 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
 
         # 3) Prefer SHAP *interaction* values when possible
         use_interactions = False
-        if is_tree and hasattr(expl, "shap_interaction_values"):
-            try:
-                sv = expl.shap_interaction_values(Xsel)
-                use_interactions = True
-            except Exception:
-                pass
 
         # 4) If interactions not available, compute regular SHAP values
         if not use_interactions:
