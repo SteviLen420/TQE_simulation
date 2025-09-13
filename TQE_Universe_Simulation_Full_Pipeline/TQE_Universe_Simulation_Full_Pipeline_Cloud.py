@@ -116,7 +116,16 @@ def smart_join(base: str, *parts: str) -> str:
     if is_gcs_path(base):
         return "/".join([base.rstrip("/")] + [p.strip("/") for p in parts])
     return os.path.join(base, *parts)
-# -------------------------------------------------------------------------------
+
+# Add this to the Cloud I/O helpers section at the top
+def smart_save_npy(path: str, arr: np.ndarray) -> None:
+    """Saves a NumPy array to a local or GCS path."""
+    import numpy as np
+    buf = BytesIO()
+    np.save(buf, arr)
+    buf.seek(0)
+    with smart_open(path, "wb") as f:
+        f.write(buf.read())
     
 # ======================================================
 # 1) MASTER CONTROLLER
@@ -357,17 +366,30 @@ MASTER_CTRL = {
     "PER_UNIVERSE_SEED_MODE": "rng" # "rng" | "np_random" — how per-universe seeds are derived
 }
 
-# === 1. CORRECT DIRECTORY SETUP ===
+# === 1. CORRECTED SETUP BLOCK ===
 
-# Set up output directories based on MASTER_CTRL.
-# This works for both local paths and GCS paths ("gs://...").
+# Set up output directories from MASTER_CTRL.
+# Works for local paths and GCS paths ("gs://...").
 import time
+import os
+import matplotlib.pyplot as plt
+import json
 
 # Base output directory (e.g., "gs://your-bucket/TQE_simulations")
 BASE_DIR = MASTER_CTRL["GCS_BASE_DIR"]
-run_id = MASTER_CTRL["RUN_ID_PREFIX"] + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
 
-# Define paths for this specific run
+# Get variant for subfolders and run_id tag
+VARIANT = MASTER_CTRL.get("PIPELINE_VARIANT", "full")
+if VARIANT == "energy_only":
+    variant_tag = "E-Only"
+elif VARIANT == "full":
+    variant_tag = "E+I"
+else:
+    variant_tag = VARIANT
+
+run_id = MASTER_CTRL["RUN_ID_PREFIX"] + variant_tag + "_" + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
+
+# Define paths for this specific run using the cloud-safe joiner
 SAVE_DIR = smart_join(BASE_DIR, run_id)
 FIG_DIR  = smart_join(SAVE_DIR, "figs")
 
@@ -376,40 +398,29 @@ smart_makedirs(SAVE_DIR, exist_ok=True)
 smart_makedirs(FIG_DIR, exist_ok=True)
 
 print(f"💾 Results will be saved in: {SAVE_DIR}")
-print(f"⚙️  Pipeline variant: {MASTER_CTRL.get('PIPELINE_VARIANT','full')}")
+print(f"⚙️  Pipeline variant: {VARIANT}")
 
-# Put outputs into E_ONLY / EIX subfolders automatically
-def with_variant(path: str) -> str:
-    # English: send every output into E_ONLY/EIX subfolders inside FIG_DIR/SAVE_DIR
-    sub = "E_ONLY" if VARIANT == "energy_only" else "EIX"
-    base, name = os.path.split(path)
-    base = os.path.join(base, sub)
-    os.makedirs(base, exist_ok=True)
-    return os.path.join(base, name)
+# --- Helper functions for cloud-safe saving ---
 
-# ----- Force-enable XAI modules & saving (can still be overridden by MASTER_CTRL) -----
-MASTER_CTRL.setdefault("XAI_ENABLE_STABILITY", True)
-MASTER_CTRL.setdefault("XAI_ENABLE_COLD", True)
-MASTER_CTRL.setdefault("XAI_ENABLE_AOE", True)
-MASTER_CTRL.setdefault("XAI_ENABLE_FINETUNE", True)
+def savefig(path):
+    """Saves a figure to a local or GCS path."""
+    if not MASTER_CTRL.get("SAVE_FIGS", True):
+        plt.close()
+        return
+    smart_savefig(path, dpi=180, bbox_inches="tight")
+    plt.close()
 
-MASTER_CTRL.setdefault("XAI_SAVE_SHAP", True)
-MASTER_CTRL.setdefault("XAI_SAVE_LIME", True)
-MASTER_CTRL.setdefault("XAI_ALLOW_CONST_FINETUNE", True)
+def save_json(path, obj):
+    """Saves a JSON object to a local or GCS path."""
+    with smart_open(path, "w") as f:
+        json.dump(obj, f, indent=2)
 
-# Make Drive copy path visible to downstream helpers
-MASTER_CTRL.setdefault("DRIVE_BASE_DIR", DRIVE_BASE)
-
-# --- Strict determinism knobs (optional but recommended) ---
-if MASTER_CTRL.get("USE_STRICT_SEED", True):
-    # Set before importing heavy numeric libs would be ideal,
-    # but applying here is still helpful for thread pools.
-    os.environ["PYTHONHASHSEED"] = "0"
-    os.environ["OMP_NUM_THREADS"] = "1"
-    os.environ["MKL_NUM_THREADS"] = "1"
-    os.environ["OPENBLAS_NUM_THREADS"] = "1"
-    os.environ["NUMEXPR_NUM_THREADS"] = "1"
-
+# This helper is needed for the fluctuation panels' CSVs
+def _save_df_safe_local(df_in, path):
+    """DEPRECATED: Use smart_to_csv instead. This is a temporary fix."""
+    print(f"[WARN] Using legacy _save_df_safe_local for {os.path.basename(path)}. Consider updating to smart_to_csv.")
+    smart_to_csv(df_in, path, index=False)
+    
 # ======================================================
 # 2) Master seed initialization (reproducibility)
 # ======================================================
@@ -1136,7 +1147,7 @@ else:
     plt.title("Goldilocks zone: stability vs E·I")
     
 plt.legend()
-savefig(with_variant(os.path.join(FIG_DIR, "stability_curve.png")))
+savefig(with_variant(smart_join(FIG_DIR, "stability_curve.png")))
 
 # ======================================================
 # 11) Scatter E vs I
@@ -1152,7 +1163,7 @@ else:
     plt.title("Universe outcomes in (E, I) space")
 cb = plt.colorbar(sc, ticks=[0, 1])
 cb.set_label("Stable (0/1)")
-savefig(with_variant(os.path.join(FIG_DIR, "scatter_EI.png")))
+savefig(with_variant(smart_join(FIG_DIR, "scatter_EI.png")))
 
 # ======================================================
 # 12) Fluctuation panels (t<0, t=0, t>0) + CSV exports
@@ -1173,7 +1184,7 @@ if MASTER_CTRL.get("RUN_QUANTUM_FLUCT", True):
 
     # save CSV
     fluc_df = pd.DataFrame({"time": tF, "exp_A": expA, "var_A": varA})
-    fluc_csv = with_variant(os.path.join(SAVE_DIR, "fl_fluctuation_timeseries.csv"))
+    fluc_csv = with_variant(smart_join(SAVE_DIR, "fl_fluctuation_timeseries.csv"))
     _save_df_safe_local(fluc_df, fluc_csv)
 
     # plot
@@ -1183,7 +1194,7 @@ if MASTER_CTRL.get("RUN_QUANTUM_FLUCT", True):
     plt.plot(tF, varA, label="Var(A)", alpha=0.95)
     plt.xlabel("time")
     plt.legend()
-    savefig(with_variant(os.path.join(FIG_DIR, "fl_fluctuation.png")))
+    savefig(with_variant(smart_join(FIG_DIR, "fl_fluctuation.png")))
 
 if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     print("[FL] Generating superposition / collapse / expansion panels...")
@@ -1206,7 +1217,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     )
     # save CSV
     sup_df = pd.DataFrame({"time": tS, "entropy": ent, "purity": pur})
-    sup_csv = with_variant(os.path.join(SAVE_DIR, "fl_superposition_timeseries.csv"))
+    sup_csv = with_variant(smart_join(SAVE_DIR, "fl_superposition_timeseries.csv"))
     _save_df_safe_local(sup_df, sup_csv)
 
     # plot
@@ -1215,7 +1226,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     plt.plot(tS, ent, label="Entropy", ls="--", alpha=0.9)
     plt.plot(tS, pur, label="Purity",  ls="--", alpha=0.9)
     plt.xlabel("time"); plt.legend()
-    savefig(with_variant(os.path.join(FIG_DIR, "fl_superposition.png")))
+    savefig(with_variant(smart_join(FIG_DIR, "fl_superposition.png")))
 
     # ---- (2) t = 0 : collapse (fluctuation -> lock-in) ----
     tC, xC = simulate_collapse_series(
@@ -1229,7 +1240,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
         seed=master_seed + 22
     )
     col_df = pd.DataFrame({"time": tC, "X": xC, "X_lock": X_lock})
-    col_csv = with_variant(os.path.join(SAVE_DIR, "fl_collapse_timeseries.csv"))
+    col_csv = with_variant(smart_join(SAVE_DIR, "fl_collapse_timeseries.csv"))
     _save_df_safe_local(col_df, col_csv)
 
     plt.figure(figsize=(8,5))
@@ -1240,7 +1251,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     plt.xlabel("time")
     plt.ylabel("X = E" if VARIANT == "energy_only" else "X = E·I")
     plt.legend()
-    savefig(with_variant(os.path.join(FIG_DIR, "fl_collapse.png")))
+    savefig(with_variant(smart_join(FIG_DIR, "fl_collapse.png")))
 
     # --- (3) t > 0 : expansion dynamics ----
     te, Atrack, Itrack = simulate_expansion_panel(
@@ -1251,7 +1262,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
         seed=master_seed + 33
     )
     exp_df = pd.DataFrame({"epoch": te, "A": Atrack, "I_track": Itrack})
-    exp_csv = with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv"))
+    exp_csv = with_variant(smart_join(SAVE_DIR, "fl_expansion_timeseries.csv"))
     _save_df_safe_local(exp_df, exp_csv)
 
     plt.figure(figsize=(9,5))
@@ -1268,7 +1279,7 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     plt.axhline(eqA, color="gray", ls="--", alpha=0.7, label="Equilibrium A")
 
     plt.xlabel("epoch"); plt.ylabel("Parameters"); plt.legend()
-    savefig(with_variant(os.path.join(FIG_DIR, "fl_expansion.png")))
+    savefig(with_variant(smart_join(FIG_DIR, "fl_expansion.png")))
 
 # ======================================================
 # 13) Stability by I (exact zero vs eps sweep) — extended
@@ -1309,7 +1320,7 @@ for eps in eps_list:
     eps_rows.append({**_stability_stats(df["I"]  > eps, f"I > {eps}"),  "eps": eps})
 eps_df = pd.DataFrame(eps_rows)
 eps_path = with_variant(os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv"))
-eps_df.to_csv(eps_path, index=False)
+eps_df.smart_to_csv(eps_path, index=False)
 print("\n📈 Epsilon sweep (near-zero thresholds, preview):")
 print(eps_df.head(12).to_string(index=False))
 print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
@@ -1325,8 +1336,8 @@ import itertools
 
 # --- Finetune output dir ---
 FINETUNE_DIR = FIG_DIR
-os.makedirs(FINETUNE_DIR, exist_ok=True)
-os.makedirs(SAVE_DIR, exist_ok=True)
+smart_makedirs(FINETUNE_DIR, exist_ok=True)
+smart_makedirs(SAVE_DIR, exist_ok=True)
 METRIC = MASTER_CTRL.get("FT_METRIC", "stability")  # "stability" or "lockin"
 
 def _safe_auc(y_true, y_proba):
@@ -1419,7 +1430,7 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None, bar
         })
 
     dfq = pd.DataFrame(rows)
-    if out_csv: dfq.to_csv(out_csv, index=False)
+    if out_csv: dfq.smart_to_csv(out_csv, index=False)
 
     if out_dir is None:
         out_dir = FINETUNE_DIR
@@ -1435,7 +1446,7 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None, bar
     plt.xlabel("|E − I| (bin mid)")
     plt.ylabel("P(lock-in)" if METRIC=="lockin" else "P(stable)")
     plt.tight_layout()
-    out_png1 = with_variant(os.path.join(out_dir, "finetune_gap_curve.png"))
+    out_png1 = with_variant(smart_join(out_dir, "finetune_gap_curve.png"))
     plt.savefig(out_png1, dpi=220, bbox_inches="tight")
     plt.close()
 
@@ -1446,7 +1457,7 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None, bar
     plt.xlabel("|E − I| (bin mid)")
     plt.ylabel("P(lock-in)" if METRIC=="lockin" else "P(stable)")
     plt.tight_layout()
-    out_png2 = with_variant(os.path.join(out_dir, "finetune_gap_adaptive.png"))
+    out_png2 = with_variant(smart_join(out_dir, "finetune_gap_adaptive.png"))
     plt.savefig(out_png2, dpi=220, bbox_inches="tight")
     plt.close()
 
@@ -1458,12 +1469,12 @@ def _stability_vs_gap_quantiles(df_in, qbins=10, out_csv=None, out_dir=None, bar
     try:
         if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
             DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
-            GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, "figs", "Finetune")
-            os.makedirs(GOOGLE_DIR, exist_ok=True)
+            GOOGLE_DIR = smart_join(DRIVE_BASE, run_id, "figs", "Finetune")
+            smart_makedirs(GOOGLE_DIR, exist_ok=True)
             for pth in [bar_png, out_png1, out_png2]:
                 if pth and os.path.exists(pth):
-                    shutil.copy2(pth, os.path.join(GOOGLE_DIR, os.path.basename(pth)))
-                    print("[FT][PUSH] ->", os.path.join(GOOGLE_DIR, os.path.basename(pth)))
+                    shutil.copy2(pth, smart_join(GOOGLE_DIR, os.path.basename(pth)))
+                    print("[FT][PUSH] ->", smart_join(GOOGLE_DIR, os.path.basename(pth)))
     except Exception as e:
         print("[FT][PUSH][WARN]", e)
 
@@ -1534,8 +1545,8 @@ def run_finetune_detector(df_in: pd.DataFrame):
             "feature": Xdf.columns,
             "importance": getattr(clf, "feature_importances_", np.zeros(len(Xdf.columns)))
         }).sort_values("importance", ascending=False)
-        fi_csv = with_variant(os.path.join(FIG_DIR, f"ft_feat_importance_{label}.csv"))
-        fi_df.to_csv(fi_csv, index=False)
+        fi_csv = with_variant(smart_join(FIG_DIR, f"ft_feat_importance_{label}.csv"))
+        fi_df.smart_to_csv(fi_csv, index=False)
         out["files"][f"feat_importance_{label}"] = fi_csv
 
         return {"label":label, "acc":acc, "auc":auc, "cm":cm}
@@ -1544,8 +1555,8 @@ def run_finetune_detector(df_in: pd.DataFrame):
     mE   = _fit_cls(X_E,   "E")
     mEIX = _fit_cls(X_EIX, "EIX")
     met_df = pd.DataFrame([mE, mEIX])
-    met_csv   = with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.csv"))
-    met_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.json")), indent=2)
+    met_csv   = with_variant(smart_join(SAVE_DIR, "ft_metrics_cls.csv"))
+    met_df.to_json(with_variant(smart_join(SAVE_DIR, "ft_metrics_cls.json")), indent=2)
     met_df.to_csv(met_csv, index=False)
     print("[FT] metrics_cls ->", met_csv)  
     out["files"]["metrics_cls_csv"] = met_csv
@@ -1578,8 +1589,8 @@ def run_finetune_detector(df_in: pd.DataFrame):
         rE   = _fit_reg(XR_E,   "E")
         rEIX = _fit_reg(XR_EIX, "EIX")
         reg_df  = pd.DataFrame([rE, rEIX])
-        reg_csv   = with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.csv"))
-        reg_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.json")), indent=2)
+        reg_csv   = with_variant(smart_join(SAVE_DIR, "ft_metrics_reg.csv"))
+        reg_df.to_json(with_variant(smart_join(SAVE_DIR, "ft_metrics_reg.json")), indent=2)
         reg_df.to_csv(reg_csv, index=False)
         print("[FT] metrics_reg ->", reg_csv)  
         out["files"]["metrics_reg_csv"] = reg_csv
@@ -1627,12 +1638,12 @@ def run_finetune_detector(df_in: pd.DataFrame):
             s_neq = _slice(m_neq, f"|E-I| > {eps:.3g}")
 
         sl_df = pd.DataFrame([s_eq, s_neq]).sort_values("slice")
-        sl_csv    = with_variant(os.path.join(SAVE_DIR, "ft_slice_adaptive.csv"))
-        sl_df.to_csv(sl_csv, index=False)
+        sl_csv    = with_variant(smart_join(SAVE_DIR, "ft_slice_adaptive.csv"))
+        sl_df.smart_to_csv(sl_csv, index=False)
         print("[FT] slice ->", sl_csv)  
         out["files"]["slice_csv"] = sl_csv
 
-        bar_png = with_variant(os.path.join(FIG_DIR, "lockin_by_eqI_bar.png"))
+        bar_png = with_variant(smart_join(FIG_DIR, "lockin_by_eqI_bar.png"))
         print("[FT] barplot ->", bar_png) 
         title = ("Lock-in" if METRIC=="lockin" else "Stability") + \
                 (" by Energy (Only E)" if VARIANT == "energy_only" else " by E≈I (adaptive epsilon)")
@@ -1646,7 +1657,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
         )
         out["files"]["slice_png"] = bar_png
 
-        q_csv     = with_variant(os.path.join(SAVE_DIR, "finetune_stability_vs_gap_quantiles.csv"))
+        q_csv     = with_variant(smart_join(SAVE_DIR, "finetune_stability_vs_gap_quantiles.csv"))
         _stability_vs_gap_quantiles(
             df_in,
             qbins=MASTER_CTRL.get("FT_GAP_QBINS", 10),
@@ -1655,8 +1666,8 @@ def run_finetune_detector(df_in: pd.DataFrame):
             bar_png=bar_png
         )
         out["files"]["gap_quantiles_csv"] = q_csv
-        out["files"]["gap_quantiles_png_curve"]    = with_variant(os.path.join(FIG_DIR, "finetune_gap_curve.png"))
-        out["files"]["gap_quantiles_png_adaptive"] = with_variant(os.path.join(FIG_DIR, "finetune_gap_adaptive.png"))
+        out["files"]["gap_quantiles_png_curve"]    = with_variant(smart_join(FIG_DIR, "finetune_gap_curve.png"))
+        out["files"]["gap_quantiles_png_adaptive"] = with_variant(smart_join(FIG_DIR, "finetune_gap_adaptive.png"))
     else:
         print("[FT] Skipping E≈I slice analysis (missing E or I column).")
 
@@ -1671,8 +1682,8 @@ def run_finetune_detector(df_in: pd.DataFrame):
         delta["r2_delta"] = (rEIX["r2"] - rE["r2"]) if np.isfinite(rEIX["r2"]) and np.isfinite(rE["r2"]) else float("nan")
 
     out["metrics"]["delta"] = delta
-    pd.DataFrame([delta]).to_csv(with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv")), index=False)
-    out["files"]["delta_csv"] = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
+    pd.DataFrame([delta]).to_csv(with_variant(smart_join(SAVE_DIR, "ft_delta_summary.csv")), index=False)
+    out["files"]["delta_csv"] = with_variant(smart_join(SAVE_DIR, "ft_delta_summary.csv"))
     return out
 
 # --- Finetune detector (E vs E+I(+X)) ---
@@ -1725,12 +1736,12 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
         # Clamp how many figures to 1..5
         n_best = int(np.clip(MASTER_CTRL.get("CMB_BEST_FIGS", 3), 1, 5))
 
-        out_dir = os.path.join(FIG_DIR, "cmb_best")
-        os.makedirs(out_dir, exist_ok=True)
+        out_dir = smart_join(FIG_DIR, "cmb_best")
+        smart_makedirsv(out_dir, exist_ok=True)
 
         # --- also save raw maps + registry for later detectors ---
-        MAPS_DIR = os.path.join(FIG_DIR, "cmb_best", "maps")
-        os.makedirs(MAPS_DIR, exist_ok=True)
+        MAPS_DIR = smart_join(FIG_DIR, "cmb_best", "maps")
+        smart_makedirs(MAPS_DIR, exist_ok=True)
 
         # Global registry of saved maps (uid, E, I, lock_epoch, mode, path)
         if "MAP_REG" not in globals():
@@ -1821,7 +1832,7 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                     m_uK = hp.alm2map(alm_full, nside=nside, verbose=False)
 
                 # --- save HEALPix map to FITS + register ---
-                map_fits = with_variant(os.path.join(MAPS_DIR, f"cmb_uid{uid:05d}.fits"))
+                map_fits = with_variant(smart_join(MAPS_DIR, f"cmb_uid{uid:05d}.fits"))
                 hp.write_map(map_fits, m_uK, overwrite=True)
                 MAP_REG.append({
                     "uid": uid,
@@ -1871,7 +1882,7 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
                 m = (m - np.mean(m)) / (np.std(m) + 1e-12)
 
                 # --- save flat map to .npy + register ---
-                map_npy = with_variant(os.path.join(MAPS_DIR, f"cmb_uid{uid:05d}.npy"))
+                map_npy = with_variant(smart_join(MAPS_DIR, f"cmb_uid{uid:05d}.npy"))
                 np.save(map_npy, m)
                 MAP_REG.append({
                     "uid": uid,
@@ -1898,12 +1909,12 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
         try:
             if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
                 DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
-                GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, os.path.relpath(os.path.join(FIG_DIR, "cmb_best"), SAVE_DIR))
+                GOOGLE_DIR = smart_join(DRIVE_BASE, run_id, os.path.relpath(smart_join(FIG_DIR, "cmb_best"), SAVE_DIR))
                 os.makedirs(GOOGLE_DIR, exist_ok=True)
                 cnt = 0
                 for fn in sorted(os.listdir(out_dir)):
                     if fn.endswith(".png"):
-                        shutil.copy2(os.path.join(out_dir, fn), os.path.join(GOOGLE_DIR, fn))
+                        shutil.copy2(smart_join(out_dir, fn), smart_join(GOOGLE_DIR, fn))
                         cnt += 1
                 print(f"[CMB][BEST] Copied {cnt} PNG(s) to Drive: {GOOGLE_DIR}")
         except Exception as e:
@@ -1931,8 +1942,8 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
         HAVE_HP = False
 
     # --- params
-    COLD_DIR = os.path.join(FIG_DIR, "cmb_coldspots")
-    os.makedirs(COLD_DIR, exist_ok=True)
+    COLD_DIR = smart_join(FIG_DIR, "cmb_coldspots")
+    smart_makedirs(COLD_DIR, exist_ok=True)
     title_variant = "E-only" if VARIANT == "energy_only" else "E+I"
     ARC_MIN_TO_RAD = np.pi / (180.0 * 60.0)
     pix_arcmin     = float(MASTER_CTRL.get("CMB_PIXSIZE_ARCMIN", 5.0))  
@@ -2036,7 +2047,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                         for pidx in picked:
                             pix = int(idx_all[pidx]); th, ph = float(theta[pix]), float(phi[pix])
                             hp.projplot(th, ph, 'o', ms=6)
-                        out_png = with_variant(os.path.join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
+                        out_png = with_variant(smart_join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
                         plt.savefig(out_png, dpi=200, bbox_inches="tight"); plt.close(fig)
                         ol_cnt += 1
 
@@ -2089,7 +2100,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                         plt.colorbar(label="μK (z-score)")
                         plt.xlabel("deg"); plt.ylabel("deg")
                         plt.title(f"Cold spots [{title_variant}] — uid {uid}, lock-in {lock_ep} (top {len(picked)})")
-                        out_png = with_variant(os.path.join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
+                        out_png = with_variant(smart_join(COLD_DIR, f"coldspots_overlay_uid{uid:05d}.png"))
                         plt.savefig(out_png, dpi=200, bbox_inches="tight"); plt.close()
                         ol_cnt += 1
 
@@ -2097,8 +2108,8 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
         import pandas as pd
         if len(all_rows):
             cold_df = pd.DataFrame(all_rows).sort_values(["universe_id", "rank"])
-            out_csv = with_variant(os.path.join(SAVE_DIR, "cmb_coldspots_summary.csv"))
-            cold_df.to_csv(out_csv, index=False)
+            out_csv = with_variant(smart_join(SAVE_DIR, "cmb_coldspots_summary.csv"))
+            cold_df.smart_to_csv(out_csv, index=False)
             print("[CMB][COLD] CSV:", out_csv)
 
             # Depth histogram
@@ -2119,7 +2130,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                             label=f"min z = {z_star:.2f}")
             plt.legend()
             
-            out_hist = with_variant(os.path.join(COLD_DIR, "coldspots_z_hist.png"))
+            out_hist = with_variant(smart_join(COLD_DIR, "coldspots_z_hist.png"))
             plt.savefig(out_hist, dpi=200, bbox_inches="tight"); plt.close()
             print("[CMB][COLD] FIG:", out_hist)
 
@@ -2135,7 +2146,7 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
                 plt.colorbar(label="Előfordulás")
                 plt.xlabel("Longitude (°)"); plt.ylabel("Latitude (°)")
                 plt.title("Cold Spot position distribution (all selected maps)")
-                out_pos = with_variant(os.path.join(COLD_DIR, "coldspots_pos_heatmap.png"))
+                out_pos = with_variant(smart_join(COLD_DIR, "coldspots_pos_heatmap.png"))
                 plt.savefig(out_pos, dpi=200, bbox_inches="tight"); plt.close()
                 print("[CMB][COLD] FIG:", out_pos)
             except Exception as e:
@@ -2145,14 +2156,14 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
             try:
                 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
                     DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
-                    GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, "figs", "cmb_coldspots")
+                    GOOGLE_DIR = smart_join(DRIVE_BASE, run_id, "figs", "cmb_coldspots")
                     os.makedirs(GOOGLE_DIR, exist_ok=True)
                     copied = 0
                     for fn in sorted(os.listdir(COLD_DIR)):
                         if fn.endswith(".png"):
-                            shutil.copy2(os.path.join(COLD_DIR, fn), os.path.join(GOOGLE_DIR, fn))
+                            shutil.copy2(smart_join(COLD_DIR, fn), smart_join(GOOGLE_DIR, fn))
                             copied += 1
-                    shutil.copy2(out_csv, os.path.join(DRIVE_BASE, run_id, os.path.relpath(out_csv, SAVE_DIR)))
+                    shutil.copy2(out_csv, smart_join(DRIVE_BASE, run_id, os.path.relpath(out_csv, SAVE_DIR)))
                     print(f"[CMB][COLD] Copied {copied} PNG(s) + CSV to Drive.")
             except Exception as e:
                 print("[CMB][COLD][WARN] Drive copy failed:", e)
@@ -2177,8 +2188,8 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
         print("[CMB][AOE][ERR] healpy is required for AoE:", e)
         hp = None
 
-    AOE_DIR = os.path.join(FIG_DIR, "cmb_axisofevil")
-    os.makedirs(AOE_DIR, exist_ok=True)
+    AOE_DIR = smart_join(FIG_DIR, "cmb_axisofevil")
+    smart_makedirs(AOE_DIR, exist_ok=True)
 
     if (hp is None) or ("MAP_REG" not in globals()) or (len(MAP_REG) == 0):
         print("[CMB][AOE] No MAP_REG / healpy missing. Skipping.")
@@ -2255,7 +2266,7 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
                 for (lon, lat, mk) in [(q_lon, q_lat, 'o'), (o_lon, o_lat, 's')]:
                     hp.projplot(lon, lat, mk, lonlat=True, ms=6)
                     hp.projplot((lon+180.0) % 360.0, -lat, mk, lonlat=True, ms=6)
-                out_png = with_variant(os.path.join(AOE_DIR, f"aoe_overlay_uid{uid:05d}.png"))
+                out_png = with_variant(smart_join(AOE_DIR, f"aoe_overlay_uid{uid:05d}.png"))
                 plt.savefig(out_png, dpi=200, bbox_inches="tight")
                 plt.close(fig)
                 ol_cnt += 1
@@ -2263,8 +2274,8 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
         # Save summary
         if rows:
             df_aoe = pd.DataFrame(rows).sort_values("universe_id")
-            csv_path = with_variant(os.path.join(SAVE_DIR, "cmb_aoe_summary.csv"))
-            df_aoe.to_csv(csv_path, index=False)
+            csv_path = with_variant(smart_join(SAVE_DIR, "cmb_aoe_summary.csv"))
+            df_aoe.smart_to_csv(csv_path, index=False)
             print("[CMB][AOE] CSV:", csv_path)
 
             # Angle histogram
@@ -2280,7 +2291,7 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             plt.xlabel("Quadrupole–Octupole angle (deg)")
             plt.ylabel("Count")
             plt.title("Axis-of-Evil alignment angle distribution")
-            hist_path = with_variant(os.path.join(AOE_DIR, "aoe_angle_hist.png"))
+            hist_path = with_variant(smart_join(AOE_DIR, "aoe_angle_hist.png"))
             plt.savefig(hist_path, dpi=200, bbox_inches="tight")
             plt.close()
             print("[CMB][AOE] FIG:", hist_path)
@@ -2289,14 +2300,14 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
             try:
                 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
                     DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
-                    GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id, "figs", "cmb_axisofevil")
+                    GOOGLE_DIR = smart_join(DRIVE_BASE, run_id, "figs", "cmb_axisofevil")
                     os.makedirs(GOOGLE_DIR, exist_ok=True)
                     copied = 0
                     for fn in sorted(os.listdir(AOE_DIR)):
                         if fn.endswith(".png"):
-                            shutil.copy2(os.path.join(AOE_DIR, fn), os.path.join(GOOGLE_DIR, fn))
+                            shutil.copy2(smart_join(AOE_DIR, fn), smart_join(GOOGLE_DIR, fn))
                             copied += 1
-                    shutil.copy2(csv_path, os.path.join(DRIVE_BASE, run_id, os.path.relpath(csv_path, SAVE_DIR)))
+                    shutil.copy2(csv_path, smart_join(DRIVE_BASE, run_id, os.path.relpath(csv_path, SAVE_DIR)))
                     print(f"[CMB][AOE] Copied {copied} PNG(s) + CSV to Drive.")
             except Exception as e:
                 print("[CMB][AOE][WARN] Drive copy failed:", e)
@@ -2346,12 +2357,12 @@ def _plot_two_bar_with_ci(labels, counts, totals, title, out_png, ylabel="Probab
 # ======================================================
 # (A) JOIN: attach Cold / AoE / Finetune 
 # ======================================================
-cold_csv = with_variant(os.path.join(SAVE_DIR, "cmb_coldspots_summary.csv"))
-aoe_csv = with_variant(os.path.join(SAVE_DIR, "cmb_aoe_summary.csv"))
+cold_csv = with_variant(smart_join(SAVE_DIR, "cmb_coldspots_summary.csv"))
+aoe_csv = with_variant(smart_join(SAVE_DIR, "cmb_aoe_summary.csv"))
 if not os.path.exists(aoe_csv):
-    aoe_csv = with_variant(os.path.join(SAVE_DIR, "cmb_axis_of_evil_summary.csv"))
+    aoe_csv = with_variant(smart_join(SAVE_DIR, "cmb_axis_of_evil_summary.csv"))
 
-ft_csv   = with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv"))
+ft_csv   = with_variant(smart_join(SAVE_DIR, "ft_delta_summary.csv"))
 
 cold_df = _safe_read_csv(cold_csv)
 aoe_df  = _safe_read_csv(aoe_csv)
@@ -2430,7 +2441,7 @@ if "stable" not in df_join.columns and "lock_epoch" in df_join.columns:
     df_join["stable"] = (df_join["lock_epoch"] >= 0).astype(int)
 
 # Persist joined view (debug) — use Cloud-safe writer so it works on GCS/Colab/VMs too
-joined_csv = with_variant(os.path.join(SAVE_DIR, "metrics_joined.csv"))
+joined_csv = with_variant(smart_join(SAVE_DIR, "metrics_joined.csv"))
 smart_to_csv(df_join, joined_csv, index=False) 
 print("[JOIN] Wrote:", joined_csv)
 
@@ -2506,16 +2517,16 @@ def run_finetune_detector(df_in: pd.DataFrame):
         fi_df = pd.DataFrame({"feature": Xdf.columns,
                               "importance": getattr(clf, "feature_importances_", np.zeros(len(Xdf.columns)))}
                              ).sort_values("importance", ascending=False)
-        fi_csv = with_variant(os.path.join(FIG_DIR, f"ft_feat_importance_{label}.csv"))
-        fi_df.to_csv(fi_csv, index=False)
+        fi_csv = with_variant(smart_join(FIG_DIR, f"ft_feat_importance_{label}.csv"))
+        fi_df.smart_to_csv(fi_csv, index=False)
         out["files"][f"feat_importance_{label}"] = fi_csv
         return {"label":label, "acc":acc, "auc":auc, "cm":cm}
 
     mE,   clf_E   = _fit_cls(X_E,   "E")
     mEIX, clf_EIX = _fit_cls(X_EIX, "EIX")
     met_df = pd.DataFrame([mE, mEIX])
-    met_df.to_csv(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.csv")), index=False)
-    met_df.to_json(with_variant(os.path.join(SAVE_DIR, "ft_metrics_cls.json")), indent=2)
+    met_df.smart_to_csv(with_variant(smart_join(SAVE_DIR, "ft_metrics_cls.csv")), index=False)
+    met_df.to_json(with_variant(smart_join(SAVE_DIR, "ft_metrics_cls.json")), indent=2)
 
     # --- Row-level finetune targets for XAI (classification) ---
     proba_E   = clf_E.predict_proba(X_E.iloc[Xte_idx])[:,1]     
@@ -2550,7 +2561,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
             reg.fit(Xdf.iloc[Rtr], yr[Rtr]); r2 = float(r2_score(yr[Rte], reg.predict(Xdf.iloc[Rte])))
             return {"label":label, "r2":r2}
         rE, rEIX = _fit_reg(XR_E, "E"), _fit_reg(XR_EIX, "EIX")
-        pd.DataFrame([rE, rEIX]).to_csv(with_variant(os.path.join(SAVE_DIR, "ft_metrics_reg.csv")), index=False)
+        pd.DataFrame([rE, rEIX]).to_csv(with_variant(smart_join(SAVE_DIR, "ft_metrics_reg.csv")), index=False)
         out["metrics"]["reg"] = {"E":rE,"EIX":rEIX}
 
     # E≈I slice + adaptive eps
@@ -2570,8 +2581,8 @@ def run_finetune_detector(df_in: pd.DataFrame):
         lab_eq  = ("E ≤ " if VARIANT=="energy_only" else "|E−I| ≤ ") + f"{eps:.3g}"
         lab_neq = ("E > " if VARIANT=="energy_only" else "|E−I| > ") + f"{eps:.3g}"
         sl_df = pd.DataFrame([_slice(m_eq,lab_eq), _slice(m_neq,lab_neq)]).sort_values("slice")
-        sl_csv = with_variant(os.path.join(SAVE_DIR, "ft_slice_adaptive.csv")); sl_df.to_csv(sl_csv, index=False)
-        bar_png = with_variant(os.path.join(FIG_DIR, "lockin_by_eqI_bar.png"))
+        sl_csv = with_variant(smart_join(SAVE_DIR, "ft_slice_adaptive.csv")); sl_df.to_csv(sl_csv, index=False)
+        bar_png = with_variant(smart_join(FIG_DIR, "lockin_by_eqI_bar.png"))
         title = ("Lock-in" if MASTER_CTRL.get("FT_METRIC","stability")=="lockin" else "Stability") + \
                 (" by Energy (Only E)" if VARIANT=="energy_only" else " by E≈I (adaptive epsilon)")
         _plot_two_bar_with_ci(sl_df["slice"].tolist(), sl_df["k"].tolist(), sl_df["n"].tolist(),
@@ -2591,11 +2602,11 @@ def run_finetune_detector(df_in: pd.DataFrame):
         plt.figure(figsize=(7,5)); plt.errorbar(mids, y, yerr=yerr, fmt='-o')
         plt.title("Fine-tune — probability vs |E−I|"); plt.xlabel("|E−I| (bin mid)")
         plt.ylabel("P(lock-in)" if MASTER_CTRL.get("FT_METRIC","stability")=="lockin" else "P(stable)")
-        plt.tight_layout(); plt.savefig(with_variant(os.path.join(FIG_DIR, "finetune_gap_curve.png")), dpi=220, bbox_inches="tight"); plt.close()
+        plt.tight_layout(); plt.savefig(with_variant(smart_join(FIG_DIR, "finetune_gap_curve.png")), dpi=220, bbox_inches="tight"); plt.close()
         plt.figure(figsize=(7,5)); plt.errorbar(mids, y, yerr=yerr, fmt='-o')
         plt.title("Fine-tune — probability by adaptive |E−I| split"); plt.xlabel("|E−I| (bin mid)")
         plt.ylabel("P(lock-in)" if MASTER_CTRL.get("FT_METRIC","stability")=="lockin" else "P(stable)")
-        plt.tight_layout(); plt.savefig(with_variant(os.path.join(FIG_DIR, "finetune_gap_adaptive.png")), dpi=220, bbox_inches="tight"); plt.close()
+        plt.tight_layout(); plt.savefig(with_variant(smart_join(FIG_DIR, "finetune_gap_adaptive.png")), dpi=220, bbox_inches="tight"); plt.close()
 
     # deltas JSON/CSV
     delta = {
@@ -2606,7 +2617,7 @@ def run_finetune_detector(df_in: pd.DataFrame):
         rE   = out["metrics"]["reg"].get("E",   {"r2": np.nan})
         rEIX = out["metrics"]["reg"].get("EIX", {"r2": np.nan})
         delta["r2_delta"] = (rEIX["r2"] - rE["r2"]) if np.isfinite(rEIX["r2"]) and np.isfinite(rE["r2"]) else float("nan")
-    pd.DataFrame([delta]).to_csv(with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv")), index=False)
+    pd.DataFrame([delta]).to_csv(with_variant(smart_join(SAVE_DIR, "ft_delta_summary.csv")), index=False)
     return delta
 
 if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True) and MASTER_CTRL.get("XAI_ENABLE_FINETUNE", True):
@@ -2614,7 +2625,7 @@ if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True) and MASTER_CTRL.get("XAI_ENABL
         _ = run_finetune_detector(df_join)
         print("[FT] Finetune detector finished.")
         # Refresh df_xai with (possibly) new ft_delta_summary
-        ft_df = _safe_read_csv(with_variant(os.path.join(SAVE_DIR, "ft_delta_summary.csv")))
+        ft_df = _safe_read_csv(with_variant(smart_join(SAVE_DIR, "ft_delta_summary.csv")))
         if ft_df is not None and not ft_df.empty:
             for col in ["acc_delta","auc_delta","r2_delta"]:
                 if col in ft_df.columns:
@@ -2654,10 +2665,10 @@ RUN_BOTH = bool(MASTER_CTRL.get("XAI_RUN_BOTH_FEATSETS", False))
 variant_title = "E-only" if VARIANT=="energy_only" else "E+I(+X)"
 
 # Directories per target
-XAI_FIG_DIR  = os.path.join(FIG_DIR, "xai")
-XAI_SAVE_DIR = os.path.join(SAVE_DIR, "xai")
-os.makedirs(XAI_FIG_DIR,  exist_ok=True)
-os.makedirs(XAI_SAVE_DIR, exist_ok=True)
+XAI_FIG_DIR  = smart_join(FIG_DIR, "xai")
+XAI_SAVE_DIR = smart_join(SAVE_DIR, "xai")
+smart_makedirs(XAI_FIG_DIR,  exist_ok=True)
+smart_makedirs(XAI_SAVE_DIR, exist_ok=True)
 SUBDIRS = {
     "stability_cls": ("stability","XAI — Stability (classification)"),
     "lock_epoch_reg":("lockin",   "XAI — Lock-in epoch (regression)"),
@@ -2671,15 +2682,15 @@ SUBDIRS = {
 }
 def _mk_dirs_for_target(tname):
     sub = SUBDIRS.get(tname, ("misc", tname))[0]
-    fig_dir  = os.path.join(XAI_FIG_DIR,  sub)
-    save_dir = os.path.join(XAI_SAVE_DIR, sub)
-    os.makedirs(fig_dir,  exist_ok=True)
-    os.makedirs(save_dir, exist_ok=True)
+    fig_dir  = smart_join(XAI_FIG_DIR,  sub)
+    save_dir = smart_join(XAI_SAVE_DIR, sub)
+    smart_makedirs(fig_dir,  exist_ok=True)
+    smart_makedirs(save_dir, exist_ok=True)
     return fig_dir, save_dir
 def _file_prefix(fig_dir, save_dir, target_name, featset):
     tag = "Eonly" if featset=="E_ONLY" else "EIX"
-    return (with_variant(os.path.join(fig_dir,  f"{target_name}__{tag}")),
-            with_variant(os.path.join(save_dir, f"{target_name}__{tag}")))
+    return (with_variant(smart_join(fig_dir,  f"{target_name}__{tag}")),
+            with_variant(smart_join(save_dir, f"{target_name}__{tag}")))
 def _title_with_feat(base_title, featset):
     return f"{base_title} [{'E-only' if featset=='E_ONLY' else 'E+I(+X)'}]"
 
@@ -3041,11 +3052,11 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         VERBOSE = MASTER_CTRL.get("VERBOSE", True)
 
         # Ensure base directory exists
-        os.makedirs(DRIVE_BASE, exist_ok=True)
+        smart_makedirs(DRIVE_BASE, exist_ok=True)
 
         # Destination run folder (deterministic naming from run_id)
-        GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id)
-        os.makedirs(GOOGLE_DIR, exist_ok=True)
+        GOOGLE_DIR = smart_join(DRIVE_BASE, run_id)
+        smart_makedirs(GOOGLE_DIR, exist_ok=True)
 
         # Optional listing before copy
         if VERBOSE and os.path.isdir(FIG_DIR):
@@ -3061,7 +3072,7 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
             # Collect eligible files first (we will sort globally for determinism)
             for file in files:
                 if any(file.endswith(ext) for ext in ALLOWED_EXTS):
-                    src = os.path.join(root, file)
+                    src = smart_join(root, file)
                     rel = os.path.relpath(src, SAVE_DIR)
                     to_copy.append((rel, src))
 
@@ -3070,22 +3081,22 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
                 if any(file.endswith(ext) for ext in ALLOWED_EXTS):
                     src = os.path.join(root, file)
                     rel_under_figs = os.path.relpath(src, FIG_DIR)           # pl. "cmb_best/xxx.png"
-                    rel = os.path.join("figs", rel_under_figs)                # run_id/figs/...
+                    rel = smart_join("figs", rel_under_figs)                # run_id/figs/...
                     to_copy.append((rel, src))
 
         # PRIORITIZE Fine-tune PNGs (root of FIG_DIR)
         prio_local = [
-            with_variant(os.path.join(FIG_DIR, "lockin_by_eqI_bar.png")),
-            with_variant(os.path.join(FIG_DIR, "finetune_gap_curve.png")),
-            with_variant(os.path.join(FIG_DIR, "finetune_gap_adaptive.png")),
-            with_variant(os.path.join(FIG_DIR, "finetune_panel.png")),  # merged panel
+            with_variant(smart_join(FIG_DIR, "lockin_by_eqI_bar.png")),
+            with_variant(smart_join(FIG_DIR, "finetune_gap_curve.png")),
+            with_variant(smart_join(FIG_DIR, "finetune_gap_adaptive.png")),
+            with_variant(smart_join(FIG_DIR, "finetune_panel.png")),  # merged panel
         ]
 
         prio_pairs = []
         for src in prio_local:
             if os.path.exists(src):
                 rel_under_figs = os.path.relpath(src, FIG_DIR)   # e.g. "Finetune/xxx.png"
-                rel = os.path.join("figs", rel_under_figs)        # run_id/figs/Finetune/xxx.png
+                rel = smart_join("figs", rel_under_figs)        # run_id/figs/Finetune/xxx.png
                 prio_pairs.append((rel, src))
 
         # Put priorities in front and deduplicate by rel
@@ -3111,9 +3122,9 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
             
         # Perform the copy
         for rel, src in to_copy:
-            dst_dir = os.path.join(GOOGLE_DIR, os.path.dirname(rel))
-            os.makedirs(dst_dir, exist_ok=True)
-            dst = os.path.join(dst_dir, os.path.basename(rel))
+            dst_dir = smart_join(GOOGLE_DIR, os.path.dirname(rel))
+            smart_makedirs(dst_dir, exist_ok=True)
+            dst = smart_join(dst_dir, os.path.basename(rel))
             try:
                 # If already same file (same inode), skip
                 if os.path.exists(dst):
@@ -3235,7 +3246,7 @@ def _plot_best_universe(unirec: dict, steps: int, n_regions: int,
         df_reg.insert(0, "time_step", t)
         df_reg["global_entropy"] = g
         df_reg["lock_epoch"] = lock_ep
-        df_reg.to_csv(os.path.join(save_csv_dir, f"best_uni_{uid:05d}_entropy_timeseries.csv"), index=False)
+        df_reg.smart_to_csv(os.path.join(save_csv_dir, f"best_uni_{uid:05d}_entropy_timeseries.csv"), index=False)
 
     plt.figure(figsize=(10, 6.2))
     title_suffix = "(E)" if VARIANT == "energy_only" else "(E,I)"
@@ -3288,14 +3299,14 @@ else:
     picked = df_lock.head(n_take)
 
     # Output folders
-    BEST_DIR = os.path.join(FIG_DIR, "best_universes")
-    BEST_CSV_DIR = os.path.join(SAVE_DIR, "best_universes_csv")
-    os.makedirs(BEST_DIR, exist_ok=True)
+    BEST_DIR = smart_join(FIG_DIR, "best_universes")
+    BEST_CSV_DIR = smart_join(SAVE_DIR, "best_universes_csv")
+    smart_makedirs(BEST_DIR, exist_ok=True)
 
     made = []
     for rank, row in picked.iterrows():
         uid = int(row["universe_id"])
-        png_path = with_variant(os.path.join(BEST_DIR, f"best_uni_rank{rank+1:02d}_uid{uid:05d}.png"))
+        png_path = with_variant(smart_join(BEST_DIR, f"best_uni_rank{rank+1:02d}_uid{uid:05d}.png"))
         _plot_best_universe(
             unirec=row.to_dict(),
             steps=BEST_CFG["TIME_STEPS"],
@@ -3334,32 +3345,32 @@ summary = {
         "X_high": E_c_high if E_c_high is not None else E_c_high_plot
     },
     "figures": {
-        "stability_curve": with_variant(os.path.join(FIG_DIR, "stability_curve.png")),
-        "scatter_EI": with_variant(os.path.join(FIG_DIR, "scatter_EI.png")),
-        "stability_distribution": with_variant(os.path.join(FIG_DIR, "stability_distribution.png")),  
-        "fl_fluctuation": with_variant(os.path.join(FIG_DIR, "fl_fluctuation.png")),
-        "fl_superposition": with_variant(os.path.join(FIG_DIR, "fl_superposition.png")),
-        "fl_collapse":      with_variant(os.path.join(FIG_DIR, "fl_collapse.png")),
-        "fl_expansion":     with_variant(os.path.join(FIG_DIR, "fl_expansion.png")),
+        "stability_curve": with_variant(smart_join(FIG_DIR, "stability_curve.png")),
+        "scatter_EI": with_variant(smart_join(FIG_DIR, "scatter_EI.png")),
+        "stability_distribution": with_variant(smart_join(FIG_DIR, "stability_distribution.png")),  
+        "fl_fluctuation": with_variant(smart_join(FIG_DIR, "fl_fluctuation.png")),
+        "fl_superposition": with_variant(smart_join(FIG_DIR, "fl_superposition.png")),
+        "fl_collapse":      with_variant(smart_join(FIG_DIR, "fl_collapse.png")),
+        "fl_expansion":     with_variant(smart_join(FIG_DIR, "fl_expansion.png")),
         "ft_slice_EeqI": ft_result.get("files", {}).get("slice_png"),
-        "best_universes_dir": os.path.join(FIG_DIR, "best_universes"),
-        "stability_distribution_three": with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png")),
+        "best_universes_dir": smart_join(FIG_DIR, "best_universes"),
+        "stability_distribution_three": with_variant(smart_join(FIG_DIR, "stability_distribution_three.png")),
     },
     "artifacts": {
-        "tqe_runs_csv": with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")),
-        "universe_seeds_csv": with_variant(os.path.join(SAVE_DIR, "universe_seeds.csv")),
-        "pre_fluctuation_pairs_csv": with_variant(os.path.join(SAVE_DIR, "pre_fluctuation_pairs.csv")),
-        "stability_by_I_zero_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_zero.csv")),
-        "stability_by_I_eps_sweep_csv": with_variant(os.path.join(SAVE_DIR, "stability_by_I_eps_sweep.csv")),  
-        "fl_fluctuation_csv": with_variant(os.path.join(SAVE_DIR, "fl_fluctuation_timeseries.csv")),
-        "fl_superposition_csv": with_variant(os.path.join(SAVE_DIR, "fl_superposition_timeseries.csv")),
-        "fl_collapse_csv":      with_variant(os.path.join(SAVE_DIR, "fl_collapse_timeseries.csv")),
-        "fl_expansion_csv":     with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv")),
+        "tqe_runs_csv": with_variant(smart_join(SAVE_DIR, "tqe_runs.csv")),
+        "universe_seeds_csv": with_variant(smart_join(SAVE_DIR, "universe_seeds.csv")),
+        "pre_fluctuation_pairs_csv": with_variant(smart_join(SAVE_DIR, "pre_fluctuation_pairs.csv")),
+        "stability_by_I_zero_csv": with_variant(smart_join(SAVE_DIR, "stability_by_I_zero.csv")),
+        "stability_by_I_eps_sweep_csv": with_variant(smart_join(SAVE_DIR, "stability_by_I_eps_sweep.csv")),  
+        "fl_fluctuation_csv": with_variant(smart_join(SAVE_DIR, "fl_fluctuation_timeseries.csv")),
+        "fl_superposition_csv": with_variant(smart_join(SAVE_DIR, "fl_superposition_timeseries.csv")),
+        "fl_collapse_csv":      with_variant(smart_join(SAVE_DIR, "fl_collapse_timeseries.csv")),
+        "fl_expansion_csv":     with_variant(smart_join(SAVE_DIR, "fl_expansion_timeseries.csv")),
         "ft_metrics_cls_csv": ft_result.get("files", {}).get("metrics_cls_csv"),
         "ft_metrics_reg_csv": ft_result.get("files", {}).get("metrics_reg_csv"),
         "ft_slice_EeqI_csv":  ft_result.get("files", {}).get("slice_csv"),
         "ft_delta_summary_csv": ft_result.get("files", {}).get("delta_csv"),
-        "best_universes_csv_dir": os.path.join(SAVE_DIR, "best_universes_csv"),
+        "best_universes_csv_dir": smart_join(SAVE_DIR, "best_universes_csv"),
     },
         "finetune_detector": {
         "enabled": bool(MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True)),
@@ -3373,7 +3384,7 @@ summary = {
     }
 }
 if MASTER_CTRL.get("SAVE_JSON", True):
-    save_json(with_variant(os.path.join(SAVE_DIR, "summary_full.json")), summary)
+    save_json(with_variant(smart_join(SAVE_DIR, "summary_full.json")), summary)
 
 print("\n🌌 Universe Stability Summary (final run)")
 print(f"Total universes: {len(df)}")
@@ -3424,8 +3435,8 @@ plt.ylabel("Number of Universes")
 plt.title(f"Universe Stability Distribution ({_variant_label()}) — three categories")
 plt.ylim(0, max(values_disjoint) * 1.12 + 1)
 plt.tight_layout()
-savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png")))
-print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png")))
+savefig(with_variant(smart_join(FIG_DIR, "stability_distribution_three.png")))
+print("[FIG] Wrote:", with_variant(smart_join(FIG_DIR, "stability_distribution_three.png")))
 
 # ---------- Overlapping categories: Stable total / Unstable / Lock-in ----------
 values_overlap = np.array([stable_total, unstable_count, lockin_count], dtype=float)
@@ -3450,8 +3461,8 @@ plt.ylabel("Number of Universes")
 plt.title("Universe Stability — overlapping categories (Stable / Unstable / Lock-in)")
 plt.ylim(0, max(values_overlap) * 1.12 + 1)
 plt.tight_layout()
-savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
-print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
+savefig(with_variant(smart_join(FIG_DIR, "stability_distribution_three_overlap.png")))
+print("[FIG] Wrote:", with_variant(smart_join(FIG_DIR, "stability_distribution_three_overlap.png")))
 
 # ------------------------------------------------------
 # 24) Compact version (backward compatibility, fixed)
@@ -3468,19 +3479,19 @@ plt.bar(labels_compact, values, color=["steelblue", "green", "red"], edgecolor="
 plt.ylabel("Number of Universes")
 plt.title("Universe Stability Distribution (compact)")
 plt.tight_layout()
-savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
-print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution.png")))
+savefig(with_variant(smart_join(FIG_DIR, "stability_distribution.png")))
+print("[FIG] Wrote:", with_variant(smart_join(FIG_DIR, "stability_distribution.png")))
 
 # --- FINAL COPY: Ensure 3-column chart goes to Google Drive ---
 try:
     if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
-        GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id)
-        os.makedirs(GOOGLE_DIR, exist_ok=True)
+        GOOGLE_DIR = smart_join(DRIVE_BASE, run_id)
+        smart_makedirs(GOOGLE_DIR, exist_ok=True)
 
-        three_local = with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png"))
-        three_dst   = os.path.join(GOOGLE_DIR, os.path.relpath(three_local, SAVE_DIR))
-        os.makedirs(os.path.dirname(three_dst), exist_ok=True)
+        three_local = with_variant(smart_join(FIG_DIR, "stability_distribution_three.png"))
+        three_dst   = smart_join(GOOGLE_DIR, os.path.relpath(three_local, SAVE_DIR))
+        smart_makedirs(os.path.dirname(three_dst), exist_ok=True)
         if os.path.exists(three_local):
             shutil.copy2(three_local, three_dst)
             print("[FINAL COPY] 3-column chart ->", three_dst)
@@ -3493,9 +3504,9 @@ except Exception as e:
 try:
     if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
-        GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id)
-        src_dir = os.path.join(FIG_DIR, "best_universes")
-        dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(src_dir, SAVE_DIR))
+        GOOGLE_DIR = smart_join(DRIVE_BASE, run_id)
+        src_dir = smart_join(FIG_DIR, "best_universes")
+        dst_dir = osmart_join(GOOGLE_DIR, os.path.relpath(src_dir, SAVE_DIR))
         if os.path.isdir(src_dir):
             os.makedirs(dst_dir, exist_ok=True)
             copied_cnt = 0
@@ -3510,7 +3521,7 @@ except Exception as e:
     print("[FINAL COPY][ERR][best]", e)
 
 # --- CHECK: Verify existence of 3-column chart ---
-pth_three = with_variant(os.path.join(FIG_DIR, "stability_distribution_three.png"))
+pth_three = with_variant(smart_join(FIG_DIR, "stability_distribution_three.png"))
 print("[CHECK] 3-column chart exists:", os.path.exists(pth_three), "->", pth_three)
 
 # --- CHECK: Verify best_universes PNGs are generated ---
