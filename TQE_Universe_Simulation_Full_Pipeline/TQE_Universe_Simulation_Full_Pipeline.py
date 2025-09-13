@@ -1261,7 +1261,7 @@ def _plot_two_bar_with_ci(labels, counts, totals, title, out_png):
     plt.title(title)
     plt.tight_layout()
     plt.savefig(out_png, dpi=220, bbox_inches="tight")
-    plt.close()
+    plt.close('all')
 
 def _select_eps_by_share(gaps, target_share=0.20, min_n=30):
     """
@@ -2669,7 +2669,8 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
             fig.suptitle(fig_title, fontsize=13, y=0.98)
         fig.tight_layout(rect=[0, 0, 1, 0.96])
         fig.savefig(out_png, dpi=220, bbox_inches="tight")
-        plt.close(fig)
+        plt.close('all')
+        
 
     except Exception as e:
         print(f"[XAI][WARN] SHAP summary plot generation failed for '{out_png}': {e}")
