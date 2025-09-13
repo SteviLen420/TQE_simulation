@@ -2817,7 +2817,7 @@ for target_name, kind, y_col, mask in targets:
                 "n_train": len(Xtr), "n_test": len(Xte)
             }]).to_csv(base_csv.replace(target_name, f"metrics__{target_name}") + ".csv", index=False)
 
-else:  # regression
+        else:  # regression
             model = RandomForestRegressor(
                 n_estimators=MASTER_CTRL.get("RF_N_ESTIMATORS",400),
                 random_state=RSTATE, n_jobs=MASTER_CTRL.get("SKLEARN_N_JOBS",-1)
