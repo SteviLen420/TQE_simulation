@@ -51,7 +51,7 @@ MASTER_CTRL = {
     "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
     "SEED":                 None,   # master RNG seed (auto-generated if None)
     "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
-    "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
+    "SAVE_DRIVE_COPY":      False,   # copy results to Google Drive
 
     # --- Energy distribution ---
     "E_DISTR":              "lognormal",  # energy sampling mode (future-proof)
