@@ -2567,25 +2567,40 @@ def _ensure_cols(df_in, cols): return [c for c in cols if c in df_in.columns]
 
 def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
     try:
+        # Try TreeExplainer first (faster, model-specific)
         expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
         sv = expl.shap_values(X_plot, check_additivity=False)
     except Exception:
+        # Fallback: generic Explainer (slower but safer)
         expl = shap.Explainer(model, X_plot)
         sv = expl(X_plot).values
 
-    if isinstance(sv, list):  # for binary classification, shap returns [neg_class, pos_class]
+    # For binary classification, SHAP returns [neg_class, pos_class]
+    if isinstance(sv, list):
         sv = sv[-1]
 
-    # --- CLEAN TYPOGRAPHY FIX ---
-    plt.close('all')
-    fig = plt.figure(figsize=(9, 6))
-    shap.summary_plot(sv, X_plot, feature_names=feat_names, show=False)
-    
+    # --- Draw plot ---
+    plt.close('all')  # reset figure state
+    shap.summary_plot(
+        sv,
+        X_plot.values,        # convert DataFrame to numpy
+        feature_names=feat_names,
+        show=False            # do not display, only draw
+    )
+
+    fig = plt.gcf()  # get current figure (the one shap actually used)
+
+    # Add title if provided
     if fig_title:
-        plt.gcf().suptitle(fig_title, fontsize=13, y=1.02)
-        
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
+        fig.suptitle(fig_title, fontsize=13, y=0.98)
+
+    # Leave space for the title
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+
+    # Save figure to file
     fig.savefig(out_png, dpi=220, bbox_inches="tight")
+
+    # Close figure to free memory
     plt.close(fig)
     
 # Target list
