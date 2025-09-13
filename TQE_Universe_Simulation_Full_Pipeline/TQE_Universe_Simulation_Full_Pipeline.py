@@ -221,7 +221,7 @@ MASTER_CTRL = {
     # --- Machine Learning / XAI ---
     "RUN_XAI":              True,   # master switch for XAI section
     "RUN_SHAP":             False,   # SHAP on/off
-    "RUN_LIME":             True,   # LIME on/off
+    "RUN_LIME":             False,   # LIME on/off
     "LIME_NUM_FEATURES":    5,      # number of features in LIME plot
     "TEST_SIZE":            0.25,   # test split ratio
     "TEST_RANDOM_STATE":    42,     # split reproducibility
