@@ -2565,6 +2565,22 @@ def _title_with_feat(base_title, featset):
 
 def _ensure_cols(df_in, cols): return [c for c in cols if c in df_in.columns]
 
+import re # Place this line at the top of the section if it's not already there
+
+def _pretty_label(s: str) -> str:
+    """Converts technical feature names into human-readable labels."""
+    base = str(s).strip()
+    # Strips away numeric parts potentially added by LIME
+    m = re.match(r"^([A-Za-z_]+)", base)
+    if m:
+        base = m.group(1)
+    # Human-friendly renames
+    base = (base
+            .replace("abs_E_minus_I", "|E − I|")
+            .replace("logX", "log X")
+            .replace("dist_to_goldilocks", "Goldilocks X"))
+    return base
+
 def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
     """
     Generates and saves a SHAP summary plot.
@@ -2588,12 +2604,20 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
         # --- Plotting and Saving ---
         # Ensure a clean slate by closing any previously opened Matplotlib figures.
         plt.close('all')
+
+        # === JAVÍTÁS 1. LÉPÉS ===
+        # Használjuk a _pretty_label segédfüggvényt a feature nevek formázására.
+        pretty_feat_names = [_pretty_label(fn) for fn in feat_names]
+
         # Generate the SHAP summary plot but do not display it interactively (show=False).
         shap.summary_plot(
             sv,
             X_plot.values,
-            feature_names=feat_names,
-            show=False
+            # === JAVÍTÁS 2. LÉPÉS ===
+            # Itt már a formázott neveket adjuk át az ábrának.
+            feature_names=pretty_feat_names,
+            show=False,
+            plot_size=(7, 5)
         )
         # Get a handle to the current figure object that was created by shap.summary_plot.
         fig = plt.gcf()
