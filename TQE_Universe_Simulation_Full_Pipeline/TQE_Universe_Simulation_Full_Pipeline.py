@@ -2603,71 +2603,71 @@ def _pretty_label(s: str) -> str:
             .replace("dist_to_goldilocks", "Goldilocks X"))
     return base
 
-def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
+def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None, max_rows=2000):
     """
-    Make a SHAP summary plot. Prefer interaction values (TreeExplainer),
-    fall back to regular SHAP values otherwise. Keep x-axis symmetric.
+    Lightweight SHAP summary:
+      - No interaction values (much cheaper).
+      - Fixed feature order: X, I, E, Goldilocks X (if present).
+      - Symmetric x-axis around 0.
+      - Optional row subsample to cap memory/CPU.
     """
     try:
-        # 1) Try a tree explainer first (fast; supports interactions)
-        try:
-            expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
-            is_tree = True
-        except Exception:
-            expl = shap.Explainer(model, X_plot)
-            is_tree = False
+        import shap
+        import numpy as np
+        import matplotlib.pyplot as plt
 
-        # 2) Pick columns in a fixed, human order, but only if they exist
-        wanted = ["E", "I", "X", "dist_to_goldilocks"]
-        cols   = [c for c in wanted if c in X_plot.columns]
+        # 0) Optional subsample to keep memory in check
+        if max_rows is not None and len(X_plot) > max_rows:
+            idx = np.random.default_rng(42).choice(len(X_plot), size=max_rows, replace=False)
+            X_use = X_plot.iloc[idx].copy()
+        else:
+            X_use = X_plot.copy()
+
+        # 1) Fixed, human order (only keep those that exist)
+        wanted = ["X", "I", "E", "dist_to_goldilocks"]
+        cols   = [c for c in wanted if c in X_use.columns]
         if not cols:
-            # fall back to whatever we were given
-            cols = list(X_plot.columns)
-
-        Xsel = X_plot[cols].copy()
+            cols = list(X_use.columns)
+        Xsel = X_use[cols].copy()
         pretty = [("Goldilocks X" if c == "dist_to_goldilocks" else c) for c in cols]
 
-        # 3) Prefer SHAP *interaction* values when possible
-        use_interactions = False
+        # 2) Explainer (no interactions)
+        try:
+            expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
+            sv = expl.shap_values(Xsel, check_additivity=False)
+        except Exception:
+            expl = shap.Explainer(model, Xsel)
+            sv = expl(Xsel).values
 
-        # 4) If interactions not available, compute regular SHAP values
-        if not use_interactions:
-            try:
-                sv = expl.shap_values(Xsel, check_additivity=False)
-            except Exception:
-                sv = expl(Xsel).values
-            if isinstance(sv, list):  # binary cls: [neg, pos]
-                sv = sv[-1]
+        # Binary classifiers return [neg, pos] – take positive class
+        if isinstance(sv, list):
+            sv = sv[-1]
 
-        # 5) Plot
+        # 3) Plot (no sorting; keep our order)
         shap.summary_plot(
             sv,
             Xsel.values,
             feature_names=pretty,
             show=False,
-            plot_size=(7, 5),
+            plot_size=(6.5, 4.8),
             max_display=len(pretty),
+            sort=False
         )
 
-        # 6) Symmetric x-axis
-        try:
-            ax = plt.gca()
-            lim = max(abs(ax.get_xlim()[0]), abs(ax.get_xlim()[1]))
-            ax.set_xlim(-lim, lim)
-        except Exception:
-            pass
+        # 4) Symmetric x-axis + title, save, close
+        ax = plt.gca()
+        lim = max(abs(ax.get_xlim()[0]), abs(ax.get_xlim()[1]))
+        ax.set_xlim(-lim, lim)
 
-        # 7) Title + save
         fig = plt.gcf()
         if fig_title:
             fig.suptitle(fig_title, fontsize=13, y=0.98)
         fig.tight_layout(rect=[0, 0, 1, 0.96])
         fig.savefig(out_png, dpi=220, bbox_inches="tight")
         plt.close(fig)
-        
 
     except Exception as e:
-        print(f"[XAI][WARN] SHAP summary plot generation failed for '{out_png}': {e}")
+        print(f"[XAI][WARN] SHAP summary plot failed for '{out_png}': {e}")
     
 # Target list
 targets = []
