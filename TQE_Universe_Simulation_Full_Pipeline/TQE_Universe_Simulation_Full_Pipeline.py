@@ -3448,4 +3448,5 @@ if os.path.isdir(best_dir):
         print("   -", f)
 else:
     print("[CHECK][WARN] best_universes directory missing:", best_dir)
-    main_progress_bar.close()
+
+main_progress_bar.close()
