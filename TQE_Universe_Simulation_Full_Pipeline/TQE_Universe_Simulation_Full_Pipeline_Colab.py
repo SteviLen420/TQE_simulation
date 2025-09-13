@@ -56,7 +56,7 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        2500,   # number of universes in Monte Carlo run
+    "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
     "TIME_STEPS":           1000,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        700,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1000,    # epochs for expansion dynamics
@@ -2549,6 +2549,8 @@ SUBDIRS = {
     "finetune_acc_delta": ("finetune","XAI — Fine-tune ΔACC (regression)"),
     "finetune_auc_delta": ("finetune","XAI — Fine-tune ΔAUC (regression)"),
     "finetune_r2_delta":  ("finetune","XAI — Fine-tune ΔR2  (regression)"),
+    "finetune_proba_gain": ("finetune", "XAI — Fine-tune ΔP (regression)"),
+    "finetune_cls_gain":   ("finetune", "XAI — Fine-tune ΔACC (regression)"),
 }
 def _mk_dirs_for_target(tname):
     sub = SUBDIRS.get(tname, ("misc", tname))[0]
@@ -2731,6 +2733,7 @@ for target_name, kind, y_col, mask in targets:
             print(f"[XAI][WARN] split failed for {target_name} ({featset}): {e}"); continue
 
         base_png, base_csv = _file_prefix(fig_dir, save_dir, target_name, featset)
+        title_base = SUBDIRS.get(target_name, ("misc", target_name))[1]
 
         if kind == "cls":
             model = RandomForestClassifier(
@@ -2752,7 +2755,7 @@ for target_name, kind, y_col, mask in targets:
             if SAVE_SHAP:
                 _shap_summary(model, Xte, X.columns.tolist(),
                               out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
-                              fig_title=_title_with_feat(SUBDIRS[target_name][1], featset))
+                              _title_with_feat(title_base, featset)
             if SAVE_LIME and len(np.unique(ytr))==2 and len(Xte) >= 5:
                 # LIME on reduced data to avoid zero-variance traps
                 X_np = Xtr.values; stds = X_np.std(axis=0); keep = stds > 1e-12
@@ -2843,7 +2846,7 @@ for target_name, kind, y_col, mask in targets:
             if SAVE_SHAP:
                 _shap_summary(model, Xte, X.columns.tolist(),
                               out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
-                              fig_title=_title_with_feat(SUBDIRS[target_name][1], featset))
+                              _title_with_feat(title_base, featset)
 
             # ADDED: LIME plot generation for regression tasks
             if SAVE_LIME and len(Xte) >= 5:
@@ -2891,7 +2894,7 @@ for target_name, kind, y_col, mask in targets:
                         plt.barh(dfw["feature_pretty"], dfw["weight"], edgecolor="black")
                         plt.xlabel("Avg LIME weight")
                         plt.title(
-                            f"LIME avg — {_title_with_feat(SUBDIRS[target_name][1], featset)}",
+                            f"LIME avg — {_title_with_feat(title_base, featset)}",
                             fontsize=13, pad=8
                         )
                         plt.gcf().tight_layout(rect=[0, 0, 1, 0.92])
