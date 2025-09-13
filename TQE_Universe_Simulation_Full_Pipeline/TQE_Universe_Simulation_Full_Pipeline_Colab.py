@@ -2577,19 +2577,17 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
         sv = sv[-1]
 
     # --- CLEAN TYPOGRAPHY FIX ---
-    plt.close('all')  # reset figure state to avoid overlap
-    fig = plt.figure(figsize=(9, 6))  # bigger canvas for clarity
-    shap.summary_plot(sv, X_plot.values, feature_names=feat_names, show=False)
-
+    plt.close('all')
+    fig = plt.figure(figsize=(9, 6))
+    shap.summary_plot(sv, X_plot, feature_names=feat_names, show=False)
+    
     if fig_title:
-        # use suptitle with padding to avoid overlap with the plot
-        plt.title(fig_title, fontsize=13, pad=8) 
-
-    # leave room for the title
+        plt.gcf().suptitle(fig_title, fontsize=13, y=1.02)
+        
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     fig.savefig(out_png, dpi=220, bbox_inches="tight")
     plt.close(fig)
-
+    
 # Target list
 targets = []
 if XAI_ENABLE_STAB and "stable" in df_xai.columns:
