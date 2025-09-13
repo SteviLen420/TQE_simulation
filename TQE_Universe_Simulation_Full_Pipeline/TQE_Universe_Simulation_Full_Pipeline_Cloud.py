@@ -357,34 +357,26 @@ MASTER_CTRL = {
     "PER_UNIVERSE_SEED_MODE": "rng" # "rng" | "np_random" — how per-universe seeds are derived
 }
 
-# ===== Cloud / Drive setup (Colab-safe) =====
-import os, sys, time, uuid, matplotlib
-matplotlib.use("Agg")  # headless backend for saving figures
+# === 1. CORRECT DIRECTORY SETUP ===
 
-# Mount Google Drive in Colab (no-op elsewhere)
-IN_COLAB = "google.colab" in sys.modules
-if IN_COLAB:
-    from google.colab import drive
-    drive.mount("/content/drive", force_remount=True)
+# Set up output directories based on MASTER_CTRL.
+# This works for both local paths and GCS paths ("gs://...").
+import time
 
-# Base folder on Drive (change to where you want results!)
-DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR",
-                             "/content/drive/MyDrive/TQE_Cloud")  # <-- change if needed
+# Base output directory (e.g., "gs://your-bucket/TQE_simulations")
+BASE_DIR = MASTER_CTRL["GCS_BASE_DIR"]
+run_id = MASTER_CTRL["RUN_ID_PREFIX"] + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
 
-# Unique run folder
-RUN_ID  = MASTER_CTRL.get("RUN_ID", time.strftime("%Y%m%d_%H%M%S_") + uuid.uuid4().hex[:6])
-OUT_DIR = os.path.join(DRIVE_BASE, RUN_ID)
+# Define paths for this specific run
+SAVE_DIR = smart_join(BASE_DIR, run_id)
+FIG_DIR  = smart_join(SAVE_DIR, "figs")
+
+# Create directories using the cloud-safe helper
 smart_makedirs(SAVE_DIR, exist_ok=True)
-smart_makedirs(FIG_DIR,  exist_ok=True)
-smart_makedirs(smart_join(FIG_DIR,  "xai"), exist_ok=True)
-smart_makedirs(smart_join(SAVE_DIR, "xai"), exist_ok=True)
+smart_makedirs(FIG_DIR, exist_ok=True)
 
-for p in [OUT_DIR, FIG_DIR, SAVE_DIR, os.path.join(FIG_DIR, "xai"), os.path.join(SAVE_DIR, "xai")]:
-    os.makedirs(p, exist_ok=True)
-
-print(f"[IO] OUT_DIR = {OUT_DIR}")
-print(f"[IO] FIG_DIR = {FIG_DIR}")
-print(f"[IO] SAVE_DIR = {SAVE_DIR}")
+print(f"💾 Results will be saved in: {SAVE_DIR}")
+print(f"⚙️  Pipeline variant: {MASTER_CTRL.get('PIPELINE_VARIANT','full')}")
 
 # Put outputs into E_ONLY / EIX subfolders automatically
 def with_variant(path: str) -> str:
@@ -463,16 +455,21 @@ SAVE_DIR = os.path.join(base_save_path, run_id)
 FIG_DIR  = os.path.join(SAVE_DIR, "figs")
 os.makedirs(FIG_DIR, exist_ok=True)
 
+# === 2. FIX HELPER FUNCTIONS FOR SAVING ===
+
+# Fix savefig to use the cloud-safe smart_savefig
 def savefig(path):
-    """Save a figure only if SAVE_FIGS is True."""
+    """Saves a figure to a local or GCS path."""
     if not MASTER_CTRL.get("SAVE_FIGS", True):
         plt.close()
         return
-    plt.savefig(path, dpi=180, bbox_inches="tight")
+    smart_savefig(path, dpi=180, bbox_inches="tight")
     plt.close()
-    
+
+# Fix save_json to use the cloud-safe smart_open
 def save_json(path, obj):
-    with open(path, "w") as f:
+    """Saves a JSON object to a local or GCS path."""
+    with smart_open(path, "w") as f:
         json.dump(obj, f, indent=2)
 
 print(f"💾 Results saved in: {SAVE_DIR}")
