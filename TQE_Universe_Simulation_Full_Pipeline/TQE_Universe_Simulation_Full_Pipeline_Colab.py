@@ -2606,15 +2606,17 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
         # Ensure a clean slate by closing any previously opened Matplotlib figures.
         plt.close('all')
 
-        pretty_feat_names = [_pretty_label(fn) for fn in feat_names]
+        ordered_feats = ["E", "I", "X", "dist_to_goldilocks"]
+        pretty_feat_names = ["E", "I", "X", "Goldilocks X"]
 
         # Generate the SHAP summary plot but do not display it interactively (show=False).
         shap.summary_plot(
             sv,
-            X_plot.values,
+            X_plot[["E", "I", "X", "dist_to_goldilocks"]].values,
             feature_names=pretty_feat_names,
             show=False,
             plot_size=(7, 5)
+            max_display=len(pretty_feat_names)
         )
 
         # Get figure and axis after the plot is created
