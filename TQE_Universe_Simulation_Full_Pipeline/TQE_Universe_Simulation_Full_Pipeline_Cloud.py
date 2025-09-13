@@ -7,50 +7,116 @@
 # Author: Stefan Len
 # ===================================================================================
 
-import os
-# Set before importing heavy numeric libs would be ideal,
-# but applying here is still helpful for thread pools.
-os.environ["PYTHONHASHSEED"] = "0"
-os.environ["OMP_NUM_THREADS"] = "1"
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-os.environ["NUMEXPR_NUM_THREADS"] = "1"
+# --- Cloud I/O helpers: seamless local <-> Google Cloud Storage ----------------
+# Put this block near the top of your Cloud pipeline (after imports).
+# It lets you pass either local paths (`/tmp/out/...`) or GCS paths (`gs://bucket/path`).
 
-import time, json, warnings, sys, subprocess, shutil
-import numpy as np
-import matplotlib.pyplot as plt
+from io import BytesIO, StringIO
+import contextlib
 
-# --- Colab detection + optional Drive mount ---
-IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
-if IN_COLAB:
-    from google.colab import drive
-    drive.mount('/content/drive', force_remount=True)
+def is_gcs_path(path: str) -> bool:
+    return isinstance(path, str) and path.startswith("gs://")
 
-# --- Core deps: ensure (no heavy extras) ---
-def _ensure(pkg):
-    try:
-        __import__(pkg)
-    except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
+# Lazy import so local runs don't require cloud libs
+_gcsfs = None
+def _get_fs():
+    global _gcsfs
+    if _gcsfs is None:
+        import gcsfs  # pip install gcsfs
+        _gcsfs = gcsfs.GCSFileSystem()  # Uses ADC; set GOOGLE_APPLICATION_CREDENTIALS if needed
+    return _gcsfs
 
-for pkg in ["qutip", "pandas", "scipy", "scikit-learn", "healpy", 
-            "google-cloud-storage", "gcsfs"]:
-    _ensure(pkg)
+def smart_makedirs(path: str, exist_ok: bool = True) -> None:
+    """
+    Create directories for local paths. For GCS we 'touch' a prefix marker,
+    because GCS has no real directories.
+    """
+    import os
+    if is_gcs_path(path):
+        fs = _get_fs()
+        # create a prefix marker so listing works nicely
+        marker = path.rstrip("/") + "/.keep"
+        with fs.open(marker, "wb") as f:
+            f.write(b"")
+    else:
+        os.makedirs(path, exist_ok=exist_ok)
 
-import qutip as qt
-import pandas as pd
-from scipy.interpolate import make_interp_spline
-warnings.filterwarnings("ignore")
+def smart_exists(path: str) -> bool:
+    """Exists check for both local and GCS paths."""
+    import os
+    if is_gcs_path(path):
+        fs = _get_fs()
+        try:
+            return fs.exists(path)
+        except Exception:
+            return False
+    return os.path.exists(path)
 
-# --- XAI stack: SHAP + LIME only ---
-try:
-    import shap
-    from lime.lime_tabular import LimeTabularExplainer
-except Exception:
-    subprocess.check_call([sys.executable, "-m", "pip", "install",
-                           "shap==0.45.0", "lime==0.2.0.1", "scikit-learn==1.5.2", "numpy==2.1.0", "-q"])
-    import shap
-    from lime.lime_tabular import LimeTabularExplainer
+@contextlib.contextmanager
+def smart_open(path: str, mode: str = "rb"):
+    """
+    Context manager that works like open(), but also supports GCS paths.
+    Text modes ('r','w') yield text handles, binary modes ('rb','wb') yield binary handles.
+    """
+    if is_gcs_path(path):
+        fs = _get_fs()
+        with fs.open(path, mode) as f:
+            yield f
+    else:
+        with open(path, mode) as f:
+            yield f
+
+def smart_to_csv(df, path: str, **kwargs) -> None:
+    """
+    Save a DataFrame to CSV at local or GCS path. Forces newline handling correctly on GCS.
+    """
+    import pandas as pd
+    if is_gcs_path(path):
+        csv_buf = StringIO()
+        df.to_csv(csv_buf, **kwargs)
+        with smart_open(path, "wb") as f:
+            f.write(csv_buf.getvalue().encode("utf-8"))
+    else:
+        df.to_csv(path, **kwargs)
+
+def smart_read_csv(path: str, **kwargs):
+    """
+    Read a CSV from local or GCS path.
+    """
+    import pandas as pd
+    if is_gcs_path(path):
+        with smart_open(path, "rb") as f:
+            return pd.read_csv(f, **kwargs)
+    else:
+        import pandas as pd
+        return pd.read_csv(path, **kwargs)
+
+def smart_savefig(path: str, fig=None, **kwargs) -> None:
+    """
+    Save a matplotlib figure to local or GCS path. If 'fig' is None, uses plt.gcf().
+    """
+    import matplotlib.pyplot as plt
+    fig = fig or plt.gcf()
+    if is_gcs_path(path):
+        buf = BytesIO()
+        fig.savefig(buf, **kwargs)
+        buf.seek(0)
+        with smart_open(path, "wb") as f:
+            f.write(buf.read())
+    else:
+        fig.savefig(path, **kwargs)
+
+# Optional: utility to join paths even for GCS
+def smart_join(base: str, *parts: str) -> str:
+    """
+    Join path parts for both local and GCS URIs.
+    For GCS we join with '/', for local we use os.path.join.
+    """
+    import os
+    if is_gcs_path(base):
+        return "/".join([base.rstrip("/")] + [p.strip("/") for p in parts])
+    return os.path.join(base, *parts)
+# -------------------------------------------------------------------------------
     
 # ======================================================
 # 1) MASTER CONTROLLER
@@ -308,8 +374,10 @@ DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR",
 # Unique run folder
 RUN_ID  = MASTER_CTRL.get("RUN_ID", time.strftime("%Y%m%d_%H%M%S_") + uuid.uuid4().hex[:6])
 OUT_DIR = os.path.join(DRIVE_BASE, RUN_ID)
-FIG_DIR = os.path.join(OUT_DIR, "figs")
-SAVE_DIR= os.path.join(OUT_DIR, "saves")
+smart_makedirs(SAVE_DIR, exist_ok=True)
+smart_makedirs(FIG_DIR,  exist_ok=True)
+smart_makedirs(smart_join(FIG_DIR,  "xai"), exist_ok=True)
+smart_makedirs(smart_join(SAVE_DIR, "xai"), exist_ok=True)
 
 for p in [OUT_DIR, FIG_DIR, SAVE_DIR, os.path.join(FIG_DIR, "xai"), os.path.join(SAVE_DIR, "xai")]:
     os.makedirs(p, exist_ok=True)
@@ -2361,9 +2429,9 @@ else:
 if "stable" not in df_join.columns and "lock_epoch" in df_join.columns:
     df_join["stable"] = (df_join["lock_epoch"] >= 0).astype(int)
 
-# Persist joined view (debug)
+# Persist joined view (debug) — use Cloud-safe writer so it works on GCS/Colab/VMs too
 joined_csv = with_variant(os.path.join(SAVE_DIR, "metrics_joined.csv"))
-df_join.to_csv(joined_csv, index=False)
+smart_to_csv(df_join, joined_csv, index=False) 
 print("[JOIN] Wrote:", joined_csv)
 
 # Working table for XAI:
@@ -2870,11 +2938,15 @@ for target_name, kind, y_col, mask in targets:
                         )
                         plt.close()
 
-            pd.DataFrame([{
-                "target": target_name, "variant": variant_title, "featset": featset,
-                "acc": acc, "auc": float(auc) if np.isfinite(auc) else np.nan,
-                "n_train": len(Xtr), "n_test": len(Xte)
-            }]).to_csv(base_csv.replace(target_name, f"metrics__{target_name}") + ".csv", index=False)
+            smart_to_csv(
+                pd.DataFrame([{
+                    "target": target_name, "variant": variant_title, "featset": featset,
+                    "acc": acc, "auc": float(auc) if np.isfinite(auc) else np.nan,
+                    "n_train": len(Xtr), "n_test": len(Xte)
+                }]),
+                base_csv.replace(target_name, f"metrics__{target_name}") + ".csv",
+                index=False
+            )
 
         else:  # regression
             model = RandomForestRegressor(
@@ -2939,16 +3011,20 @@ for target_name, kind, y_col, mask in targets:
                         )
                         plt.gcf().tight_layout(rect=[0, 0, 1, 0.92])
                         plt.tight_layout()
-                        plt.savefig(
+                        smart_savefig(
                             base_png.replace(target_name, f"lime_avg__{target_name}") + ".png",
                             dpi=220, bbox_inches="tight"
                         )
                         plt.close()
 
-            pd.DataFrame([{
-                "target": target_name, "variant": variant_title, "featset": featset,
-                "r2": r2, "n_train": len(Xtr), "n_test": len(Xte)
-            }]).to_csv(base_csv.replace(target_name, f"metrics__{target_name}") + ".csv", index=False)
+            smart_to_csv(
+                pd.DataFrame([{
+                    "target": target_name, "variant": variant_title, "featset": featset,
+                    "r2": r2, "n_train": len(Xtr), "n_test": len(Xte)
+                }]),
+                base_csv.replace(target_name, f"metrics__{target_name}") + ".csv",
+                index=False
+            )
 
 print("[XAI] Completed.")    
             
