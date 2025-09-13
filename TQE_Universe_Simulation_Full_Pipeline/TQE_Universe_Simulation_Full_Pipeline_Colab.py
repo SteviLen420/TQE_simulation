@@ -2736,9 +2736,20 @@ for target_name, kind, y_col, mask in targets:
                     pos = int(np.argmax(getattr(model,"classes_", [0,1])))
                     for i in idxs:
                         exp = expl.explain_instance(X_red[i], _predict_proba_on_reduced,
-                                                    num_features=min(8, X_red.shape[1]))
+                                                     num_features=min(8, X_red.shape[1]))
+                        
+                        # Iterate through the (explanation, weight) pairs from LIME
                         for name, w in exp.as_list(label=pos):
-                            base = name.split()[0]; rows.append((base, float(w)))
+                            found_feat = None
+                            # Check which of the known feature names is in the LIME explanation string
+                            for f_name in feat_red: # 'feat_red' is the list of correct feature names
+                                if f_name in name:
+                                    found_feat = f_name
+                                    break # Stop after the first match
+                            
+                            # Use the found feature name, or fall back to the original string if none was found
+                            base_name = found_feat if found_feat is not None else name
+                            rows.append((base_name, float(w)))
                     if rows:
                         import re
 
