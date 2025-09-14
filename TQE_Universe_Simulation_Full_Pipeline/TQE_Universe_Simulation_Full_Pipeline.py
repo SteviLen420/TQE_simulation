@@ -659,11 +659,8 @@ def simulate_lock_in(
     # Tracking states
     stable_at, lockin_at = None, None
     consec_stable, consec_lockin = 0, 0
-
-    # Rolling window for delta_rel aggregation
+    A_series, ns_series, H_series = [], [], []
     window = deque(maxlen=MASTER_CTRL["LOCKIN_WINDOW"])
-
-    # Small epsilon to avoid division-by-zero in relative deltas
     _eps = 1e-12
 
     # Helper for window aggregation
