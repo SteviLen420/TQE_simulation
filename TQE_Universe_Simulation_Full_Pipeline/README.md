@@ -379,6 +379,11 @@ If you would like to contribute to the TQE Framework, please follow these steps:
 
 By contributing, you agree that your code will be licensed under the same license as this project.
 
+
+## License
+
+This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
+
 ## Contact
 
 Got questions, ideas, or feedback?  
