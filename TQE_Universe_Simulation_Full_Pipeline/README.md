@@ -367,11 +367,13 @@ If you would like to contribute to the TQE Framework, please follow these steps:
 5.	Open a Pull Request against the main branch of this repository.
 
 **Code Style**
+
 	•	Follow PEP8 style guidelines.
 	•	Use meaningful variable and function names.
 	•	Include docstrings for all public functions and classes.
 
 **Testing**
+
 	•	Please ensure that existing tests pass before submitting.
 	•	If you add new features, include unit tests (pytest is recommended).
 
