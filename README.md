@@ -2,7 +2,7 @@
 
 ## Author: Stefan Len
 
-Title: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy-Information Principles
+**Title: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy-Information Principles**
 
 
 ## About The Project
