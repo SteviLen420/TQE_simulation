@@ -5,7 +5,7 @@ authors:
   - family-names: "Len"
     given-names: "Stefan"
     # orcid: "https://orcid.org/XXXX-XXXX-XXXX-XXXX"  # Optional but recommended
-title: "TQE (E,I) Universe Simulation Pipeline"
+title: "TQE Universe Simulation Pipeline"
 version: 1.0.0
 date-released: 2025-09-07
 url: "https://github.com/SteviLen420/TQE_simulation"
