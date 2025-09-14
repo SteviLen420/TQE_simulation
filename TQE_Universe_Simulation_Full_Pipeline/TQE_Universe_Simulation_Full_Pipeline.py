@@ -697,6 +697,10 @@ def simulate_lock_in(
         ns += rng.normal(0, sigma * MASTER_CTRL["NOISE_COEFF_NS"])
         H  += rng.normal(0, sigma * MASTER_CTRL["NOISE_COEFF_H"])
 
+        A_series.append(A)
+        ns_series.append(ns)
+        H_series.append(H)
+
         # Relative change with epsilon guards
         delta_rel = (
             abs(A  - A_prev) / max(abs(A_prev),  _eps) +
@@ -730,6 +734,9 @@ def simulate_lock_in(
                 lockin_at = n
         else:
             consec_lockin = 0
+
+
+
 
 # Outcomes
 is_stable = 1 if stable_at is not None else 0
