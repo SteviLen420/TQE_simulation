@@ -64,6 +64,38 @@ conda activate tqe_env
 
 💡 If installation issues occur with healpy or qutip, we recommend using Conda, as it handles binary dependencies more reliably than pip.
 
+## Quickstart / Usage Example
+
+Once the environment is set up, you can run the TQE Framework directly with the default configuration file.
+
+### Run with default configuration
+```bash
+python TQE_Universe_Simulation_Full_Pipeline.py --config MASTER_CTRL.yml
+```
+### Minimal example
+```bash
+# Example: run the simulation programmatically
+from TQE_Universe_Simulation_Full_Pipeline import run_simulation
+
+# Load default configuration
+config = "MASTER_CTRL.yml"
+
+# Run simulation
+results = run_simulation(config)
+
+# Inspect output
+print(results.head())
+```
+Output
+	
+ •	All results are stored in a timestamped directory inside runs/ (e.g., runs/TQE_Run_20250914_123000/).
+	
+ •	Subdirectories contain:
+	•	**maps/** → CMB-like sky maps
+	•	**diag/** → stability curves, anomaly scans
+	•	**xai/** → Explainable AI outputs (SHAP/LIME)
+	•	**logs/** → runtime information and metadata
+
 
 ## Computational Framework & Methodology
 
