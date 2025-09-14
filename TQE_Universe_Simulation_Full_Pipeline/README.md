@@ -382,7 +382,9 @@ By contributing, you agree that your code will be licensed under the same licens
 
 ## License
 
-This project is licensed under the MIT License – see the [LICENSE.md]([LICENSE.md]) file for details.
+This project is licensed under the MIT License – see the [LICENSE] file for details.
+
+[LICENSE]: LICENSE.md
 
 ## Contact
 
