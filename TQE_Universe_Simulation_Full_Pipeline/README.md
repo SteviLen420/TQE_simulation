@@ -63,13 +63,13 @@ This staged structure conceptually supports re-running individual components (e.
 
 ## Reproducibility by Design: The Seeding Hierarchy
 
+To ensure computational reproducibility, the framework implements a two-tiered seeding hierarchy. This design provides deterministic outcomes within a fixed software environment, supporting verifiable and repeatable scientific workflows.
 
-To ensure full computational determinism, the framework implements a sophisticated two-tiered seeding hierarchy. This system guarantees that any simulation campaign can be reproduced bit-for-bit, a non-negotiable requirement for verifiable scientific claims.
+•	**Master Seed** – A single master_seed is defined in the MASTER_CTRL.yml configuration file. This initializes a master pseudo-random number generator (PRNG) at the beginning of a run.
+ 
+•	**Per-Universe Seeds** – The master PRNG is used to deterministically generate a unique universe_seed for each of the n_universes in the ensemble. This ensures that each universe’s stochastic processes are initialized independently and reproducibly.
 
-1. **Master Seed:** A single master_seed is defined in the MASTER_CTRL.yml configuration file. This seed initializes a master pseudo-random number generator (PRNG) at the beginning of a run.
-   
-2. **Per-Universe Seeds:** The master PRNG is used to deterministically generate a unique universe_seed for each of the n_universes in the ensemble. This is achieved through a robust function, such as universe_seed_i = f(master_seed, i), which ensures that the seed for universe $i$ is independent of the total number of universes being simulated.
-Each universe_seed is then used to seed the local PRNG responsible for all stochastic processes within that single universe's simulation. This hierarchical design provides two layers of reproducibility. A researcher can reproduce the entire ensemble of results by simply re-using the master_seed. Furthermore, if a single universe exhibits particularly interesting behavior, it can be isolated and its evolution reproduced exactly by using its specific universe_seed, without the need to re-run the entire, potentially massive, ensemble. This capability is invaluable for debugging, detailed analysis, and validating extraordinary results.
+This hierarchical system provides two levels of control. Re-using the same master_seed allows an entire ensemble to be reproduced, while selecting an individual universe_seed enables the exact reproduction of a single universe’s evolution without re-running the full ensemble. This capability is especially valuable for debugging, targeted analysis, and validation of noteworthy cases. While the current implementation guarantees reproducibility under consistent library versions and environments, strict cross-platform bit-level determinism may vary depending on the underlying PRNG implementation.
 
 
 
