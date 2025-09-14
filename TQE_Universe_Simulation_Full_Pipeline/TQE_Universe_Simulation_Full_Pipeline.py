@@ -186,7 +186,7 @@ MASTER_CTRL = {
     "CMB_NPIX": 512,                   # Pixel count for flat-sky maps
     "CMB_PIXSIZE_ARCMIN": 3.0,         # Pixel size in arcmin for flat-sky
     "CMB_POWER_SLOPE": 1.5,            # Power spectrum slope (Pk ~ k^-slope)
-    "CMB_SMOOTH_FWHM_DEG": 0.1,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
+    "CMB_SMOOTH_FWHM_DEG": 0.5,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
     "CMB_AMPLITUDE_SCALE": 1.0e-10,    # Overall amplitude of CMB fluctuations
 
     # --- CMB cold-spot detector ---
@@ -194,7 +194,7 @@ MASTER_CTRL = {
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
     "CMB_COLD_SIGMA_ARCMIN":      [60, 120, 240, 480],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    30,                   # Minimal separation between spots (arcmin)
-    "CMB_COLD_Z_THRESH":          -4.0,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_Z_THRESH":          -0.5,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
     "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
