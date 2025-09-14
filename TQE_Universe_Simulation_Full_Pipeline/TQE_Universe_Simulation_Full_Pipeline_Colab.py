@@ -19,7 +19,6 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 import time, json, warnings, sys, subprocess, shutil
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm.auto import tqdm
 
 # --- Colab detection + optional Drive mount ---
 IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
@@ -57,7 +56,7 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
+    "NUM_UNIVERSES":        10000,   # number of universes in Monte Carlo run
     "TIME_STEPS":           1000,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        700,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1000,    # epochs for expansion dynamics
@@ -930,6 +929,11 @@ def compute_dynamic_goldilocks(df_in):
 
     return E_c_low, E_c_high, xs, ys, xx, yy, df_tmp
 
+from tqdm.auto import tqdm # Make sure this import is at the top of your script
+
+# --- Create the main progress bar for 12 major phases ---
+main_progress_bar = tqdm(total=12, desc="Starting full simulation pipeline")
+
 # ======================================================
 # 9) Monte Carlo universes — single or two-phase run
 # ======================================================
@@ -971,6 +975,9 @@ else:
 
 # Save main run
 df.to_csv(with_variant(os.path.join(SAVE_DIR, "tqe_runs.csv")), index=False)
+
+main_progress_bar.update(1)
+main_progress_bar.set_description("1/12: Monte Carlo run complete")
 
 # ======================================================
 # 10) Stability curve (binned) + Goldilocks window plot
@@ -1020,6 +1027,9 @@ else:
 plt.legend()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_curve.png")))
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("2/12: Stability curve plotted")
+
 # ======================================================
 # 11) Scatter E vs I
 # ======================================================
@@ -1035,6 +1045,9 @@ else:
 cb = plt.colorbar(sc, ticks=[0, 1])
 cb.set_label("Stable (0/1)")
 savefig(with_variant(os.path.join(FIG_DIR, "scatter_EI.png")))
+
+main_progress_bar.update(1)
+main_progress_bar.set_description("3/12: E-I scatter plot saved")
 
 # ======================================================
 # 12) Fluctuation panels (t<0, t=0, t>0) + CSV exports
@@ -1152,6 +1165,9 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     plt.xlabel("epoch"); plt.ylabel("Parameters"); plt.legend()
     savefig(with_variant(os.path.join(FIG_DIR, "fl_expansion.png")))
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("4/12: Fluctuation panels generated")
+
 # ======================================================
 # 13) Stability by I (exact zero vs eps sweep) — extended
 # ======================================================
@@ -1195,6 +1211,9 @@ eps_df.to_csv(eps_path, index=False)
 print("\n📈 Epsilon sweep (near-zero thresholds, preview):")
 print(eps_df.head(12).to_string(index=False))
 print(f"\n📝 Saved breakdowns to:\n - {zero_split_path}\n - {eps_path}")
+
+main_progress_bar.update(1)
+main_progress_bar.set_description("5/12: Stability-by-I analyzed")
 
 # ======================================================
 # 14) Finetune Detector (E vs E+I(+X))
@@ -1567,6 +1586,9 @@ if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True):
     except Exception as e:
         print(f"[FT][ERR] Detector failed: {e}")
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("6/12: Finetune detector finished")
+
 # ======================================================
 # 15) Best CMB thumbnails (per top lock-in universes)
 # ======================================================
@@ -1792,7 +1814,8 @@ if MASTER_CTRL.get("CMB_BEST_ENABLE", True):
             print("[CMB][BEST][WARN] Drive copy failed:", e)
             print(f"[CMB][BEST] MAP_REG entries now: {len(MAP_REG)}")
 
-   
+main_progress_bar.update(1)
+main_progress_bar.set_description("7/12: Best CMB maps generated")
 
 # ======================================================
 # 16) CMB Cold-spot detector (use SAVED maps from MAP_REG)
@@ -2041,6 +2064,9 @@ if MASTER_CTRL.get("CMB_COLD_ENABLE", True):
         else:
             print("[CMB][COLD] No cold spots recorded; no CSV produced.")
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("8/12: Cold-spot detection complete")
+
 # ======================================================
 # 17) CMB Axis-of-Evil detector (uses pre-made maps in MAP_REG)
 # ======================================================
@@ -2184,6 +2210,9 @@ if MASTER_CTRL.get("CMB_AOE_ENABLE", True):
                 print("[CMB][AOE][WARN] Drive copy failed:", e)
         else:
             print("[CMB][AOE] No AoE rows collected; nothing to save.")
+
+main_progress_bar.update(1)
+main_progress_bar.set_description("9/12: Axis-of-Evil detection complete")
 
 # ======================================================
 # 18) Multi-target XAI (SHAP+LIME)
@@ -2550,8 +2579,6 @@ SUBDIRS = {
     "finetune_acc_delta": ("finetune","XAI — Fine-tune ΔACC (regression)"),
     "finetune_auc_delta": ("finetune","XAI — Fine-tune ΔAUC (regression)"),
     "finetune_r2_delta":  ("finetune","XAI — Fine-tune ΔR2  (regression)"),
-    "finetune_proba_gain": ("finetune", "XAI — Fine-tune ΔP (regression)"),
-    "finetune_cls_gain":   ("finetune", "XAI — Fine-tune ΔACC (regression)"),
 }
 def _mk_dirs_for_target(tname):
     sub = SUBDIRS.get(tname, ("misc", tname))[0]
@@ -2587,74 +2614,60 @@ def _pretty_label(s: str) -> str:
 
 def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
     """
-    Make a SHAP summary plot. Prefer interaction values (TreeExplainer),
-    fall back to regular SHAP values otherwise. Keep x-axis symmetric.
+    Generates and saves a SHAP summary plot.
+    This function is wrapped in error handling to prevent crashes.
     """
     try:
-        # 1) Try a tree explainer first (fast; supports interactions)
+        # This inner try-except block attempts to calculate SHAP values,
+        # using a fallback method if the primary one fails.
         try:
+            # Primary method: Use TreeExplainer for tree-based models (fast and precise).
             expl = shap.TreeExplainer(model, feature_perturbation="interventional", model_output="raw")
-            is_tree = True
+            sv = expl.shap_values(X_plot, check_additivity=False)
         except Exception:
+            # Fallback method: Use the generic Explainer if TreeExplainer fails (slower but more robust).
             expl = shap.Explainer(model, X_plot)
-            is_tree = False
+            sv = expl(X_plot).values
+        # For binary classification, SHAP returns a list of two arrays [class_0, class_1].
+        # We select the values for the positive class (the last element).
+        if isinstance(sv, list):
+            sv = sv[-1]
+        # --- Plotting and Saving ---
+        # Ensure a clean slate by closing any previously opened Matplotlib figures.
+        plt.close('all')
 
-        # 2) Pick columns in a fixed, human order, but only if they exist
-        wanted = ["E", "I", "X", "dist_to_goldilocks"]
-        cols   = [c for c in wanted if c in X_plot.columns]
-        if not cols:
-            # fall back to whatever we were given
-            cols = list(X_plot.columns)
+        pretty_feat_names = [_pretty_label(fn) for fn in feat_names]
 
-        Xsel = X_plot[cols].copy()
-        pretty = [("Goldilocks X" if c == "dist_to_goldilocks" else c) for c in cols]
-
-        # 3) Prefer SHAP *interaction* values when possible
-        use_interactions = False
-        if is_tree and hasattr(expl, "shap_interaction_values"):
-            try:
-                sv = expl.shap_interaction_values(Xsel)
-                use_interactions = True
-            except Exception:
-                pass
-
-        # 4) If interactions not available, compute regular SHAP values
-        if not use_interactions:
-            try:
-                sv = expl.shap_values(Xsel, check_additivity=False)
-            except Exception:
-                sv = expl(Xsel).values
-            if isinstance(sv, list):  # binary cls: [neg, pos]
-                sv = sv[-1]
-
-        # 5) Plot
-        plt.close("all")
+        # Generate the SHAP summary plot but do not display it interactively (show=False).
         shap.summary_plot(
             sv,
-            Xsel.values,
-            feature_names=pretty,
+            X_plot.values,
+            feature_names=pretty_feat_names,
             show=False,
-            plot_size=(7, 5),
-            max_display=len(pretty),
+            plot_size=(7, 5)
         )
 
-        # 6) Symmetric x-axis
-        try:
-            ax = plt.gca()
-            lim = max(abs(ax.get_xlim()[0]), abs(ax.get_xlim()[1]))
-            ax.set_xlim(-lim, lim)
-        except Exception:
-            pass
-
-        # 7) Title + save
+        # Get figure and axis after the plot is created
         fig = plt.gcf()
+        ax = plt.gca()
+        # Force symmetric x-axis
+        xlim = max(abs(ax.get_xlim()[0]), abs(ax.get_xlim()[1]))
+        ax.set_xlim(-xlim, xlim)
+        # Get a handle to the current figure object that was created by shap.summary_plot.
+        fig = plt.gcf()
+        # Add a title to the figure if one was provided.
         if fig_title:
             fig.suptitle(fig_title, fontsize=13, y=0.98)
+        # Adjust plot layout to prevent the title and labels from overlapping.
         fig.tight_layout(rect=[0, 0, 1, 0.96])
+        # Save the figure to the specified output path.
         fig.savefig(out_png, dpi=220, bbox_inches="tight")
+        # Close the figure object to free up memory.
         plt.close(fig)
 
     except Exception as e:
+        # This outer except block catches any failure from the entire process
+        # and prints a warning instead of crashing the script.
         print(f"[XAI][WARN] SHAP summary plot generation failed for '{out_png}': {e}")
     
 # Target list
@@ -2678,17 +2691,11 @@ if XAI_ENABLE_AOE and "aoe_align_score" in df_xai.columns:
     if int(m.sum()) >= REGRESSION_MIN:
         targets.append(("aoe_align_reg","reg","aoe_align_score",m))
 
-# Prefer row-level Fine-tune targets (non-constant) for XAI
-if "ft_proba_gain" in df_xai.columns and df_xai["ft_proba_gain"].std(skipna=True) > 1e-8:
-    targets.append(("finetune_proba_gain", "reg", "ft_proba_gain", None))
-if "ft_cls_gain" in df_xai.columns and df_xai["ft_cls_gain"].std(skipna=True) > 1e-8:
-    targets.append(("finetune_cls_gain", "reg", "ft_cls_gain", None))
-
-# Optional fallback to global deltas (will be constant → usually not useful)
+# Finetune deltas as regression targets (added even if nearly-constant; main loop guards)
 for nm, col in [("finetune_acc_delta","ft_acc_delta"),
                 ("finetune_auc_delta","ft_auc_delta"),
-                ("finetune_r2_delta","ft_r2_delta")]:
-    if col in df_xai.columns and df_xai[col].std(skipna=True) > 1e-8:
+                ("finetune_r2_delta", "ft_r2_delta")]:
+    if col in df_xai.columns:
         targets.append((nm, "reg", col, None))
 
 if not targets:
@@ -2746,7 +2753,6 @@ for target_name, kind, y_col, mask in targets:
             print(f"[XAI][WARN] split failed for {target_name} ({featset}): {e}"); continue
 
         base_png, base_csv = _file_prefix(fig_dir, save_dir, target_name, featset)
-        title_base = SUBDIRS.get(target_name, ("misc", target_name))[1]
 
         if kind == "cls":
             model = RandomForestClassifier(
@@ -2766,13 +2772,9 @@ for target_name, kind, y_col, mask in targets:
             print(f"[XAI] {target_name} [{variant_title}] {featset}: ACC={acc:.3f}, AUC={auc if np.isnan(auc) else round(auc,3)}")
 
             if SAVE_SHAP:
-                _shap_summary(
-                    model,
-                    Xte,
-                    X.columns.tolist(),
-                    out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
-                    fig_title=_title_with_feat(title_base, featset)
-                )
+                _shap_summary(model, Xte, X.columns.tolist(),
+                              out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
+                              fig_title=_title_with_feat(SUBDIRS[target_name][1], featset))
             if SAVE_LIME and len(np.unique(ytr))==2 and len(Xte) >= 5:
                 # LIME on reduced data to avoid zero-variance traps
                 X_np = Xtr.values; stds = X_np.std(axis=0); keep = stds > 1e-12
@@ -2861,13 +2863,9 @@ for target_name, kind, y_col, mask in targets:
             model.fit(Xtr, ytr); r2 = r2_score(yte, model.predict(Xte))
             print(f"[XAI] {target_name} [{variant_title}] {featset}: R2={r2:.3f}")
             if SAVE_SHAP:
-                _shap_summary(
-                    model,
-                    Xte,
-                    X.columns.tolist(),
-                    out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
-                    fig_title=_title_with_feat(title_base, featset)
-                )
+                _shap_summary(model, Xte, X.columns.tolist(),
+                              out_png=base_png.replace(target_name, f"shap_summary__{target_name}") + ".png",
+                              fig_title=_title_with_feat(SUBDIRS[target_name][1], featset))
 
             # ADDED: LIME plot generation for regression tasks
             if SAVE_LIME and len(Xte) >= 5:
@@ -2915,7 +2913,7 @@ for target_name, kind, y_col, mask in targets:
                         plt.barh(dfw["feature_pretty"], dfw["weight"], edgecolor="black")
                         plt.xlabel("Avg LIME weight")
                         plt.title(
-                            f"LIME avg — {_title_with_feat(title_base, featset)}",
+                            f"LIME avg — {_title_with_feat(SUBDIRS[target_name][1], featset)}",
                             fontsize=13, pad=8
                         )
                         plt.gcf().tight_layout(rect=[0, 0, 1, 0.92])
@@ -2931,7 +2929,10 @@ for target_name, kind, y_col, mask in targets:
                 "r2": r2, "n_train": len(Xtr), "n_test": len(Xte)
             }]).to_csv(base_csv.replace(target_name, f"metrics__{target_name}") + ".csv", index=False)
 
-print("[XAI] Completed.")       
+print("[XAI] Completed.")   
+
+main_progress_bar.update(1)
+main_progress_bar.set_description("10/12: XAI analysis finished")
             
 # ======================================================
 # 19) PATCH: Robust copy to Google Drive (MASTER_CTRL-driven)
@@ -3212,6 +3213,9 @@ else:
 
     print(f"[BEST] Generated {len(made)} figure(s) for lock-in universes.")
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("11/12: Best universe plots done")
+
 # ======================================================
 # 21) Save consolidated summary (single write)
 # ======================================================
@@ -3358,6 +3362,9 @@ plt.tight_layout()
 savefig(with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
 print("[FIG] Wrote:", with_variant(os.path.join(FIG_DIR, "stability_distribution_three_overlap.png")))
 
+main_progress_bar.update(1)
+main_progress_bar.set_description("12/12: Final plots generated")
+
 # ------------------------------------------------------
 # 23) Compact version (backward compatibility, fixed)
 # ------------------------------------------------------
@@ -3427,3 +3434,5 @@ if os.path.isdir(best_dir):
         print("   -", f)
 else:
     print("[CHECK][WARN] best_universes directory missing:", best_dir)
+
+main_progress_bar.close()
