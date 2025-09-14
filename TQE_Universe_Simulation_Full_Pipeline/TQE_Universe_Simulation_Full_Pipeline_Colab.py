@@ -19,6 +19,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 import time, json, warnings, sys, subprocess, shutil
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm.auto import tqdm
 
 # --- Colab detection + optional Drive mount ---
 IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
