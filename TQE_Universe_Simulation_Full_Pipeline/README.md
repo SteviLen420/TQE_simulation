@@ -1,7 +1,10 @@
-**The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy–Information Principles**
+#  TQE (E,I) UNIVERSE SIMULATION PIPELINE
+
+# Author: Stefan Len
 
 
-**Author: Stefan Len**
+Title: The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo
+Simulation of Universe Evolution from Energy-Information Principles
 
 Tagline: A Monte Carlo pipeline for simulating emergent physical laws and cosmological observables from first principles of energy and information.
 
@@ -12,21 +15,28 @@ Tagline: A Monte Carlo pipeline for simulating emergent physical laws and cosmol
 The TQE Framework is a novel computational pipeline designed to investigate the hypothesis that the fundamental laws of physics are not axiomatic but emerge from a more primitive interplay of Energy (E) and Information (I). This framework provides a complete, end-to-end environment for conducting Monte Carlo simulations of universe ensembles, allowing for the systematic exploration of a vast parameter space of initial conditions. The core of the pipeline is a multi-stage simulation that models the lifecycle of a universe: an initial, pre-collapse phase where physical laws exist in a quantum-like superposition; a probabilistic "law lock-in" event, where a stable set of physical constants is selected; and a subsequent expansion phase that generates large-scale structures. A comprehensive analysis suite processes the outputs of these simulations to generate cosmological observables analogous to the Cosmic Microwave Background (CMB) and to perform targeted scans for known CMB anomalies, such as the Cold Spot and low-ℓ alignments. A key contribution of this work is the integration of an Explainable AI (XAI) module, which uses machine learning models and interpretability techniques like SHAP to build a predictive and explanatory bridge between the initial (E,I) conditions and the final, observable characteristics of a simulated universe. The TQE Framework is architected for modularity, scalability, and, most critically, full computational reproducibility, making it a powerful tool for theoretical cosmology research.
 
 
-**How to Cite**
+## How to Cite
 
+If you use this software in your research, please consider citing it. This helps to 
+acknowledge the work and allows others to discover and reproduce your results. 
+The `CITATION.cff` file in the root of this repository is provided for automated 
+citation management.
 
-If you use this framework in your research, please cite the following publication:
-Len, S. (Year). The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy–Information Principles. Journal of Open Source Software. URL: https://example.com/tqe-paper
-BibTeX Entry:
+**Plain Text Citation:**
+> Stefan Len. (2025). *TQE (E,I) Universe Simulation Pipeline* (Version 1.0.0) [Software]. GitHub. https://github.com/SteviLen420/TQE_simulation
 
+**BibTeX Entry:**
 
-         @article{Len_TQE_Framework,
-         author  = {Len, Stefan},
-         title   = {{The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy–Information Principles}},
-         journal = {Journal of Open Source Software},
-         year    = {2025},
-         url     = {https://example.com/tqe-paper}
-       }
+```bibtex
+@software{TQE_Simulation_2025,
+  author = {Len, Stefan},
+  title = {{TQE (E,I) Universe Simulation Pipeline}},
+  year = {2025},
+  publisher = {GitHub},
+  version = {1.0.0},
+  url = {[https://github.com/SteviLen420/TQE_simulation](https://github.com/SteviLen420/TQE_simulation)}
+}
+```
 
 ________________
 
