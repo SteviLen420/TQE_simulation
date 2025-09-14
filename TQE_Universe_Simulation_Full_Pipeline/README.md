@@ -190,121 +190,6 @@ $$
 
 This value quantifies the normalized difference in power over a specific range of angular scales (multipoles $\ell$).
 
-________________
-
-
-### Environment & Installation
-
-
-
-
-System Requirements
-
-
-      * Python: Version 3.8 or newer is required.
-      * Operating System: Linux (Recommended): The primary development and testing platform. Provides the smoothest installation experience for complex dependencies like healpy.
-      * macOS: Fully supported.
-      * Windows: Supported via the Windows Subsystem for Linux (WSL2), which provides a native Linux environment.
-It is strongly recommended to use a virtual environment manager like venv or conda to isolate project dependencies.
-
-
-**Dependencies**
-
-
-The framework's dependencies are split into a core set required for basic operation and an optional set for full functionality.
-      * Core Dependencies: numpy, pandas, pyyaml, matplotlib, scikit-learn, tqdm
-      * Optional Dependencies (for full analysis and simulation features): healpy, scipy, shap, lime, qutip
-Installation:
-
-1. Clone the repository:
-	  ```text
-	  git clone https://github.com/your-username/tqe-framework.git
-      cd tqe-framework
-2. Create and activate a virtual environment:
-      ```text
-      python3 -m venv venv
-      source venv/bin/activate
-3. Install dependencies from the provided requirements.txt file:
-      ```text
-      pip install -r requirements.txt
-
-
-Build Tips and Common Pitfalls
-
-
-________________
-
-
-### Configuration & Profiles
-
-
-The entire TQE pipeline is controlled through YAML configuration files. The default file is MASTER_CTRL.yml, but different files can be used to define distinct experimental profiles.
-
-
-**The MASTER_CTRL System**
-
-
-The YAML configuration is structured into logical blocks (meta, simulation, analysis, xai) that correspond to the pipeline stages. This allows for clear and organized experiment definition.
-
-Table 1: Key MASTER_CTRL Parameters
-
-| Parameter            | Section     | Type   | Default            | Description                                                                 |
-|----------------------|-------------|--------|--------------------|-----------------------------------------------------------------------------|
-| `run_name`           | meta        | string | `tqe_run`          | Base name for the output directory.                                         |
-| `master_seed`        | meta        | int    |                    | The master seed for the entire experiment to ensure reproducibility.        |
-| `n_universes`        | simulation  | int    | `100`              | Number of universes to simulate in the ensemble.                            |
-| `e_dist`             | simulation  | dict   | `{...}`            | Parameters for the initial Energy distribution (e.g., mean, std).           |
-| `i_dist`             | simulation  | dict   | `{...}`            | Parameters for the initial Information distribution.                        |
-| `stability_threshold`| simulation  | float  | `1e-5`             | The stability metric threshold required for law lock-in.                    |
-| `run_hpa_scan`       | analysis    | bool   | `true`             | Flag to enable or disable the Hemispherical Power Asymmetry analysis.       |
-| `xai_target`         | xai         | string | `fine_tuning_score`| The target variable for the XAI model to predict.                           |
-| `n_jobs`             | meta        | int    | `-1`               | Number of parallel processes to use (-1 means all available cores).         |
-	
-
-**Execution Profiles**
-
-
-By maintaining multiple YAML files, you can easily switch between different experimental setups. This is useful for managing:
-
-            * profiles/demo.yml: A small, fast-running configuration designed to test the installation and verify that all pipeline stages execute correctly.
-            * profiles/paper_fig3.yml: The exact configuration, including the master_seed, used to generate the data for a specific figure in a publication, ensuring perfect reproducibility.
-            * profiles/colab_friendly.yml: A profile with reduced n_universes and computational complexity, suitable for running on resource-constrained cloud environments like Google Colab.
-To use a specific profile, pass it to the main execution script via the --config or -c command-line argument.
-
-
-________________
-
-
-**Reproducibility & Performance**
-
-
-
-
-Determinism Guarantees
-
-
-The framework is designed to provide bit-for-bit reproducibility. To replicate a previous experiment exactly, you must ensure two conditions are met:
-            1. Identical Configuration: Use the exact same YAML configuration file, including the same master_seed.
-            2. Identical Software Environment: Use the same versions of Python and all required libraries.
-When these conditions are met, the pipeline will produce identical numerical results, figures, and analysis outputs. For example, to reproduce Figure 3 from the accompanying paper, one would run the pipeline using the profiles/paper_fig3.yml configuration file.
-
-
-Scaling and Performance Hints
-
-
-            * Parallelization: The n_jobs parameter in the meta section of the configuration controls the number of parallel processes used. The simulation of universes is an "embarrassingly parallel" problem, so performance scales nearly linearly with the number of available CPU cores. Set n_jobs: -1 to use all available cores.
-            * Computational Cost: The primary drivers of computational cost are n_universes (number of universes) and max_epochs (maximum simulation time). For exploratory work, keep these values low. For publication-quality results requiring high statistical power, these values should be increased significantly, which may require execution on a high-performance computing (HPC) cluster.
-            * Memory Usage: Memory usage scales with n_universes and the resolution of the generated sky maps (healpy_nside). For very large ensembles or high-resolution maps, ensure sufficient RAM is available.
-________________
-
-
-**Troubleshooting**
-
-
-            * ImportError: No module named 'tqe': This typically means the project's root directory is not in your PYTHONPATH. Ensure you are running scripts from the root directory of the repository.
-            * healpy or scipy Build Failures: This is almost always due to missing system-level dependencies (e.g., gfortran, libcfitsio-dev). Refer to the Environment & Installation section for instructions on how to install them for your operating system. Using a containerized environment like Docker is the most robust solution.
-            * FileNotFoundError when running a module script: If you are running individual pipeline stages manually (e.g., 15_run_analysis_suite.py), this error means the required input files from a previous stage are missing. Ensure you have successfully run the prerequisite stages first and that the output directories are correctly specified.
-            * YAML Parsing Errors: If the pipeline fails immediately with an error related to pyyaml, double-check your MASTER_CTRL.yml file for syntax errors like incorrect indentation, which is meaningful in YAML.
 			
 ________________
 
@@ -323,15 +208,18 @@ The TQE Framework is assessed as Research-Grade. The codebase demonstrates a hig
 Ratings
 
 
-            * Rigor: 9/10. The methodological foundations are exceptionally strong. The two-tiered seeding hierarchy provides a state-of-the-art solution for reproducibility in stochastic simulations. The explicit focus on testing against known cosmological anomalies and the use of a formal XAI loop for interpretation reflect a deep commitment to scientific rigor.
-            * Clarity: 7/10. The modular architecture significantly enhances clarity at a high level. However, as is common with specialized research code, the internal logic of the core simulation algorithms and mathematical formalisms is likely dense and may present a steep learning curve for those outside the immediate domain of theoretical cosmology.
-            * Reproducibility: 10/10. The framework's design makes reproducibility a first-class citizen. The combination of configuration-as-code via YAML files and the deterministic hierarchical seeding mechanism provides a complete and robust solution for ensuring that all results can be independently verified and reproduced, which is the gold standard for computational science.
+* Rigor: 9/10. The methodological foundations are exceptionally strong. The two-tiered seeding hierarchy provides a state-of-the-art solution for reproducibility in stochastic simulations. The explicit focus on testing against known cosmological anomalies and the use of a formal XAI loop for interpretation reflect a deep commitment to scientific rigor.
+  
+* Clarity: 7/10. The modular architecture significantly enhances clarity at a high level. However, as is common with specialized research code, the internal logic of the core simulation algorithms and mathematical formalisms is likely dense and may present a steep learning curve for those outside the immediate domain of theoretical cosmology.
+  
+* Reproducibility: 10/10. The framework's design makes reproducibility a first-class citizen. The combination of configuration-as-code via YAML files and the deterministic hierarchical seeding mechanism provides a complete and robust solution for ensuring that all results can be independently verified and reproduced, which is the gold standard for computational science.
 
 
 **Justification and Concrete Suggestions for Improvement**
 
 
 The framework stands out for its exceptional scientific and methodological design, particularly its unwavering focus on reproducibility and its innovative use of XAI to accelerate hypothesis generation. The architecture is thoughtfully constructed for large-scale computational experiments, allowing for the systematic exploration of the TQE model's parameter space. The primary areas for improvement lie in software engineering best practices that would enhance its robustness, ease of use for collaborators, and long-term maintainability.
+
 Three concrete suggestions to further elevate the project are:
             1. Implement a Formal Testing Suite: Introduce the pytest framework to the repository. This would involve creating a tests/ directory with unit tests for critical, isolated functions (e.g., anomaly calculators, stability metrics) to verify their correctness. Additionally, integration tests could be added to run the minimal demo.yml profile and assert that the expected output files and directories are created correctly. A formal test suite would safeguard against regressions during future development and provide an executable specification of the code's intended behavior.
             2. Containerize the Environment: Provide a Dockerfile and/or a Conda environment.yml file in the repository's root. The framework's dependencies, particularly healpy and qutip, are known to be difficult to build from source due to system-level requirements. Containerization would completely solve this problem by packaging the exact, working software environment. This would guarantee that any user on any machine can run the code with a single command, making the framework's results truly and effortlessly reproducible.
