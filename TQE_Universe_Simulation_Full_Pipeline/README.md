@@ -3,8 +3,8 @@
 # Author: Stefan Len
 
 
-Title: The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo
-Simulation of Universe Evolution from Energy-Information Principles
+**Title: The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo
+Simulation of Universe Evolution from Energy-Information Principles**
 
 Tagline: A Monte Carlo pipeline for simulating emergent physical laws and cosmological observables from first principles of energy and information.
 
