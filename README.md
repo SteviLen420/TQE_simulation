@@ -20,7 +20,7 @@ To understand the project, we recommend exploring the following files:
 To get the code up and running, follow these steps:
 
 1. Clone the repository:sh
-   git clone https://github.com/your-username/your-repository-name.git
+   git clone https://github.com/SteviLen420/TQE_simulation/blob/main/TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py
 
 2. Navigate to the main pipeline directory:
 ```bash
