@@ -155,7 +155,7 @@ MASTER_CTRL = {
     # --- Best-universe visualization (lock-in only) ---
     "BEST_UNIVERSE_FIGS": 3,      # how many figures to export (typical: 1 or 5)
     "BEST_N_REGIONS": 10,         # number of region-level entropy traces
-    "BEST_STAB_THRESHOLD": 3.5,   # horizontal reference line on plots
+    "BEST_STAB_THRESHOLD": 6,   # horizontal reference line on plots
     "BEST_SAVE_CSV": True,        # also export per-universe time series as CSV
     "BEST_SEED_OFFSET": 777,      # reproducible offset for the synthetic entropy generator
     "BEST_MAX_FIGS": 50,          # safety clamp
