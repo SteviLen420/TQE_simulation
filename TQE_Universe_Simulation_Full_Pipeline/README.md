@@ -108,48 +108,62 @@ ________________
 
 
 ## Mathematical Formalism
-
 The TQE Framework is grounded in a set of mathematical principles that govern the evolution of simulated universes. The core concepts are defined below.
 
 ### Key State Variables
 - **E**: The total energy of the initial state. A scalar value, $E \in \mathbb{R}^+$.
 - **I**: The total information content of the initial state. A scalar value, $I \in \mathbb{R}^+$.
-- **X(t)**: A time-varying state vector representing the set of physical laws during the pre-collapse phase, $X(t) \in \mathbb{R}^n$.
-- **X_{final}**: The final, locked-in vector of physical laws, $X_{final} = X(t_{lock})$.
+- **X(t)**: A time-varying state vector representing the set of physical laws during the pre-collapse phase. $X(t) \in \mathbb{R}^n$, where *n* is the number of fundamental parameters (e.g., coupling constants, particle masses) being simulated.
+- **X\_{final}**: The final, locked-in vector of physical laws, $X\_{final} = X(t\_{lock})$, where $t\_{lock}$ is the lock-in epoch.
 
 ### Update and Selection Rules
 **Coupling Function:**  
-$X_{mean} = f(E,I)$  
+The initial state of the physical laws is centered around a value determined by the initial energy and information through a coupling function,  
+$$
+X\_{mean} = f(E,I)
+$$
+This function defines the fundamental hypothesis of the TQE model.
 
 **Pre-Collapse Dynamics:**  
+The fluctuation of the law vector $X(t)$ around its mean can be modeled as a stochastic process. A simplified representation using a Langevin equation is:  
 $$
 \frac{dX(t)}{dt} = -\nabla V(X) + \sqrt{2D}\,\eta(t)
 $$
+Here, $V(X)$ is a potential landscape whose shape is determined by the initial conditions $E$ and $I$. The term $-\nabla V(X)$ drives the system towards local minima (stable law configurations), $D$ is a diffusion coefficient representing the magnitude of quantum-like fluctuations, and $\eta(t)$ is a Gaussian white noise term.
 
 **Lock-In Criterion:**  
+The transition to a stable set of laws occurs at epoch $t\_{lock}$ if the system's stability metric, $S(t)$, remains below a predefined threshold $\epsilon$ for a duration of $\Delta t$ epochs.  
+A common choice for the stability metric is the trace of the covariance matrix of the state vector over the recent time window:  
 $$
 S(t) = \mathrm{Tr}\big(\mathrm{Cov}(X(t'))\big) < \epsilon
 $$
 
 ### Probabilistic and Stability Definitions
+The probability of the system locking into a specific configuration of laws $X$ is related to the depth of the corresponding well in the potential landscape $V(X)$.  
+In analogy to statistical mechanics, this can be expressed as:  
 $$
-P(\text{lock-in}\mid X) \propto \exp\!\left(-\frac{V(X)}{kT_{eff}}\right)
+P(\text{lock-in} \mid X) \propto \exp\!\left(-\frac{V(X)}{kT\_{eff}}\right)
 $$
-
-where $T_{eff}$ is an effective temperature of the system during the pre-collapse phase.
+where $T\_{eff}$ is an effective temperature of the system during the pre-collapse phase, representing the energy available for fluctuations.
 
 ### Anomaly and Scoring Equations
+The analysis suite uses standard statistical estimators to quantify cosmological observables and anomalies.
 
 **Fine-Tuning Score ($\mathcal{F}$):**  
+A heuristic score to quantify the "habitability" of a universe with laws  
+$X\_{final} = \{x\_1, x\_2, \dots, x\_n\}$.  
+This is often modeled as a multivariate Gaussian function centered on known "life-friendly" values $(x\_{i,\text{target}})$, with widths $(\sigma\_i)$ defining the tolerance for each parameter:  
 $$
-\mathcal{F}(X_{final}) = \prod_{i=1}^n \exp\!\left(-\frac{(x_i - x_{i,\text{target}})^2}{2\sigma_i^2}\right)
+\mathcal{F}(X\_{final}) = \prod\_{i=1}^n \exp\!\left(-\frac{(x\_i - x\_{i,\text{target}})^2}{2\sigma\_i^2}\right)
 $$
 
 **Hemispherical Power Asymmetry (HPA):**  
+The asymmetry parameter $A$ is calculated from the angular power spectra $(C\_\ell)$ computed independently on two opposing hemispheres of the sky map (North, $N$, and South, $S$):  
 $$
-A = \frac{\sum_{\ell=\ell_{min}}^{\ell_{max}} (C_\ell^N - C_\ell^S)}
-         {\sum_{\ell=\ell_{min}}^{\ell_{max}} (C_\ell^N + C_\ell^S)}
+A = \frac{\sum\_{\ell=\ell\_{min}}^{\ell\_{max}} \big(C\_\ell^N - C\_\ell^S\big)}
+         {\sum\_{\ell=\ell\_{min}}^{\ell\_{max}} \big(C\_\ell^N + C\_\ell^S\big)}
 $$
+This value quantifies the normalized difference in power over a specific range of angular scales (multipoles $\ell$).
 
 ________________
 
