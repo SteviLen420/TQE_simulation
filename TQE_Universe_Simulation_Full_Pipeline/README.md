@@ -30,7 +30,7 @@ citation management.
 ```bibtex
 @software{TQE_Simulation_2025,
   author = {Len, Stefan},
-  title = {{TQE (E,I) Universe Simulation Pipeline}},
+  title = {{TQE Universe Simulation Pipeline}},
   year = {2025},
   publisher = {GitHub},
   version = {1.0.0},
