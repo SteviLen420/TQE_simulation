@@ -48,10 +48,14 @@ The TQE Framework is structured as a multi-stage computational pipeline for the 
 The workflow is orchestrated by a central YAML configuration file, MASTER_CTRL.yml. This configuration-as-code approach enables experimental campaigns—including parameter sweeps and analysis settings—to be defined and archived in a single, human-readable text file. This provides a foundation for reproducibility and transparent experimental design.
 
 The pipeline is organized into four sequential stages:
-	1.	Generation – Reads simulation parameters from MASTER_CTRL.yml and generates initial conditions for an ensemble of universes, each defined by Energy (E) and Information (I) values drawn from statistical distributions.
-	2.	Simulation – The computational core of the framework. It evolves universes through pre-collapse, law lock-in, and expansion phases. This stage is computationally intensive and includes preliminary support for parallel execution.
-	3.	Analysis – Performs post-processing on raw outputs, including calculation of cosmological observables, generation of CMB-like sky maps, and execution of diagnostic tests to score universes for fine-tuning and scan for selected anomalies.
-	4.	Interpretation – Applies Explainable AI (XAI) to synthesize ensemble results. Machine learning models are trained to predict outcomes from initial conditions, providing insights into causal relationships within the TQE model.
+
+1.	**Generation** – Reads simulation parameters from MASTER_CTRL.yml and generates initial conditions for an ensemble of universes, each defined by Energy (E) and Information (I) values drawn from statistical distributions.
+   
+2.	**Simulation** – The computational core of the framework. It evolves universes through pre-collapse, law lock-in, and expansion phases. This stage is computationally intensive and includes preliminary support for parallel execution.
+   
+3.	**Analysis** – Performs post-processing on raw outputs, including calculation of cosmological observables, generation of CMB-like sky maps, and execution of diagnostic tests to score universes for fine-tuning and scan for selected anomalies.
+   
+4.	**Interpretation** – Applies Explainable AI (XAI) to synthesize ensemble results. Machine learning models are trained to predict outcomes from initial conditions, providing insights into causal relationships within the TQE model.
 
 This staged structure conceptually supports re-running individual components (e.g., re-analyzing simulation data with a new anomaly detector) without repeating upstream steps, although the current implementation realizes this in a more streamlined, script-based form.
 
