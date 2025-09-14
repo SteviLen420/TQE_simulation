@@ -92,13 +92,13 @@ Output
 	
  •	Subdirectories contain:
 	
-    *	**maps/** → CMB-like sky maps
+**maps/** → CMB-like sky maps
+ 	
+**diag/** → stability curves, anomaly scans
  
-	*	**diag/** → stability curves, anomaly scans
+**xai/** → Explainable AI outputs (SHAP/LIME)
  
-	*	**xai/** → Explainable AI outputs (SHAP/LIME)
- 
-	*	**logs/** → runtime information and metadata
+**logs/** → runtime information and metadata
  
 
 
