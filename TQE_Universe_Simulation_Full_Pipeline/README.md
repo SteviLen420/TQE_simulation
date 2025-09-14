@@ -80,9 +80,9 @@ The evolution of each universe in the simulation follows a staged lifecycle, mod
  
 •	**Pre-Collapse Phase** – In this phase, the effective physical laws (represented by a state vector X) fluctuate stochastically around values determined by the initial conditions. Conceptually, this is interpreted as a “quantum-like” regime where the laws are not yet fixed. The implementation models these fluctuations through random perturbations, with optional use of qutip for more advanced experiments.
 
-•	**Law Lock-In** – At a critical point, the universe transitions from fluctuating to stable laws, X_{\text{final}}. This lock-in event is governed by a stability_threshold parameter. When the variance of X(t) remains below this threshold for a specified number of epochs, the system records a lock_epoch. This value is a key output of the simulation.
+•	**Law Lock-In** – At a critical point, the universe transitions from fluctuating to stable laws, $X_{final}$. This lock-in event is governed by a stability_threshold parameter. When the variance of X(t) remains below this threshold for a specified number of epochs, the system records a lock_epoch. This value is a key output of the simulation.
 
-•	**Expansion Phase** – After lock-in, the universe evolves deterministically according to the fixed laws X_{\text{final}}. This phase simulates large-scale expansion and structure formation, producing cosmological observables that are passed to the analysis stage.
+•	**Expansion Phase** – After lock-in, the universe evolves deterministically according to the fixed laws $X_{final}$. This phase simulates large-scale expansion and structure formation, producing cosmological observables that are passed to the analysis stage.
 
 
 **The Analysis & Diagnostics Suite**
