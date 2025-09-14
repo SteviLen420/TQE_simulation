@@ -182,33 +182,29 @@ Additional anomaly equations, such as the Hemispherical Power Asymmetry (HPA), a
 
 
 
-Assessment of the Codebase
+# AAssessment of the Codebase
+
+## Maturity Level
+
+The TQE Framework is best described as a research-grade prototype. The codebase demonstrates architectural sophistication beyond a simple script, featuring a configuration-driven pipeline, a hierarchical seeding mechanism for reproducibility, and integration of an XAI module. These are hallmarks of a serious scientific tool. However, the current implementation lacks formal test suites, robust error handling, and polished user-facing APIs, which would be expected in a production-ready system.
+
+**Ratings**
+	
+ •	**Rigor: 8/10** – The methodological foundations are strong. The two-tiered seeding hierarchy and the integration of explainable machine learning reflect a clear focus on scientific rigor. Some anomaly modules are implemented in simplified form, leaving room for further refinement.
+	
+ •	**Clarity: 7/10** – The high-level architecture is well structured and documented, but the core algorithms are dense and may pose a learning curve for those outside theoretical cosmology.
+	
+ •	**Reproducibility: 8/10** – Reproducibility is a central design feature, with YAML configuration and a deterministic seeding mechanism ensuring consistency across runs in the same environment. Full cross-platform bit-level reproducibility, however, is not yet guaranteed.
 
 
+## Justification and Suggestions for Improvement
 
+The framework distinguishes itself through its strong scientific motivation, emphasis on reproducibility, and the novel integration of explainable AI. Its architecture is well-suited for large-scale computational experiments and provides a solid foundation for exploring the TQE model’s parameter space.
 
-Maturity Level
-
-
-The TQE Framework is assessed as Research-Grade. The codebase demonstrates a high degree of architectural sophistication, moving well beyond a simple prototype. Key features such as the modular pipeline, configuration-driven design, a robust reproducibility mechanism, and the integration of an advanced XAI analysis suite are hallmarks of a mature tool built for serious scientific inquiry. However, it likely lacks the comprehensive test suites, extensive error handling, and polished user-facing APIs that would characterize a production-grade system intended for a non-expert audience.
-
-
-Ratings
-
-
-* Rigor: 9/10. The methodological foundations are exceptionally strong. The two-tiered seeding hierarchy provides a state-of-the-art solution for reproducibility in stochastic simulations. The explicit focus on testing against known cosmological anomalies and the use of a formal XAI loop for interpretation reflect a deep commitment to scientific rigor.
-  
-* Clarity: 7/10. The modular architecture significantly enhances clarity at a high level. However, as is common with specialized research code, the internal logic of the core simulation algorithms and mathematical formalisms is likely dense and may present a steep learning curve for those outside the immediate domain of theoretical cosmology.
-  
-* Reproducibility: 10/10. The framework's design makes reproducibility a first-class citizen. The combination of configuration-as-code via YAML files and the deterministic hierarchical seeding mechanism provides a complete and robust solution for ensuring that all results can be independently verified and reproduced, which is the gold standard for computational science.
-
-
-**Justification and Concrete Suggestions for Improvement**
-
-
-The framework stands out for its exceptional scientific and methodological design, particularly its unwavering focus on reproducibility and its innovative use of XAI to accelerate hypothesis generation. The architecture is thoughtfully constructed for large-scale computational experiments, allowing for the systematic exploration of the TQE model's parameter space. The primary areas for improvement lie in software engineering best practices that would enhance its robustness, ease of use for collaborators, and long-term maintainability.
-
-Three concrete suggestions to further elevate the project are:
-            1. Implement a Formal Testing Suite: Introduce the pytest framework to the repository. This would involve creating a tests/ directory with unit tests for critical, isolated functions (e.g., anomaly calculators, stability metrics) to verify their correctness. Additionally, integration tests could be added to run the minimal demo.yml profile and assert that the expected output files and directories are created correctly. A formal test suite would safeguard against regressions during future development and provide an executable specification of the code's intended behavior.
-            2. Containerize the Environment: Provide a Dockerfile and/or a Conda environment.yml file in the repository's root. The framework's dependencies, particularly healpy and qutip, are known to be difficult to build from source due to system-level requirements. Containerization would completely solve this problem by packaging the exact, working software environment. This would guarantee that any user on any machine can run the code with a single command, making the framework's results truly and effortlessly reproducible.
-            3. Generate Automated API Documentation: Supplement this high-level README.md with detailed, low-level API documentation. This can be achieved by using a tool like Sphinx with the autodoc extension, which automatically parses docstrings from the Python source code to generate a full HTML documentation website. This would be an invaluable resource for other researchers wishing to understand the codebase in detail, extend the framework with new modules, or use its components as a library in their own projects.
+To further strengthen the project and improve its usability, maintainability, and adoption by the wider research community, the following software engineering improvements are recommended:
+	
+ **1.	Formal Testing Suite** – Introduce automated testing (e.g., with pytest). Unit tests could cover core functions (e.g., anomaly calculators, stability metrics), while integration tests could validate end-to-end runs with a minimal configuration. This would safeguard against regressions and ensure correctness as the code evolves.
+	
+ **2.	Containerization** – Provide a Dockerfile and/or environment.yml for Conda. Dependencies such as healpy and qutip are known to be challenging to build across platforms. Containerization would package a working environment, allowing any user to reproduce results reliably with a single command.
+	
+ **3.	Automated API Documentation** – Supplement the high-level README with detailed API documentation. Using tools like Sphinx with the autodoc extension would automatically generate a documentation site from in-code docstrings. This would support collaborators and enable the framework to be extended or integrated as a research library.
