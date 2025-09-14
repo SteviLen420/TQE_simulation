@@ -107,179 +107,49 @@ The framework also supports mirroring all outputs to a secondary location, a fea
 ________________
 
 
-Mathematical Formalism
+## Mathematical Formalism
+
 The TQE Framework is grounded in a set of mathematical principles that govern the evolution of simulated universes. The core concepts are defined below.
 
-Key State Variables
-E: The total energy of the initial state. A scalar value, E∈R 
-+
- .
+### Key State Variables
+- **E**: The total energy of the initial state. A scalar value, $E \in \mathbb{R}^+$.
+- **I**: The total information content of the initial state. A scalar value, $I \in \mathbb{R}^+$.
+- **X(t)**: A time-varying state vector representing the set of physical laws during the pre-collapse phase, $X(t) \in \mathbb{R}^n$.
+- **X_{final}**: The final, locked-in vector of physical laws, $X_{final} = X(t_{lock})$.
 
-I: The total information content of the initial state. A scalar value, I∈R 
-+
- .
+### Update and Selection Rules
+**Coupling Function:**  
+$X_{mean} = f(E,I)$  
 
-X(t): A time-varying state vector representing the set of physical laws during the pre-collapse phase. X(t)∈R 
-n
- , where n is the number of fundamental parameters (e.g., coupling constants, particle masses) being simulated.
+**Pre-Collapse Dynamics:**  
+$$
+\frac{dX(t)}{dt} = -\nabla V(X) + \sqrt{2D}\,\eta(t)
+$$
 
-X 
-final
-​
- : The final, locked-in vector of physical laws, X 
-final
-​
- =X(t 
-lock
-​
- ), where t 
-lock
-​
-  is the lock-in epoch.
+**Lock-In Criterion:**  
+$$
+S(t) = \mathrm{Tr}\big(\mathrm{Cov}(X(t'))\big) < \epsilon
+$$
 
-Update and Selection Rules
-Coupling Function: The initial state of the physical laws is centered around a value determined by the initial energy and information through a coupling function, X 
-mean
-​
- =f(E,I). This function defines the fundamental hypothesis of the TQE model.
+### Probabilistic and Stability Definitions
+$$
+P(\text{lock-in}\mid X) \propto \exp\!\left(-\frac{V(X)}{kT_{eff}}\right)
+$$
 
-Pre-Collapse Dynamics: The fluctuation of the law vector X(t) around its mean can be modeled as a stochastic process. A simplified representation using a Langevin equation is:
+where $T_{eff}$ is an effective temperature of the system during the pre-collapse phase.
 
-dt
-dX(t)
-​
- =−∇V(X)+ 
-2D
+### Anomaly and Scoring Equations
 
-​
- ⋅η(t)
-Here, V(X) is a potential landscape whose shape is determined by the initial conditions E and I. The term −∇V(X) drives the system towards local minima (stable law configurations), D is a diffusion coefficient representing the magnitude of quantum-like fluctuations, and η(t) is a Gaussian white noise term.
+**Fine-Tuning Score ($\mathcal{F}$):**  
+$$
+\mathcal{F}(X_{final}) = \prod_{i=1}^n \exp\!\left(-\frac{(x_i - x_{i,\text{target}})^2}{2\sigma_i^2}\right)
+$$
 
-Lock-In Criterion: The transition to a stable set of laws occurs at epoch t 
-lock
-​
-  if the system's stability metric, S(t), remains below a predefined threshold ϵ for a duration of Δt epochs. A common choice for the stability metric is the trace of the covariance matrix of the state vector over the recent time window:
-
-S(t)=Tr(Cov(X(t 
-′
- ))) 
-t 
-′
- ∈
-​
- <ϵ
-Probabilistic and Stability Definitions
-The probability of the system locking into a specific configuration of laws X is related to the depth of the corresponding well in the potential landscape V(X). In analogy to statistical mechanics, this can be expressed as:
-
-P(lock-in∣X)∝exp(− 
-kT 
-eff
-​
- 
-V(X)
-​
- )
-
-where T 
-eff
-​
-  is an effective temperature of the system during the pre-collapse phase, representing the energy available for fluctuations.
-
-Anomaly and Scoring Equations
-The analysis suite uses standard statistical estimators to quantify cosmological observables and anomalies.
-
-Fine-Tuning Score (F): A heuristic score to quantify the "habitability" of a universe with laws X 
-final
-​
- ={x 
-1
-​
- ,x 
-2
-​
- ,...,x 
-n
-​
- }. This is often modeled as a multivariate Gaussian function centered on known "life-friendly" values (x 
-i,target
-​
- ), with widths (σ 
-i
-​
- ) defining the tolerance for each parameter:
-
-F(X 
-final
-​
- )= 
-i=1
-∏
-n
-​
- exp(− 
-2σ 
-i
-2
-​
- 
-(x 
-i
-​
- −x 
-i,target
-​
- ) 
-2
- 
-​
- )
-Hemispherical Power Asymmetry (HPA): The asymmetry parameter A is calculated from the angular power spectra (C 
-ℓ
-​
- ) computed independently on two opposing hemispheres of the sky map (North, N, and South, S):
-
-A= 
-∑ 
-ℓ=ℓ 
-min
-​
- 
-ℓ 
-max
-​
- 
-​
- (C 
-ℓ
-N
-​
- +C 
-ℓ
-S
-​
- )
-∑ 
-ℓ=ℓ 
-min
-​
- 
-ℓ 
-max
-​
- 
-​
- (C 
-ℓ
-N
-​
- −C 
-ℓ
-S
-​
- )
-​
- 
-This value quantifies the normalized difference in power over a specific range of angular scales (multipoles ℓ).
+**Hemispherical Power Asymmetry (HPA):**  
+$$
+A = \frac{\sum_{\ell=\ell_{min}}^{\ell_{max}} (C_\ell^N - C_\ell^S)}
+         {\sum_{\ell=\ell_{min}}^{\ell_{max}} (C_\ell^N + C_\ell^S)}
+$$
 
 ________________
 
