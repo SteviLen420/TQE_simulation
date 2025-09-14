@@ -735,20 +735,121 @@ def simulate_lock_in(
 
 
 
-# Outcomes
-is_stable = 1 if stable_at is not None else 0
-is_lockin = 1 if lockin_at is not None else 0
+def simulate_lock_in(
+    X, N_epoch,
+    rel_eps_stable=MASTER_CTRL["REL_EPS_STABLE"],
+    rel_eps_lockin=MASTER_CTRL["REL_EPS_LOCKIN"],
+    sigma0=0.2, alpha=1.0,
+    E_c_low=None, E_c_high=None, rng=None
+):
+    """
+    Simulate law stabilization and lock-in under MASTER_CTRL-driven noise model.
+    - Goldilocks-shaped noise via sigma_goldilocks(...)
+    - Time-decaying noise with non-zero floor
+    - Per-variable noise multipliers (A, ns, H)
+    - Rolling-window lock-in condition with optional prior-stable requirement
+    """
+    from collections import deque
 
-# Return full state histories as well (needed for entropy export)
-return (
-    is_stable,
-    is_lockin,
-    (stable_at if stable_at else -1),
-    (lockin_at if lockin_at else -1),
-    np.array(A_series),   # full A history
-    np.array(ns_series),  # full ns history
-    np.array(H_series)    # full H history
-)
+    if rng is None:
+        rng = np.random.default_rng()
+
+    # State variables (arbitrary but consistent scales)
+    A  = rng.normal(50, 5)
+    ns = rng.normal(0.8, 0.05)
+    H  = rng.normal(0.7, 0.08)
+
+    # Tracking states
+    stable_at, lockin_at = None, None
+    consec_stable, consec_lockin = 0, 0
+    A_series, ns_series, H_series = [], [], []
+    window = deque(maxlen=MASTER_CTRL["LOCKIN_WINDOW"])
+    _eps = 1e-12
+
+    # Helper for window aggregation
+    def _agg(vals):
+        m = MASTER_CTRL["LOCKIN_ROLL_METRIC"]
+        if m == "median":
+            return float(np.median(vals))
+        if m == "max":
+            return float(np.max(vals))
+        return float(np.mean(vals))
+
+    A_series, ns_series, H_series = [], [], []
+
+    for n in range(1, N_epoch + 1):
+        # Base noise shaped by Goldilocks window (outside penalty handled inside)
+        sigma = sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high)
+
+        # Time decay of noise (never goes to zero; clamped by LL_BASE_NOISE)
+        decay = (
+            MASTER_CTRL["NOISE_FLOOR_FRAC"]
+            + (1 - MASTER_CTRL["NOISE_FLOOR_FRAC"])
+              * np.exp(-n / MASTER_CTRL["NOISE_DECAY_TAU"])
+        )
+        sigma = max(MASTER_CTRL["LL_BASE_NOISE"], sigma * decay)
+
+        # Save previous state
+        A_prev, ns_prev, H_prev = A, ns, H
+
+        # Per-variable stochastic updates
+        A  += rng.normal(0, sigma * MASTER_CTRL["NOISE_COEFF_A"])
+        ns += rng.normal(0, sigma * MASTER_CTRL["NOISE_COEFF_NS"])
+        H  += rng.normal(0, sigma * MASTER_CTRL["NOISE_COEFF_H"])
+
+        A_series.append(A)
+        ns_series.append(ns)
+        H_series.append(H)
+
+        # Relative change with epsilon guards
+        delta_rel = (
+            abs(A  - A_prev) / max(abs(A_prev),  _eps) +
+            abs(ns - ns_prev) / max(abs(ns_prev), _eps) +
+            abs(H  - H_prev) / max(abs(H_prev),  _eps)
+        ) / 3.0
+
+        # Push into rolling window
+        window.append(delta_rel)
+
+        # --- stable check ---
+        if delta_rel < rel_eps_stable:
+            consec_stable += 1
+            if consec_stable >= MASTER_CTRL["CALM_STEPS_STABLE"] and stable_at is None:
+                stable_at = n
+        else:
+            consec_stable = 0
+
+        # --- lock-in check (rolling avg + min epoch + prior stable if required) ---
+        can_check_lock = (len(window) == window.maxlen) and (n >= MASTER_CTRL["MIN_LOCKIN_EPOCH"])
+
+        if MASTER_CTRL["LOCKIN_REQUIRES_STABLE"]:
+            can_check_lock = can_check_lock and (stable_at is not None)
+
+        if MASTER_CTRL["LOCKIN_MIN_STABLE_EPOCH"] > 0 and stable_at is not None:
+            can_check_lock = can_check_lock and (n - stable_at >= MASTER_CTRL["LOCKIN_MIN_STABLE_EPOCH"])
+
+        if can_check_lock and (_agg(window) < rel_eps_lockin):
+            consec_lockin += 1
+            if consec_lockin >= MASTER_CTRL["CALM_STEPS_LOCKIN"] and lockin_at is None:
+                lockin_at = n
+        else:
+            consec_lockin = 0
+
+        # Outcomes
+        is_stable = 1 if stable_at is not None else 0
+        is_lockin = 1 if lockin_at is not None else 0
+
+        # Return full state histories as well (needed for entropy export)
+        return (
+            is_stable,
+            is_lockin,
+            (stable_at if stable_at else -1),
+            (lockin_at if lockin_at else -1),
+            np.array(A_series),   # full A history
+            np.array(ns_series),  # full ns history
+            np.array(H_series)    # full H history
+        )
+
 
 
 # ======================================================
