@@ -85,17 +85,19 @@ The evolution of each universe in the simulation follows a staged lifecycle, mod
 •	**Expansion Phase** – After lock-in, the universe evolves deterministically according to the fixed laws $X_{final}$. This phase simulates large-scale expansion and structure formation, producing cosmological observables that are passed to the analysis stage.
 
 
-**The Analysis & Diagnostics Suite**
+## The Analysis & Diagnostics Suite
 
+This suite of modules quantifies the outcomes of the simulation core, transforming raw data into scientifically meaningful metrics and visualizations.
 
-This suite of modules quantifies the outcomes of the simulation core, translating raw data into scientifically meaningful metrics and visualizations.
-* CMB-like Map Generation: The framework uses the healpy library to project the final state of the simulated universe onto a spherical grid, creating a sky map analogous to the Cosmic Microwave Background. This allows for direct visual and statistical comparison with observational data.
-* Fine-Tuning Diagnostics: A set of metrics is computed to score how "fine-tuned" a universe's locked-in laws (Xfinal​) are for the emergence of complexity (e.g., structure formation, stable chemistry). This allows for a quantitative classification of universes in the ensemble as "barren," "habitable," or other categories, providing a means to study the anthropic principle from a generative standpoint.
-* Anomaly Scanning: The pipeline is explicitly designed to search for patterns in the generated maps that correspond to statistically significant anomalies observed in our own CMB data. The focus on these specific anomalies suggests the TQE framework is positioned as a potential explanatory model for phenomena that are in tension with the standard ΛCDM model of cosmology. The targeted anomalies include:
-   * The CMB Cold Spot: An unusually large and cold region of the sky.
-   * Low-ℓ Multipole Alignments: The unexpected alignment of the quadrupole (ℓ=2) and octopole (ℓ=3) moments of the CMB, sometimes referred to as the "Axis of Evil."
-   * The Low-ℓ Alignment Correlation (LLAC): Correlations between the low multipole alignments.
-   * The Hemispherical Power Asymmetry (HPA): A statistically significant difference in the power of temperature fluctuations between two opposing hemispheres of the sky.
+•	**CMB-like Map Generation** – The framework uses the healpy library to project the final state of the simulated universe onto a spherical grid, producing sky maps analogous to the Cosmic Microwave Background. These maps enable direct visual and statistical comparison with observational data.
+
+•	**Fine-Tuning Diagnostics** – A set of metrics evaluates how “fine-tuned” a universe’s locked-in laws ($X_{final}$) are for the emergence of complexity (e.g., structure formation, stable chemistry). The current implementation provides a continuous fine-tuning score, which can serve as the basis for classifying universes as barren, habitable, or other categories in future extensions.
+
+•	**Anomaly Scanning** – The current implementation includes tools for detecting two key anomalies observed in CMB data:
+	•	**CMB Cold Spot** – detection of unusually cold regions in the simulated sky.
+	•	**Low-ℓ Multipole Alignment (Axis of Evil)** – analysis of the alignment between quadrupole ($\ell=2$) and octopole ($\ell=3$) modes.
+
+Additional anomaly modules, such as the Hemispherical Power Asymmetry (HPA) and the Low-ℓ Alignment Correlation (LLAC), are mentioned in the framework design but are not yet implemented in the prototype.
 
 
 **Explainable AI (XAI) for Cosmological Interpretation**
