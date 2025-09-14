@@ -19,12 +19,11 @@ Len, S. (Year). The TQE Framework: A Modular, Reproducible Pipeline for Monte Ca
 BibTeX Entry:
 
 
-
 @article{Len_TQE_Framework,
   author  = {Len, Stefan},
   title   = {{The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy–Information Principles}},
   journal = {Journal of Open Source Software},
-  year    = {YYYY},
+  year    = {2025},
   volume  = {VV},
   number  = {NN},
   pages   = {PPPP},
@@ -109,52 +108,179 @@ ________________
 
 
 Mathematical Formalism
-
-
 The TQE Framework is grounded in a set of mathematical principles that govern the evolution of simulated universes. The core concepts are defined below.
 
-
 Key State Variables
+E: The total energy of the initial state. A scalar value, E∈R 
++
+ .
 
+I: The total information content of the initial state. A scalar value, I∈R 
++
+ .
 
-* E: The total energy of the initial state. A scalar value, E∈R+.
-* I: The total information content of the initial state. A scalar value, I∈R+.
-* X(t): A time-varying state vector representing the set of physical laws during the pre-collapse phase. X(t)∈Rn, where n is the number of fundamental parameters (e.g., coupling constants, particle masses) being simulated.
-* Xfinal​: The final, locked-in vector of physical laws, Xfinal​=X(tlock​), where tlock​ is the lock-in epoch.
+X(t): A time-varying state vector representing the set of physical laws during the pre-collapse phase. X(t)∈R 
+n
+ , where n is the number of fundamental parameters (e.g., coupling constants, particle masses) being simulated.
 
+X 
+final
+​
+ : The final, locked-in vector of physical laws, X 
+final
+​
+ =X(t 
+lock
+​
+ ), where t 
+lock
+​
+  is the lock-in epoch.
 
 Update and Selection Rules
+Coupling Function: The initial state of the physical laws is centered around a value determined by the initial energy and information through a coupling function, X 
+mean
+​
+ =f(E,I). This function defines the fundamental hypothesis of the TQE model.
 
+Pre-Collapse Dynamics: The fluctuation of the law vector X(t) around its mean can be modeled as a stochastic process. A simplified representation using a Langevin equation is:
 
-* Coupling Function: The initial state of the physical laws is centered around a value determined by the initial energy and information through a coupling function, Xmean​=f(E,I). This function defines the fundamental hypothesis of the TQE model.
-* Pre-Collapse Dynamics: The fluctuation of the law vector X(t) around its mean can be modeled as a stochastic process. A simplified representation using a Langevin equation is:
-dtdX(t)​=−∇V(X)+2D​⋅η(t)
+dt
+dX(t)
+​
+ =−∇V(X)+ 
+2D
+
+​
+ ⋅η(t)
 Here, V(X) is a potential landscape whose shape is determined by the initial conditions E and I. The term −∇V(X) drives the system towards local minima (stable law configurations), D is a diffusion coefficient representing the magnitude of quantum-like fluctuations, and η(t) is a Gaussian white noise term.
-* Lock-In Criterion: The transition to a stable set of laws occurs at epoch tlock​ if the system's stability metric, S(t), remains below a predefined threshold ϵ for a duration of Δt epochs. A common choice for the stability metric is the trace of the covariance matrix of the state vector over the recent time window:
-S(t)=Tr(Cov(X(t′)))t′∈​<ϵ
 
+Lock-In Criterion: The transition to a stable set of laws occurs at epoch t 
+lock
+​
+  if the system's stability metric, S(t), remains below a predefined threshold ϵ for a duration of Δt epochs. A common choice for the stability metric is the trace of the covariance matrix of the state vector over the recent time window:
 
+S(t)=Tr(Cov(X(t 
+′
+ ))) 
+t 
+′
+ ∈
+​
+ <ϵ
 Probabilistic and Stability Definitions
-
-
 The probability of the system locking into a specific configuration of laws X is related to the depth of the corresponding well in the potential landscape V(X). In analogy to statistical mechanics, this can be expressed as:
 
+P(lock-in∣X)∝exp(− 
+kT 
+eff
+​
+ 
+V(X)
+​
+ )
 
-P(lock-in∣X)∝exp(−kTeff​V(X)​)
-
-
-where Teff​ is an effective temperature of the system during the pre-collapse phase, representing the energy available for fluctuations.
-
+where T 
+eff
+​
+  is an effective temperature of the system during the pre-collapse phase, representing the energy available for fluctuations.
 
 Anomaly and Scoring Equations
-
-
 The analysis suite uses standard statistical estimators to quantify cosmological observables and anomalies.
-   * Fine-Tuning Score (F): A heuristic score to quantify the "habitability" of a universe with laws Xfinal​={x1​,x2​,...,xn​}. This is often modeled as a multivariate Gaussian function centered on known "life-friendly" values (xi,target​), with widths (σi​) defining the tolerance for each parameter:
-F(Xfinal​)=i=1∏n​exp(−2σi2​(xi​−xi,target​)2​)
-   * Hemispherical Power Asymmetry (HPA): The asymmetry parameter A is calculated from the angular power spectra (Cℓ​) computed independently on two opposing hemispheres of the sky map (North, N, and South, S):
-A=∑ℓ=ℓmin​ℓmax​​(CℓN​+CℓS​)∑ℓ=ℓmin​ℓmax​​(CℓN​−CℓS​)​
+
+Fine-Tuning Score (F): A heuristic score to quantify the "habitability" of a universe with laws X 
+final
+​
+ ={x 
+1
+​
+ ,x 
+2
+​
+ ,...,x 
+n
+​
+ }. This is often modeled as a multivariate Gaussian function centered on known "life-friendly" values (x 
+i,target
+​
+ ), with widths (σ 
+i
+​
+ ) defining the tolerance for each parameter:
+
+F(X 
+final
+​
+ )= 
+i=1
+∏
+n
+​
+ exp(− 
+2σ 
+i
+2
+​
+ 
+(x 
+i
+​
+ −x 
+i,target
+​
+ ) 
+2
+ 
+​
+ )
+Hemispherical Power Asymmetry (HPA): The asymmetry parameter A is calculated from the angular power spectra (C 
+ℓ
+​
+ ) computed independently on two opposing hemispheres of the sky map (North, N, and South, S):
+
+A= 
+∑ 
+ℓ=ℓ 
+min
+​
+ 
+ℓ 
+max
+​
+ 
+​
+ (C 
+ℓ
+N
+​
+ +C 
+ℓ
+S
+​
+ )
+∑ 
+ℓ=ℓ 
+min
+​
+ 
+ℓ 
+max
+​
+ 
+​
+ (C 
+ℓ
+N
+​
+ −C 
+ℓ
+S
+​
+ )
+​
+ 
 This value quantifies the normalized difference in power over a specific range of angular scales (multipoles ℓ).
+
 ________________
 
 
