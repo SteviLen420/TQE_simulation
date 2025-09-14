@@ -19,20 +19,27 @@ Len, S. (Year). The TQE Framework: A Modular, Reproducible Pipeline for Monte Ca
 BibTeX Entry:
 
 
-Útržok kódu
-
 
 
 
 @article{Len_TQE_Framework,
+
  author  = {Len, Stefan},
+ 
  title   = {{The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy–Information Principles}},
+ 
  journal = {Journal of Open Source Software},
+ 
  year    = {YYYY},
+ 
  volume  = {VV},
+ 
  number  = {NN},
+ 
  pages   = {PPPP},
+ 
  url     = {https://example.com/tqe-paper}
+ 
 }
 
 ________________
