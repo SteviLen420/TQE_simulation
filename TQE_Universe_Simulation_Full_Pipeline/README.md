@@ -35,8 +35,34 @@ citation management.
   url = {[https://github.com/SteviLen420/TQE_simulation](https://github.com/SteviLen420/TQE_simulation)}
 }
 ```
-
 ________________
+
+## Installation & Environment Setup
+
+The TQE Framework requires **Python 3.9+** and several scientific libraries.  
+We recommend setting up a dedicated virtual environment to ensure reproducibility.
+
+### Using pip
+```bash
+git clone https://github.com/your_username/TQE_Framework.git
+cd TQE_Framework
+python -m venv venv
+source venv/bin/activate   # On Windows use: venv\Scripts\activate
+pip install -r requirements.txt 
+```
+### Using Conda
+```bash
+git clone https://github.com/your_username/TQE_Framework.git
+cd TQE_Framework
+conda env create -f environment.yml
+conda activate tqe_env
+```
+### Optional Dependencies
+	•	**qutip** – enables quantum-mechanical modeling of pre-collapse dynamics
+	•	**healpy** – required for generating CMB-like sky maps
+	•	**shap, lime** – required for Explainable AI (XAI) analysis
+
+💡 If installation issues occur with healpy or qutip, we recommend using Conda, as it handles binary dependencies more reliably than pip.
 
 
 ## Computational Framework & Methodology
