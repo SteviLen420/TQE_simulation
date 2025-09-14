@@ -193,7 +193,7 @@ This value quantifies the normalized difference in power over a specific range o
 ________________
 
 
-**Environment & Installation**
+### Environment & Installation
 
 
 
@@ -202,8 +202,7 @@ System Requirements
 
 
       * Python: Version 3.8 or newer is required.
-      * Operating System:
-      * Linux (Recommended): The primary development and testing platform. Provides the smoothest installation experience for complex dependencies like healpy.
+      * Operating System: Linux (Recommended): The primary development and testing platform. Provides the smoothest installation experience for complex dependencies like healpy.
       * macOS: Fully supported.
       * Windows: Supported via the Windows Subsystem for Linux (WSL2), which provides a native Linux environment.
 It is strongly recommended to use a virtual environment manager like venv or conda to isolate project dependencies.
@@ -236,7 +235,7 @@ Build Tips and Common Pitfalls
 ________________
 
 
-**Configuration & Profiles**
+### Configuration & Profiles
 
 
 The entire TQE pipeline is controlled through YAML configuration files. The default file is MASTER_CTRL.yml, but different files can be used to define distinct experimental profiles.
@@ -246,196 +245,33 @@ The entire TQE pipeline is controlled through YAML configuration files. The defa
 
 
 The YAML configuration is structured into logical blocks (meta, simulation, analysis, xai) that correspond to the pipeline stages. This allows for clear and organized experiment definition.
+
 Table 1: Key MASTER_CTRL Parameters
-Parameter
-	Section
-	Type
-	Default
-	Description
-	run_name
-	meta
-	string
-	tqe_run
-	Base name for the output directory.
-	master_seed
-	meta
-	int
-	42
-	The master seed for the entire experiment to ensure reproducibility.
-	n_universes
-	simulation
-	int
-	100
-	Number of universes to simulate in the ensemble.
-	e_dist
-	simulation
-	dict
-	{...}
-	Parameters for the initial Energy distribution (e.g., mean, std).
-	i_dist
-	simulation
-	dict
-	{...}
-	Parameters for the initial Information distribution.
-	stability_threshold
-	simulation
-	float
-	1e-5
-	The stability metric threshold required for law lock-in.
-	run_hpa_scan
-	analysis
-	bool
-	true
-	Flag to enable or disable the Hemispherical Power Asymmetry analysis.
-	xai_target
-	xai
-	string
-	fine_tuning_score
-	The target variable for the XAI model to predict.
-	n_jobs
-	meta
-	int
-	-1
-	Number of parallel processes to use (-1 means all available cores).
+
+| Parameter            | Section     | Type   | Default            | Description                                                                 |
+|----------------------|-------------|--------|--------------------|-----------------------------------------------------------------------------|
+| `run_name`           | meta        | string | `tqe_run`          | Base name for the output directory.                                         |
+| `master_seed`        | meta        | int    |                    | The master seed for the entire experiment to ensure reproducibility.        |
+| `n_universes`        | simulation  | int    | `100`              | Number of universes to simulate in the ensemble.                            |
+| `e_dist`             | simulation  | dict   | `{...}`            | Parameters for the initial Energy distribution (e.g., mean, std).           |
+| `i_dist`             | simulation  | dict   | `{...}`            | Parameters for the initial Information distribution.                        |
+| `stability_threshold`| simulation  | float  | `1e-5`             | The stability metric threshold required for law lock-in.                    |
+| `run_hpa_scan`       | analysis    | bool   | `true`             | Flag to enable or disable the Hemispherical Power Asymmetry analysis.       |
+| `xai_target`         | xai         | string | `fine_tuning_score`| The target variable for the XAI model to predict.                           |
+| `n_jobs`             | meta        | int    | `-1`               | Number of parallel processes to use (-1 means all available cores).         |
 	
 
 **Execution Profiles**
 
 
 By maintaining multiple YAML files, you can easily switch between different experimental setups. This is useful for managing:
+
             * profiles/demo.yml: A small, fast-running configuration designed to test the installation and verify that all pipeline stages execute correctly.
             * profiles/paper_fig3.yml: The exact configuration, including the master_seed, used to generate the data for a specific figure in a publication, ensuring perfect reproducibility.
             * profiles/colab_friendly.yml: A profile with reduced n_universes and computational complexity, suitable for running on resource-constrained cloud environments like Google Colab.
 To use a specific profile, pass it to the main execution script via the --config or -c command-line argument.
 
 
-**Minimal Working ACTIVE Configuration**
-
-
-Below is a minimal, commented YAML snippet that can be used as a starting point for a custom experiment. This configuration will run a small ensemble of 10 universes and perform a basic analysis.
-
-
-YAML
-
-
-
-
-# Minimal working configuration for the TQE Framework
-meta:
- run_name: "minimal_demo"
- 
- master_seed: 1337
- 
- n_jobs: 2 # Use 2 CPU cores
-
-simulation:
-
- n_universes: 10
- 
- e_dist:
- 
-   type: "normal"
-   
-   mean: 1.0
-   
-   std: 0.1
-   
- i_dist:
- 
-   type: "normal"
-   
-   mean: 1.0
-   
-   std: 0.1
-   
- stability_threshold: 1.0e-5
- 
- max_epochs: 5000
- 
-
-analysis:
- run_fine_tuning_score: true
- run_hpa_scan: true
- healpy_nside: 64 # Resolution for CMB-like maps
-
-xai:
- run_xai_module: true
- xai_target: "fine_tuning_score"
- test_size: 0.2
-
-________________
-
-
-Running the Pipeline
-
-
-The framework can be executed as a single command that runs all stages sequentially, or individual stages can be run for more advanced workflows.
-
-
-Master Control Run Examples
-
-
-The primary entry point is master_run.py, which orchestrates the entire pipeline based on a specified configuration file.
-Bash (Linux/macOS):
-
-
-Bash
-
-
-
-
-# Run the demonstration profile
-python master_run.py --config profiles/demo.yml
-
-PowerShell (Windows):
-
-
-PowerShell
-
-
-
-
-# Run a custom configuration file
-python master_run.py -c my_experiment.yml
-
-
-
-Per-Module Entry Points
-
-
-For advanced use cases, such as on a compute cluster with a job scheduler, each stage of the pipeline can be executed via its standalone script. This requires ensuring that the necessary input data from the previous stage is available.
-Table 2: Pipeline Module Entry Points
-Script
-	Module ID
-	Function
-	Prerequisites
-	13_generate_initial_conditions.py
-	13
-	Creates the initial state files for each universe.
-	MASTER_CTRL config.
-	14_run_simulation_core.py
-	14
-	Runs the core evolution simulation on the ensemble.
-	Initial condition files from Module 13.
-	15_run_analysis_suite.py
-	15
-	Performs analysis on simulation outputs.
-	Raw simulation data from Module 14.
-	16_run_xai_interpretation.py
-	16
-	Trains and runs the XAI models.
-	Processed analysis data from Module 15.
-	
-
-Expected Outputs & Filenames
-
-
-After a successful run named my_run, a directory RUN_DIR/my_run_YYYYMMDD_HHMMSS/ will be created, containing:
-            * analysis/results.csv: A summary CSV file with one row per simulated universe and columns for initial conditions and all calculated metrics.
-            * analysis/run_summary.json: A JSON file containing aggregate statistics for the entire ensemble.
-            * FIG_DIR/hpa_map.png: An example figure showing a generated sky map with hemispherical division.
-            * FIG_DIR/fine_tuning_distribution.png: A histogram of the fine-tuning scores across the ensemble.
-            * FIG_DIR/xai_shap_summary.png: The SHAP summary plot showing global feature importances for the trained XAI model.
 ________________
 
 
@@ -469,84 +305,8 @@ ________________
             * healpy or scipy Build Failures: This is almost always due to missing system-level dependencies (e.g., gfortran, libcfitsio-dev). Refer to the Environment & Installation section for instructions on how to install them for your operating system. Using a containerized environment like Docker is the most robust solution.
             * FileNotFoundError when running a module script: If you are running individual pipeline stages manually (e.g., 15_run_analysis_suite.py), this error means the required input files from a previous stage are missing. Ensure you have successfully run the prerequisite stages first and that the output directories are correctly specified.
             * YAML Parsing Errors: If the pipeline fails immediately with an error related to pyyaml, double-check your MASTER_CTRL.yml file for syntax errors like incorrect indentation, which is meaningful in YAML.
+			
 ________________
-
-
-**Appendix**
-
-
-
-
-Minimal End-to-End Code Snippet (API Usage)
-
-
-The TQE Framework can also be used as a Python library for more customized workflows. The following snippet demonstrates how to programmatically load a configuration, instantiate a single universe, and run its simulation.
-
-
-Python
-
-
-
-
-from tqe.simulator import Universe
-from tqe.config import load_config
-from tqe.analysis import calculate_fine_tuning
-
-# 1. Load a configuration profile
-params = load_config('profiles/demo.yml')
-
-# 2. Instantiate a single universe with a specific seed and initial conditions
-#    (Here we use the mean values from the config for simplicity)
-uni = Universe(
-   seed=42,
-   initial_E=params.simulation.e_dist.mean,
-   initial_I=params.simulation.i_dist.mean,
-   config=params.simulation
-)
-
-# 3. Run the core simulation
-#    This returns a dictionary with the final state and metadata
-results = uni.run_simulation()
-
-# 4. Perform a post-hoc analysis calculation
-final_laws = results['final_law_vector']
-score = calculate_fine_tuning(final_laws, params.analysis)
-
-print(f"Simulation completed at epoch: {results['lock_epoch']}")
-print(f"Final law vector: {final_laws}")
-print(f"Fine-Tuning Score: {score:.4f}")
-
-
-
-Glossary of Symbols and Acronyms
-
-
-Table 3: Glossary of Symbols and Acronyms
-Symbol/Acronym
-	Definition
-	TQE
-	The Quantum Evolution Framework (assumed)
-	E
-	Initial Energy of a simulated universe.
-	I
-	Initial Information content of a simulated universe.
-	X
-	The state vector of physical laws and constants.
-	lock_epoch
-	The simulation time-step at which physical laws become stable.
-	CMB
-	Cosmic Microwave Background.
-	LLAC
-	Low-ℓ Alignment Correlation.
-	HPA
-	Hemispherical Power Asymmetry.
-	SHAP
-	SHapley Additive exPlanations.
-	LIME
-	Local Interpretable Model-agnostic Explanations.
-	PRNG
-	Pseudo-Random Number Generator.
-	________________
 
 
 Assessment of the Codebase
