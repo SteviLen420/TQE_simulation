@@ -141,6 +141,6 @@ I ran the simulations with random initialization and, in most cases, deliberatel
 
 Author’s Note
 
-I am not a professional physicist, but rather an independent enthusiast. I apologize for any possible inaccuracies or oversights. My intention is not to present a finished theory, but to contribute an idea that may be worth further exploration and refinement by others.
+I am not a professional physicist, but an independent enthusiast. This work is intended as an exploratory contribution rather than a finished theory. I apologize for any possible inaccuracies or oversights, my goal is simply to share an idea that may inspire further exploration, refinement, and development by the broader research community.
 
 
