@@ -1,17 +1,18 @@
-The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy–Information Principles
+**The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy–Information Principles**
 
 
-Author: Stefan Len
+**Author: Stefan Len**
+
 Tagline: A Monte Carlo pipeline for simulating emergent physical laws and cosmological observables from first principles of energy and information.
 
 
-Abstract
+**Abstract**
 
 
 The TQE Framework is a novel computational pipeline designed to investigate the hypothesis that the fundamental laws of physics are not axiomatic but emerge from a more primitive interplay of Energy (E) and Information (I). This framework provides a complete, end-to-end environment for conducting Monte Carlo simulations of universe ensembles, allowing for the systematic exploration of a vast parameter space of initial conditions. The core of the pipeline is a multi-stage simulation that models the lifecycle of a universe: an initial, pre-collapse phase where physical laws exist in a quantum-like superposition; a probabilistic "law lock-in" event, where a stable set of physical constants is selected; and a subsequent expansion phase that generates large-scale structures. A comprehensive analysis suite processes the outputs of these simulations to generate cosmological observables analogous to the Cosmic Microwave Background (CMB) and to perform targeted scans for known CMB anomalies, such as the Cold Spot and low-ℓ alignments. A key contribution of this work is the integration of an Explainable AI (XAI) module, which uses machine learning models and interpretability techniques like SHAP to build a predictive and explanatory bridge between the initial (E,I) conditions and the final, observable characteristics of a simulated universe. The TQE Framework is architected for modularity, scalability, and, most critically, full computational reproducibility, making it a powerful tool for theoretical cosmology research.
 
 
-How to Cite
+**How to Cite**
 
 
 If you use this framework in your research, please cite the following publication:
@@ -30,13 +31,13 @@ BibTeX Entry:
 ________________
 
 
-Computational Framework & Methodology
+**Computational Framework & Methodology**
 
 
 The TQE Framework is engineered as a robust, multi-stage computational pipeline designed for the systematic investigation of emergent physical laws. Its architecture prioritizes modularity, configuration-driven execution, and strict reproducibility to meet the rigorous demands of scientific research.
 
 
-High-Level Architecture
+**High-Level Architecture**
 
 
 The framework's workflow is orchestrated by a central YAML configuration file, MASTER_CTRL.yml. This configuration-as-code approach allows entire experimental campaigns, including parameter sweeps and analysis settings, to be defined and archived within a single, human-readable text file. This design not only simplifies the execution of complex simulations but also forms the bedrock of the framework's reproducibility.
@@ -48,7 +49,7 @@ The pipeline is divided into four distinct, logically sequential stages:
 This modular structure is a critical design feature, enabling researchers to re-run specific parts of the pipeline without having to repeat upstream computations. For instance, one can re-analyze existing simulation data with a new anomaly detection algorithm by invoking only the analysis stage, a significant efficiency gain in research workflows.
 
 
-Reproducibility by Design: The Seeding Hierarchy
+**Reproducibility by Design: The Seeding Hierarchy**
 
 
 To ensure full computational determinism, the framework implements a sophisticated two-tiered seeding hierarchy. This system guarantees that any simulation campaign can be reproduced bit-for-bit, a non-negotiable requirement for verifiable scientific claims.
@@ -57,7 +58,7 @@ To ensure full computational determinism, the framework implements a sophisticat
 Each universe_seed is then used to seed the local PRNG responsible for all stochastic processes within that single universe's simulation. This hierarchical design provides two layers of reproducibility. A researcher can reproduce the entire ensemble of results by simply re-using the master_seed. Furthermore, if a single universe exhibits particularly interesting behavior, it can be isolated and its evolution reproduced exactly by using its specific universe_seed, without the need to re-run the entire, potentially massive, ensemble. This capability is invaluable for debugging, detailed analysis, and validating extraordinary results.
 
 
-The Simulation Core: A Universe's Lifecycle
+**The Simulation Core: A Universe's Lifecycle**
 
 
 The evolution of each universe within the simulation follows a distinct lifecycle, modeling the transition from a state of physical indeterminacy to a cosmos with stable, fixed laws.
@@ -67,7 +68,7 @@ The evolution of each universe within the simulation follows a distinct lifecycl
 * Expansion Phase: Once the laws are locked-in, the universe's subsequent evolution is deterministic, governed by the fixed parameter set Xfinal​. This phase simulates the large-scale expansion and structure formation that produce the final cosmological observables passed to the analysis suite.
 
 
-The Analysis & Diagnostics Suite
+**The Analysis & Diagnostics Suite**
 
 
 This suite of modules quantifies the outcomes of the simulation core, translating raw data into scientifically meaningful metrics and visualizations.
@@ -80,7 +81,7 @@ This suite of modules quantifies the outcomes of the simulation core, translatin
    * The Hemispherical Power Asymmetry (HPA): A statistically significant difference in the power of temperature fluctuations between two opposing hemispheres of the sky.
 
 
-Explainable AI (XAI) for Cosmological Interpretation
+**Explainable AI (XAI) for Cosmological Interpretation**
 
 
 The most advanced component of the framework is its XAI module, which transforms the massive dataset generated by the simulation ensemble into scientific understanding.
@@ -92,7 +93,7 @@ The most advanced component of the framework is its XAI module, which transforms
 The integration of this XAI workflow creates a powerful feedback loop for scientific discovery. It elevates the framework from a descriptive tool that merely generates data to a prescriptive one that generates hypotheses. By revealing the quantitative relationships between initial conditions and final observables, the XAI module allows researchers to formulate new, precise, and testable hypotheses about the underlying physics of the TQE model, dramatically accelerating the process of scientific inquiry.
 
 
-Results Manifesting & Run Folder Structure
+**Results Manifesting & Run Folder Structure**
 
 
 To ensure organized and traceable results, every execution of the pipeline creates a unique, timestamped output directory, for example: RUN_DIR/run_20231027_153000/. This directory contains a standardized set of subfolders:
@@ -185,7 +186,7 @@ This value quantifies the normalized difference in power over a specific range o
 ________________
 
 
-Environment & Installation
+**Environment & Installation**
 
 
 
@@ -201,7 +202,7 @@ System Requirements
 It is strongly recommended to use a virtual environment manager like venv or conda to isolate project dependencies.
 
 
-Dependencies
+**Dependencies**
 
 
 The framework's dependencies are split into a core set required for basic operation and an optional set for full functionality.
@@ -238,13 +239,13 @@ After installing these system packages, pip install healpy should succeed.
 ________________
 
 
-Configuration & Profiles
+**Configuration & Profiles**
 
 
 The entire TQE pipeline is controlled through YAML configuration files. The default file is MASTER_CTRL.yml, but different files can be used to define distinct experimental profiles.
 
 
-The MASTER_CTRL System
+**The MASTER_CTRL System**
 
 
 The YAML configuration is structured into logical blocks (meta, simulation, analysis, xai) that correspond to the pipeline stages. This allows for clear and organized experiment definition.
@@ -301,7 +302,7 @@ Parameter
 	Number of parallel processes to use (-1 means all available cores).
 	
 
-Execution Profiles
+**Execution Profiles**
 
 
 By maintaining multiple YAML files, you can easily switch between different experimental setups. This is useful for managing:
@@ -311,7 +312,7 @@ By maintaining multiple YAML files, you can easily switch between different expe
 To use a specific profile, pass it to the main execution script via the --config or -c command-line argument.
 
 
-Minimal Working ACTIVE Configuration
+**Minimal Working ACTIVE Configuration**
 
 
 Below is a minimal, commented YAML snippet that can be used as a starting point for a custom experiment. This configuration will run a small ensemble of 10 universes and perform a basic analysis.
@@ -427,7 +428,7 @@ After a successful run named my_run, a directory RUN_DIR/my_run_YYYYMMDD_HHMMSS/
 ________________
 
 
-Reproducibility & Performance
+**Reproducibility & Performance**
 
 
 
@@ -450,7 +451,7 @@ Scaling and Performance Hints
 ________________
 
 
-Troubleshooting
+**Troubleshooting**
 
 
             * ImportError: No module named 'tqe': This typically means the project's root directory is not in your PYTHONPATH. Ensure you are running scripts from the root directory of the repository.
@@ -460,7 +461,7 @@ Troubleshooting
 ________________
 
 
-Appendix
+**Appendix**
 
 
 
@@ -556,7 +557,7 @@ Ratings
             * Reproducibility: 10/10. The framework's design makes reproducibility a first-class citizen. The combination of configuration-as-code via YAML files and the deterministic hierarchical seeding mechanism provides a complete and robust solution for ensuring that all results can be independently verified and reproduced, which is the gold standard for computational science.
 
 
-Justification and Concrete Suggestions for Improvement
+**Justification and Concrete Suggestions for Improvement**
 
 
 The framework stands out for its exceptional scientific and methodological design, particularly its unwavering focus on reproducibility and its innovative use of XAI to accelerate hypothesis generation. The architecture is thoughtfully constructed for large-scale computational experiments, allowing for the systematic exploration of the TQE model's parameter space. The primary areas for improvement lie in software engineering best practices that would enhance its robustness, ease of use for collaborators, and long-term maintainability.
