@@ -288,3 +288,46 @@ To further strengthen the project and improve its usability, maintainability, an
  **2.	Containerization** – Provide a Dockerfile and/or environment.yml for Conda. Dependencies such as healpy and qutip are known to be challenging to build across platforms. Containerization would package a working environment, allowing any user to reproduce results reliably with a single command.
 	
  **3.	Automated API Documentation** – Supplement the high-level README with detailed API documentation. Using tools like Sphinx with the autodoc extension would automatically generate a documentation site from in-code docstrings. This would support collaborators and enable the framework to be extended or integrated as a research library.
+
+
+## Troubleshooting
+
+Below are some common issues and suggested fixes when working with the TQE Framework.
+
+### 1. Installation / Dependency Issues
+- **Problem:** `healpy` fails to compile or install on some platforms.  
+- **Fix:**  
+  - Use Conda: `conda install -c conda-forge healpy`  
+  - Or install system dependencies first (Linux):  
+    ```bash
+    sudo apt-get update && sudo apt-get install libcfitsio-dev
+    ```
+
+### 2. Memory Usage
+- **Problem:** Running large ensembles (e.g., `n_universes > 1000`) causes memory errors.  
+- **Fix:**  
+  - Reduce `n_universes` in `MASTER_CTRL.yml`.  
+  - Run in batches (split runs into smaller ensembles).  
+  - Use parallel execution with fewer workers (`n_jobs`).  
+
+### 3. Reproducibility
+- **Problem:** Results differ across machines/platforms.  
+- **Fix:**  
+  - Ensure same Python version and library versions (use `environment.yml`).  
+  - For strict reproducibility, containerization (Docker) is recommended.  
+
+### 4. Long Runtime
+- **Problem:** Simulation takes too long for large parameter sweeps.  
+- **Fix:**  
+  - Enable parallelization with `n_jobs = -1`.  
+  - Use smaller `LOCKIN_WINDOW` or fewer epochs for testing/debugging.  
+
+### 5. Visualization Errors
+- **Problem:** Plots or maps do not display in headless environments (servers, clusters).  
+- **Fix:**  
+  - Save outputs to file instead of displaying:  
+    ```python
+    import matplotlib
+    matplotlib.use("Agg")
+    ```
+  - Check `runs/.../maps/` for saved images.
