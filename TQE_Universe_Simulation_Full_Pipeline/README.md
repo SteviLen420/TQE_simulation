@@ -60,16 +60,20 @@ The pipeline is organized into four sequential stages:
 This staged structure conceptually supports re-running individual components (e.g., re-analyzing simulation data with a new anomaly detector) without repeating upstream steps, although the current implementation realizes this in a more streamlined, script-based form.
 
 
-**Reproducibility by Design: The Seeding Hierarchy**
+
+## Reproducibility by Design: The Seeding Hierarchy
 
 
 To ensure full computational determinism, the framework implements a sophisticated two-tiered seeding hierarchy. This system guarantees that any simulation campaign can be reproduced bit-for-bit, a non-negotiable requirement for verifiable scientific claims.
-1. Master Seed: A single master_seed is defined in the MASTER_CTRL.yml configuration file. This seed initializes a master pseudo-random number generator (PRNG) at the beginning of a run.
-2. Per-Universe Seeds: The master PRNG is used to deterministically generate a unique universe_seed for each of the n_universes in the ensemble. This is achieved through a robust function, such as universe_seed_i = f(master_seed, i), which ensures that the seed for universe $i$ is independent of the total number of universes being simulated.
+
+1. **Master Seed:** A single master_seed is defined in the MASTER_CTRL.yml configuration file. This seed initializes a master pseudo-random number generator (PRNG) at the beginning of a run.
+   
+2. **Per-Universe Seeds:** The master PRNG is used to deterministically generate a unique universe_seed for each of the n_universes in the ensemble. This is achieved through a robust function, such as universe_seed_i = f(master_seed, i), which ensures that the seed for universe $i$ is independent of the total number of universes being simulated.
 Each universe_seed is then used to seed the local PRNG responsible for all stochastic processes within that single universe's simulation. This hierarchical design provides two layers of reproducibility. A researcher can reproduce the entire ensemble of results by simply re-using the master_seed. Furthermore, if a single universe exhibits particularly interesting behavior, it can be isolated and its evolution reproduced exactly by using its specific universe_seed, without the need to re-run the entire, potentially massive, ensemble. This capability is invaluable for debugging, detailed analysis, and validating extraordinary results.
 
 
-**The Simulation Core: A Universe's Lifecycle**
+
+## The Simulation Core: A Universe's Lifecycle
 
 
 The evolution of each universe within the simulation follows a distinct lifecycle, modeling the transition from a state of physical indeterminacy to a cosmos with stable, fixed laws.
