@@ -349,3 +349,30 @@ Below are some common issues and suggested fixes when working with the TQE Frame
     matplotlib.use("Agg")
     ```
   - Check `runs/.../maps/` for saved images.
+
+
+## Contributing Guidelines
+
+This project is a research-grade prototype. Contributions are welcome, especially in the form of bug fixes, documentation improvements, or experimental module extensions.  
+
+If you would like to contribute to the TQE Framework, please follow these steps:
+
+1. **Fork** the repository to your own GitHub account.  
+2. **Create a new branch** for your feature or bugfix.  
+   ```bash
+   git checkout -b feature/my-new-feature
+   ```
+3.	Commit your changes with clear messages.
+4.	Push the branch to your fork.
+5.	Open a Pull Request against the main branch of this repository.
+
+**Code Style**
+	•	Follow PEP8 style guidelines.
+	•	Use meaningful variable and function names.
+	•	Include docstrings for all public functions and classes.
+
+**Testing**
+	•	Please ensure that existing tests pass before submitting.
+	•	If you add new features, include unit tests (pytest is recommended).
+
+By contributing, you agree that your code will be licensed under the same license as this project.
