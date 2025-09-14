@@ -165,7 +165,6 @@ $$
 
 where $T_{eff}$ is an effective temperature of the system during the pre-collapse phase, representing the energy available for fluctuations.
 
----
 
 ### Anomaly and Scoring Equations
 The analysis suite uses standard statistical estimators to quantify cosmological observables and anomalies.
@@ -220,20 +219,20 @@ The framework's dependencies are split into a core set required for basic operat
       * Optional Dependencies (for full analysis and simulation features): healpy, scipy, shap, lime, qutip
 Installation:
 
-      1. Clone the repository:
-	  
+1. Clone the repository:
+	  ```text
 	  git clone https://github.com/your-username/tqe-framework.git
       cd tqe-framework
 
 
-      2. Create and activate a virtual environment:
-
+2. Create and activate a virtual environment:
+      ```text
       python3 -m venv venv
       source venv/bin/activate
 
 
-      3. Install dependencies from the provided requirements.txt file:
-
+3. Install dependencies from the provided requirements.txt file:
+      ```text
       pip install -r requirements.txt
 
 
