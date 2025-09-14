@@ -15,12 +15,12 @@ the driving force that led me here.
 
 After this question was born, I first sought answers in spirituality. I
 delved deep: for years, I studied, learned, and researched. Ultimately,
-however, I had to realize that spirituality does not provide real answers—only
+however, I had to realize that spirituality does not provide real answers, only
 ones based on faith. For me, that was not enough. So I moved on and began to
 search for the solution in science.
 
 I soon realized that here, I could find real answers. My learning
-escalated almost to an obsession: I reached for everything where I could
+escalated almost to an obsession, I reached for everything where I could
 find information that brought me closer to understanding. Books, YouTube,
 podcasts, publications, studies, and eventually, artificial intelligence. I
 learned about everything: physics, chemistry, quantum mechanics, biology,
@@ -43,7 +43,7 @@ questions in my mind: What if these two worlds don't need to be
 connected at all? What if we are talking about two separate systems that
 are not mathematically linked on their own, but are necessary *together*
 for the universe to exist? Perhaps the laws are the way they are because
-that's how everything can function—but that doesn't mean they must
+that's how everything can function, but that doesn't mean they must
 converge mathematically at all costs.
 
 Then another question arose: how do the laws of physics come into being?
@@ -65,7 +65,7 @@ Here, I interpreted f(Φ) as a "consciousness field." This was the equation
 that set me on this research path. The first question, of course, was
 immediate: how do I define the consciousness field? I concluded that the
 consciousness field Φ is a non-local informational background field that,
-by acting on quantum systems, supports the creation of low-entropy,
+by acting on quantum systems, supports the creation of low entropy,
 high-coherence structures through preferential probability distortion. In
 other words, I gave the consciousness field a directionality.
 
@@ -75,7 +75,7 @@ must be a mistake. So I started testing it: I made it unstable, introduced
 feedback, collapsed it—but it worked in every case.
 
 Then I got to the point where I tried to simulate the beginning of the
-universe. At first, it failed: every universe became unstable (perhaps
+universe. At first, it failed, every universe became unstable (perhaps
 because there was no E). So I started using RL agents, and the first
 universes without laws were born.
 
