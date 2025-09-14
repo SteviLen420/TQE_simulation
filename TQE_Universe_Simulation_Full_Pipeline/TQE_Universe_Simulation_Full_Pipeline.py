@@ -58,12 +58,12 @@ except Exception:
 MASTER_CTRL = {
     # --- Core simulation ---
     "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
-    "TIME_STEPS":           1000,    # epochs per stability run (if used elsewhere)
-    "LOCKIN_EPOCHS":        700,    # epochs for law lock-in dynamics
+    "TIME_STEPS":           5000,    # epochs per stability run (if used elsewhere)
+    "LOCKIN_EPOCHS":        1000,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1000,    # epochs for expansion dynamics
-    "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
+    "FL_EXP_EPOCHS":        1000,    # length of t>0 expansion panel
     "SEED":                 None,   # master RNG seed (auto-generated if None)
-    "PIPELINE_VARIANT": "energy_only",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
+    "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
     "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
 
     # --- Energy distribution ---
@@ -194,7 +194,7 @@ MASTER_CTRL = {
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
     "CMB_COLD_SIGMA_ARCMIN":      [60, 120, 240, 480],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    30,                   # Minimal separation between spots (arcmin)
-    "CMB_COLD_Z_THRESH":          -1.0,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_Z_THRESH":          -4.0,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
     "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
