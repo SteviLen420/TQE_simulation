@@ -186,6 +186,10 @@ MASTER_CTRL = {
     "CMB_BEST_SEED_OFFSET": 909,      # Per-universe seed offset for reproducibility
     "CMB_BEST_MODE": "healpix",       # "auto" | "healpix" | "flat"
 
+    # --- Simulation entropy export (for best-universe plots) ---
+    "EXPORT_SIM_ENTROPY_TS": True,          # Enable saving per-universe entropy time series
+    "SIM_ENTROPY_DIR": "sim_entropy_ts",    # Subfolder under RUN_DIR for entropy .npy files
+
     # --- CMB map parameters ---
     "CMB_NSIDE": 256,                  # Resolution for healpy maps
     "CMB_NPIX": 512,                   # Pixel count for flat-sky maps
@@ -607,6 +611,24 @@ def sigma_goldilocks(X, sigma0, alpha, E_c_low, E_c_high):
     dist = abs(X - mid) / width  # 0 center, 1 edges
     return sigma0 * (1 + alpha * dist**2)  # <-- use the passed-in alpha
 
+# --- SIM entropy helpers (from core simulation) ---
+import os, numpy as np
+
+def _entropy_timeseries_from_state_history(arr, axis=1, eps=1e-12):
+    """L1-normalize along 'axis' -> probabilities -> S = -sum p log p per timestep."""
+    X = np.asarray(arr, float)
+    sums = np.maximum(X.sum(axis=axis, keepdims=True), eps)
+    p = np.clip(X / sums, eps, 1.0)
+    return -np.sum(p * np.log(p), axis=axis)
+
+def _save_sim_entropy_ts(run_dir: str, uid: int, Sg, Sr=None, subdir="sim_entropy_ts"):
+    """Save global (and optional regional) entropy series to RUN_DIR/subdir/."""
+    outdir = os.path.join(run_dir, subdir)
+    os.makedirs(outdir, exist_ok=True)
+    np.save(os.path.join(outdir, f"global_entropy__{uid}.npy"), np.asarray(Sg))
+    if Sr is not None:
+        np.save(os.path.join(outdir, f"region_entropies__{uid}.npy"), np.asarray(Sr))
+
 # ======================================================
 # 7) Lock-in simulation (drop-in: MASTER_CTRL-driven)
 # ======================================================
@@ -652,6 +674,8 @@ def simulate_lock_in(
         if m == "max":
             return float(np.max(vals))
         return float(np.mean(vals))
+
+    A_series, ns_series, H_series = [], [], []
 
     for n in range(1, N_epoch + 1):
         # Base noise shaped by Goldilocks window (outside penalty handled inside)
@@ -758,15 +782,23 @@ def run_mc(E_c_low=None, E_c_high=None):
                     X = (E * (aI * I)) * MASTER_CTRL["X_SCALE"]
 
             # Simulation
-            stable, lockin, stable_epoch, lock_epoch = simulate_lock_in(
-                X,
-                MASTER_CTRL["LOCKIN_EPOCHS"],
+            stable, lockin, stable_epoch, lock_epoch, A_ser, ns_ser, H_ser = simulate_lock_in(
+                X=Xi,
+                N_epoch=MASTER_CTRL["TIME_STEPS"],
                 sigma0=MASTER_CTRL["EXP_NOISE_BASE"],
                 alpha=MASTER_CTRL.get("SIGMA_ALPHA", 1.0),
-                E_c_low=E_c_low,
-                E_c_high=E_c_high,
-                rng=rng_uni
+                E_c_low=E_c_low, E_c_high=E_c_high,
+                rng=rng_uni,
             )
+
+            if MASTER_CTRL.get("EXPORT_SIM_ENTROPY_TS", True):
+                state_mat = np.stack([np.abs(A_ser), np.abs(ns_ser), np.abs(H_ser)], axis=1)
+                Sg = _entropy_timeseries_from_state_history(state_mat, axis=1)
+                Sr = None  # csak akkor számold, ha tényleg vannak régiós állapotok
+                _save_sim_entropy_ts(
+                    RUN_DIR, uid=i, Sg=Sg, Sr=Sr,
+                    subdir=MASTER_CTRL.get("SIM_ENTROPY_DIR", "sim_entropy_ts")
+                )
 
             rec = {
                 "universe_id": i,
