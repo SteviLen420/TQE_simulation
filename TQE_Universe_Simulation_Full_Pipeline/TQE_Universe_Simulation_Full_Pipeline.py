@@ -898,7 +898,7 @@ def run_mc(E_c_low=None, E_c_high=None):
 
             # Simulation
             stable, lockin, stable_epoch, lock_epoch, A_ser, ns_ser, H_ser = simulate_lock_in(
-                X=Xi,
+                X=X,
                 N_epoch=MASTER_CTRL["TIME_STEPS"],
                 sigma0=MASTER_CTRL["EXP_NOISE_BASE"],
                 alpha=MASTER_CTRL.get("SIGMA_ALPHA", 1.0),
