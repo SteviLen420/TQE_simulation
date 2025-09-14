@@ -94,8 +94,10 @@ This suite of modules quantifies the outcomes of the simulation core, transformi
 •	**Fine-Tuning Diagnostics** – A set of metrics evaluates how “fine-tuned” a universe’s locked-in laws ($X_{final}$) are for the emergence of complexity (e.g., structure formation, stable chemistry). The current implementation provides a continuous fine-tuning score, which can serve as the basis for classifying universes as barren, habitable, or other categories in future extensions.
 
 •	**Anomaly Scanning** – The current implementation includes tools for detecting two key anomalies observed in CMB data:
-	•	**CMB Cold Spot** – detection of unusually cold regions in the simulated sky.
-	•	**Low-ℓ Multipole Alignment (Axis of Evil)** – analysis of the alignment between quadrupole ($\ell=2$) and octopole ($\ell=3$) modes.
+	
+ •	**CMB Cold Spot** – detection of unusually cold regions in the simulated sky.
+	
+ •	**Low-ℓ Multipole Alignment (Axis of Evil)** – analysis of the alignment between quadrupole ($\ell=2$) and octopole ($\ell=3$) modes.
 
 Additional anomaly modules, such as the Hemispherical Power Asymmetry (HPA) and the Low-ℓ Alignment Correlation (LLAC), are mentioned in the framework design but are not yet implemented in the prototype.
 
