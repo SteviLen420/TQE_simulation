@@ -336,21 +336,35 @@ YAML
 # Minimal working configuration for the TQE Framework
 meta:
  run_name: "minimal_demo"
+ 
  master_seed: 1337
+ 
  n_jobs: 2 # Use 2 CPU cores
 
 simulation:
+
  n_universes: 10
+ 
  e_dist:
+ 
    type: "normal"
+   
    mean: 1.0
+   
    std: 0.1
+   
  i_dist:
+ 
    type: "normal"
+   
    mean: 1.0
+   
    std: 0.1
+   
  stability_threshold: 1.0e-5
+ 
  max_epochs: 5000
+ 
 
 analysis:
  run_fine_tuning_score: true
