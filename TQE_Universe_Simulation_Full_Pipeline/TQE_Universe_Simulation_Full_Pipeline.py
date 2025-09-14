@@ -731,11 +731,21 @@ def simulate_lock_in(
         else:
             consec_lockin = 0
 
-    # Outcomes
-    is_stable = 1 if stable_at is not None else 0
-    is_lockin = 1 if lockin_at is not None else 0
+# Outcomes
+is_stable = 1 if stable_at is not None else 0
+is_lockin = 1 if lockin_at is not None else 0
 
-    return is_stable, is_lockin, (stable_at if stable_at else -1), (lockin_at if lockin_at else -1)
+# Return full state histories as well (needed for entropy export)
+return (
+    is_stable,
+    is_lockin,
+    (stable_at if stable_at else -1),
+    (lockin_at if lockin_at else -1),
+    np.array(A_series),   # full A history
+    np.array(ns_series),  # full ns history
+    np.array(H_series)    # full H history
+)
+
 
 # ======================================================
 # 8) Helpers for MC runs and dynamic Goldilocks estimation
