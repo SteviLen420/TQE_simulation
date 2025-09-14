@@ -65,5 +65,5 @@ This project is licensed under the MIT License – see the [LICENSE](./LICENSE) 
 Got questions, ideas, or feedback?  
 Drop me an email at **tqe.simulation@gmail.com** 
 
-## TQE
+## TQE pipeline
 [TQE_Universe_Simulation_Full_Pipeline.py](./TQE_Universe_Simulation_Full_Pipeline.py)
