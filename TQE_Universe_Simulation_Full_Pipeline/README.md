@@ -182,7 +182,7 @@ Additional anomaly equations, such as the Hemispherical Power Asymmetry (HPA), a
 
 
 
-# AAssessment of the Codebase
+# Assessment of the Codebase
 
 ## Maturity Level
 
