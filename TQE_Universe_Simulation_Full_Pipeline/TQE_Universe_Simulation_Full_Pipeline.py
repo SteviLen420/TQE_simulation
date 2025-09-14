@@ -63,7 +63,7 @@ MASTER_CTRL = {
     "EXPANSION_EPOCHS":     1000,    # epochs for expansion dynamics
     "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
     "SEED":                 None,   # master RNG seed (auto-generated if None)
-    "PIPELINE_VARIANT": "energy_only",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
+    "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
     "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
 
     # --- Energy distribution ---
@@ -162,9 +162,9 @@ MASTER_CTRL = {
 
     # --- Noise / smoothing knobs for entropy evolution ---
     "BEST_REGION_MU": 5.1,          # Target mean for region entropy traces
-    "BEST_REGION_SIGMA": 0.06,      # Noise amplitude for region traces (lower = smoother)
-    "BEST_GLOBAL_JITTER": 0.008,    # Small jitter added to the global entropy curve
-    "BEST_SMOOTH_WINDOW": 9,        # Rolling average window size (>=1, 1 = disabled)
+    "BEST_REGION_SIGMA": 0.02,      # Noise amplitude for region traces (lower = smoother)
+    "BEST_GLOBAL_JITTER": 0.003,    # Small jitter added to the global entropy curve
+    "BEST_SMOOTH_WINDOW": 25,        # Rolling average window size (>=1, 1 = disabled)
     "BEST_SHOW_REGIONS": True,      # If False, only plot the global entropy curve
     "BEST_ANNOTATE_LOCKIN": True,   # Draw vertical lock-in marker and annotation text
     "BEST_ANNOTATION_OFFSET": 3,    # Horizontal offset for annotation text placement
