@@ -91,10 +91,10 @@ Output
  •	All results are stored in a timestamped directory inside runs/ (e.g., runs/TQE_Run_20250914_123000/).
 	
  •	Subdirectories contain:
-	•	**maps/** → CMB-like sky maps
-	•	**diag/** → stability curves, anomaly scans
-	•	**xai/** → Explainable AI outputs (SHAP/LIME)
-	•	**logs/** → runtime information and metadata
+	*	**maps/** → CMB-like sky maps
+	*	**diag/** → stability curves, anomaly scans
+	*	**xai/** → Explainable AI outputs (SHAP/LIME)
+	*	**logs/** → runtime information and metadata
 
 
 ## Computational Framework & Methodology
