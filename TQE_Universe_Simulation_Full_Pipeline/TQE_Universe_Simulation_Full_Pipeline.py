@@ -182,7 +182,7 @@ MASTER_CTRL = {
     "CMB_BEST_MODE": "healpix",       # "auto" | "healpix" | "flat"
 
     # --- CMB map parameters ---
-    "CMB_NSIDE": 256,                  # Resolution for healpy maps
+    "CMB_NSIDE": 1024,                  # Resolution for healpy maps
     "CMB_NPIX": 512,                   # Pixel count for flat-sky maps
     "CMB_PIXSIZE_ARCMIN": 3.0,         # Pixel size in arcmin for flat-sky
     "CMB_POWER_SLOPE": 1.5,            # Power spectrum slope (Pk ~ k^-slope)
