@@ -384,8 +384,6 @@ By contributing, you agree that your code will be licensed under the same licens
 
 This project is licensed under the MIT License – see the [LICENSE](./TQE_Simulation/LICENSE.md) file for details.
 
-[LICENSE]: LICENSE.md
-
 ## Contact
 
 Got questions, ideas, or feedback?  
