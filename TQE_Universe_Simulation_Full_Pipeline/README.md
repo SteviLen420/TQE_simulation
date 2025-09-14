@@ -44,7 +44,7 @@ We recommend setting up a dedicated virtual environment to ensure reproducibilit
 
 ### Using pip
 ```bash
-git clone https://github.com/your_username/TQE_Framework.git
+git clone https://github.com/SteviLen420/TQE_simulation/blob/main/TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py
 cd TQE_Framework
 python -m venv venv
 source venv/bin/activate   # On Windows use: venv\Scripts\activate
@@ -52,7 +52,7 @@ pip install -r requirements.txt
 ```
 ### Using Conda
 ```bash
-git clone https://github.com/your_username/TQE_Framework.git
+git clone https://github.com/SteviLen420/TQE_simulation/blob/main/TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py
 cd TQE_Framework
 conda env create -f environment.yml
 conda activate tqe_env
@@ -113,7 +113,6 @@ The table below lists the most important parameters:
 | `e_dist`             | simulation  | dict    | `{...}`       | Parameters for the initial Energy distribution (e.g., mean, std).           |
 | `i_dist`             | simulation  | dict    | `{...}`       | Parameters for the initial Information distribution.                        |
 | `stability_threshold`| simulation  | float   | `1e-5`        | The stability metric threshold required for law lock-in.                    |
-| `run_hpa_scan`       | analysis    | bool    | `true`        | Enable/disable the Hemispherical Power Asymmetry (HPA) anomaly analysis.    |
 | `xai_target`         | xai         | string  | `fine_tuning_score` | Target variable for the XAI model to predict.                         |
 | `n_jobs`             | meta        | int     | `-1`          | Number of parallel processes to use (`-1` = all available cores).           |
  
