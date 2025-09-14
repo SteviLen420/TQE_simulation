@@ -99,6 +99,23 @@ Output
 **xai/** → Explainable AI outputs (SHAP/LIME)
  
 **logs/** → runtime information and metadata
+
+## Configuration Parameters
+
+The behavior of the TQE Framework is controlled by a central YAML configuration file (`MASTER_CTRL.yml`).  
+The table below lists the most important parameters:
+
+| Parameter            | Section      | Type    | Default       | Description                                                                 |
+|----------------------|-------------|---------|---------------|-----------------------------------------------------------------------------|
+| `run_name`           | meta        | string  | `tqe_run`     | Base name for the output directory.                                         |
+| `master_seed`        | meta        | int     | `42`          | The master seed for reproducibility of the entire experiment.               |
+| `n_universes`        | simulation  | int     | `100`         | Number of universes to simulate in the ensemble.                            |
+| `e_dist`             | simulation  | dict    | `{...}`       | Parameters for the initial Energy distribution (e.g., mean, std).           |
+| `i_dist`             | simulation  | dict    | `{...}`       | Parameters for the initial Information distribution.                        |
+| `stability_threshold`| simulation  | float   | `1e-5`        | The stability metric threshold required for law lock-in.                    |
+| `run_hpa_scan`       | analysis    | bool    | `true`        | Enable/disable the Hemispherical Power Asymmetry (HPA) anomaly analysis.    |
+| `xai_target`         | xai         | string  | `fine_tuning_score` | Target variable for the XAI model to predict.                         |
+| `n_jobs`             | meta        | int     | `-1`          | Number of parallel processes to use (`-1` = all available cores).           |
  
 
 
