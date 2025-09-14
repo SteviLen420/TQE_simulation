@@ -192,7 +192,7 @@ MASTER_CTRL = {
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
-    "CMB_COLD_SIGMA_ARCMIN":      [60, 120, 240, 480],  # Gaussian smoothing scales (arcmin)
+    "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 90, 120, 180, 240, 360, 480, 720],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    30,                   # Minimal separation between spots (arcmin)
     "CMB_COLD_Z_THRESH":          -2.0,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
