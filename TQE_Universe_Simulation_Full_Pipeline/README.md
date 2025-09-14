@@ -133,7 +133,7 @@ To ensure organized and traceable results, each execution of the pipeline genera
 •	**figures/** – generated plots and figures, such as CMB-like maps and SHAP summary plots.
 
 This structure ensures that results remain reproducible and easy to navigate. The framework design also anticipates the ability to mirror outputs to a secondary location (e.g., for compute cluster storage), though this functionality is not yet fully implemented in the current prototype.
-________________
+
 
 
 ## Mathematical Formalism
@@ -179,7 +179,7 @@ Anomaly Metrics
 Current anomaly modules include the CMB Cold Spot and Low-ℓ multipole alignments.
 Additional anomaly equations, such as the Hemispherical Power Asymmetry (HPA), are included in the framework’s formal design but are not yet implemented in the prototype.
 			
-________________
+
 
 
 Assessment of the Codebase
