@@ -289,6 +289,23 @@ To further strengthen the project and improve its usability, maintainability, an
 	
  **3.	Automated API Documentation** – Supplement the high-level README with detailed API documentation. Using tools like Sphinx with the autodoc extension would automatically generate a documentation site from in-code docstrings. This would support collaborators and enable the framework to be extended or integrated as a research library.
 
+## Limitations & Future Work
+
+The TQE Framework should be regarded as a stochastic research prototype rather than a fully developed cosmological simulator. While the pipeline demonstrates the feasibility of modeling emergent laws of physics through energy–information dynamics, several limitations remain:
+
+- **Simplified Physics**: Current implementations of anomalies (e.g., Cold Spot, multipole alignment) and fine-tuning diagnostics use heuristic or simplified metrics. They do not yet capture the full complexity of astrophysical analyses.
+- **Computational Scale**: The framework is designed for moderate ensemble sizes. Large-scale runs may encounter memory and runtime constraints without further optimization.
+- **Reproducibility Scope**: Results are reproducible within the same environment and dependency versions, but strict bitwise reproducibility across platforms is not guaranteed.
+- **Prototype XAI Integration**: SHAP is well integrated, but LIME and other interpretability methods remain in an early-stage prototype form.
+
+### Future Work
+Planned and potential directions for extension include:
+- Incorporating additional physical models for greater realism.
+- Implementing GPU acceleration and distributed computing for scaling to very large ensembles.
+- Extending the anomaly detection suite to include Hemispherical Power Asymmetry (HPA) and Low-ℓ Alignment Correlation (LLAC).
+- Enhancing the XAI toolkit to provide deeper interpretability across different machine learning models.
+- Introducing a formal testing suite and containerization to support robust cross-platform reproducibility.
+
 
 ## Troubleshooting
 
