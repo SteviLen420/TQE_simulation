@@ -39,22 +39,21 @@ citation management.
 ________________
 
 
-**Computational Framework & Methodology**
+## Computational Framework & Methodology
 
+The TQE Framework is structured as a multi-stage computational pipeline for the systematic investigation of emergent physical laws. Its design emphasizes configuration-driven execution and reproducibility, with modularity implemented at the conceptual level and partially realized in the current prototype.
 
-The TQE Framework is engineered as a robust, multi-stage computational pipeline designed for the systematic investigation of emergent physical laws. Its architecture prioritizes modularity, configuration-driven execution, and strict reproducibility to meet the rigorous demands of scientific research.
+### High-Level Architecture
 
+The workflow is orchestrated by a central YAML configuration file, MASTER_CTRL.yml. This configuration-as-code approach enables experimental campaigns—including parameter sweeps and analysis settings—to be defined and archived in a single, human-readable text file. This provides a foundation for reproducibility and transparent experimental design.
 
-**High-Level Architecture**
+The pipeline is organized into four sequential stages:
+	1.	Generation – Reads simulation parameters from MASTER_CTRL.yml and generates initial conditions for an ensemble of universes, each defined by Energy (E) and Information (I) values drawn from statistical distributions.
+	2.	Simulation – The computational core of the framework. It evolves universes through pre-collapse, law lock-in, and expansion phases. This stage is computationally intensive and includes preliminary support for parallel execution.
+	3.	Analysis – Performs post-processing on raw outputs, including calculation of cosmological observables, generation of CMB-like sky maps, and execution of diagnostic tests to score universes for fine-tuning and scan for selected anomalies.
+	4.	Interpretation – Applies Explainable AI (XAI) to synthesize ensemble results. Machine learning models are trained to predict outcomes from initial conditions, providing insights into causal relationships within the TQE model.
 
-
-The framework's workflow is orchestrated by a central YAML configuration file, MASTER_CTRL.yml. This configuration-as-code approach allows entire experimental campaigns, including parameter sweeps and analysis settings, to be defined and archived within a single, human-readable text file. This design not only simplifies the execution of complex simulations but also forms the bedrock of the framework's reproducibility.
-The pipeline is divided into four distinct, logically sequential stages:
-1. 01-Generation: This initial stage reads the simulation parameters from MASTER_CTRL.yml and generates the initial conditions for an entire ensemble of universes. Each universe is defined by its starting Energy (E) and Information (I) values, drawn from specified statistical distributions.
-2. 02-Simulation: This is the computational core of the framework. It takes the initial conditions for each universe and executes the evolution algorithm, progressing through the pre-collapse, law lock-in, and expansion phases. This stage is computationally intensive and designed for parallel execution.
-3. 03-Analysis: Following the simulation, this stage performs post-processing on the raw output data. It calculates high-level cosmological observables, generates CMB-like sky maps, and executes a suite of diagnostic tests to score universes for fine-tuning and scan for cosmological anomalies.
-4. 04-Interpretation: The final stage leverages Explainable AI (XAI) to synthesize the results from the entire ensemble. It trains machine learning models to predict simulation outcomes based on initial conditions, providing deep insights into the causal relationships within the TQE model.
-This modular structure is a critical design feature, enabling researchers to re-run specific parts of the pipeline without having to repeat upstream computations. For instance, one can re-analyze existing simulation data with a new anomaly detection algorithm by invoking only the analysis stage, a significant efficiency gain in research workflows.
+This staged structure conceptually supports re-running individual components (e.g., re-analyzing simulation data with a new anomaly detector) without repeating upstream steps, although the current implementation realizes this in a more streamlined, script-based form.
 
 
 **Reproducibility by Design: The Seeding Hierarchy**
