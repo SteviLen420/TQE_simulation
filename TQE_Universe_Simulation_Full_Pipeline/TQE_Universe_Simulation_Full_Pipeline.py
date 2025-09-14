@@ -153,12 +153,17 @@ MASTER_CTRL = {
     "FT_METRIC": "lockin",          # Use lock-in probability (P(lock-in)) instead of stability as the main metric
 
     # --- Best-universe visualization (lock-in only) ---
-    "BEST_UNIVERSE_FIGS": 3,      # how many figures to export (typical: 1 or 5)
-    "BEST_N_REGIONS": 10,         # number of region-level entropy traces
-    "BEST_STAB_THRESHOLD": 3.5,   # horizontal reference line on plots
-    "BEST_SAVE_CSV": True,        # also export per-universe time series as CSV
-    "BEST_SEED_OFFSET": 777,      # reproducible offset for the synthetic entropy generator
-    "BEST_MAX_FIGS": 50,          # safety clamp
+    "EXPORT_SIM_ENTROPY_TS": True,          # Export per-universe entropy time series during simulation
+    "SIM_ENTROPY_DIR": "sim_entropy_ts",    # Subfolder under RUN_DIR where .npy series are saved
+
+    "BEST_UNIVERSE_FIGS": 3,                # How many TOP universes to plot (1..50)
+    "BEST_MAX_FIGS": 50,                    # Hard upper limit for safety
+
+    "BEST_SAVE_CSV": True,                  # Also export per-universe CSV alongside the PNG
+    "BEST_SHOW_REGIONS": True,              # If region series are available, draw them
+    "BEST_STAB_THRESHOLD": 3.5,             # Horizontal stability threshold line on the plot
+    "BEST_ANNOTATE_LOCKIN": True,           # Draw vertical line + text at lock-in epoch
+    "BEST_ANNOTATION_OFFSET": 5,            # Text offset (time steps) to the right of the lock-in line
 
     # --- Noise / smoothing knobs for entropy evolution ---
     "BEST_REGION_MU": 5.1,          # Target mean for region entropy traces
@@ -3068,101 +3073,81 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
         print(f"[ERR] Drive copy block failed: {e}")
 
 # ======================================================
-# 20) Best-universe entropy evolution (lock-in only)
+# 20) Best-universe entropy evolution (from CORE SIM only)
 # ======================================================
 
-# Build a local config dict from MASTER_CTRL (type-safe + clamps)
+# NOTE:
+#  - Core simulation must export per-universe time series to:
+#      RUN_DIR/sim_entropy_ts/global_entropy__{uid}.npy
+#      RUN_DIR/sim_entropy_ts/region_entropies__{uid}.npy  (optional)
+#  - No synthetic fallback: universes without exported series are skipped.
+
 BEST_CFG = {
-    "N_TOP_BEST": int(np.clip(MASTER_CTRL.get("BEST_UNIVERSE_FIGS", 1),
+    "N_TOP_BEST": int(np.clip(MASTER_CTRL.get("BEST_UNIVERSE_FIGS", 3),
                               1, MASTER_CTRL.get("BEST_MAX_FIGS", 50))),
-    "TIME_STEPS": int(MASTER_CTRL.get("TIME_STEPS", 1000)),
-    "N_REGIONS":  int(MASTER_CTRL.get("BEST_N_REGIONS", 10)),
     "STAB_THRESH": float(MASTER_CTRL.get("BEST_STAB_THRESHOLD", 3.5)),
     "SAVE_CSV": bool(MASTER_CTRL.get("BEST_SAVE_CSV", True)),
-    "SEED_OFFSET": int(MASTER_CTRL.get("BEST_SEED_OFFSET", 777)),
-
-    # --- FIX: region noise parameters ---
-    "REGION_MU": float(MASTER_CTRL.get("BEST_REGION_MU", 5.1)),
-    "REGION_SIGMA": float(MASTER_CTRL.get("BEST_REGION_SIGMA", 0.06)),
-    "GLOBAL_JITTER": float(MASTER_CTRL.get("BEST_GLOBAL_JITTER", 0.008)),
-    "SMOOTH_WINDOW": int(MASTER_CTRL.get("BEST_SMOOTH_WINDOW", 9)),
     "SHOW_REGIONS": bool(MASTER_CTRL.get("BEST_SHOW_REGIONS", True)),
     "ANNOTATE_LOCKIN": bool(MASTER_CTRL.get("BEST_ANNOTATE_LOCKIN", True)),
     "ANNOTATION_OFFSET": int(MASTER_CTRL.get("BEST_ANNOTATION_OFFSET", 5)),
 }
 
-def _entropy_evolution(seed: int, steps: int, n_regions: int):
+def _load_sim_entropy_ts(run_dir: str, uid: int):
+    """Load simulation-derived entropy time series for a universe ID."""
+    base = os.path.join(run_dir, "sim_entropy_ts")
+    gpath = os.path.join(base, f"global_entropy__{uid}.npy")
+    rpath = os.path.join(base, f"region_entropies__{uid}.npy")
+    gS = np.load(gpath) if os.path.exists(gpath) else None
+    rS = np.load(rpath) if os.path.exists(rpath) else None
+    return gS, rS
+
+def _plot_best_universe_from_sim(unirec: dict, save_png: str, save_csv_dir: str) -> bool:
     """
-    Synthetic entropy generator for best-universe plots.
-    All noise/smoothing parameters are taken from BEST_CFG.
-    """
-    r = np.random.default_rng(seed)
-    t = np.arange(steps)
-
-    base_mu  = BEST_CFG["REGION_MU"]
-    base_sig = max(1e-6, BEST_CFG["REGION_SIGMA"])  # safety guard
-
-    regions = []
-    for _ in range(n_regions):
-        x = np.empty(steps, dtype=float)
-        x[0] = base_mu + r.normal(0, base_sig)
-        for k in range(1, steps):
-            # Mean-reverting random walk with noise
-            x[k] = x[k-1] + 0.04*(base_mu - x[k-1]) + r.normal(0, base_sig*0.6)
-        # Optional rolling-average smoothing
-        w = max(1, int(BEST_CFG["SMOOTH_WINDOW"]))
-        if w > 1:
-            c = np.convolve(x, np.ones(w)/w, mode="same")
-            x = c
-        regions.append(x)
-    regions = np.vstack(regions) if n_regions > 0 else np.empty((0, steps))
-
-    # Global entropy: smooth growth + independent jitter
-    jitter = BEST_CFG["GLOBAL_JITTER"]
-    g = 5.6 + 0.45 * (1 - np.exp(-t / (steps/6))) + r.normal(0, jitter, size=steps)
-
-    return t, regions, g
-
-def _plot_best_universe(unirec: dict, steps: int, n_regions: int,
-                        save_png: str, save_csv_dir: str):
-    """
-    Render one figure for a selected (lock-in) universe.
-    Controlled entirely by BEST_CFG parameters.
+    Render a figure for a selected (lock-in) universe using SIM-DERIVED entropy only.
+    Returns True if a figure was generated; otherwise False (e.g., missing data).
     """
     uid = int(unirec["universe_id"])
-    seed = int(unirec["seed"])
     lock_ep = int(unirec["lock_epoch"])
 
-    t, regions, g = _entropy_evolution(seed + BEST_CFG["SEED_OFFSET"], steps, n_regions)
+    gS, rS = _load_sim_entropy_ts(RUN_DIR, uid)
+    if gS is None:
+        print(f"[BEST][SKIP] No sim entropy for uid={uid}; skipping.")
+        return False
 
-    # Export per-universe time series if enabled
+    t = np.arange(len(gS))
+
+    # Optional CSV export
     if BEST_CFG["SAVE_CSV"]:
         os.makedirs(save_csv_dir, exist_ok=True)
-        df_reg = pd.DataFrame(regions.T, columns=[f"region_{i}_entropy" for i in range(n_regions)]) if n_regions>0 else pd.DataFrame()
-        df_reg.insert(0, "time_step", t)
-        df_reg["global_entropy"] = g
-        df_reg["lock_epoch"] = lock_ep
-        df_reg.to_csv(os.path.join(save_csv_dir, f"best_uni_{uid:05d}_entropy_timeseries.csv"), index=False)
+        df_out = pd.DataFrame({"time_step": t, "global_entropy": gS})
+        df_out["lock_epoch"] = lock_ep
+        if rS is not None and BEST_CFG["SHOW_REGIONS"]:
+            # rS shape: (T, R)
+            for j in range(rS.shape[1]):
+                df_out[f"region_{j}_entropy"] = rS[:, j]
+        df_out.to_csv(os.path.join(save_csv_dir, f"best_uni_{uid:05d}_entropy_timeseries.csv"), index=False)
 
+    # Plot
     plt.figure(figsize=(10, 6.2))
     title_suffix = "(E)" if VARIANT == "energy_only" else "(E,I)"
-    plt.title(f"Best-universe entropy evolution {title_suffix}")
+    plt.title(f"Best-universe entropy (from core simulation) {title_suffix}")
 
-    # Plot region curves if enabled
-    if BEST_CFG["SHOW_REGIONS"] and n_regions > 0:
-        for i in range(n_regions):
-            plt.plot(t, regions[i], lw=1.0, alpha=0.55, label=f"Region {i} entropy" if i < 10 else None)
+    # Region curves (optional)
+    if rS is not None and BEST_CFG["SHOW_REGIONS"]:
+        many = (rS.shape[1] > 12)
+        for j in range(rS.shape[1]):
+            plt.plot(t, rS[:, j], lw=1.0, alpha=0.35 if many else 0.55)
 
-    # Plot global curve
-    plt.plot(t, g, color="black", lw=3.0, label="Global entropy")
+    # Global curve
+    plt.plot(t, gS, color="black", lw=3.0, label="Global entropy")
 
     # Stability threshold
     plt.axhline(BEST_CFG["STAB_THRESH"], color="red", ls="--", lw=1.5, label="Stability threshold")
 
     # Lock-in marker + annotation
-    if BEST_CFG["ANNOTATE_LOCKIN"] and (0 <= lock_ep < steps):
+    if BEST_CFG["ANNOTATE_LOCKIN"] and (0 <= lock_ep < len(t)):
         plt.axvline(lock_ep, color="purple", ls=(0, (5, 5)), lw=2.0)
-        y_text = float(np.nanmin(g)) + 0.15
+        y_text = float(np.nanmin(gS)) + 0.15
         plt.text(lock_ep + BEST_CFG["ANNOTATION_OFFSET"], y_text,
                  f"Lock-in step ≈ {lock_ep}", color="purple")
 
@@ -3178,23 +3163,20 @@ def _plot_best_universe(unirec: dict, steps: int, n_regions: int,
 
     plt.tight_layout()
     savefig(save_png)
+    return True
 
-# ---------- Selection + rendering (lock-in only) ----------
+# ---------- Selection + rendering (lock-in only, TOP-N) ----------
 df_lock = df[df["lock_epoch"] >= 0].copy()
 if len(df_lock) == 0:
     print("[BEST] No lock-in universes found; skipping best-universe plots.")
 else:
-    # Ranking: earlier lock-in is better; ties broken by smaller |E - I| if available.
-    if "I" in df_lock.columns:
-        df_lock["_gap"] = np.abs(df_lock["E"] - df_lock["I"])
-    else:
-        df_lock["_gap"] = 0.0
+    # Rank by earliest lock-in; tie-breaker: smaller |E - I| if available.
+    df_lock["_gap"] = np.abs(df_lock["E"] - df_lock["I"]) if "I" in df_lock.columns else 0.0
     df_lock = df_lock.sort_values(["lock_epoch", "_gap"]).reset_index(drop=True)
 
     n_take = int(np.clip(BEST_CFG["N_TOP_BEST"], 1, 50))
     picked = df_lock.head(n_take)
 
-    # Output folders
     BEST_DIR = os.path.join(FIG_DIR, "best_universes")
     BEST_CSV_DIR = os.path.join(SAVE_DIR, "best_universes_csv")
     os.makedirs(BEST_DIR, exist_ok=True)
@@ -3203,19 +3185,18 @@ else:
     for rank, row in picked.iterrows():
         uid = int(row["universe_id"])
         png_path = with_variant(os.path.join(BEST_DIR, f"best_uni_rank{rank+1:02d}_uid{uid:05d}.png"))
-        _plot_best_universe(
+        ok = _plot_best_universe_from_sim(
             unirec=row.to_dict(),
-            steps=BEST_CFG["TIME_STEPS"],
-            n_regions=BEST_CFG["N_REGIONS"],
             save_png=png_path,
             save_csv_dir=BEST_CSV_DIR
         )
-        made.append(png_path)
+        if ok:
+            made.append(png_path)
 
-    print(f"[BEST] Generated {len(made)} figure(s) for lock-in universes.")
+    print(f"[BEST] Generated {len(made)} figure(s) from core simulation entropy.")
 
 main_progress_bar.update(1)
-main_progress_bar.set_description("11/12: Best universe plots done")
+main_progress_bar.set_description("11/12: Best universe plots (core sim) done")
 
 # ======================================================
 # 21) Save consolidated summary (single write)
