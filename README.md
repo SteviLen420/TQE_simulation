@@ -12,7 +12,7 @@ This repository contains the full source code and documentation for the framewor
 
 To understand the project, we recommend exploring the following files:
 
-➡️ [STORY](STORY.md) : Start here for the scientific motivation, the core concepts, and the narrative behind the TQE framework. This explains the "WHY" of the project.
+➡️ [./TQE_Universe_Simulation_Full_Pipeline/README.md] : Start here for the scientific motivation, the core concepts, and the narrative behind the TQE framework. This explains the "WHY" of the project.
 
 ➡️ [README](README.md) : This is the main technical documentation. It contains detailed instructions on installation, configuration, usage, and the complete API reference. This explains the "HOW" of the project.
 
@@ -21,6 +21,7 @@ To understand the project, we recommend exploring the following files:
 To get the code up and running, follow these steps:
 
 1. Clone the repository:sh
+   
    git clone https://github.com/SteviLen420/TQE_simulation/blob/main/TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py
 
 2. Navigate to the main pipeline directory:
