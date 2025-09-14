@@ -18,6 +18,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 import time, json, warnings, sys, subprocess, shutil
 import numpy as np
+from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 
@@ -234,6 +235,8 @@ MASTER_CTRL = {
     "RUN_XAI":              True,   # master switch for XAI section
     "RUN_SHAP":             True,   # SHAP on/off
     "RUN_LIME":             True,   # LIME on/off
+    "RUN_XGBOOST_XAI":      True,   # XGBOOST on/off
+    "FT_METRIC_TARGET": "delta_ACC",  # target column used for XGBoost regression/analysis
     "LIME_NUM_FEATURES":    5,      # number of features in LIME plot
     "TEST_SIZE":            0.25,   # test split ratio
     "TEST_RANDOM_STATE":    42,     # split reproducibility
@@ -2216,7 +2219,7 @@ main_progress_bar.update(1)
 main_progress_bar.set_description("9/12: Axis-of-Evil detection complete")
 
 # ======================================================
-# 18) Multi-target XAI (SHAP+LIME)
+# 18) Multi-target XAI (XGBOOST+SHAP+LIME)
 # ======================================================
 
 import os, json, shutil, numpy as np, pandas as pd, matplotlib.pyplot as plt
@@ -2540,6 +2543,12 @@ if MASTER_CTRL.get("RUN_FINETUNE_DETECTOR", True) and MASTER_CTRL.get("XAI_ENABL
 
 # Safe SHAP/LIME availability (Colab may have numba/np mismatch)
 try:
+    import xgboost as xgb
+    XGB_OK = True
+except Exception as e:
+    print("[XAI][WARN] XGBoost disabled:", e); XGB_OK = False
+
+try:
     import shap; SHAP_OK = True
 except Exception as e:
     print("[XAI][WARN] SHAP disabled:", e); SHAP_OK = False
@@ -2670,6 +2679,76 @@ def _shap_summary(model, X_plot, feat_names, out_png, fig_title=None):
         # This outer except block catches any failure from the entire process
         # and prints a warning instead of crashing the script.
         print(f"[XAI][WARN] SHAP summary plot generation failed for '{out_png}': {e}")
+
+def run_advanced_xgboost_analysis(df, config, results_path):
+    """
+    This function performs the complete Feature Engineering, XGBoost training,
+    and SHAP analysis pipeline.
+    """
+    print("\n" + "="*50)
+    print("--- Running Advanced XGBoost + SHAP Analysis ---")
+    print("="*50)
+
+    try:
+        # --- 1. Feature Engineering ---
+        print("[XGB] Performing Feature Engineering...")
+        df_engineered = df.copy() # Create a copy to avoid overwriting the original data
+        df_engineered['E_per_I'] = df_engineered['E'] / (df_engineered['I'] + 1e-9) # Add epsilon to avoid division by zero
+        df_engineered['E_times_I'] = df_engineered['E'] * df_engineered['I']
+        if 'lockin_epoch' in df_engineered.columns:
+            df_engineered['lockin_succeeded'] = (df_engineered['lockin_epoch'] >= 0).astype(int) # 1 if lock-in succeeded, 0 otherwise
+        df_engineered['E_squared'] = df_engineered['E']**2
+        if 'X' in df_engineered.columns:
+            df_engineered['X_squared'] = df_engineered['X']**2
+
+        # --- 2. Data Preparation ---
+        target_variable = config.get('FT_METRIC_TARGET', 'delta_ACC') # Use target from config, with a default
+        # Exclude non-feature columns
+        features_to_exclude = [target_variable, 'universe_id', 'seed'] + [col for col in df_engineered.columns if 'delta' in col]
+        features = [col for col in df_engineered.columns if col not in features_to_exclude]
+
+        X = df_engineered[features]
+        y = df_engineered[target_variable]
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=TEST_SIZE, random_state=RSTATE
+        )
+
+        # --- 3. XGBoost Model Training ---
+        print(f"[XGB] Training XGBoost model to predict '{target_variable}'...")
+        model = xgb.XGBRegressor(
+            n_estimators=500,
+            learning_rate=0.05,
+            max_depth=5,
+            n_jobs=-1,
+            random_state=RSTATE
+        )
+        model.fit(X_train, y_train)
+
+        # --- 4. Explanation with SHAP ---
+        print("[XGB] Generating SHAP explanation plots...")
+        explainer = shap.Explainer(model)
+        shap_values = explainer(X_test)
+
+        # Generate and save the summary plot
+        shap.summary_plot(shap_values, X_test, show=False)
+        plot_filename = f"shap_summary_xgboost_{target_variable}.png"
+        plt.savefig(os.path.join(results_path, plot_filename), bbox_inches='tight', dpi=220)
+        plt.close() # Close the plot to prevent it from displaying in the notebook
+        print(f"[XGB] SHAP plot saved to: {os.path.join(results_path, plot_filename)}")
+
+    except Exception as e:
+        print(f"[XGB] ERROR: The advanced analysis failed. Reason: {e}")
+
+    print("-" * 50 + "\n")
+
+# --- Global XGBoost + SHAP analysis (run before per-target SHAP/LIME) ---
+if XGB_OK and MASTER_CTRL.get("RUN_XGBOOST_XAI", True):
+    tgt = MASTER_CTRL.get("FT_METRIC_TARGET")
+    if tgt and tgt in df_xai.columns:
+        run_advanced_xgboost_analysis(df_xai, MASTER_CTRL, XAI_SAVE_DIR)
+    else:
+        print(f"[XGB][INFO] Skipping: FT_METRIC_TARGET='{tgt}' not found in df_xai.")
+# ------------------------------------------------------------------------
     
 # Target list
 targets = []
