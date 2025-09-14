@@ -14,7 +14,7 @@ To understand the project, we recommend exploring the following files:
 
 ➡️ [STORY](STORY.md) : Start here for the scientific motivation, the core concepts, and the narrative behind the TQE framework. This explains the "WHY" of the project.
 
-➡️ [TQE_Universe_Simulation_Full_Pipeline](README.md) : This is the main technical documentation. It contains detailed instructions on installation, configuration, usage, and the complete API reference. This explains the "HOW" of the project.
+➡️ [README](README.md) : This is the main technical documentation. It contains detailed instructions on installation, configuration, usage, and the complete API reference. This explains the "HOW" of the project.
 
 ## Quick Start
 
