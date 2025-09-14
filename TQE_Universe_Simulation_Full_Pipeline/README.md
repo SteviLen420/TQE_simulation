@@ -219,33 +219,28 @@ The framework's dependencies are split into a core set required for basic operat
       * Core Dependencies: numpy, pandas, pyyaml, matplotlib, scikit-learn, tqdm
       * Optional Dependencies (for full analysis and simulation features): healpy, scipy, shap, lime, qutip
 Installation:
+
       1. Clone the repository:
-Bash
-git clone https://github.com/your-username/tqe-framework.git
-cd tqe-framework
+	  
+	  git clone https://github.com/your-username/tqe-framework.git
+      cd tqe-framework
+
 
       2. Create and activate a virtual environment:
-Bash
-python3 -m venv venv
-source venv/bin/activate
+
+      python3 -m venv venv
+      source venv/bin/activate
+
 
       3. Install dependencies from the provided requirements.txt file:
-Bash
-pip install -r requirements.txt
+
+      pip install -r requirements.txt
 
 
 
 Build Tips and Common Pitfalls
 
 
-         * healpy Installation: The healpy library is a powerful tool for spherical harmonic transforms but can be challenging to install. It has system-level dependencies, including a Fortran compiler (gfortran) and the CFITSIO library. On Debian/Ubuntu, these can be installed with:
-Bash
-sudo apt-get update
-sudo apt-get install gfortran libcfitsio-dev
-
-After installing these system packages, pip install healpy should succeed.
-         * qutip Installation: Ensure you have a C++ compiler available, as qutip builds C++ extensions for performance.
-         * Virtual Environments: Failure to use a virtual environment can lead to dependency conflicts with other Python projects on your system. This is the most common source of installation problems.
 ________________
 
 
