@@ -223,18 +223,13 @@ Installation:
 	  ```text
 	  git clone https://github.com/your-username/tqe-framework.git
       cd tqe-framework
-
-
 2. Create and activate a virtual environment:
       ```text
       python3 -m venv venv
       source venv/bin/activate
-
-
 3. Install dependencies from the provided requirements.txt file:
       ```text
       pip install -r requirements.txt
-
 
 
 Build Tips and Common Pitfalls
