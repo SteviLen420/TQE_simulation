@@ -1,6 +1,8 @@
 # Theory of The Question of Existance (TQE) Framework
 A Monte Carlo pipeline for simulating emergent physical laws and cosmological observables from first principles of energy and information.
 
+(./https-img.shields.io-badge-Navigate%20to-TQE_Simulation_Pipeline-blue.svg)](./TQE_Universe_Simulation_Full_Pipeline/)
+
 ## About The Project
 
 The TQE Framework is a computational pipeline designed to investigate the hypothesis that the fundamental laws of physics emerge from a primitive interplay of Energy (E) and Information (I). It provides a complete, end-to-end environment for conducting Monte Carlo simulations of universe ensembles, analyzing their cosmological properties, and using Explainable AI (XAI) to uncover the underlying principles.
