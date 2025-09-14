@@ -41,7 +41,7 @@ If you use this software in your research, please cite it. The repository includ
 ```bash
 @article{Len_TQE_Framework,
   author  = {Len, Stefan},
-  title   = {{The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy–Information Principles}},
+  title   = {{"TQE Universe Simulation Pipeline"}},
   journal = {Journal of Open Source Software},
   year    = {YYYY},
   volume  = {VV},
