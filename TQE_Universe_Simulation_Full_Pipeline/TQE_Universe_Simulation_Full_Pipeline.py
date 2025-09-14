@@ -352,6 +352,7 @@ else:
 run_id = MASTER_CTRL["RUN_ID_PREFIX"] + variant_tag + "_" + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
 SAVE_DIR = os.path.join(os.getcwd(), run_id)
 FIG_DIR  = os.path.join(SAVE_DIR, "figs")
+RUN_DIR = SAVE_DIR  # for simulation entropy exports
 os.makedirs(FIG_DIR, exist_ok=True)
 
 def savefig(path):
