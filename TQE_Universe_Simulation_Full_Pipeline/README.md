@@ -1,6 +1,7 @@
 **TQE (E,I) Universe Simulation Pipeline**
 
 Author: Stefan Len
+
 Contact: stefan.len [at] gmail.com
 
 Abstract
