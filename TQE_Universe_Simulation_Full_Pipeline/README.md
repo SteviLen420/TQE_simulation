@@ -150,7 +150,7 @@ The transition to a stable set of laws occurs at epoch $t_{lock}$ if the system'
 A common choice for the stability metric is the trace of the covariance matrix of the state vector over the recent time window:
 
 $$
-S(t) = \mathrm{Tr}\left(\mathrm{Cov}(X(t'))\right)_{t' \in \epsilon} < \epsilon
+S(t) = \mathrm{Tr}\left(\mathrm{Cov}(X(t'))\right)_{t' \in} < \epsilon
 $$
 
 ### Probabilistic and Stability Definitions
