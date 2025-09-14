@@ -382,7 +382,7 @@ By contributing, you agree that your code will be licensed under the same licens
 
 ## License
 
-This project is licensed under the MIT License – see the [LICENSE](./TQE_Simulation/LICENSE.md) file for details.
+This project is licensed under the MIT License – see the [LICENSE](./LICENSE) file for details.
 
 ## Contact
 
@@ -390,4 +390,4 @@ Got questions, ideas, or feedback?
 Drop me an email at **tqe.simulation@gmail.com** 
 
 ### TQE
-[TQE_Universe_Simulation_Full_Pipeline.py](TQE_Universe_Simulation_Full_Pipeline.py)
+[TQE_Universe_Simulation_Full_Pipeline.py](./TQE_Universe_Simulation_Full_Pipeline.py)
