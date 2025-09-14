@@ -382,4 +382,4 @@ By contributing, you agree that your code will be licensed under the same licens
 ## Contact
 
 Got questions, ideas, or feedback?  
-💌 Drop me an email at **tqe.simulation@gmail.com** 
+Drop me an email at **tqe.simulation@gmail.com** 
