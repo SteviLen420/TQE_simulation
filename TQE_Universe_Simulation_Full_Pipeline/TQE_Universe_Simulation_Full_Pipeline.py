@@ -53,6 +53,11 @@ except Exception:
                            "shap==0.45.0", "lime==0.2.0.1", "scikit-learn==1.5.2", "-q"])
     import shap
     from lime.lime_tabular import LimeTabularExplainer
+
+import yaml
+
+with open("MASTER_CTRL.yml", "r") as f:
+    MASTER_CTRL = yaml.safe_load(f)
     
 # --- Strict determinism knobs (optional but recommended) ---
 if MASTER_CTRL.get("USE_STRICT_SEED", True):
@@ -63,11 +68,6 @@ if MASTER_CTRL.get("USE_STRICT_SEED", True):
     os.environ["MKL_NUM_THREADS"] = "1"
     os.environ["OPENBLAS_NUM_THREADS"] = "1"
     os.environ["NUMEXPR_NUM_THREADS"] = "1"
-
-import yaml
-
-with open("MASTER_CTRL.yml", "r") as f:
-    MASTER_CTRL = yaml.safe_load(f)
 
 # ======================================================
 # 1) OUTPUT ROOT AND SAVE HELPERS
