@@ -74,11 +74,9 @@ In the TQE framework, the modulation factor *f(E, I)* is governed by a minimal s
 
 **α – orientation bias strength:** quantifies the effect of informational orientation *I*. For α = 0, orientation is irrelevant; larger α increases the probability of complexity-permitting universes.
 
-**β – asymmetry strength:** shifts stabilization probabilities depending on orientation direction, relevant in asymmetric variants.
-
 **Lock-in criterion:** operationally defined as stabilization when relative probability change satisfies ΔP / P < 0.01 over at least five consecutive epochs.
 
-In numerical experiments, typical values (*E_c = 1.0, σ = 0.3, α = 0.2*) yield a clear stability window, while alternative values can be varied to probe robustness.
+In the default configuration of the numerical experiments, the values are set to (E_c = 4.0, σ = 4.0, α = 0.8) to yield a clear stability window. These parameters can be varied to probe the model's robustness.
 
 ### **2.3. Definition of the Information Parameter (I)**
 
@@ -90,18 +88,15 @@ I = Dₖₗ(Pₜ || Pₜ₊₁) / (1 + Dₖₗ(Pₜ || Pₜ₊₁))
 
 ensuring 0 ≤ I ≤ 1.
 
-Thus, **I acts as a proxy for directional bias** in quantum state evolution, computable in both simulation and (in principle) observational contexts. However, this definition should be regarded as a first operational step: the precise formalization and physical grounding of **I** remain open questions that require further theoretical and empirical investigation.
+Thus, **I acts as a proxy for directional bias** in quantum state evolution, computable in both simulation and (in principle) observational contexts. The numerical implementation, however, explores a richer definition by also computing the Shannon entropy (H) of the state. In the default configuration, these two measures are combined via a product fusion **(I = I_kl × I_shannon)**, creating a composite parameter that captures both informational asymmetry and intrinsic complexity. However, this definition should be regarded as a first operational step: the precise formalization and physical grounding of **I** remain open questions that require further theoretical and empirical investigation.
 
 ### **2.4. Stability Condition (Lock-In Criterion)**
 
-We define **law stabilization (lock-in)** when the relative variation of probability weights satisfies:
+We define **law stabilization (lock-in)** when the relative variation of the system's key parameters satisfies:
 
-ΔP / P < 0.01 over at least 5 consecutive epochs}.
+**ΔP / P < 0.005 over at least 6 consecutive epochs.**
 
-This provides an **objective, reproducible criterion** for distinguishing universes that stabilize from those that collapse.
-
-In numerical simulations, we adopt a slightly relaxed criterion **(ΔP/P < 0.05 sustained over 15 epochs)**, which preserves the same principle while ensuring sufficient statistical convergence.
-This operational definition ensures statistical robustness without changing the conceptual principle.
+This operational definition, directly implemented in the simulation's MASTER_CTRL configuration (REL_EPS_LOCKIN = 5e-3, CALM_STEPS_LOCKIN = 6), provides an objective and reproducible criterion for distinguishing universes that stabilize from those that remain in chaos.
 
 ### **2.5. Goldilocks Zone as Emergent Critical Points**
 
@@ -137,7 +132,7 @@ It extends these by offering a **quantitative, information-theoretic stabilizati
 
 **Methods – Randomness and Scope**
 
-I ran the simulations with random initialization and, in most cases, deliberately did not use fixed seeds. The purpose here was to demonstrate the core principle rather than to enforce strict reproducibility. To complement this, I also provide seeded runs (using a fixed seed, e.g., 42) so that the simulations can be reproduced exactly by others. This dual approach highlights both the stochastic robustness of the framework (unseeded runs) and its reproducibility (seeded runs). The extended statistical testing of robustness and reproducibility will be a matter for future investigation.
+The simulation framework is built on a strong foundation of reproducibility. While exploratory runs can be performed with random seeds, all key experiments presented are governed by a master_seed defined in the configuration. This ensures that the entire ensemble of universes can be reproduced exactly, which is critical for scientific validation, debugging, and peer review.
 
 Author’s Note
 
