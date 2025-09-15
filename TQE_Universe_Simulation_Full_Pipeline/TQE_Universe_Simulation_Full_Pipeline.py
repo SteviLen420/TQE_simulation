@@ -19,6 +19,7 @@ import yaml
 # --- Load MASTER_CTRL from YAML (always load at start) ---
 script_dir = Path(__file__).resolve().parent
 config_path = script_dir / "MASTER_CTRL.yml"
+
 with open(config_path, "r") as f:
     MASTER_CTRL = yaml.safe_load(f)
 
