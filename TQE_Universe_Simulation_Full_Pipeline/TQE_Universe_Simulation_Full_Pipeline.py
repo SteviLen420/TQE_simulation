@@ -3362,7 +3362,9 @@ summary = {
     }
 }
 if MASTER_CTRL.get("SAVE_JSON", True):
-    save_json(with_variant(os.path.join(SAVE_DIR, "summary_full.json")), summary)
+    out_json = with_variant(os.path.join(SAVE_DIR, "summary_full.json"))
+    save_json(out_json, summary)
+    print("[SUMMARY] Wrote full summary →", out_json)
 
 print("\n🌌 Universe Stability Summary (final run)")
 print(f"Total universes: {len(df)}")
