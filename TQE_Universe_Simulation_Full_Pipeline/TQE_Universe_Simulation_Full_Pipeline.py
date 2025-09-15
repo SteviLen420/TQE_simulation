@@ -3366,6 +3366,22 @@ if MASTER_CTRL.get("SAVE_JSON", True):
     save_json(out_json, summary)
     print("[SUMMARY] Wrote full summary →", out_json)
 
+# Copy summary_full to Google Drive after writing it
+import shutil, os
+
+if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
+    DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Runs")
+    drive_run_dir = os.path.join(DRIVE_BASE, RUN_ID)
+    os.makedirs(drive_run_dir, exist_ok=True)
+
+    src_json = with_variant(os.path.join(SAVE_DIR, "summary_full.json"))
+    dst_json = os.path.join(drive_run_dir, os.path.basename(src_json))
+    if os.path.exists(src_json):
+        shutil.copy2(src_json, dst_json)
+        print("[FINAL COPY] summary_full ->", dst_json)
+    else:
+        print("[FINAL COPY][WARN] not found:", src_json)
+
 print("\n🌌 Universe Stability Summary (final run)")
 print(f"Total universes: {len(df)}")
 print(f"Stable:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
