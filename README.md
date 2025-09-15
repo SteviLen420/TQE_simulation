@@ -96,6 +96,19 @@ Given this unique, AI-assisted methodology, the TQE Framework should be viewed a
 
 It is my hope that this project might serve as a novel starting point or a useful tool for researchers in theoretical physics and cosmology. Collaboration and feedback are warmly welcomed.
 
+
+## Future Development
+
+The TQE Framework is an actively evolving research project. While the current version provides a complete and robust proof-of-concept, several key areas are planned for future development to enhance its scale, realism, and usability.
+
+* **Computational Scaling**: To explore the parameter space more exhaustively, future work will focus on optimizing the pipeline for high-performance computing (HPC) environments. This will enable simulations with significantly larger ensembles of universes (>10^5) and longer evolutionary epochs, providing greater statistical power to the results.
+
+* **Expansion of Anomaly Detectors**: The current framework includes detectors for the CMB Cold Spot and the Axis of Evil. The pipeline is designed to be extensible, and future versions will incorporate additional anomaly modules, such as the Hemispherical Power Asymmetry (HPA) and other statistical measures observed in cosmological data.
+
+* **Architectural Refactoring**: I am actively refactoring the current single-script implementation into a fully modular framework. This will improve maintainability, make collaboration easier, and allow researchers to swap or modify individual components (e.g., the simulation core, an analysis module) without altering the rest of the pipeline.
+
+I highly encourage contributions and collaborations in these areas.
+
 ## License
 This project is licensed under the MIT License – see the [LICENSE](./LICENSE) file for details.
 
