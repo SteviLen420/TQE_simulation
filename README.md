@@ -91,12 +91,9 @@ Placing the project in an academic context and documenting it was a critical ste
 
 * **Gemini 2.5 Pro & GPT-5**: Assisted in drafting the comprehensive documentation, abstracts, and formal descriptions found throughout this repository.
 
-### A Call for Further Investigation
+## Limitations and Future Work
+
 Given this unique, AI-assisted methodology, the TQE Framework should be viewed as a research-grade proof-of-concept. It demonstrates the feasibility of this line of inquiry but does not yet represent a peer-reviewed scientific result. The findings, code, and the underlying hypothesis require further investigation, validation, and critique, which I hope the scientific community will carry out.
-
-It is my hope that this project might serve as a novel starting point or a useful tool for researchers in theoretical physics and cosmology. I warmly welcome collaboration and feedback.
-
-## Future Development
 
 The TQE Framework is an actively evolving research project. While the current version provides a complete and robust proof-of-concept, several key areas are planned for future development to enhance its scale, realism, and usability.
 
@@ -106,7 +103,7 @@ The TQE Framework is an actively evolving research project. While the current ve
 
 * **Architectural Refactoring**: I am actively refactoring the current single-script implementation into a fully modular framework. This will improve maintainability, make it easier for me to collaborate with others, and allow me (or other researchers) to swap or modify individual components (e.g., the simulation core, an analysis module) without altering the rest of the pipeline.
 
-I highly encourage contributions and collaborations in these areas.
+It is my hope that this project might serve as a novel starting point or a useful tool for researchers in theoretical physics and cosmology. I highly encourage contributions and collaborations in these areas.
 
 ## License
 This project is licensed under the MIT License – see the [LICENSE](./LICENSE) file for details.
