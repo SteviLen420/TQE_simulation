@@ -8,14 +8,6 @@
 # ===================================================================================
 
 import os
-# Set before importing heavy numeric libs would be ideal,
-# but applying here is still helpful for thread pools.
-os.environ["PYTHONHASHSEED"] = "0"
-os.environ["OMP_NUM_THREADS"] = "1"
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-os.environ["NUMEXPR_NUM_THREADS"] = "1"
-
 import time, json, warnings, sys, subprocess, shutil
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -23,6 +15,10 @@ import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 from pathlib import Path
 import yaml
+
+# --- Load MASTER_CTRL from YAML (always load at start) ---
+with open("MASTER_CTRL.yml", "r") as f:
+    MASTER_CTRL = yaml.safe_load(f)
 
 # --- Colab detection + optional Drive mount ---
 IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
@@ -55,14 +51,8 @@ except Exception:
     import shap
     from lime.lime_tabular import LimeTabularExplainer
 
-    with open("MASTER_CTRL.yml", "r") as f:
-        MASTER_CTRL = yaml.safe_load(f)
-
-    
 # --- Strict determinism knobs (optional but recommended) ---
 if MASTER_CTRL.get("USE_STRICT_SEED", True):
-    # Set before importing heavy numeric libs would be ideal,
-    # but applying here is still helpful for thread pools.
     os.environ["PYTHONHASHSEED"] = "0"
     os.environ["OMP_NUM_THREADS"] = "1"
     os.environ["MKL_NUM_THREADS"] = "1"
