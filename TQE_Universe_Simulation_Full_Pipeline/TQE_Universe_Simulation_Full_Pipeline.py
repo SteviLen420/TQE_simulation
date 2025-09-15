@@ -455,21 +455,6 @@ print(f"🗂 Figures:           {FIG_DIR}")
 print(f"⚙️  Pipeline variant:  {MASTER_CTRL.get('PIPELINE_VARIANT','full')}")
 print("-" * 60)
 
-def savefig(path):
-    """Save a figure only if SAVE_FIGS is True."""
-    if not MASTER_CTRL.get("SAVE_FIGS", True):
-        plt.close()
-        return
-    plt.savefig(path, dpi=180, bbox_inches="tight")
-    plt.close()
-    
-def save_json(path, obj):
-    with open(path, "w") as f:
-        json.dump(obj, f, indent=2)
-
-print(f"💾 Results saved in: {SAVE_DIR}")
-print(f"⚙️  Pipeline variant: {MASTER_CTRL.get('PIPELINE_VARIANT','full')}")
-
 # ======================================================
 # 3) Information parameter I = g(KL, Shannon) (fusion)
 # ======================================================
