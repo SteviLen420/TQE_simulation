@@ -71,25 +71,25 @@ Full transparency about the tools used is critical to understanding the project'
 **1. Code Generation and Architectural Design**
 The pipeline's code was developed through a combination of high-level architectural guidance and iterative, hands-on implementation.
 
-**Google's Gemini 2.5 Pro & OpenAI's GPT-5**: Served as high-level architectural consultants, assisting in the overall pipeline design, complex refactoring, and the implementation of advanced features.
+* **Google's Gemini 2.5 Pro & OpenAI's GPT-5**: Served as high-level architectural consultants, assisting in the overall pipeline design, complex refactoring, and the implementation of advanced features.
 
-**DeepSeek Coder (v2, 7B, via Ollama)**: Employed as a local, offline model for the core iterative development loop, including real-time code generation, debugging, and algorithm refinement.
+* **DeepSeek Coder (v2, 7B, via Ollama)**: Employed as a local, offline model for the core iterative development loop, including real-time code generation, debugging, and algorithm refinement.
 
 **2. Data Analysis and Mathematical Validation**
 The raw outputs of the simulation were processed and validated using a combination of general and specialized AI.
 
-**Gemini 2.5 Pro & DeepSeek**: Used for the primary analysis of simulation outputs, helping to structure statistical tests and interpret the results from the XAI modules.
+* **Gemini 2.5 Pro & DeepSeek**: Used for the primary analysis of simulation outputs, helping to structure statistical tests and interpret the results from the XAI modules.
 
-**Wolfram|One & Wolfram|Alpha**: Utilized for the rigorous validation of the mathematical formalisms and equations presented in the documentation, ensuring their correctness and internal consistency.
+* **Wolfram|One & Wolfram|Alpha**: Utilized for the rigorous validation of the mathematical formalisms and equations presented in the documentation, ensuring their correctness and internal consistency.
 
 **3. Scientific Context and Documentation**
 Placing the project in an academic context and documenting it was a critical step.
 
-**IBM Watson**: Leveraged for large-scale analysis of scientific literature to identify broader research trends and knowledge gaps, ensuring the TQE hypothesis was positioned correctly within the current scientific landscape.
+* **IBM Watson**: Leveraged for large-scale analysis of scientific literature to identify broader research trends and knowledge gaps, ensuring the TQE hypothesis was positioned correctly within the current scientific landscape.
 
-**Specialized GPTs (Wolfram GPT, SciSpace, Scholar GPT)**: Employed to perform targeted literature searches, contextualizing the TQE hypothesis against existing scientific research and specific papers.
+* **Specialized GPTs (Wolfram GPT, SciSpace, Scholar GPT)**: Employed to perform targeted literature searches, contextualizing the TQE hypothesis against existing scientific research and specific papers.
 
-**Gemini 2.5 Pro & GPT-5**: Assisted in drafting the comprehensive documentation, abstracts, and formal descriptions found throughout this repository.
+* **Gemini 2.5 Pro & GPT-5**: Assisted in drafting the comprehensive documentation, abstracts, and formal descriptions found throughout this repository.
 
 ### A Call for Further Investigation
 Given this unique, AI-assisted methodology, the TQE Framework should be viewed as a research-grade proof-of-concept. It demonstrates the feasibility of this line of inquiry but does not yet represent a peer-reviewed scientific result. The findings, code, and the underlying hypothesis require further investigation, validation, and critique by the scientific community.
