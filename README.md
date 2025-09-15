@@ -15,7 +15,7 @@ This repository contains the full source code and documentation for the framewor
 
 ## Navigating This Repository
 
-To understand the project, we recommend exploring the following files:
+To understand the project, I recommend exploring the following files:
 
 ➡️ [STORY](STORY.md) : Start here for the scientific motivation, the core concepts, and the narrative behind the TQE framework. This explains the "WHY" of the project.
 
@@ -92,10 +92,9 @@ Placing the project in an academic context and documenting it was a critical ste
 * **Gemini 2.5 Pro & GPT-5**: Assisted in drafting the comprehensive documentation, abstracts, and formal descriptions found throughout this repository.
 
 ### A Call for Further Investigation
-Given this unique, AI-assisted methodology, the TQE Framework should be viewed as a research-grade proof-of-concept. It demonstrates the feasibility of this line of inquiry but does not yet represent a peer-reviewed scientific result. The findings, code, and the underlying hypothesis require further investigation, validation, and critique by the scientific community.
+Given this unique, AI-assisted methodology, the TQE Framework should be viewed as a research-grade proof-of-concept. It demonstrates the feasibility of this line of inquiry but does not yet represent a peer-reviewed scientific result. The findings, code, and the underlying hypothesis require further investigation, validation, and critique, which I hope the scientific community will carry out.
 
-It is my hope that this project might serve as a novel starting point or a useful tool for researchers in theoretical physics and cosmology. Collaboration and feedback are warmly welcomed.
-
+It is my hope that this project might serve as a novel starting point or a useful tool for researchers in theoretical physics and cosmology. CI warmly welcome collaboration and feedback.
 
 ## Future Development
 
@@ -105,7 +104,7 @@ The TQE Framework is an actively evolving research project. While the current ve
 
 * **Expansion of Anomaly Detectors**: The current framework includes detectors for the CMB Cold Spot and the Axis of Evil. The pipeline is designed to be extensible, and future versions will incorporate additional anomaly modules, such as the Hemispherical Power Asymmetry (HPA) and other statistical measures observed in cosmological data.
 
-* **Architectural Refactoring**: I am actively refactoring the current single-script implementation into a fully modular framework. This will improve maintainability, make collaboration easier, and allow researchers to swap or modify individual components (e.g., the simulation core, an analysis module) without altering the rest of the pipeline.
+* **Architectural Refactoring**: I am actively refactoring the current single-script implementation into a fully modular framework. This will improve maintainability, make it easier for me to collaborate with others, and allow researchers to swap or modify individual components (e.g., the simulation core, an analysis module) without altering the rest of the pipeline.
 
 I highly encourage contributions and collaborations in these areas.
 
