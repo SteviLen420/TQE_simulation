@@ -64,6 +64,11 @@ if MASTER_CTRL.get("USE_STRICT_SEED", True):
     os.environ["OPENBLAS_NUM_THREADS"] = "1"
     os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
+import yaml
+
+with open("MASTER_CTRL.yml", "r") as f:
+    MASTER_CTRL = yaml.safe_load(f)
+
 # ======================================================
 # OUTPUT ROOT AND SAVE HELPERS
 # ======================================================
