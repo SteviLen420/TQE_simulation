@@ -7,6 +7,11 @@
 # Author: Stefan Len
 # ===================================================================================
 
+import yaml
+
+with open("MASTER_CTRL.yml", "r") as f:
+    MASTER_CTRL = yaml.safe_load(f)
+
 import os
 # Set before importing heavy numeric libs would be ideal,
 # but applying here is still helpful for thread pools.
@@ -54,10 +59,6 @@ except Exception:
     import shap
     from lime.lime_tabular import LimeTabularExplainer
 
-import yaml
-
-with open("MASTER_CTRL.yml", "r") as f:
-    MASTER_CTRL = yaml.safe_load(f)
     
 # --- Strict determinism knobs (optional but recommended) ---
 if MASTER_CTRL.get("USE_STRICT_SEED", True):
