@@ -93,17 +93,15 @@ Placing the project in an academic context and documenting it was a critical ste
 
 ## Limitations and Future Work
 
-Given this unique, AI-assisted methodology, the TQE Framework should be viewed as a research-grade proof-of-concept. It demonstrates the feasibility of this line of inquiry but does not yet represent a peer-reviewed scientific result. The findings, code, and the underlying hypothesis require further investigation, validation, and critique, which I hope the scientific community will carry out.
-
-The TQE Framework is an actively evolving research project. While the current version provides a complete and robust proof-of-concept, several key areas are planned for future development to enhance its scale, realism, and usability.
+Given this unique, AI-assisted methodology, the TQE Framework should be viewed as a research-grade **proof-of-concept**. It demonstrates the feasibility of this line of inquiry, but the findings require further investigation, validation, and critique by the scientific community. To facilitate this process and guide the project's evolution, the following key areas are planned for future development:
 
 * **Computational Scaling**: To explore the parameter space more exhaustively, future work will focus on optimizing the pipeline for high-performance computing (HPC) environments. This will enable simulations with significantly larger ensembles of universes (>10^5) and longer evolutionary epochs, providing greater statistical power to the results.
 
 * **Expansion of Anomaly Detectors**: The current framework includes detectors for the CMB Cold Spot and the Axis of Evil. The pipeline is designed to be extensible, and future versions will incorporate additional anomaly modules, such as the Hemispherical Power Asymmetry (HPA) and other statistical measures observed in cosmological data.
 
-* **Architectural Refactoring**: I am actively refactoring the current single-script implementation into a fully modular framework. This will improve maintainability, make it easier for me to collaborate with others, and allow me (or other researchers) to swap or modify individual components (e.g., the simulation core, an analysis module) without altering the rest of the pipeline.
+* **Architectural Refactoring**: The current single-script implementation is being actively refactored into a fully modular framework. This will improve maintainability, facilitate easier collaboration, and allow researchers to swap or modify individual components (e.g., the simulation core, an analysis module) without altering the rest of the pipeline.
 
-It is my hope that this project might serve as a novel starting point or a useful tool for researchers in theoretical physics and cosmology. I highly encourage contributions and collaborations in these areas.
+It is my hope that this project might serve as a novel starting point or a useful tool for researchers in theoretical physics and cosmology. Contributions, feedback, and collaborations in all these areas are warmly welcomed.
 
 ## License
 This project is licensed under the MIT License – see the [LICENSE](./LICENSE) file for details.
