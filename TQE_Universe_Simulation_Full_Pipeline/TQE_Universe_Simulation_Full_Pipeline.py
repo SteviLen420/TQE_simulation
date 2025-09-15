@@ -7,11 +7,6 @@
 # Author: Stefan Len
 # ===================================================================================
 
-import yaml
-
-with open("MASTER_CTRL.yml", "r") as f:
-    MASTER_CTRL = yaml.safe_load(f)
-
 import os
 # Set before importing heavy numeric libs would be ideal,
 # but applying here is still helpful for thread pools.
@@ -27,6 +22,7 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 from pathlib import Path
+import yaml
 
 # --- Colab detection + optional Drive mount ---
 IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
@@ -58,6 +54,9 @@ except Exception:
                            "shap==0.45.0", "lime==0.2.0.1", "scikit-learn==1.5.2", "-q"])
     import shap
     from lime.lime_tabular import LimeTabularExplainer
+
+    with open("MASTER_CTRL.yml", "r") as f:
+        MASTER_CTRL = yaml.safe_load(f)
 
     
 # --- Strict determinism knobs (optional but recommended) ---
