@@ -17,8 +17,9 @@ from pathlib import Path
 import yaml
 
 # --- Load MASTER_CTRL from YAML (always load at start) ---
-with open("/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline/MASTER_CTRL.yml", "r") as f:
-    MASTER_CTRL = yaml.safe_load(f)
+script_dir = Path(__file__).resolve().parent
+config_path = script_dir / "MASTER_CTRL.yml"
+with open(config_path, "r") as f:
 
 # --- Colab detection + optional Drive mount ---
 IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
