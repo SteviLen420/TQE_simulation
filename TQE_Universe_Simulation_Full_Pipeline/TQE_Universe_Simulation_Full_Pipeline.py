@@ -3370,7 +3370,7 @@ if MASTER_CTRL.get("SAVE_JSON", True):
 import shutil, os
 
 if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
-    DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Runs")
+    DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
     drive_run_dir = os.path.join(DRIVE_BASE, RUN_ID)
     os.makedirs(drive_run_dir, exist_ok=True)
 
