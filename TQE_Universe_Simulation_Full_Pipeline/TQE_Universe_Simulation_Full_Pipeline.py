@@ -14,11 +14,6 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 from pathlib import Path
-import yaml
-
-# --- Load MASTER_CTRL from YAML (always load at start) ---
-with open("TQE_simulation/TQE_Universe_Simulation_Full_Pipeline/MASTER_CTRL.yml", "r") as f:
-    MASTER_CTRL = yaml.safe_load(f)
 
 # --- Colab detection + optional Drive mount ---
 IN_COLAB = ("COLAB_RELEASE_TAG" in os.environ) or ("COLAB_BACKEND_VERSION" in os.environ)
@@ -51,8 +46,242 @@ except Exception:
     import shap
     from lime.lime_tabular import LimeTabularExplainer
 
+# ======================================================
+# 1) MASTER CONTROLLER
+# ======================================================
+MASTER_CTRL = {
+    # --- Core simulation ---
+    "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
+    "TIME_STEPS":           2000,    # epochs per stability run (if used elsewhere)
+    "LOCKIN_EPOCHS":        800,    # epochs for law lock-in dynamics
+    "EXPANSION_EPOCHS":     1500,    # epochs for expansion dynamics
+    "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
+    "SEED":                 None,   # master RNG seed (auto-generated if None)
+    "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
+    "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
+
+    # --- Energy distribution ---
+    "E_DISTR":              "lognormal",  # energy sampling mode (future-proof)
+    "E_LOG_MU":             2.5,    # lognormal mean for initial energy
+    "E_LOG_SIGMA":          0.8,    # lognormal sigma for initial energy
+    "E_TRUNC_LOW":          None,   # optional post-sample clamp (low)
+    "E_TRUNC_HIGH":         None,   # optional post-sample clamp (high)
+
+    # --- Information parameter I controls ---
+    "I_DIM":                8,         # Hilbert space dimension for random kets
+    "KL_EPS":               1e-12,     # numerical epsilon for KL/entropy
+    "INFO_FUSION_MODE":     "product", # "product" | "weighted"
+    "INFO_WEIGHT_KL":       0.5,       # used if INFO_FUSION_MODE == "weighted"
+    "INFO_WEIGHT_SHANNON":  0.5,       # used if INFO_FUSION_MODE == "weighted"
+    "I_EXPONENT":           1.0,       # optional nonlinearity: I <- I**I_EXPONENT
+    "I_MIN_EPS":            0.0,       # clamp floor for I (avoid exact zeros)
+
+    # --- E–I coupling (X definition) ---
+    "X_MODE":               "product",  # "product" | "E_plus_I" | "E_times_I_pow"
+    "X_I_POWER":            1.0,        # if "E_times_I_pow": X = E * (I ** X_I_POWER)
+    "X_SCALE":              1.0,        # global X scaling prior to Goldilocks
+    "ALPHA_I":              0.8,        # coupling factor: strength of I in E·I (heuristics)
+
+    # --- Fluctuation / superposition module toggles & params ---
+    "RUN_FLUCTUATION_BLOCK": True,  # Show the t<0 superposition, t=0 collapse, and t>0 expansion panels.
+    "RUN_QUANTUM_FLUCT":     True,  # Generate the standalone quantum-fluctuation time-series panel.
+    "FL_SUPER_T":            10.0,     # duration for t<0 superposition plot (arb. units)
+    "FL_SUPER_DT":           0.05,     # time step for superposition time series
+    "FL_SUPER_DIM":          4,        # small Hilbert dim for toy density evolution
+    "FL_SUPER_NOISE":        0.06,     # depolarizing-like noise amplitude
+    "FL_SUPER_KICK":         0.18,     # Strength of random unitary kicks in superposition (t<0).  
+    "FL_FLUCT_OBS":           "Z",     # Observable for quantum fluctuation panel ("Z", "X", or "rand").  
+
+    "FL_COLLAPSE_T_PRE":     0.22,     # window before t=0 (collapse)
+    "FL_COLLAPSE_T_POST":    0.22,     # window after t=0
+    "FL_COLLAPSE_DT":        0.002,    # time step
+    "FL_COLLAPSE_PRE_SIGMA": 0.55,     # volatility before t=0
+    "FL_COLLAPSE_POST_SIGMA":0.015,    # small jitter after t=0
+    "FL_COLLAPSE_REVERT":    0.35,     # mean-reversion towards X_lock after t=0 (OU factor)
+
+    "FL_EXP_DRIFT":          0.45,     # upward drift for A
+    "FL_EXP_JITTER":         0.9,      # noise for A random walk
+    "FL_EXP_I_JITTER":       0.04,     # small jitter for I track
+
+    # --- Stability thresholds ---
+    "REL_EPS_STABLE":       0.010,    # relative calmness threshold for stability
+    "REL_EPS_LOCKIN":       5e-3,     # relative calmness threshold for lock-in (~0.5%)
+    "CALM_STEPS_STABLE":    8,        # consecutive calm steps required (stable)
+    "CALM_STEPS_LOCKIN":    6,        # consecutive calm steps required (lock-in)
+    "MIN_LOCKIN_EPOCH":     300,      # lock-in can only occur after this epoch
+    "LOCKIN_WINDOW":        8,        # rolling window size for averaging delta_rel
+    "LOCKIN_ROLL_METRIC":   "mean",   # "mean" | "median" | "max" — aggregator over window
+    "LOCKIN_REQUIRES_STABLE": True,   # require stable_at before checking lock-in
+    "LOCKIN_MIN_STABLE_EPOCH": 0,     # require n - stable_at >= this many epochs
+
+    # --- Goldilocks zone controls ---
+    "GOLDILOCKS_MODE":      "dynamic",  # "heuristic" | "dynamic"
+    "E_CENTER":             4.0,    # heuristic: energy sweet-spot center (used for X window)
+    "E_WIDTH":              4.0,    # heuristic: energy sweet-spot width (used for X window)
+    "GOLDILOCKS_THRESHOLD": 0.50,   # dynamic: fraction of max stability to define zone
+    "GOLDILOCKS_MARGIN":    0.12,   # dynamic fallback margin around peak (±10%)
+    "SIGMA_ALPHA":          1.5,    # curvature inside Goldilocks (sigma shaping)
+    "OUTSIDE_PENALTY":      5.0,     # sigma multiplier outside Goldilocks zone
+    "STAB_BINS":            40,     # number of bins in stability curve
+    "SPLINE_K":             3,      # spline order for smoothing (3=cubic)
+
+    # --- Noise shaping (lock-in loop) ---
+    "EXP_NOISE_BASE":       0.12,   # baseline noise for updates (sigma0)
+    "LL_BASE_NOISE":        8e-4,   # absolute noise floor (never go below this)
+    "NOISE_DECAY_TAU":      500,    # e-folding time for noise decay (epochs)
+    "NOISE_FLOOR_FRAC":     0.25,   # fraction of initial sigma preserved by decay
+    "NOISE_COEFF_A":        1.0,    # per-variable noise multiplier (A)
+    "NOISE_COEFF_NS":       0.10,   # per-variable noise multiplier (ns)
+    "NOISE_COEFF_H":        0.20,   # per-variable noise multiplier (H)
+
+    # --- Expansion dynamics (if/when used) ---
+    "EXP_GROWTH_BASE":      1.005,  # baseline exponential growth rate
+    # (EXP_NOISE_BASE above is reused as expansion amplitude baseline)
+
+    # --- Finetune / ablation detector ---
+    "RUN_FINETUNE_DETECTOR": True,  # turn on/off the comparator block
+    "FT_EPS_EQ":             1e-3,  # threshold for E≈I slice (|E - I| <= eps)
+    "FT_TEST_SIZE":          0.25,  # test split for the detector
+    "FT_RANDOM_STATE":       42,    # reproducibility for splits
+    "FT_ONLY_LOCKIN": False,        # If True, fine-tune detector uses only lock-in universes (lock_epoch >= 0)
+    "FT_METRIC": "lockin",          # Use lock-in probability (P(lock-in)) instead of stability as the main metric
+
+    # --- Best-universe visualization (lock-in only) ---
+    "BEST_UNIVERSE_FIGS": 0,      # how many figures to export (typical: 1 or 5)
+    "BEST_N_REGIONS": 10,         # number of region-level entropy traces
+    "BEST_STAB_THRESHOLD": 3.5,   # horizontal reference line on plots
+    "BEST_SAVE_CSV": True,        # also export per-universe time series as CSV
+    "BEST_SEED_OFFSET": 777,      # reproducible offset for the synthetic entropy generator
+    "BEST_MAX_FIGS": 50,          # safety clamp
+
+    # --- Noise / smoothing knobs for entropy evolution ---
+    "BEST_REGION_MU": 5.1,          # Target mean for region entropy traces
+    "BEST_REGION_SIGMA": 0.04,      # Noise amplitude for region traces (lower = smoother)
+    "BEST_GLOBAL_JITTER": 0.005,    # Small jitter added to the global entropy curve
+    "BEST_SMOOTH_WINDOW": 10,        # Rolling average window size (>=1, 1 = disabled)
+    "BEST_SHOW_REGIONS": True,      # If False, only plot the global entropy curve
+    "BEST_ANNOTATE_LOCKIN": True,   # Draw vertical lock-in marker and annotation text
+    "BEST_ANNOTATION_OFFSET": 3,    # Horizontal offset for annotation text placement
+
+    # --- Extra robustness / docs ---
+    "STAB_MIN_COUNT":       10,    # Minimum samples required in a stability bin; bins with fewer are ignored.
+    "REGRESSION_MIN":       10,    # Minimum number of lock-in cases required to train/evaluate the regression.
+    "MAX_SHAP_SAMPLES":     1000,  # Upper limit on samples used for SHAP plotting to keep it fast and stable.
+    "SHAP_BACKGROUND_SIZE": 200,   # Size of the SHAP background (reference) dataset for model-agnostic explainers.
+
+    # --- CMB best-universe map generation ---
+    "CMB_BEST_ENABLE": True,          # Enable best-CMB PNG export
+    "CMB_BEST_FIGS": 3,               # How many best CMB PNGs to export (1..5)
+    "CMB_BEST_SEED_OFFSET": 909,      # Per-universe seed offset for reproducibility
+    "CMB_BEST_MODE": "healpix",       # "auto" | "healpix" | "flat"
+
+    # --- CMB map parameters ---
+    "CMB_NSIDE": 512,                  # Resolution for healpy maps
+    "CMB_NPIX": 512,                   # Pixel count for flat-sky maps
+    "CMB_PIXSIZE_ARCMIN": 3.0,         # Pixel size in arcmin for flat-sky
+    "CMB_POWER_SLOPE": 1.5,            # Power spectrum slope (Pk ~ k^-slope)
+    "CMB_SMOOTH_FWHM_DEG": 0.5,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
+    "CMB_AMPLITUDE_SCALE": 1.0e-10,    # Overall amplitude of CMB fluctuations
+
+    # --- CMB cold-spot detector ---
+    "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
+    "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
+    "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 90, 120, 180, 240, 360, 480, 720],  # Gaussian smoothing scales (arcmin)
+    "CMB_COLD_MIN_SEP_ARCMIN":    30,                   # Minimal separation between spots (arcmin)
+    "CMB_COLD_Z_THRESH":          -2.0,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
+    "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
+    "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
+    "CMB_COLD_OVERLAY":           True,                 # Draw markers on the full-sky/flat map overlays
+    "CMB_COLD_MAX_OVERLAYS":      3,                    # max. cold-spot overlay PNG
+    "CMB_COLD_REF_Z":             -70.0,                # Planck cold spot reference depth (µK or z-score)
+    "CMB_COLD_UK_THRESH":         -70.0,                # Use µK-based flag threshold (for unit-aware cold_flag logic)
+
+    # --- CMB Axis-of-Evil detector ---
+    "CMB_AOE_ENABLE":      True,        # Enable/disable the Axis-of-Evil detector
+    "CMB_AOE_LMAX":        3,           # Maximum multipole ℓ to check (ℓ=3 is standard for AoE)
+    "CMB_AOE_NREALIZ":     3000,        # Number of Monte Carlo randomizations for significance (p-value)
+    "CMB_AOE_OVERLAY":     True,        # Overlay principal axes on the CMB map PNG
+    "CMB_AOE_MODE":        "healpix",   # Backend selection: "auto" | "healpix" | "flat"
+    "CMB_AOE_SEED_OFFSET": 909,         # Per-universe seed offset to keep AoE maps reproducible
+    "CMB_AOE_MAX_OVERLAYS": 3,          # maximum number of AoE overlay PNGs to generate
+    "CMB_AOE_PHASE_LOCK":  True,        # do the quadrupole-axis rotation & boost
+    "CMB_AOE_LMAX_BEST":   64,          # alm lmax during phase lock step
+    "CMB_AOE_L23_BOOST":   1.0,         # 1.5–3.0: strength of ℓ=2,3 boost
+    "AOE_REF_ANGLE_DEG":   10.0,        # reference alignment angle (Planck/WMAP ~20°)
+    "AOE_P_THRESHOLD":      0.10,       # if you have p-values in cmb_aoe_summary.csv
+    "AOE_ALIGN_THRESHOLD":  0.5,       # fallback if only angle is present (score = 1 - angle/180)
+
+       # --- XAI: enable targets and outputs ---
+    "XAI_ENABLE_STABILITY": True,    # run stability targets
+    "XAI_ENABLE_COLD": True,         # run cold-spot targets
+    "XAI_ENABLE_AOE": True,          # run AoE targets
+    "XAI_SAVE_SHAP": True,           # save SHAP plots
+    "XAI_SAVE_LIME": True,           # save LIME plots
+    "XAI_ALLOW_CONST_FINETUNE": True,
+    "XAI_LIME_K": 50,                # samples for averaged LIME
+    "XAI_RUN_BOTH_FEATSETS": False,  # only matching feature-set per variant
+    "REGRESSION_MIN": 3,             # minimum finite rows for regression targets
+
+    # --- Machine Learning / XAI ---
+    "RUN_XAI": True,                 # master switch for XAI section
+    "RUN_SHAP": True,                # SHAP on/off
+    "RUN_LIME": True,                # LIME on/off
+    "RUN_XGBOOST_XAI": True,         # XGBOOST on/off
+    "FT_METRIC_TARGET": "delta_ACC", # target column for XGBoost regression/analysis
+    "LIME_NUM_FEATURES": 5,          # number of features in LIME plot
+    "TEST_SIZE": 0.25,               # test split ratio
+    "TEST_RANDOM_STATE": 42,         # split reproducibility
+    "RF_N_ESTIMATORS": 400,          # number of trees in random forest
+    "RF_CLASS_WEIGHT": "balanced",   # e.g., "balanced" for skewed classes
+    "SKLEARN_N_JOBS": -1,            # parallelism for RF
+    "FT_MIN_PER_SLICE": 30,          # min elems inside/outside the |E-I|<=eps slice for CI plots
+
+    # --- XAI feature sets ---
+    "XAI_FEATURES_E_ONLY": ["E", "logE", "E_rank"],
+    "XAI_FEATURES_EIX":    ["E", "I", "X", "abs_E_minus_I", "logX", "dist_to_goldilocks"],
+
+    # --- SHAP / LIME options ---
+    "XAI_LIME_K": 50,                # Number of LIME samples averaged (kept here once)
+
+    # --- Data split options ---
+    "XAI_TEST_SIZE": 0.25,           # Test split size
+    "XAI_RANDOM_STATE": 42,          # Reproducibility for train/test split
+
+    # --- Targets for supervised XAI analysis ---
+    "XAI_TARGETS": [
+        "stability_cls",   # binary classification: stable vs unstable
+        "lock_epoch_reg",  # regression: law lock-in epoch
+        "cold_flag_cls",   # classification: cold-spot presence
+        "cold_min_z_reg",  # regression: cold-spot minimum depth
+        "aoe_flag_cls",    # classification: Axis-of-Evil presence
+        "aoe_align_reg"    # regression: Axis-of-Evil alignment strength
+    ],
+    
+    # --- Outputs / IO ---
+    "SAVE_FIGS":            True,   # save plots to disk
+    "SAVE_JSON":            True,   # save summary JSON
+    "DRIVE_BASE_DIR":       "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline",
+    "RUN_ID_PREFIX":        "TQE_Universe_Simulation_Full_Pipeline_",   # prefix for run_id
+    "RUN_ID_FORMAT":        "%Y%m%d_%H%M%S",          # time format for run_id
+    "ALLOW_FILE_EXTS":      [".png", ".fits", ".csv", ".json", ".txt", ".npy"],
+    "MAX_FILES_TO_SAVE":    None,   # global cap across all allowed extensions
+    "VERBOSE":              True,   # extra prints/logs
+
+    # --- Plot toggles ---
+    "PLOT_AVG_LOCKIN":      True,   # plot average lock-in curve
+    "PLOT_LOCKIN_HIST":     True,   # plot histogram of lock-in epochs
+    "PLOT_STABILITY_BASIC": False,  # simple stability diagnostic plot
+
+    # --- Reproducibility knobs ---
+    "USE_STRICT_SEED":      True,   # optionally seed other libs/system for strict reproducibility
+    "PER_UNIVERSE_SEED_MODE": "rng" # "rng" | "np_random" — how per-universe seeds are derived
+}
+
 # --- Strict determinism knobs (optional but recommended) ---
 if MASTER_CTRL.get("USE_STRICT_SEED", True):
+    # Set before importing heavy numeric libs would be ideal,
+    # but applying here is still helpful for thread pools.
     os.environ["PYTHONHASHSEED"] = "0"
     os.environ["OMP_NUM_THREADS"] = "1"
     os.environ["MKL_NUM_THREADS"] = "1"
@@ -63,56 +292,55 @@ if MASTER_CTRL.get("USE_STRICT_SEED", True):
 # 1) OUTPUT ROOT AND SAVE HELPERS
 # ======================================================
 
-# Determine repo root (current file's directory)
-repo_root = Path(__file__).resolve().parent
+# Safe repo_root: works in scripts and in notebooks/Colab
+repo_root = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else os.getcwd()
 
-# Get output root from MASTER_CTRL or default to "runs"
-output_root = MASTER_CTRL.get("OUTPUT_ROOT", "runs")
-OUTPUT_ROOT = (repo_root / output_root).resolve()
-OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
-
-# Build run_id with prefix, variant tag, and timestamp
+# Build run_id (prefix + variant + timestamp)
 variant_tag = f"_{MASTER_CTRL.get('PIPELINE_VARIANT', 'full')}"
 run_id = (
-    MASTER_CTRL["RUN_ID_PREFIX"]
+    MASTER_CTRL.get("RUN_ID_PREFIX", "TQE_Run")
     + variant_tag
     + "_"
-    + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
+    + time.strftime(MASTER_CTRL.get("RUN_ID_FORMAT", "%Y%m%d_%H%M%S"))
 )
 
-# Define save directories
-SAVE_DIR = (OUTPUT_ROOT / run_id).resolve()
-FIG_DIR = (SAVE_DIR / "figs").resolve()
-SAVE_DIR.mkdir(parents=True, exist_ok=True)
-FIG_DIR.mkdir(parents=True, exist_ok=True)
+# Resolve output root and create dirs
+output_root = MASTER_CTRL.get("OUTPUT_ROOT", "runs")  # e.g. "runs"
+OUTPUT_ROOT = os.path.join(repo_root, output_root)
+SAVE_DIR   = os.path.join(OUTPUT_ROOT, run_id)
+FIG_DIR    = os.path.join(SAVE_DIR, "figs")
 
+os.makedirs(FIG_DIR, exist_ok=True)
 
-# Save JSON helper
+# Helpers
 def save_json(path, obj):
-    """Save Python object as JSON with UTF-8 encoding."""
-    p = Path(path)
-    p.parent.mkdir(parents=True, exist_ok=True)
+    """Save a JSON file with UTF-8, ensuring parent directory exists."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
-        with p.open("w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(obj, f, indent=2, ensure_ascii=False)
     except Exception as e:
-        print(f"[save_json] ERROR writing {p}: {e}")
+        print(f"[save_json] ERROR writing {path}: {e}")
 
-
-# Save figure helper
 def savefig(path):
-    """Save matplotlib figure if enabled in MASTER_CTRL."""
+    """Save a matplotlib figure if enabled in MASTER_CTRL."""
     if not MASTER_CTRL.get("SAVE_FIGS", True):
         plt.close()
         return
-    p = Path(path)
-    p.parent.mkdir(parents=True, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
-        plt.savefig(p, dpi=180, bbox_inches="tight")
+        plt.savefig(path, dpi=180, bbox_inches="tight")
     except Exception as e:
-        print(f"[savefig] ERROR saving {p}: {e}")
+        print(f"[savefig] ERROR saving {path}: {e}")
     finally:
         plt.close()
+
+# One-line summary
+print("-" * 60)
+print(f"💾 Results saved in:\n{SAVE_DIR}")
+print(f"🗂 Figures:           {FIG_DIR}")
+print(f"⚙️  Pipeline variant:  {MASTER_CTRL.get('PIPELINE_VARIANT','full')}")
+print("-" * 60)
 
 # ======================================================
 # 2) Master seed initialization (reproducibility)
@@ -152,34 +380,6 @@ elif VARIANT == "full":
     variant_tag = "E+I"
 else:
     variant_tag = VARIANT
-
-# --- Build run_id (prefix + variant + timestamp) ---
-variant_tag = f"_{MASTER_CTRL.get('PIPELINE_VARIANT', 'full')}"
-run_id = (
-    MASTER_CTRL["RUN_ID_PREFIX"]
-    + variant_tag
-    + "_"
-    + time.strftime(MASTER_CTRL["RUN_ID_FORMAT"])
-)
-
-# --- Resolve output root (repo_root / OUTPUT_ROOT) ---
-repo_root = os.path.dirname(os.path.abspath(__file__))
-output_root = MASTER_CTRL.get("OUTPUT_ROOT", "runs")  # e.g. "runs"
-OUTPUT_ROOT = os.path.join(repo_root, output_root)
-os.makedirs(OUTPUT_ROOT, exist_ok=True)
-
-# --- Create save dirs ---
-SAVE_DIR = os.path.join(OUTPUT_ROOT, run_id)
-FIG_DIR  = os.path.join(SAVE_DIR, "figs")
-os.makedirs(SAVE_DIR, exist_ok=True)
-os.makedirs(FIG_DIR, exist_ok=True)
-
-# --- Optional: print a tiny summary ---
-print("-" * 60)
-print(f"💾 Results saved in:\n{SAVE_DIR}")
-print(f"🗂 Figures:           {FIG_DIR}")
-print(f"⚙️  Pipeline variant:  {MASTER_CTRL.get('PIPELINE_VARIANT','full')}")
-print("-" * 60)
 
 # ======================================================
 # 3) Information parameter I = g(KL, Shannon) (fusion)
