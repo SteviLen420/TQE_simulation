@@ -47,13 +47,13 @@ except Exception:
     from lime.lime_tabular import LimeTabularExplainer
 
 # ======================================================
-#  MASTER CONTROLLER
+# 1) MASTER CONTROLLER
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
     "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
-    "TIME_STEPS":           2000,    # epochs per stability run (if used elsewhere)
-    "LOCKIN_EPOCHS":        1000,    # epochs for law lock-in dynamics
+    "TIME_STEPS":           1500,    # epochs per stability run (if used elsewhere)
+    "LOCKIN_EPOCHS":        800,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1500,    # epochs for expansion dynamics
     "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
     "SEED":                 None,   # master RNG seed (auto-generated if None)
@@ -218,7 +218,7 @@ MASTER_CTRL = {
     "XAI_ENABLE_AOE": True,          # run AoE targets
     "XAI_SAVE_SHAP": True,           # save SHAP plots
     "XAI_SAVE_LIME": True,           # save LIME plots
-    "XAI_ALLOW_CONST_FINETUNE": False,
+    "XAI_ALLOW_CONST_FINETUNE": True,
     "XAI_LIME_K": 50,                # samples for averaged LIME
     "XAI_RUN_BOTH_FEATSETS": False,  # only matching feature-set per variant
     "REGRESSION_MIN": 3,             # minimum finite rows for regression targets
@@ -238,8 +238,8 @@ MASTER_CTRL = {
     "FT_MIN_PER_SLICE": 30,          # min elems inside/outside the |E-I|<=eps slice for CI plots
 
     # --- XAI feature sets ---
-    "XAI_FEATURES_E_ONLY": ["E"],
-    "XAI_FEATURES_EIX":    ["E", "I", "X", "abs_E_minus_I", "log_X","goldilocks_X"],  
+    "XAI_FEATURES_E_ONLY": ["E", "logE", "E_rank"],
+    "XAI_FEATURES_EIX":    ["E", "I", "X", "abs_E_minus_I", "logX", "dist_to_goldilocks"],
 
     # --- SHAP / LIME options ---
     "XAI_LIME_K": 50,                # Number of LIME samples averaged (kept here once)
@@ -334,44 +334,6 @@ def savefig(path):
         print(f"[savefig] ERROR saving {path}: {e}")
     finally:
         plt.close()
-
-# === OOF delta helpers (place once, near modeling utils) ===
-from sklearn.model_selection import KFold
-from xgboost import XGBRegressor
-import numpy as np
-
-def oof_preds(X, y, model_ctor, model_params, n_splits=5):
-    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
-    oof = np.zeros(len(X), dtype=float)
-    models = []
-    for tr, te in kf.split(X):
-        m = model_ctor(**model_params)
-        m.fit(X.iloc[tr], y.iloc[tr])
-        oof[te] = m.predict(X.iloc[te])
-        models.append(m)
-    return oof, models
-
-def build_delta_targets(
-    df, FEATURES, TARGET,
-    base_model_ctor=XGBRegressor,
-    base_params=dict(n_estimators=800, max_depth=7, learning_rate=0.05, subsample=0.8, colsample_bytree=0.8, tree_method="hist"),
-    plus_model_ctor=XGBRegressor,
-    plus_params=dict(n_estimators=800, max_depth=7, learning_rate=0.05, subsample=0.8, colsample_bytree=0.8, tree_method="hist"),
-    n_splits=5,
-):
-    Xb = df[FEATURES["base"]]
-    Xp = df[FEATURES["plus"]]
-    y  = df[TARGET]
-
-    oof_b, _ = oof_preds(Xb, y, base_model_ctor, base_params, n_splits)
-    oof_p, _ = oof_preds(Xp, y, plus_model_ctor, plus_params, n_splits)
-
-    out = df.copy()
-    out["y_hat_base"] = oof_b
-    out["y_hat_plus"] = oof_p
-    out["delta_pred"] = out["y_hat_plus"] - out["y_hat_base"]
-    out["delta_pred_pct"] = 100.0 * out["delta_pred"]
-    return out
 
 # One-line summary
 print("-" * 60)
@@ -2366,19 +2328,15 @@ if aoe_df is not None and not aoe_df.empty:
 else:
     print("[JOIN] No AoE summary; skipping AoE metrics.")
 
-# --- Per-row OOF delta targets (replacement for Finetune deltas) ---
-FEATURES = {
-    "base": ["E"],  # baseline feature-jeid
-    "plus": ["E","I","X","abs_E_minus_I","log_X","goldilocks_X"]  
-}
-TARGET = "stability_score"  
-
-df_join = build_delta_targets(df_join, FEATURES, TARGET, n_splits=5)
-
-assert df_join["delta_pred_pct"].std() > 0
-
-XAI_TARGET   = "delta_pred_pct"
-XAI_FEATURES = FEATURES["plus"]
+# Finetune deltas broadcast (if exists)
+if ft_df is not None and not ft_df.empty:
+    for col in ["acc_delta","auc_delta","r2_delta"]:
+        if col in ft_df.columns:
+            df_join[f"ft_{col}"] = float(ft_df[col].iloc[0])
+else:
+    for col in ["ft_acc_delta","ft_auc_delta","ft_r2_delta"]:
+        if col not in df_join.columns:
+            df_join[col] = np.nan
 
 # Engineered features (stay compatible)
 df_join["abs_E_minus_I"] = np.abs(df_join.get("E", np.nan) - df_join.get("I", 0.0))
@@ -2750,7 +2708,7 @@ def run_advanced_xgboost_analysis(df, config, results_path):
     print("="*50)
 
     try:
-        # --- Feature Engineering ---
+        # --- 1. Feature Engineering ---
         print("[XGB] Performing Feature Engineering...")
         df_engineered = df.copy() # Create a copy to avoid overwriting the original data
         df_engineered['E_per_I'] = df_engineered['E'] / (df_engineered['I'] + 1e-9) # Add epsilon to avoid division by zero
@@ -2761,11 +2719,11 @@ def run_advanced_xgboost_analysis(df, config, results_path):
         if 'X' in df_engineered.columns:
             df_engineered['X_squared'] = df_engineered['X']**2
 
-        # --- TARGET: use per-row delta built earlier ---
-        target_variable = "delta_pred_pct"
-        # Use the same feature set you defined in JOIN (FEATURES["plus"])
-        plus_feats = ["E","I","X","abs_E_minus_I","log_X","goldilocks_X"]
-        features = [c for c in plus_feats if c in df_engineered.columns]
+        # --- 2. Data Preparation ---
+        target_variable = config.get('FT_METRIC_TARGET', 'delta_ACC') # Use target from config, with a default
+        # Exclude non-feature columns
+        features_to_exclude = [target_variable, 'universe_id', 'seed'] + [col for col in df_engineered.columns if 'delta' in col]
+        features = [col for col in df_engineered.columns if col not in features_to_exclude]
 
         X = df_engineered[features]
         y = df_engineered[target_variable]
@@ -2773,7 +2731,7 @@ def run_advanced_xgboost_analysis(df, config, results_path):
             X, y, test_size=TEST_SIZE, random_state=RSTATE
         )
 
-        # --- XGBoost Model Training ---
+        # --- 3. XGBoost Model Training ---
         print(f"[XGB] Training XGBoost model to predict '{target_variable}'...")
         model = xgb.XGBRegressor(
             n_estimators=500,
@@ -2784,11 +2742,10 @@ def run_advanced_xgboost_analysis(df, config, results_path):
         )
         model.fit(X_train, y_train)
 
-        # --- Explanation with SHAP ---
+        # --- 4. Explanation with SHAP ---
         print("[XGB] Generating SHAP explanation plots...")
-        explainer = shap.TreeExplainer(model, model_output="raw", feature_perturbation="tree_path_dependent")
-        shap_values = explainer.shap_values(X_test)
-        # shap.summary_plot(shap_values, X_test, show=False)
+        explainer = shap.Explainer(model)
+        shap_values = explainer(X_test)
 
         # Generate and save the summary plot
         shap.summary_plot(shap_values, X_test, show=False)
@@ -2802,9 +2759,13 @@ def run_advanced_xgboost_analysis(df, config, results_path):
 
     print("-" * 50 + "\n")
 
-# --- Global XGBoost + SHAP analysis (uses per-row delta target) ---
+# --- Global XGBoost + SHAP analysis (run before per-target SHAP/LIME) ---
 if XGB_OK and MASTER_CTRL.get("RUN_XGBOOST_XAI", True):
-    run_advanced_xgboost_analysis(df_join, MASTER_CTRL, XAI_SAVE_DIR)
+    tgt = MASTER_CTRL.get("FT_METRIC_TARGET")
+    if tgt and tgt in df_xai.columns:
+        run_advanced_xgboost_analysis(df_xai, MASTER_CTRL, XAI_SAVE_DIR)
+    else:
+        print(f"[XGB][INFO] Skipping: FT_METRIC_TARGET='{tgt}' not found in df_xai.")
 # ------------------------------------------------------------------------
     
 # Target list
