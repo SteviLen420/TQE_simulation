@@ -238,8 +238,8 @@ MASTER_CTRL = {
     "FT_MIN_PER_SLICE": 30,          # min elems inside/outside the |E-I|<=eps slice for CI plots
 
     # --- XAI feature sets ---
-    "XAI_FEATURES_E_ONLY": ["E", "logE", "E_rank"],
-    "XAI_FEATURES_EIX":    ["E", "I", "X", "abs_E_minus_I", "logX", "dist_to_goldilocks"],
+    "XAI_FEATURES_E_ONLY": ["E"],
+    "XAI_FEATURES_EIX":    ["E", "I", "X", "abs_E_minus_I", "log_X","goldilocks_X"],  
 
     # --- SHAP / LIME options ---
     "XAI_LIME_K": 50,                # Number of LIME samples averaged (kept here once)
