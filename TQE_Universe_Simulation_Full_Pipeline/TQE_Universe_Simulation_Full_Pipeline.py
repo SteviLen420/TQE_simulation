@@ -47,7 +47,7 @@ except Exception:
     from lime.lime_tabular import LimeTabularExplainer
 
 # ======================================================
-# 1) MASTER CONTROLLER
+#  MASTER CONTROLLER
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
