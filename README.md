@@ -37,8 +37,7 @@ To get the project up and running locally, follow these steps.
     ```bash
     pip install -r requirements.txt
     ```
-For detailed execution and configuration instructions, please refer to the technical [TQE_simulation/TQE_Universe_Simulation_Full_Pipeline
-/README.md](README.md) file in the pipeline directory.
+For detailed execution and configuration instructions, please refer to the technical [README](./TQE_Universe_Simulation_Full_Pipeline/README.md) file in the pipeline directory.
 
 ## How to Cite
 
