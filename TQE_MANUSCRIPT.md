@@ -92,7 +92,7 @@ Thus, **I acts as a proxy for directional bias** in quantum state evolution, com
 
 ### **2.4. Stability Condition (Lock-In Criterion)**
 
-We define **law stabilization (lock-in)** when the relative variation of the system's key parameters satisfies:
+I define **law stabilization (lock-in)** when the relative variation of the system's key parameters satisfies:
 
 **ΔP / P < 0.005 over at least 6 consecutive epochs.**
 
@@ -106,7 +106,7 @@ Illustrative simulations support this interpretation. Both Kullback–Leibler di
 
 ### **2.6. Relation to CMB Anomalies**
 
-I emphasize that we do not claim the TQE model *explains* anomalies like the **low quadrupole** or the **Axis of Evil**. Rather, such features are natural **diagnostic proxies** of law-stabilization dynamics.
+I emphasize that I do not claim the TQE model *explains* anomalies like the **low quadrupole** or the **Axis of Evil**. Rather, such features are natural **diagnostic proxies** of law-stabilization dynamics.
 
 If the TQE mechanism is correct, one expects a **non-random distribution of large-scale anomalies**, statistically testable against Planck and WMAP data. This makes the model, in principle, falsifiable.
 
