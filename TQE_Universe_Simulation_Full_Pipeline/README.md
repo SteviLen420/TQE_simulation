@@ -67,10 +67,10 @@ conda activate tqe_env
 💡 If installation issues occur with healpy or qutip, we recommend using Conda, as it handles binary dependencies more reliably than pip.
 
 ## Quickstart / Usage
-The simulation is launched by running the script directly. Its behavior can be fully customized by modifying the MASTER_CTRL Python dictionary, which is located at the top of the .py file.
+The simulation is launched by running the script directly. Its behavior can be fully customized by modifying the `MASTER_CTRL` Python dictionary, which is located at the top of the .py file.
 
 ### 1. Modify Settings (Optional)
-Open the TQE_Universe_Simulation_Full_Pipeline.py file in a text editor and change the values in the MASTER_CTRL dictionary according to your requirements.
+Open the `TQE_Universe_Simulation_Full_Pipeline.py` file in a text editor and change the values in the `MASTER_CTRL` dictionary according to your requirements.
 ```bash
 # Example: Increasing the number of universes
 MASTER_CTRL = {
@@ -85,24 +85,10 @@ Run the script from the command line.
 python TQE_Universe_simulation_Full_Pipeline.py
 ```
 
-### Output
-	
- •	All results are stored in a timestamped directory inside runs/ (e.g., runs/TQE_Run_20250914_123000/).
-	
- •	Subdirectories contain:
-	
-**maps/** → CMB-like sky maps
- 	
-**diag/** → stability curves, anomaly scans
- 
-**xai/** → Explainable AI outputs (SHAP/LIME)
- 
-**logs/** → runtime information and metadata
-
 ## Configuration Parameters
 
-The behavior of the TQE Framework is controlled by a central YAML configuration file (`MASTER_CTRL.yml`).  
-The table below lists the most important parameters:
+The behavior of the TQE Framework is controlled by the central `MASTER_CTRL` Python dictionary within the script. 
+The table below lists some of the most important parameters:
 
 | Parameter        | Type   | Default | Description                                                           |
 |------------------|--------|---------|-----------------------------------------------------------------------|
@@ -119,11 +105,11 @@ The table below lists the most important parameters:
 The TQE Framework is structured as a multi-stage computational pipeline for the systematic investigation of emergent physical laws. Its design emphasizes configuration-driven execution and reproducibility, with modularity implemented at the conceptual level and partially realized in the current prototype.
 
 ### High-Level Architecture
-The workflow is orchestrated by a central Python dictionary named MASTER_CTRL, which is located at the top of the main script (TQE_Universe_Simulation_Full_Pipeline.py). This configuration-as-code approach enables experimental campaigns—including parameter sweeps and analysis settings—to be defined directly within the source code. This provides a clear and direct foundation for reproducibility and transparent experimental design.
+The workflow is orchestrated by a central Python dictionary named `MASTER_CTRL`, which is located at the top of the main script (`TQE_Universe_Simulation_Full_Pipeline.py`). This configuration-as-code approach enables experimental campaigns—including parameter sweeps and analysis settings—to be defined directly within the source code. This provides a clear and direct foundation for reproducibility and transparent experimental design.
 
 The pipeline is organized into four sequential stages:
 
-**Generation** – Reads simulation parameters from the MASTER_CTRL dictionary and generates initial conditions for an ensemble of universes, each defined by Energy (E) and Information (I) values drawn from statistical distributions.
+**Generation** – Reads simulation parameters from the `MASTER_CTRL` dictionary and generates initial conditions for an ensemble of universes, each defined by Energy (E) and Information (I) values drawn from statistical distributions.
 
 **Simulation** – The computational core of the framework. It evolves universes through pre-collapse, law lock-in, and expansion phases. This stage is computationally intensive and includes preliminary support for parallel execution.
 
@@ -139,11 +125,11 @@ This staged structure conceptually supports re-running individual components (e.
 
 To ensure computational reproducibility, the framework implements a two-tiered seeding hierarchy. This design provides deterministic outcomes within a fixed software environment, supporting verifiable and repeatable scientific workflows.
 
-•	**Master Seed** – A single seed is defined by the SEED key in the MASTER_CTRL dictionary within the Python script. If set to an integer, it initializes a master pseudo-random number generator (PRNG) for the entire run. If left as None, a random seed is automatically generated.
+•	**Master Seed** – A single seed is defined by the `SEED` key in the `MASTER_CTRL` dictionary within the Python script. If set to an integer, it initializes a master pseudo-random number generator (PRNG) for the entire run. If left as None, a random seed is automatically generated.
  
-•	**Per-Universe Seeds** – The master PRNG is used to deterministically generate a unique seed for each of the NUM_UNIVERSES in the ensemble. This ensures that each universe’s stochastic processes are initialized independently and reproducibly.
+•	**Per-Universe Seeds** – The master PRNG is used to deterministically generate a unique seed for each of the `NUM_UNIVERSES` in the ensemble. This ensures that each universe’s stochastic processes are initialized independently and reproducibly.
 
-This hierarchical system provides two levels of control. Re-using the same SEED allows an entire ensemble to be reproduced, while selecting an individual universe's seed (found in the output universe_seeds.csv file) enables the exact reproduction of that universe’s evolution without re-running the full ensemble. This capability is especially valuable for debugging, targeted analysis, and validation of noteworthy cases. While the current implementation guarantees reproducibility under consistent library versions and environments, strict cross-platform bit-level determinism may vary depending on the underlying PRNG implementation.
+This hierarchical system provides two levels of control. Re-using the same `SEED` allows an entire ensemble to be reproduced, while selecting an individual universe's seed (found in the output universe_seeds.csv file) enables the exact reproduction of that universe’s evolution without re-running the full ensemble. This capability is especially valuable for debugging, targeted analysis, and validation of noteworthy cases. While the current implementation guarantees reproducibility under consistent library versions and environments, strict cross-platform bit-level determinism may vary depending on the underlying PRNG implementation.
 
 
 
@@ -190,9 +176,9 @@ The framework integrates explainability tools to analyze the trained models:
 
 •	**SHAP (SHapley Additive exPlanations)** – Used to quantify global feature importance. SHAP values answer questions such as: “What factors most influence whether a universe becomes fine-tuned?”
 
-•	**LIME (Local Interpretable Model-agnostic Explanations)** – Support for local explanations is included at a prototype stage. LIME can provide case-by-case insights (e.g., explaining why a specific simulated universe exhibits an anomaly), though its integration is less developed than SHAP.
+•	**LIME (Local Interpretable Model-agnostic Explanations)** – Support for local explanations is included at a prototype stage. `LIME` can provide case-by-case insights (e.g., explaining why a specific simulated universe exhibits an anomaly), though its integration is less developed than `SHAP`.
 
-By combining ensemble simulation with XAI, the framework goes beyond description and supports hypothesis generation. It highlights the quantitative relationships between initial conditions and final observables, enabling new, testable ideas about the underlying physics of the TQE model.
+By combining ensemble simulation with `XAI`, the framework goes beyond description and supports hypothesis generation. It highlights the quantitative relationships between initial conditions and final observables, enabling new, testable ideas about the underlying physics of the TQE model.
 
 
 ## Results & Run Folder Structure
@@ -296,7 +282,7 @@ The TQE Framework should be regarded as a stochastic research prototype rather t
 - **Simplified Physics**: Current implementations of anomalies (e.g., Cold Spot, multipole alignment) and fine-tuning diagnostics use heuristic or simplified metrics. They do not yet capture the full complexity of astrophysical analyses.
 - **Computational Scale**: The framework is designed for moderate ensemble sizes. Large-scale runs may encounter memory and runtime constraints without further optimization.
 - **Reproducibility Scope**: Results are reproducible within the same environment and dependency versions, but strict bitwise reproducibility across platforms is not guaranteed.
-- **Prototype XAI Integration**: SHAP is well integrated, but LIME and other interpretability methods remain in an early-stage prototype form.
+- **Prototype XAI Integration**: `SHAP` is well integrated, but `LIME` and other interpretability methods remain in an early-stage prototype form.
 
 ### Future Work
 Planned and potential directions for extension include:
@@ -321,11 +307,11 @@ Below are some common issues and suggested fixes when working with the TQE Frame
     ```
 
 ### 2. Memory Usage
-- **Problem:** Running large ensembles (e.g., `n_universes > 1000`) causes memory errors.  
+- **Problem:** Running large ensembles (e.g., `NUM_UNIVERSES > 1000`) causes memory errors.  
 - **Fix:**  
-  - Reduce `n_universes` in `MASTER_CTRL.yml`.  
+  - Reduce `NUM_UNIVERSES` in the `MASTER_CTRL` dictionary.  
   - Run in batches (split runs into smaller ensembles).  
-  - Use parallel execution with fewer workers (`n_jobs`).  
+  - Use parallel execution with fewer workers (`SKLEARN_N_JOBS`).  
 
 ### 3. Reproducibility
 - **Problem:** Results differ across machines/platforms.  
@@ -336,7 +322,7 @@ Below are some common issues and suggested fixes when working with the TQE Frame
 ### 4. Long Runtime
 - **Problem:** Simulation takes too long for large parameter sweeps.  
 - **Fix:**  
-  - Enable parallelization with `n_jobs = -1`.  
+  - Enable parallelization with `SKLEARN_N_JOBS = -1`.  
   - Use smaller `LOCKIN_WINDOW` or fewer epochs for testing/debugging.  
 
 ### 5. Visualization Errors
@@ -347,7 +333,7 @@ Below are some common issues and suggested fixes when working with the TQE Frame
     import matplotlib
     matplotlib.use("Agg")
     ```
-  - Check `runs/.../maps/` for saved images.
+  - Check `runs/.../figs/` for saved images.
 
 
 ## Contributing Guidelines
