@@ -71,7 +71,7 @@ The simulation is launched by running the script directly. Its behavior can be f
 
 ### 1. Modify Settings (Optional)
 Open the `TQE_Universe_Simulation_Full_Pipeline.py` file in a text editor and change the values in the `MASTER_CTRL` dictionary according to your requirements.
-```bash
+```Python
 # Example: Increasing the number of universes
 MASTER_CTRL = {
     "NUM_UNIVERSES": 10000,
@@ -260,7 +260,7 @@ The TQE Framework is best described as a research-grade prototype. The codebase 
 	
  •	**Clarity: 7/10** – The high-level architecture is well structured and documented, but the core algorithms are dense and may pose a learning curve for those outside theoretical cosmology.
 	
- •	**Reproducibility: 8/10** – Reproducibility is a central design feature, with YAML configuration and a deterministic seeding mechanism ensuring consistency across runs in the same environment. Full cross-platform bit-level reproducibility, however, is not yet guaranteed.
+ •	**Reproducibility: 8/10** – Reproducibility is a central design feature, with its in-script configuration and a deterministic seeding mechanism ensuring consistency across runs in the same environment. Full cross-platform bit-level reproducibility, however, is not yet guaranteed.
 
 
 ## Justification and Suggestions for Improvement
