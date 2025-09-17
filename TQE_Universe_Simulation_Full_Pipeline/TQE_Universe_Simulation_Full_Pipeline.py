@@ -51,13 +51,13 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        15000,   # number of universes in Monte Carlo run
+    "NUM_UNIVERSES":        10000,   # number of universes in Monte Carlo run
     "TIME_STEPS":           2500,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        1000,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1500,    # epochs for expansion dynamics
     "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
     "SEED":                 None,   # master RNG seed (auto-generated if None)
-    "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
+    "PIPELINE_VARIANT": "energy_only",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
     "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
 
     # --- Energy distribution ---
