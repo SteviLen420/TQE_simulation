@@ -82,7 +82,7 @@ MASTER_CTRL = {
 ### 2. Run the Simulation
 Run the script from the command line.
 ```bash
-python TQE_Universe_simulation_Full_Pipeline.py
+python TQE_Universe_Simulation_Full_Pipeline.py
 ```
 
 ## Configuration Parameters
