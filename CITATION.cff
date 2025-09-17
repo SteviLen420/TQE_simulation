@@ -1,11 +1,17 @@
-# Citation File Format, see https://citation-file-format.github.io/
-cff-version: 1.2.0
-message: "If you use this software in your research, please cite it as below."
-authors:
-  - family-names: "Len"
-    given-names: "Stefan"
-    # orcid: "https://orcid.org/XXXX-XXXX-XXXX-XXXX"  # Optional but recommended
-title: "TQE Universe Simulation Pipeline"
-version: 1.0.0
-date-released: 2025-09-07
-url: "https://github.com/SteviLen420/TQE_simulation"
+How to Cite
+If you use this software in your research, please cite it. This repository includes a CITATION.cff file that can be used by citation management tools.
+
+Plain Text Citation:
+
+Stefan Len. (2025). TQE Universe Simulation Pipeline (Version 1.0.0). GitHub. https://github.com/SteviLen420/TQE_simulation
+
+BibTeX Entry:
+
+@software{Len_2025_TQE,
+  author    = {Len, Stefan},
+  title     = {{TQE Universe Simulation Pipeline}},
+  version   = {1.0.0},
+  date      = {2025-09-07},
+  publisher = {GitHub},
+  url       = {https://github.com/SteviLen420/TQE_simulation}
+}
