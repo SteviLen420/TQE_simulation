@@ -46,8 +46,8 @@ We recommend setting up a dedicated virtual environment to ensure reproducibilit
 
 ### Using pip
 ```bash
-git clone https://github.com/SteviLen420/TQE_simulation/blob/main/TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py
-cd TQE_Framework
+git clone https://github.com/SteviLen420/TQE_simulation.git
+cd TQE_simulation
 python -m venv venv
 source venv/bin/activate   # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt 
@@ -66,29 +66,26 @@ conda activate tqe_env
 
 💡 If installation issues occur with healpy or qutip, we recommend using Conda, as it handles binary dependencies more reliably than pip.
 
-## Quickstart / Usage Example
+## Quickstart / Usage
+The simulation is launched by running the script directly. Its behavior can be fully customized by modifying the MASTER_CTRL Python dictionary, which is located at the top of the .py file.
 
-Once the environment is set up, you can run the TQE Framework directly with the default configuration file.
-
-### Run with default configuration
+### 1. Modify Settings (Optional)
+Open the TQE_Universe_Simulation_Full_Pipeline.py file in a text editor and change the values in the MASTER_CTRL dictionary according to your requirements.
 ```bash
-python TQE_Universe_Simulation_Full_Pipeline.py --config MASTER_CTRL.yml
+# Example: Increasing the number of universes
+MASTER_CTRL = {
+    "NUM_UNIVERSES": 10000,
+    "SAVE_FIGS": True,
+    # ... other settings
+}
 ```
-### Minimal example
+### 2. Run the Simulation
+Run the script from the command line.
 ```bash
-# Example: run the simulation programmatically
-from TQE_Universe_Simulation_Full_Pipeline import run_simulation
-
-# Load default configuration
-config = "MASTER_CTRL.yml"
-
-# Run simulation
-results = run_simulation(config)
-
-# Inspect output
-print(results.head())
+python TQE_Universe_simulation_Full_Pipeline.py
 ```
-Output
+
+### Output
 	
  •	All results are stored in a timestamped directory inside runs/ (e.g., runs/TQE_Run_20250914_123000/).
 	
@@ -107,36 +104,32 @@ Output
 The behavior of the TQE Framework is controlled by a central YAML configuration file (`MASTER_CTRL.yml`).  
 The table below lists the most important parameters:
 
-| Parameter            | Section      | Type    | Default       | Description                                                                 |
-|----------------------|-------------|---------|---------------|-----------------------------------------------------------------------------|
-| `run_name`           | meta        | string  | `tqe_run`     | Base name for the output directory.                                         |
-| `master_seed`        | meta        | int     | `42`          | The master seed for reproducibility of the entire experiment.               |
-| `n_universes`        | simulation  | int     | `100`         | Number of universes to simulate in the ensemble.                            |
-| `e_dist`             | simulation  | dict    | `{...}`       | Parameters for the initial Energy distribution (e.g., mean, std).           |
-| `i_dist`             | simulation  | dict    | `{...}`       | Parameters for the initial Information distribution.                        |
-| `stability_threshold`| simulation  | float   | `1e-5`        | The stability metric threshold required for law lock-in.                    |
-| `xai_target`         | xai         | string  | `fine_tuning_score` | Target variable for the XAI model to predict.                         |
-| `n_jobs`             | meta        | int     | `-1`          | Number of parallel processes to use (`-1` = all available cores).           |
- 
+| Parameter        | Type   | Default | Description                                                           |
+|------------------|--------|---------|-----------------------------------------------------------------------|
+| NUM_UNIVERSES    | int    | 5000    | Number of universes to simulate in the Monte Carlo run.               |
+| PIPELINE_VARIANT | string | "full"  | `"full"` (E+I) or `"energy_only"` (E only) pipeline variant.          |
+| SEED             | int    | None    | The master seed for reproducibility. If `None`, it's auto-generated.  |
+| SAVE_DRIVE_COPY  | bool   | True    | If True and running in Colab, copies results to Google Drive.         |
+| GOLDILOCKS_MODE  | string | "dynamic" | `"dynamic"` or `"heuristic"` mode for stability window calculation. |
+| RUN_XAI          | bool   | True    | Master switch for running the entire Explainable AI (XAI) section.    |
+| CMB_BEST_FIGS    | int    | 3       | How many CMB maps of the "best" universes to generate.                |
 
 
 ## Computational Framework & Methodology
-
 The TQE Framework is structured as a multi-stage computational pipeline for the systematic investigation of emergent physical laws. Its design emphasizes configuration-driven execution and reproducibility, with modularity implemented at the conceptual level and partially realized in the current prototype.
 
 ### High-Level Architecture
-
-The workflow is orchestrated by a central YAML configuration file, MASTER_CTRL.yml. This configuration-as-code approach enables experimental campaigns—including parameter sweeps and analysis settings—to be defined and archived in a single, human-readable text file. This provides a foundation for reproducibility and transparent experimental design.
+The workflow is orchestrated by a central Python dictionary named MASTER_CTRL, which is located at the top of the main script (TQE_Universe_Simulation_Full_Pipeline.py). This configuration-as-code approach enables experimental campaigns—including parameter sweeps and analysis settings—to be defined directly within the source code. This provides a clear and direct foundation for reproducibility and transparent experimental design.
 
 The pipeline is organized into four sequential stages:
 
-1.	**Generation** – Reads simulation parameters from MASTER_CTRL.yml and generates initial conditions for an ensemble of universes, each defined by Energy (E) and Information (I) values drawn from statistical distributions.
-   
-2.	**Simulation** – The computational core of the framework. It evolves universes through pre-collapse, law lock-in, and expansion phases. This stage is computationally intensive and includes preliminary support for parallel execution.
-   
-3.	**Analysis** – Performs post-processing on raw outputs, including calculation of cosmological observables, generation of CMB-like sky maps, and execution of diagnostic tests to score universes for fine-tuning and scan for selected anomalies.
-   
-4.	**Interpretation** – Applies Explainable AI (XAI) to synthesize ensemble results. Machine learning models are trained to predict outcomes from initial conditions, providing insights into causal relationships within the TQE model.
+**Generation** – Reads simulation parameters from the MASTER_CTRL dictionary and generates initial conditions for an ensemble of universes, each defined by Energy (E) and Information (I) values drawn from statistical distributions.
+
+**Simulation** – The computational core of the framework. It evolves universes through pre-collapse, law lock-in, and expansion phases. This stage is computationally intensive and includes preliminary support for parallel execution.
+
+**Analysis** – Performs post-processing on raw outputs, including calculation of cosmological observables, generation of CMB-like sky maps, and execution of diagnostic tests to score universes for fine-tuning and scan for selected anomalies.
+
+**Interpretation** – Applies Explainable AI (XAI) to synthesize ensemble results. Machine learning models are trained to predict outcomes from initial conditions, providing insights into causal relationships within the TQE model.
 
 This staged structure conceptually supports re-running individual components (e.g., re-analyzing simulation data with a new anomaly detector) without repeating upstream steps, although the current implementation realizes this in a more streamlined, script-based form.
 
@@ -146,11 +139,11 @@ This staged structure conceptually supports re-running individual components (e.
 
 To ensure computational reproducibility, the framework implements a two-tiered seeding hierarchy. This design provides deterministic outcomes within a fixed software environment, supporting verifiable and repeatable scientific workflows.
 
-•	**Master Seed** – A single master_seed is defined in the MASTER_CTRL.yml configuration file. This initializes a master pseudo-random number generator (PRNG) at the beginning of a run.
+•	**Master Seed** – A single seed is defined by the SEED key in the MASTER_CTRL dictionary within the Python script. If set to an integer, it initializes a master pseudo-random number generator (PRNG) for the entire run. If left as None, a random seed is automatically generated.
  
-•	**Per-Universe Seeds** – The master PRNG is used to deterministically generate a unique universe_seed for each of the n_universes in the ensemble. This ensures that each universe’s stochastic processes are initialized independently and reproducibly.
+•	**Per-Universe Seeds** – The master PRNG is used to deterministically generate a unique seed for each of the NUM_UNIVERSES in the ensemble. This ensures that each universe’s stochastic processes are initialized independently and reproducibly.
 
-This hierarchical system provides two levels of control. Re-using the same master_seed allows an entire ensemble to be reproduced, while selecting an individual universe_seed enables the exact reproduction of a single universe’s evolution without re-running the full ensemble. This capability is especially valuable for debugging, targeted analysis, and validation of noteworthy cases. While the current implementation guarantees reproducibility under consistent library versions and environments, strict cross-platform bit-level determinism may vary depending on the underlying PRNG implementation.
+This hierarchical system provides two levels of control. Re-using the same SEED allows an entire ensemble to be reproduced, while selecting an individual universe's seed (found in the output universe_seeds.csv file) enables the exact reproduction of that universe’s evolution without re-running the full ensemble. This capability is especially valuable for debugging, targeted analysis, and validation of noteworthy cases. While the current implementation guarantees reproducibility under consistent library versions and environments, strict cross-platform bit-level determinism may vary depending on the underlying PRNG implementation.
 
 
 
@@ -202,19 +195,24 @@ The framework integrates explainability tools to analyze the trained models:
 By combining ensemble simulation with XAI, the framework goes beyond description and supports hypothesis generation. It highlights the quantitative relationships between initial conditions and final observables, enabling new, testable ideas about the underlying physics of the TQE model.
 
 
-## Results Manifesting & Run Folder Structure
+## Results & Run Folder Structure
+To ensure organized and traceable results, each execution of the pipeline generates a unique, timestamped output directory inside the runs/ folder (e.g., runs/TQE_Universe_Simulation_Full_Pipeline_full_20250917_083000/). 
 
-To ensure organized and traceable results, each execution of the pipeline generates a unique, timestamped output directory (e.g., RUN_DIR/run_20231027_153000/). Within this directory, the following standardized subfolders are created:
+Within this main run directory, the following structure is used:
 
-•	**logs/** – detailed logs of the pipeline’s execution.
+Root Directory: All primary data artifacts, including .csv files (like tqe_runs.csv), .json summaries, and .npy map data, are saved directly into the root of this folder.
 
-•	**data/** – raw, unprocessed outputs from the simulation stage for each universe.
+figs/ Subdirectory: A dedicated figs/ folder is created to hold all generated plots and visualizations (.png). This directory contains further subfolders for specific analyses, such as:
 
-•	**analysis/** – processed results, including metrics, anomaly statistics, and summary tables (e.g., results.csv).
+**best_universes/**
 
-•	**figures/** – generated plots and figures, such as CMB-like maps and SHAP summary plots.
+**cmb_best/**
 
-This structure ensures that results remain reproducible and easy to navigate. The framework design also anticipates the ability to mirror outputs to a secondary location (e.g., for compute cluster storage), though this functionality is not yet fully implemented in the current prototype.
+**cmb_coldspots/**
+
+**xai/**
+
+This structure ensures that results from each run are self-contained, reproducible, and easy to navigate. The framework design also anticipates the ability to mirror outputs to a secondary location (e.g., for compute cluster storage), though this functionality is not yet fully implemented in the current prototype.
 
 
 
@@ -245,7 +243,7 @@ Probabilistic Interpretation
 The README formalism includes a Boltzmann-like expression for lock-in probability:
 
 $$
-P(\text{lock-in} \mid X) \propto \exp!\left(-\frac{V(X)}{kT_{eff}}\right)
+P(\text{lock-in} \mid X) \propto \exp\left(-\frac{V(X)}{kT_{eff}}\right)
 $$
 
 This represents a guiding analogy rather than a fully implemented feature.
@@ -254,7 +252,7 @@ Fine-Tuning Score
 The habitability score is implemented as a multivariate Gaussian around life-friendly target values:
 
 $$
-\mathcal{F}(X_{final}) = \prod_{i=1}^n \exp!\left(-\frac{(x_i - x_{i,\text{target}})^2}{2\sigma_i^2}\right)
+\mathcal{F}(X_{final}) = \prod_{i=1}^n \exp\left(-\frac{(x_i - x_{i,\text{target}})^2}{2\sigma_i^2}\right)
 $$
 
 Anomaly Metrics
