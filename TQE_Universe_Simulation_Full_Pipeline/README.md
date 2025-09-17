@@ -29,12 +29,12 @@ citation management.
 
 ```bibtex
 @software{TQE_Simulation_2025,
-  author = {Len, Stefan},
-  title = {{TQE Universe Simulation Pipeline}},
-  year = {2025},
+  author    = {Len, Stefan},
+  title     = {{TQE Universe Simulation Pipeline}},
+  year      = {2025},
   publisher = {GitHub},
-  version = {1.0.0},
-  url = {[https://github.com/SteviLen420/TQE_simulation](https://github.com/SteviLen420/TQE_simulation)}
+  version   = {1.0.0},
+  url       = {https://github.com/SteviLen420/TQE_simulation}
 }
 ```
 ________________
