@@ -42,7 +42,7 @@ ________________
 ## Installation & Environment Setup
 
 The TQE Framework requires **Python 3.9+** and several scientific libraries.  
-We recommend setting up a dedicated virtual environment to ensure reproducibility.
+I recommend setting up a dedicated virtual environment to ensure reproducibility.
 
 ### Using pip
 ```bash
