@@ -23,21 +23,22 @@ To understand the project, I recommend exploring the following files:
 
 ## Quick Start
 
-To get the code up and running, follow these steps:
+To get the project up and running locally, follow these steps.
 
-1. Clone the repository:sh
-   
-   git clone https://github.com/SteviLen420/TQE_simulation/blob/main/TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py
-
-2. Navigate to the main pipeline directory:
-```bash
-cd TQE_Universe_Simulation_Full_Pipeline
-```
-3. Install the required dependencies:
-```bash
-pip install -r requirements.txt
-```
-For detailed execution and configuration instructions, please refer to the(./TQE_Universe_simulation_Full_Pipeline/README.md).
+**1. Clone the repository:**
+     ```bash
+     git clone [https://github.com/SteviLen420/TQE_simulation.git](https://github.com/SteviLen420/TQE_simulation.git)
+     ```
+**2. Navigate to the repository directory:**
+    ```bash
+    cd TQE_Universe_Simulation_Full_Pipeline
+    ```
+**3. Install the required dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+For detailed execution and configuration instructions, please refer to the technical {TQE_simulation/TQE_Universe_Simulation_Full_Pipeline
+/README.md}(README.md) file in the pipeline directory.
 
 ## How to Cite
 
@@ -46,15 +47,14 @@ If you use this software in your research, please cite it. The repository includ
 **You can use the following BibTeX entry for convenience:**
 
 ```bash
-@article{Len_TQE_Framework,
-  author  = {Len, Stefan},
-  title   = {{"TQE Universe Simulation Pipeline"}},
-  journal = {Journal of Open Source Software},
-  year    = {YYYY},
-  volume  = {VV},
-  number  = {NN},
-  pages   = {PPPP},
-  url     = {[https://example.com/tqe-paper](https://example.com/tqe-paper)}
+```bibtex
+@software{TQE_Simulation_2025,
+  author    = {Len, Stefan},
+  title     = {{TQE Universe Simulation Pipeline}},
+  year      = {2025},
+  publisher = {GitHub},
+  version   = {1.0.0},
+  url       = {https://github.com/SteviLen420/TQE_simulation}
 }
 ```
 
