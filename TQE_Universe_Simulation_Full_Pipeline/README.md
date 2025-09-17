@@ -54,8 +54,8 @@ pip install -r requirements.txt
 ```
 ### Using Conda
 ```bash
-git clone https://github.com/SteviLen420/TQE_simulation/blob/main/TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py
-cd TQE_Framework
+git clone https://github.com/SteviLen420/TQE_simulation.git
+cd TQE_simulation
 conda env create -f environment.yml
 conda activate tqe_env
 ```
