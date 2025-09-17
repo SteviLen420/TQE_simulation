@@ -111,7 +111,7 @@ make biochemical reactions more efficient.
 
 Perhaps this was the point that had already started in my subconscious and,
 a few days later, brought a confession to the surface: the universe does
-not need consciousness to come intoบูรณ์. **Consciousness does not play a
+not need consciousness o come into existence. **Consciousness does not play a
 role in the beginning**—it only emerges later through the complexity of matter.
 
 This realization led me to believe that energy has an internal
