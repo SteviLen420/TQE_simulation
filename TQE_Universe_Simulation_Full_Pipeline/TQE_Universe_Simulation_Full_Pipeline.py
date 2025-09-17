@@ -1160,32 +1160,67 @@ if MASTER_CTRL.get("RUN_FLUCTUATION_BLOCK", True):
     savefig(with_variant(os.path.join(FIG_DIR, "fl_collapse.png")))
 
     # --- (3) t > 0 : expansion dynamics ----
-    te, Atrack, Itrack = simulate_expansion_panel(
-        epochs=MASTER_CTRL["FL_EXP_EPOCHS"],
-        drift=MASTER_CTRL["FL_EXP_DRIFT"],
-        jitter=MASTER_CTRL["FL_EXP_JITTER"],
-        i_jitter=MASTER_CTRL["FL_EXP_I_JITTER"],
-        seed=master_seed + 33
-    )
-    exp_df = pd.DataFrame({"epoch": te, "A": Atrack, "I_track": Itrack})
-    exp_csv = with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv"))
-    _save_df_safe_local(exp_df, exp_csv)
+    if VARIANT == "energy_only":
+        # E-only: disable I dynamics
+        te, Atrack, Itrack = simulate_expansion_panel(
+            epochs=MASTER_CTRL["FL_EXP_EPOCHS"],
+            drift=MASTER_CTRL["FL_EXP_DRIFT"],
+            jitter=MASTER_CTRL["FL_EXP_JITTER"],
+            i_jitter=0.0,                 # hard-disable I jitter
+            seed=master_seed + 33
+        )
+        # Force Itrack to zero for clean outputs/plots
+        Itrack = np.zeros_like(Atrack)
 
-    plt.figure(figsize=(9,5))
-    plt.title("t > 0 : Expansion dynamics")
-    plt.plot(te, Atrack, label="Amplitude A")
-    plt.plot(te, Itrack, label="Orientation I")
+        # Save CSV with zero I
+        exp_df = pd.DataFrame({"epoch": te, "A": Atrack, "I_track": Itrack})
+        exp_csv = with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv"))
+        _save_df_safe_local(exp_df, exp_csv)
 
-    # --- real lock-in marker, if data is available ---
-    if "lock_epoch" in df.columns and (df["lock_epoch"] >= 0).any():
-        lock_ep = int(np.median(df.loc[df["lock_epoch"] >= 0, "lock_epoch"]))
-        plt.axvline(lock_ep, color="red", ls="--", label=f"Law lock-in ≈ {lock_ep}")
+        # Plot A only (no I)
+        plt.figure(figsize=(9,5))
+        plt.title("t > 0 : Expansion dynamics (E-only)")
+        plt.plot(te, Atrack, label="Amplitude A")
 
-    eqA = np.percentile(Atrack, 50)
-    plt.axhline(eqA, color="gray", ls="--", alpha=0.7, label="Equilibrium A")
+        # real lock-in marker, if data is available
+        if "lock_epoch" in df.columns and (df["lock_epoch"] >= 0).any():
+            lock_ep = int(np.median(df.loc[df["lock_epoch"] >= 0, "lock_epoch"]))
+            plt.axvline(lock_ep, color="red", ls="--", label=f"Law lock-in ≈ {lock_ep}")
 
-    plt.xlabel("epoch"); plt.ylabel("Parameters"); plt.legend()
-    savefig(with_variant(os.path.join(FIG_DIR, "fl_expansion.png")))
+        eqA = np.percentile(Atrack, 50)
+        plt.axhline(eqA, color="gray", ls="--", alpha=0.7, label="Equilibrium A")
+
+        plt.xlabel("epoch"); plt.ylabel("Amplitude A"); plt.legend()
+        savefig(with_variant(os.path.join(FIG_DIR, "fl_expansion.png")))
+
+    else:
+        # E+I: full dynamics
+        te, Atrack, Itrack = simulate_expansion_panel(
+            epochs=MASTER_CTRL["FL_EXP_EPOCHS"],
+            drift=MASTER_CTRL["FL_EXP_DRIFT"],
+            jitter=MASTER_CTRL["FL_EXP_JITTER"],
+            i_jitter=MASTER_CTRL["FL_EXP_I_JITTER"],
+            seed=master_seed + 33
+        )
+        exp_df = pd.DataFrame({"epoch": te, "A": Atrack, "I_track": Itrack})
+        exp_csv = with_variant(os.path.join(SAVE_DIR, "fl_expansion_timeseries.csv"))
+        _save_df_safe_local(exp_df, exp_csv)
+
+        plt.figure(figsize=(9,5))
+        plt.title("t > 0 : Expansion dynamics (E+I)")
+        plt.plot(te, Atrack, label="Amplitude A")
+        plt.plot(te, Itrack, label="Orientation I")
+
+        # real lock-in marker, if data is available
+        if "lock_epoch" in df.columns and (df["lock_epoch"] >= 0).any():
+            lock_ep = int(np.median(df.loc[df["lock_epoch"] >= 0, "lock_epoch"]))
+            plt.axvline(lock_ep, color="red", ls="--", label=f"Law lock-in ≈ {lock_ep}")
+
+        eqA = np.percentile(Atrack, 50)
+        plt.axhline(eqA, color="gray", ls="--", alpha=0.7, label="Equilibrium A")
+
+        plt.xlabel("epoch"); plt.ylabel("Parameters"); plt.legend()
+        savefig(with_variant(os.path.join(FIG_DIR, "fl_expansion.png")))
 
 main_progress_bar.update(1)
 main_progress_bar.set_description("4/12: Fluctuation panels generated")
@@ -1311,7 +1346,7 @@ def _select_eps_by_share(gaps, target_share=0.20, min_n=30):
     target_n = max(int(np.ceil(target_share * len(g))), int(min_n))
     target_n = min(target_n, len(g) - 1) if len(g) > 1 else 0
     eps = float(g[target_n])
-    # ha minden 0, adjunk nagyon kicsi értéket
+    
     if not np.isfinite(eps) or eps == 0.0:
         eps = float(g[-1]) if np.isfinite(g[-1]) else 0.0
     return eps
