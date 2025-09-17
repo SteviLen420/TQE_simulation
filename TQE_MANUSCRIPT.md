@@ -4,7 +4,7 @@
 
 ### **Abstract**
 
-Why do stable, complexity-permitting physical laws exist at all? I propose the Theory of the Question of Existence (TQE), a quantitative framework where such stability emerges from the coupling of vacuum energy fluctuations with an information-theoretic orientation parameter. I define this parameter via Kullback–Leibler divergence. In complementary analyses, I also employ Shannon entropy as an alternative measure of informational asymmetry. This parameter biases quantum state reduction toward law-consistent outcomes. Numerical simulations demonstrate that universes stabilize only within a narrow energetic “Goldilocks window,” where probability weights lock in and complexity becomes possible. Crucially, the model yields falsifiable predictions: it implies non-random statistical features in large-scale anomalies of the cosmic microwave background, including features such as the low quadrupole and hemispherical alignments. TQE thus reframes the fine-tuning problem, presenting a potential mechanism for the dynamic selection of physical law at the origin of cosmogenesis.
+Why do stable, complexity-permitting physical laws exist at all? I propose the Theory of the Question of Existence (TQE), a quantitative framework where such stability emerges from the coupling of vacuum energy fluctuations with an information-theoretic orientation parameter. I define this parameter via Kullback–Leibler divergence. In complementary analyses, I also employ Shannon entropy as an alternative measure of informational asymmetry. This parameter biases quantum state reduction toward law-consistent outcomes. Numerical simulations demonstrate that universes stabilize only within a narrow energetic “Goldilocks window,” where probability weights lock in and complexity becomes possible. Crucially, the model yields falsifiable predictions: it implies non-random statistical features in large-scale anomalies of the cosmic microwave background, including features such as the low quadrupole and hemispherical power asymmetry. TQE thus reframes the fine-tuning problem, presenting a potential mechanism for the dynamic selection of physical law at the origin of cosmogenesis.
 
 ### **Core Message**
 
@@ -14,7 +14,7 @@ I hypothesize that stable physical laws may arise from the coupling of energy fl
 
 The persistence of stable physical laws enabling complexity is one of the central open questions in cosmology. Standard quantum field theory describes vacuum fluctuations but does not explain how law-governed universes emerge from them. Inflationary models address fine-tuning and expansion dynamics, while anthropic reasoning justifies observed conditions retrospectively, yet neither explains why particular configurations are preferentially realized.
 
-We propose that stability originates from an intrinsic information orientation parameter, which introduces a systematic bias in the collapse of quantum superpositions. Coupled with vacuum energy fluctuations, this parameter generates a probabilistic mechanism for the emergence of physical law. Unlike anthropic or purely inflationary accounts, this framework offers a quantitative formulation and identifies potential empirical tests.
+I propose that stability originates from an intrinsic information orientation parameter, which introduces a systematic bias in the collapse of quantum superpositions. Coupled with vacuum energy fluctuations, this parameter generates a probabilistic mechanism for the emergence of physical law. Unlike anthropic or purely inflationary accounts, this framework offers a quantitative formulation and identifies potential empirical tests.
 
 ### **1.1 Extended Introduction**
 
@@ -44,7 +44,7 @@ where:
 
 ### **2.1. Explicit Form of the Fine-Tuning Function**
 
-We use the functional form:
+I use the functional form:
 
 **f(E, I) = exp(−(E − E_c)² / (2σ²)) · (1 + α · I)**
 
@@ -62,7 +62,7 @@ This captures two assumptions:
 
 **Information bias:** I increases the likelihood of collapse into complexity-permitting states.
 
-While Eq. (1) provides the analytical form of f**(E, I)**, the **Monte Carlo** implementation uses a stochastic approximation (**‘Goldilocks noise’)**, where noise amplitude scales with distance from the stability window. This probabilistic scheme captures the same underlying mechanism of stabilization.
+While Eq. (1) provides the analytical form of **f(E, I)**, the **Monte Carlo** implementation uses a stochastic approximation (**‘Goldilocks noise’)**, where noise amplitude scales with distance from the stability window. This probabilistic scheme captures the same underlying mechanism of stabilization.
 
 ### **2.2 Model Parameters**
 
@@ -74,13 +74,13 @@ In the TQE framework, the modulation factor *f(E, I)* is governed by a minimal s
 
 **α – orientation bias strength:** quantifies the effect of informational orientation *I*. For α = 0, orientation is irrelevant; larger α increases the probability of complexity-permitting universes.
 
-**Lock-in criterion:** operationally defined as stabilization when relative probability change satisfies ΔP / P < 0.01 over at least five consecutive epochs.
+**Lock-in criterion:** operationally defined as stabilization when relative probability change satisfies ΔP / P < 0.005 over at least 6 consecutive epochs.
 
 In the default configuration of the numerical experiments, the values are set to (E_c = 4.0, σ = 4.0, α = 0.8) to yield a clear stability window. These parameters can be varied to probe the model's robustness.
 
 ### **2.3. Definition of the Information Parameter (I)**
 
-We here define **I** formally as an **information-theoretic asymmetry measure** rather than a metaphysical quantity.
+I here define **I** formally as an **information-theoretic asymmetry measure** rather than a metaphysical quantity.
 
 Concretely, I is estimated via the **Kullback–Leibler (KL) divergence** between probability distributions at successive epochs:
 
@@ -106,7 +106,7 @@ Illustrative simulations support this interpretation. Both Kullback–Leibler di
 
 ### **2.6. Relation to CMB Anomalies**
 
-We emphasize that we do not claim the TQE model *explains* anomalies like the **low quadrupole** or the **Axis of Evil**. Rather, such features are natural **diagnostic proxies** of law-stabilization dynamics.
+I emphasize that we do not claim the TQE model *explains* anomalies like the **low quadrupole** or the **Axis of Evil**. Rather, such features are natural **diagnostic proxies** of law-stabilization dynamics.
 
 If the TQE mechanism is correct, one expects a **non-random distribution of large-scale anomalies**, statistically testable against Planck and WMAP data. This makes the model, in principle, falsifiable.
 
@@ -132,7 +132,7 @@ It extends these by offering a **quantitative, information-theoretic stabilizati
 
 **Methods – Randomness and Scope**
 
-The simulation framework is built on a strong foundation of reproducibility. While exploratory runs can be performed with random seeds, all key experiments presented are governed by a master_seed defined in the configuration. This ensures that the entire ensemble of universes can be reproduced exactly, which is critical for scientific validation, debugging, and peer review.
+The simulation framework is built on a strong foundation of reproducibility. While exploratory runs can be performed with SEED, all key experiments presented are governed by a SEED defined in the configuration. This ensures that the entire ensemble of universes can be reproduced exactly, which is critical for scientific validation, debugging, and peer review.
 
 Author’s Note
 
