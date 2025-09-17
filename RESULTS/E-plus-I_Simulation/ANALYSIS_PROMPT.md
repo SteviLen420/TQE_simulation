@@ -1,4 +1,3 @@
-{ cat <<'EOF'
 You are a scientific research assistant. Analyze the entire TQE (E,I) Universe Simulation dataset exhaustively and rigorously.
 
 PRIMARY GOALS
@@ -133,8 +132,3 @@ Answer this specific question in depth:
 • Include equations inline in plain text.
 • When giving numbers, include sample sizes and percentages.
 • If something cannot be determined from the dataset, say so and propose how to measure it.
-
-Now here is the dataset (JSON):
-EOF
-cat "/Users/stevilen/Desktop/TQE_Universe_Simulation_Full_Pipeline__full_20250916_112634 "
-} | ollama run deepseek-r1:7b | tee "/Users/stevilen/Desktop/deepseek_master_analysis.txt"
