@@ -140,6 +140,11 @@ The evolution of each universe in the simulation follows a staged lifecycle, mod
  
 •	**Pre-Collapse Phase** – In this phase, the effective physical laws (represented by a state vector X) fluctuate stochastically around values determined by the initial conditions. Conceptually, this is interpreted as a “quantum-like” regime where the laws are not yet fixed. The implementation models these fluctuations through random perturbations, with optional use of qutip for more advanced experiments.
 
+### Clarification on the "Lawless" Phase
+It is crucial to note that the "pre-collapse" phase, while characterized by fluctuating laws, does not start from an absolutely lawless state. The simulation framework is built upon the qutip quantum mechanics library, which fundamentally incorporates **the Schrödinger equation** and **Hamiltonian mechanics** as its operational baseline.
+
+Therefore, the TQE model does not simulate the emergence of quantum mechanics itself. Instead, it investigates the process by which higher-level, effective physical laws and constants (like those governing gravitation or electromagnetism) are selected and stabilized from this fundamental, fluctuating quantum substrate. The simulation models the emergence of stable macro-level laws from an underlying quantum reality.
+
 •	**Law Lock-In** – At a critical point, the universe transitions from fluctuating to stable laws, $X_{final}$. This lock-in event is governed by a stability_threshold parameter. When the variance of X(t) remains below this threshold for a specified number of epochs, the system records a lock_epoch. This value is a key output of the simulation.
 
 •	**Expansion Phase** – After lock-in, the universe evolves deterministically according to the fixed laws $X_{final}$. This phase simulates large-scale expansion and structure formation, producing cosmological observables that are passed to the analysis stage.
