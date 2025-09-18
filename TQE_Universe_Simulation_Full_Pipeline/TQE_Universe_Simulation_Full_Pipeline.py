@@ -3212,6 +3212,11 @@ BEST_CFG = {
     "STAB_THRESH": float(MASTER_CTRL.get("BEST_STAB_THRESHOLD", 3.5)),
     "SAVE_CSV": bool(MASTER_CTRL.get("BEST_SAVE_CSV", True)),
     "SEED_OFFSET": int(MASTER_CTRL.get("BEST_SEED_OFFSET", 777)),
+    "SIGMA_PRE":   float(MASTER_CTRL.get("BEST_SIGMA_PRE", 0.06)),
+    "SIGMA_POST":  float(MASTER_CTRL.get("BEST_SIGMA_POST", 0.01)),
+    "SMOOTH_PRE":  int(MASTER_CTRL.get("BEST_SMOOTH_PRE", 8)),
+    "SMOOTH_POST": int(MASTER_CTRL.get("BEST_SMOOTH_POST", 36)),
+    "DECAY_TAU":   float(MASTER_CTRL.get("BEST_SIGMA_DECAY_TAU", 250.0)),
 
     # --- FIX: region noise parameters ---
     "REGION_MU": float(MASTER_CTRL.get("BEST_REGION_MU", 5.1)),
@@ -3223,35 +3228,61 @@ BEST_CFG = {
     "ANNOTATION_OFFSET": int(MASTER_CTRL.get("BEST_ANNOTATION_OFFSET", 5)),
 }
 
-def _entropy_evolution(seed: int, steps: int, n_regions: int):
+def _entropy_evolution(seed: int, steps: int, n_regions: int, lock_ep: int):
     """
-    Synthetic entropy generator for best-universe plots.
-    All noise/smoothing parameters are taken from BEST_CFG.
+    Synthetic entropy evolution with phase change at lock-in:
+    - Before lock-in: higher noise, weaker smoothing
+    - After lock-in: noise decays, smoothing gets stronger
     """
     r = np.random.default_rng(seed)
     t = np.arange(steps)
 
-    base_mu  = BEST_CFG["REGION_MU"]
-    base_sig = max(1e-6, BEST_CFG["REGION_SIGMA"])  # safety guard
+    # Time-dependent sigma: exponential decay after lock-in
+    sig_pre  = BEST_CFG["SIGMA_PRE"]
+    sig_post = BEST_CFG["SIGMA_POST"]
+    tau      = max(1.0, BEST_CFG["DECAY_TAU"])
 
+    sigma_t = np.full(steps, sig_pre, dtype=float)
+    if 0 <= lock_ep < steps:
+        after = np.arange(steps - lock_ep, dtype=float)
+        decay = np.exp(-after / tau)
+        sigma_t[lock_ep:] = sig_post + (sig_pre - sig_post) * decay
+
+    # Helper: segmented moving average (different window before/after lock-in)
+    def _segmented_smooth(x: np.ndarray) -> np.ndarray:
+        w_pre  = max(1, int(BEST_CFG["SMOOTH_PRE"]))
+        w_post = max(1, int(BEST_CFG["SMOOTH_POST"]))
+        if w_pre == 1 and w_post == 1:
+            return x  # no smoothing at all
+
+        def _ma(arr, w):
+            if w <= 1: return arr
+            k = np.ones(w, dtype=float) / w
+            return np.convolve(arr, k, mode="same")
+
+        if 0 <= lock_ep < steps:
+            a = _ma(x[:lock_ep], w_pre)
+            b = _ma(x[lock_ep:], w_post)
+            return np.concatenate([a, b])
+        else:
+            # fallback: apply only pre-smoothing
+            return _ma(x, w_pre)
+
+    # Generate region-level entropy curves
+    base_mu = BEST_CFG["REGION_MU"]
     regions = []
     for _ in range(n_regions):
         x = np.empty(steps, dtype=float)
-        x[0] = base_mu + r.normal(0, base_sig)
+        x[0] = base_mu + r.normal(0, sigma_t[0])
         for k in range(1, steps):
-            # Mean-reverting random walk with noise
-            x[k] = x[k-1] + 0.04*(base_mu - x[k-1]) + r.normal(0, base_sig*0.6)
-        # Optional rolling-average smoothing
-        w = max(1, int(BEST_CFG["SMOOTH_WINDOW"]))
-        if w > 1:
-            c = np.convolve(x, np.ones(w)/w, mode="same")
-            x = c
+            # mean reversion + time-dependent noise
+            x[k] = x[k-1] + 0.04*(base_mu - x[k-1]) + r.normal(0, sigma_t[k]*0.6)
+        x = _segmented_smooth(x)
         regions.append(x)
     regions = np.vstack(regions) if n_regions > 0 else np.empty((0, steps))
 
-    # Global entropy: smooth growth + independent jitter
-    jitter = BEST_CFG["GLOBAL_JITTER"]
-    g = 5.6 + 0.45 * (1 - np.exp(-t / (steps/6))) + r.normal(0, jitter, size=steps)
+    # Global entropy curve: slow drift + small jitter
+    g = 5.6 + 0.45 * (1 - np.exp(-t / (steps/6))) + r.normal(0, BEST_CFG["GLOBAL_JITTER"], size=steps)
 
     return t, regions, g
 
@@ -3265,7 +3296,12 @@ def _plot_best_universe(unirec: dict, steps: int, n_regions: int,
     seed = int(unirec["seed"])
     lock_ep = int(unirec["lock_epoch"])
 
-    t, regions, g = _entropy_evolution(seed + BEST_CFG["SEED_OFFSET"], steps, n_regions)
+    t, regions, g = _entropy_evolution(
+        seed + BEST_CFG["SEED_OFFSET"],
+        steps,
+        n_regions,
+        lock_ep
+    )
 
     # Export per-universe time series if enabled
     if BEST_CFG["SAVE_CSV"]:
