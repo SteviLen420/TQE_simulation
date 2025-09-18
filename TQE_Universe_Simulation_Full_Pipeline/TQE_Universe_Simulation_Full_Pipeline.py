@@ -51,7 +51,7 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        10000,   # number of universes in Monte Carlo run
+    "NUM_UNIVERSES":        2000,   # number of universes in Monte Carlo run
     "TIME_STEPS":           3000,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        1000,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1500,    # epochs for expansion dynamics
@@ -147,8 +147,8 @@ MASTER_CTRL = {
     "FT_METRIC": "lockin",          # Use lock-in probability (P(lock-in)) instead of stability as the main metric
 
     # --- Best-universe visualization (lock-in only) ---
-    "BEST_UNIVERSE_FIGS": 0,      # how many figures to export (typical: 1 or 5)
-    "BEST_N_REGIONS": 10,         # number of region-level entropy traces
+    "BEST_UNIVERSE_FIGS": 3,      # how many figures to export (typical: 1 or 5)
+    "BEST_N_REGIONS": 8,         # number of region-level entropy traces
     "BEST_STAB_THRESHOLD": 3.5,   # horizontal reference line on plots
     "BEST_SAVE_CSV": True,        # also export per-universe time series as CSV
     "BEST_SEED_OFFSET": 777,      # reproducible offset for the synthetic entropy generator
@@ -156,9 +156,9 @@ MASTER_CTRL = {
 
     # --- Noise / smoothing knobs for entropy evolution ---
     "BEST_REGION_MU": 5.1,          # Target mean for region entropy traces
-    "BEST_REGION_SIGMA": 0.04,      # Noise amplitude for region traces (lower = smoother)
+    "BEST_REGION_SIGMA": 0.02,      # Noise amplitude for region traces (lower = smoother)
     "BEST_GLOBAL_JITTER": 0.005,    # Small jitter added to the global entropy curve
-    "BEST_SMOOTH_WINDOW": 10,        # Rolling average window size (>=1, 1 = disabled)
+    "BEST_SMOOTH_WINDOW": 20,        # Rolling average window size (>=1, 1 = disabled)
     "BEST_SHOW_REGIONS": True,      # If False, only plot the global entropy curve
     "BEST_ANNOTATE_LOCKIN": True,   # Draw vertical lock-in marker and annotation text
     "BEST_ANNOTATION_OFFSET": 3,    # Horizontal offset for annotation text placement
@@ -170,7 +170,7 @@ MASTER_CTRL = {
     "SHAP_BACKGROUND_SIZE": 200,   # Size of the SHAP background (reference) dataset for model-agnostic explainers.
 
     # --- CMB best-universe map generation ---
-    "CMB_BEST_ENABLE": True,          # Enable best-CMB PNG export
+    "CMB_BEST_ENABLE": False,          # Enable best-CMB PNG export
     "CMB_BEST_FIGS": 3,               # How many best CMB PNGs to export (1..5)
     "CMB_BEST_SEED_OFFSET": 909,      # Per-universe seed offset for reproducibility
     "CMB_BEST_MODE": "healpix",       # "auto" | "healpix" | "flat"
@@ -184,7 +184,7 @@ MASTER_CTRL = {
     "CMB_AMPLITUDE_SCALE": 2.0e-10,    # Overall amplitude of CMB fluctuations
 
     # --- CMB cold-spot detector ---
-    "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
+    "CMB_COLD_ENABLE":            False,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
     "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 90, 120, 180, 240, 360, 480, 720],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    30,                   # Minimal separation between spots (arcmin)
@@ -198,7 +198,7 @@ MASTER_CTRL = {
     "CMB_COLD_UK_THRESH":         -70.0,                # Use µK-based flag threshold (for unit-aware cold_flag logic)
 
     # --- CMB Axis-of-Evil detector ---
-    "CMB_AOE_ENABLE":      True,        # Enable/disable the Axis-of-Evil detector
+    "CMB_AOE_ENABLE":      False,        # Enable/disable the Axis-of-Evil detector
     "CMB_AOE_LMAX":        3,           # Maximum multipole ℓ to check (ℓ=3 is standard for AoE)
     "CMB_AOE_NREALIZ":     3000,        # Number of Monte Carlo randomizations for significance (p-value)
     "CMB_AOE_OVERLAY":     True,        # Overlay principal axes on the CMB map PNG
@@ -224,10 +224,10 @@ MASTER_CTRL = {
     "REGRESSION_MIN": 3,             # minimum finite rows for regression targets
 
     # --- Machine Learning / XAI ---
-    "RUN_XAI": True,                 # master switch for XAI section
-    "RUN_SHAP": True,                # SHAP on/off
-    "RUN_LIME": True,                # LIME on/off
-    "RUN_XGBOOST_XAI": True,         # XGBOOST on/off
+    "RUN_XAI": False,                 # master switch for XAI section
+    "RUN_SHAP": False,                # SHAP on/off
+    "RUN_LIME": False,                # LIME on/off
+    "RUN_XGBOOST_XAI": False,         # XGBOOST on/off
     "FT_METRIC_TARGET": "delta_ACC", # target column for XGBoost regression/analysis
     "LIME_NUM_FEATURES": 5,          # number of features in LIME plot
     "TEST_SIZE": 0.25,               # test split ratio
