@@ -56,7 +56,7 @@ MASTER_CTRL = {
     "LOCKIN_EPOCHS":        1000,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1500,    # epochs for expansion dynamics
     "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
-    "SEED":                 1814586890,   # master RNG seed (auto-generated if None)
+    "SEED":                 None,   # master RNG seed (auto-generated if None)
     "PIPELINE_VARIANT": "full",     # "full" = E+I pipeline, "energy_only" = E only (I disabled)
     "SAVE_DRIVE_COPY":      True,   # copy results to Google Drive
 
@@ -188,14 +188,14 @@ MASTER_CTRL = {
     "CMB_PIXSIZE_ARCMIN": 3.0,         # Pixel size in arcmin for flat-sky
     "CMB_POWER_SLOPE": 1.5,            # Power spectrum slope (Pk ~ k^-slope)
     "CMB_SMOOTH_FWHM_DEG": 0.5,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
-    "CMB_AMPLITUDE_SCALE": 1e-10,    # Overall amplitude of CMB fluctuations
+    "CMB_AMPLITUDE_SCALE": 2e-10,    # Overall amplitude of CMB fluctuations
 
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
     "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 90, 120, 180, 240, 360, 480, 720],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    30,                   # Minimal separation between spots (arcmin)
-    "CMB_COLD_Z_THRESH":          -2.0,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_Z_THRESH":          -1.5,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
     "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
