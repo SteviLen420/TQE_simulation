@@ -225,7 +225,7 @@ MASTER_CTRL = {
     "XAI_ENABLE_AOE": True,          # run AoE targets
     "XAI_SAVE_SHAP": True,           # save SHAP plots
     "XAI_SAVE_LIME": True,           # save LIME plots
-    "XAI_ALLOW_CONST_FINETUNE":False,
+    "XAI_ALLOW_CONST_FINETUNE":True,
     "XAI_LIME_K": 50,                # samples for averaged LIME
     "XAI_RUN_BOTH_FEATSETS": False,  # only matching feature-set per variant
     "REGRESSION_MIN": 3,             # minimum finite rows for regression targets
@@ -3663,8 +3663,8 @@ DRIVE_DIR = locals().get("DRIVE_DIR", None)  # EN: if your pipeline already defi
 assert RUN_DIR and os.path.isdir(RUN_DIR), f"[PACK] Run directory not found: {RUN_DIR}"
 
 # EN: Output filenames (placed inside the run folder)
-out_csv  = os.path.join(RUN_DIR, "combined_simulation_data.csv")
-out_json = os.path.join(RUN_DIR, "combined_simulation_data.json")
+out_csv  = with_variant(os.path.join(RUN_DIR, "combined_simulation_data.csv"))
+out_json = with_variant(os.path.join(RUN_DIR, "combined_simulation_data.json"))
 
 print(f"[PACK] Run dir:   {RUN_DIR}")
 print(f"[PACK] Output ->  {out_csv}")
@@ -3729,5 +3729,29 @@ if DRIVE_DIR and os.path.isdir(DRIVE_DIR):
         print(f"[PACK][DRIVE][WARN] Could not copy to Drive -> {e}")
 else:
     print("[PACK] DRIVE_DIR not set or missing; skipping Drive copy.")
+
+from PIL import Image
+
+# --- Collect all PNG files from the run folder ---
+png_files = sorted(glob.glob(os.path.join(FIG_DIR, "**", "*.png"), recursive=True))
+
+if png_files:
+    images = []
+    for i, f in enumerate(png_files):
+        try:
+            img = Image.open(f).convert("RGB")  # convert to PDF-compatible
+            images.append(img)
+        except Exception as e:
+            print(f"⚠️ Skipping {f}: {e}")
+
+    # Save all into one PDF
+    pdf_path = with_variant(os.path.join(SAVE_DIR, "combined_figures.pdf"))
+    if images:
+        images[0].save(pdf_path, save_all=True, append_images=images[1:])
+        print(f"\n✅ All PNGs combined into one PDF: {pdf_path}")
+    else:
+        print("No valid images found for PDF export.")
+else:
+    print("No PNG files found in FIG_DIR.")
 
 main_progress_bar.close()
