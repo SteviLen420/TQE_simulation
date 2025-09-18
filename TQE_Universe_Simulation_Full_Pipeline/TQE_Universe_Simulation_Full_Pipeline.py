@@ -3343,13 +3343,22 @@ def _plot_best_universe(unirec: dict, steps: int, n_regions: int,
 
     plt.xlabel("Time step"); plt.ylabel("Entropy")
 
-    # Compact legend
+    # --- Legend: move to bottom-right, 2-column layout ---
     handles, labels = plt.gca().get_legend_handles_labels()
     if len(labels) > 13:
         handles = handles[:12] + handles[-2:]
         labels  = labels[:12]  + labels[-2:]
     if handles:
-        plt.legend(handles, labels, loc="lower left", framealpha=0.9)
+        plt.legend(handles, labels,
+                   loc="lower right",   # place legend in bottom-right corner
+                   ncol=2,              # make it horizontal with 2 columns
+                   framealpha=0.9)      # slight transparency for readability
+
+    # --- Add lock-in annotation in the bottom-right corner of the plot ---
+    plt.text(0.98, 0.02, f"Lock-in ≈ {lock_ep}",
+             transform=plt.gca().transAxes,  # use axis-relative coordinates
+             ha="right", va="bottom",        # align to bottom-right
+             fontsize=9, color="purple")     # style: small, purple text
 
     plt.tight_layout()
     savefig(save_png)
