@@ -159,7 +159,7 @@ MASTER_CTRL = {
     "BEST_SIGMA_POST":  0.01,   # Weaker noise after lock-in
     "BEST_SMOOTH_PRE":  8,      # Smaller smoothing window before lock-in
     "BEST_SMOOTH_POST": 36,     # Larger smoothing window after lock-in
-    "BEST_SIGMA_DECAY_TAU": 250 # Time constant (steps) for how fast the noise decays/cleans up
+    "BEST_SIGMA_DECAY_TAU": 250, # Time constant (steps) for how fast the noise decays/cleans up
 
     # --- Noise / smoothing knobs for entropy evolution ---
     "BEST_REGION_MU": 5.1,          # Target mean for region entropy traces
