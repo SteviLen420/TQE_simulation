@@ -179,9 +179,9 @@ MASTER_CTRL = {
     "CMB_NSIDE": 512,                  # Resolution for healpy maps
     "CMB_NPIX": 512,                   # Pixel count for flat-sky maps
     "CMB_PIXSIZE_ARCMIN": 3.0,         # Pixel size in arcmin for flat-sky
-    "CMB_POWER_SLOPE": 1.5,            # Power spectrum slope (Pk ~ k^-slope)
-    "CMB_SMOOTH_FWHM_DEG": 0.5,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
-    "CMB_AMPLITUDE_SCALE": 1.0e-10,    # Overall amplitude of CMB fluctuations
+    "CMB_POWER_SLOPE": 2.0,            # Power spectrum slope (Pk ~ k^-slope)
+    "CMB_SMOOTH_FWHM_DEG": 1.5,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
+    "CMB_AMPLITUDE_SCALE": 2.0e-10,    # Overall amplitude of CMB fluctuations
 
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
@@ -207,7 +207,7 @@ MASTER_CTRL = {
     "CMB_AOE_MAX_OVERLAYS": 3,          # maximum number of AoE overlay PNGs to generate
     "CMB_AOE_PHASE_LOCK":  True,        # do the quadrupole-axis rotation & boost
     "CMB_AOE_LMAX_BEST":   64,          # alm lmax during phase lock step
-    "CMB_AOE_L23_BOOST":   1.0,         # 1.5–3.0: strength of ℓ=2,3 boost
+    "CMB_AOE_L23_BOOST":   2.0,         # 1.5–3.0: strength of ℓ=2,3 boost
     "AOE_REF_ANGLE_DEG":   10.0,        # reference alignment angle (Planck/WMAP ~20°)
     "AOE_P_THRESHOLD":      0.10,       # if you have p-values in cmb_aoe_summary.csv
     "AOE_ALIGN_THRESHOLD":  0.5,       # fallback if only angle is present (score = 1 - angle/180)
