@@ -214,7 +214,7 @@ MASTER_CTRL = {
     "CMB_AOE_MAX_OVERLAYS": 3,          # maximum number of AoE overlay PNGs to generate
     "CMB_AOE_PHASE_LOCK":  True,        # do the quadrupole-axis rotation & boost
     "CMB_AOE_LMAX_BEST":   64,          # alm lmax during phase lock step
-    "CMB_AOE_L23_BOOST":   2.0,         # 1.5–3.0: strength of ℓ=2,3 boost
+    "CMB_AOE_L23_BOOST":   1.0,         # 1.5–3.0: strength of ℓ=2,3 boost
     "AOE_REF_ANGLE_DEG":   10.0,        # reference alignment angle (Planck/WMAP ~20°)
     "AOE_P_THRESHOLD":      0.10,       # if you have p-values in cmb_aoe_summary.csv
     "AOE_ALIGN_THRESHOLD":  0.5,       # fallback if only angle is present (score = 1 - angle/180)
@@ -3657,8 +3657,13 @@ def _latest_run_dir(base="/content/runs"):
     return cand[0]
 
 # EN: Try to use pipeline variables if they exist; else fall back to latest under /content/runs
-RUN_DIR  = locals().get("SAVE_DIR", None) or locals().get("RUN_DIR", None) or _latest_run_dir("/content/runs")
-DRIVE_DIR = locals().get("DRIVE_DIR", None)  # EN: if your pipeline already defines it
+RUN_DIR = locals().get("SAVE_DIR", None) or locals().get("RUN_DIR", None) or _latest_run_dir("/content/runs")
+
+# Force Drive target based on run_id
+run_id = os.path.basename(RUN_DIR.rstrip("/"))
+DRIVE_BASE = MASTER_CTRL.get("DRIVE_BASE_DIR", "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline")
+DRIVE_DIR = os.path.join(DRIVE_BASE, run_id)
+os.makedirs(DRIVE_DIR, exist_ok=True)
 
 assert RUN_DIR and os.path.isdir(RUN_DIR), f"[PACK] Run directory not found: {RUN_DIR}"
 
@@ -3745,10 +3750,15 @@ if png_files:
             print(f"⚠️ Skipping {f}: {e}")
 
     # Save all into one PDF
-    pdf_path = with_variant(os.path.join(SAVE_DIR, "combined_figures.pdf"))
+    pdf_local = with_variant(os.path.join(SAVE_DIR, "combined_figures.pdf"))
     if images:
-        images[0].save(pdf_path, save_all=True, append_images=images[1:])
-        print(f"\n✅ All PNGs combined into one PDF: {pdf_path}")
+        images[0].save(pdf_local, save_all=True, append_images=images[1:])
+        print(f"\n✅ All PNGs combined into one PDF: {pdf_local}")
+        # copy to Drive/figs
+        pdf_drive = os.path.join(DRIVE_DIR, "figs", os.path.basename(pdf_local))
+        os.makedirs(os.path.dirname(pdf_drive), exist_ok=True)
+        shutil.copy2(pdf_local, pdf_drive)
+        print(f"[PACK][DRIVE] Copied PDF -> {pdf_drive}")
     else:
         print("No valid images found for PDF export.")
 else:
