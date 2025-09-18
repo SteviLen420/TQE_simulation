@@ -51,7 +51,7 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        1000,   # number of universes in Monte Carlo run
+    "NUM_UNIVERSES":        10000,   # number of universes in Monte Carlo run
     "TIME_STEPS":           3000,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        1000,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1500,    # epochs for expansion dynamics
@@ -177,7 +177,7 @@ MASTER_CTRL = {
     "SHAP_BACKGROUND_SIZE": 200,   # Size of the SHAP background (reference) dataset for model-agnostic explainers.
 
     # --- CMB best-universe map generation ---
-    "CMB_BEST_ENABLE": False,          # Enable best-CMB PNG export
+    "CMB_BEST_ENABLE": True,          # Enable best-CMB PNG export
     "CMB_BEST_FIGS": 3,               # How many best CMB PNGs to export (1..5)
     "CMB_BEST_SEED_OFFSET": 909,      # Per-universe seed offset for reproducibility
     "CMB_BEST_MODE": "healpix",       # "auto" | "healpix" | "flat"
@@ -191,7 +191,7 @@ MASTER_CTRL = {
     "CMB_AMPLITUDE_SCALE": 2.0e-10,    # Overall amplitude of CMB fluctuations
 
     # --- CMB cold-spot detector ---
-    "CMB_COLD_ENABLE":            False,                 # Enable/disable the cold-spot detector
+    "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
     "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 90, 120, 180, 240, 360, 480, 720],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    30,                   # Minimal separation between spots (arcmin)
@@ -205,7 +205,7 @@ MASTER_CTRL = {
     "CMB_COLD_UK_THRESH":         -70.0,                # Use µK-based flag threshold (for unit-aware cold_flag logic)
 
     # --- CMB Axis-of-Evil detector ---
-    "CMB_AOE_ENABLE":      False,        # Enable/disable the Axis-of-Evil detector
+    "CMB_AOE_ENABLE":      True,        # Enable/disable the Axis-of-Evil detector
     "CMB_AOE_LMAX":        3,           # Maximum multipole ℓ to check (ℓ=3 is standard for AoE)
     "CMB_AOE_NREALIZ":     3000,        # Number of Monte Carlo randomizations for significance (p-value)
     "CMB_AOE_OVERLAY":     True,        # Overlay principal axes on the CMB map PNG
@@ -220,21 +220,21 @@ MASTER_CTRL = {
     "AOE_ALIGN_THRESHOLD":  0.5,       # fallback if only angle is present (score = 1 - angle/180)
 
        # --- XAI: enable targets and outputs ---
-    "XAI_ENABLE_STABILITY": False,    # run stability targets
-    "XAI_ENABLE_COLD": False,         # run cold-spot targets
-    "XAI_ENABLE_AOE": False,          # run AoE targets
-    "XAI_SAVE_SHAP": False,           # save SHAP plots
-    "XAI_SAVE_LIME": False,           # save LIME plots
-    "XAI_ALLOW_CONST_FINETUNE": False,
+    "XAI_ENABLE_STABILITY": True,    # run stability targets
+    "XAI_ENABLE_COLD": True,         # run cold-spot targets
+    "XAI_ENABLE_AOE": True,          # run AoE targets
+    "XAI_SAVE_SHAP": True,           # save SHAP plots
+    "XAI_SAVE_LIME": True,           # save LIME plots
+    "XAI_ALLOW_CONST_FINETUNE":False,
     "XAI_LIME_K": 50,                # samples for averaged LIME
     "XAI_RUN_BOTH_FEATSETS": False,  # only matching feature-set per variant
     "REGRESSION_MIN": 3,             # minimum finite rows for regression targets
 
     # --- Machine Learning / XAI ---
-    "RUN_XAI": False,                 # master switch for XAI section
-    "RUN_SHAP": False,                # SHAP on/off
-    "RUN_LIME": False,                # LIME on/off
-    "RUN_XGBOOST_XAI": False,         # XGBOOST on/off
+    "RUN_XAI": True,                 # master switch for XAI section
+    "RUN_SHAP": True,                # SHAP on/off
+    "RUN_LIME": True,                # LIME on/off
+    "RUN_XGBOOST_XAI": True,         # XGBOOST on/off
     "FT_METRIC_TARGET": "delta_ACC", # target column for XGBoost regression/analysis
     "LIME_NUM_FEATURES": 5,          # number of features in LIME plot
     "TEST_SIZE": 0.25,               # test split ratio
