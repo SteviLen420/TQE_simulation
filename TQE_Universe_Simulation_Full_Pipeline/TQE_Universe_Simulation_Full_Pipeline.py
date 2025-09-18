@@ -52,7 +52,7 @@ except Exception:
 MASTER_CTRL = {
     # --- Core simulation ---
     "NUM_UNIVERSES":        10000,   # number of universes in Monte Carlo run
-    "TIME_STEPS":           2500,    # epochs per stability run (if used elsewhere)
+    "TIME_STEPS":           3000,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        1000,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     1500,    # epochs for expansion dynamics
     "FL_EXP_EPOCHS":        800,    # length of t>0 expansion panel
@@ -80,7 +80,7 @@ MASTER_CTRL = {
     "X_MODE":               "product",  # "product" | "E_plus_I" | "E_times_I_pow"
     "X_I_POWER":            1.0,        # if "E_times_I_pow": X = E * (I ** X_I_POWER)
     "X_SCALE":              1.0,        # global X scaling prior to Goldilocks
-    "ALPHA_I":              0.8,        # coupling factor: strength of I in E·I (heuristics)
+    "ALPHA_I":              0.9,        # coupling factor: strength of I in E·I (heuristics)
 
     # --- Fluctuation / superposition module toggles & params ---
     "RUN_FLUCTUATION_BLOCK": True,  # Show the t<0 superposition, t=0 collapse, and t>0 expansion panels.
@@ -188,7 +188,7 @@ MASTER_CTRL = {
     "CMB_COLD_TOPK":              1,                    # Top-K cold spots to keep per universe
     "CMB_COLD_SIGMA_ARCMIN":      [30, 60, 90, 120, 180, 240, 360, 480, 720],  # Gaussian smoothing scales (arcmin)
     "CMB_COLD_MIN_SEP_ARCMIN":    30,                   # Minimal separation between spots (arcmin)
-    "CMB_COLD_Z_THRESH":          -2.0,                 # Keep spots with z <= threshold (more negative = colder)
+    "CMB_COLD_Z_THRESH":          -1.5,                 # Keep spots with z <= threshold (more negative = colder)
     "CMB_COLD_SAVE_PATCHES":      False,                # Flat-sky: also save small cutout PNGs around spots
     "CMB_COLD_PATCH_SIZE_ARCMIN": 200,                  # Flat-sky: patch size (arcmin) for thumbnails
     "CMB_COLD_MODE":              "healpix",            # Backend selection: "auto" | "healpix" | "flat"
