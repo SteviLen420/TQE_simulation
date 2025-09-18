@@ -3334,12 +3334,17 @@ def _plot_best_universe(unirec: dict, steps: int, n_regions: int,
     # Stability threshold
     plt.axhline(BEST_CFG["STAB_THRESH"], color="red", ls="--", lw=1.5, label="Stability threshold")
 
-    # Lock-in marker + annotation
+    # --- Lock-in marker + annotation ---
     if BEST_CFG["ANNOTATE_LOCKIN"] and (0 <= lock_ep < steps):
-        plt.axvline(lock_ep, color="purple", ls=(0, (5, 5)), lw=2.0)
-        y_text = float(np.nanmin(g)) + 0.15
-        plt.text(lock_ep + BEST_CFG["ANNOTATION_OFFSET"], y_text,
-                 f"Lock-in step ≈ {lock_ep}", color="purple")
+        plt.axvline(lock_ep,
+                    color="purple",
+                    ls=(0, (3, 6)),   # dashed line: 3 on, 6 off
+                    lw=1.2,           # thinner line
+                    alpha=0.6)        # more transparent
+        plt.text(lock_ep + BEST_CFG["ANNOTATION_OFFSET"], 
+                 float(np.nanmin(g)) + 0.15,
+                 f"Lock-in step ≈ {lock_ep}",
+                 color="purple", fontsize=9)
 
     plt.xlabel("Time step"); plt.ylabel("Entropy")
 
