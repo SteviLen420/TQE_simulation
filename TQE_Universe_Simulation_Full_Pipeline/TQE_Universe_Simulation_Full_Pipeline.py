@@ -154,6 +154,13 @@ MASTER_CTRL = {
     "BEST_SEED_OFFSET": 777,      # reproducible offset for the synthetic entropy generator
     "BEST_MAX_FIGS": 50,          # safety clamp
 
+    # --- Best-universe: phase-change knobs ---
+    "BEST_SIGMA_PRE":   0.06,   # Stronger noise before lock-in
+    "BEST_SIGMA_POST":  0.01,   # Weaker noise after lock-in
+    "BEST_SMOOTH_PRE":  8,      # Smaller smoothing window before lock-in
+    "BEST_SMOOTH_POST": 36,     # Larger smoothing window after lock-in
+    "BEST_SIGMA_DECAY_TAU": 250 # Time constant (steps) for how fast the noise decays/cleans up
+
     # --- Noise / smoothing knobs for entropy evolution ---
     "BEST_REGION_MU": 5.1,          # Target mean for region entropy traces
     "BEST_REGION_SIGMA": 0.01,      # Noise amplitude for region traces (lower = smoother)
