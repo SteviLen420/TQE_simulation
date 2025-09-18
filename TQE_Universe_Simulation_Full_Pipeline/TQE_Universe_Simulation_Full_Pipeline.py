@@ -156,9 +156,9 @@ MASTER_CTRL = {
 
     # --- Noise / smoothing knobs for entropy evolution ---
     "BEST_REGION_MU": 5.1,          # Target mean for region entropy traces
-    "BEST_REGION_SIGMA": 0.02,      # Noise amplitude for region traces (lower = smoother)
+    "BEST_REGION_SIGMA": 0.01,      # Noise amplitude for region traces (lower = smoother)
     "BEST_GLOBAL_JITTER": 0.005,    # Small jitter added to the global entropy curve
-    "BEST_SMOOTH_WINDOW": 20,        # Rolling average window size (>=1, 1 = disabled)
+    "BEST_SMOOTH_WINDOW": 30,        # Rolling average window size (>=1, 1 = disabled)
     "BEST_SHOW_REGIONS": True,      # If False, only plot the global entropy curve
     "BEST_ANNOTATE_LOCKIN": True,   # Draw vertical lock-in marker and annotation text
     "BEST_ANNOTATION_OFFSET": 3,    # Horizontal offset for annotation text placement
