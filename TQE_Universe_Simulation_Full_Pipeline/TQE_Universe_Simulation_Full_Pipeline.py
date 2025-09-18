@@ -3492,6 +3492,30 @@ if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
     else:
         print("[FINAL COPY][WARN] not found:", src_json)
 
+# --- FINAL COPY: Ensure XAI figs are copied to Google Drive ---
+try:
+    if MASTER_CTRL.get("SAVE_DRIVE_COPY", True):
+        DRIVE_BASE = MASTER_CTRL.get(
+            "DRIVE_BASE_DIR",
+            "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline"
+        )
+        GOOGLE_DIR = os.path.join(DRIVE_BASE, run_id)
+        src_dir = os.path.join(FIG_DIR, "xai")
+        dst_dir = os.path.join(GOOGLE_DIR, os.path.relpath(src_dir, SAVE_DIR))
+
+        if os.path.isdir(src_dir):
+            os.makedirs(dst_dir, exist_ok=True)
+            copied_cnt = 0
+            for fn in sorted(os.listdir(src_dir)):
+                if fn.lower().endswith((".png", ".csv", ".json")):
+                    shutil.copy2(os.path.join(src_dir, fn), os.path.join(dst_dir, fn))
+                    copied_cnt += 1
+            print(f"[FINAL COPY] XAI files copied: {copied_cnt} -> {dst_dir}")
+        else:
+            print("[FINAL COPY][WARN] XAI directory missing:", src_dir)
+except Exception as e:
+    print("[FINAL COPY][ERR][xai]", e)
+
 print("\n🌌 Universe Stability Summary (final run)")
 print(f"Total universes: {len(df)}")
 print(f"Stable:   {stable_count} ({stable_count/len(df)*100:.2f}%)")
