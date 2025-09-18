@@ -1,2 +1,0 @@
-target,variant,featset,r2,n_train,n_test
-finetune_acc_delta,E+I(+X),EIX,-2476.8855,7500,2500
