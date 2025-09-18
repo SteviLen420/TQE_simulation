@@ -3643,4 +3643,91 @@ if os.path.isdir(best_dir):
 else:
     print("[CHECK][WARN] best_universes directory missing:", best_dir)
 
+# === Pack current run outputs into a single CSV + JSON ===
+
+import os, json, time, glob
+import pandas as pd
+
+def _latest_run_dir(base="/content/runs"):
+    # EN: pick most recently modified subfolder under /content/runs
+    cand = [os.path.join(base, d) for d in os.listdir(base) if os.path.isdir(os.path.join(base, d))]
+    if not cand:
+        return None
+    cand.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+    return cand[0]
+
+# EN: Try to use pipeline variables if they exist; else fall back to latest under /content/runs
+RUN_DIR  = locals().get("SAVE_DIR", None) or locals().get("RUN_DIR", None) or _latest_run_dir("/content/runs")
+DRIVE_DIR = locals().get("DRIVE_DIR", None)  # EN: if your pipeline already defines it
+
+assert RUN_DIR and os.path.isdir(RUN_DIR), f"[PACK] Run directory not found: {RUN_DIR}"
+
+# EN: Output filenames (placed inside the run folder)
+out_csv  = os.path.join(RUN_DIR, "combined_simulation_data.csv")
+out_json = os.path.join(RUN_DIR, "combined_simulation_data.json")
+
+print(f"[PACK] Run dir:   {RUN_DIR}")
+print(f"[PACK] Output ->  {out_csv}")
+print(f"[PACK] Output ->  {out_json}")
+
+# ---------- Collect & combine CSVs ----------
+csv_paths = [p for p in glob.glob(os.path.join(RUN_DIR, "**", "*.csv"), recursive=True)]
+dfs = []
+for p in csv_paths:
+    try:
+        df = pd.read_csv(p)
+        df["__source_file"] = os.path.relpath(p, RUN_DIR)  # HU: forrásfájl nyoma
+        dfs.append(df)
+    except Exception as e:
+        print(f"[PACK][CSV][SKIP] {p} -> {e}")
+
+if dfs:
+    # EN: union of columns; let pandas align by column names
+    combined_df = pd.concat(dfs, ignore_index=True, sort=True)
+    # Optional de-dup (comment out if not needed)
+    combined_df = combined_df.drop_duplicates()
+    combined_df.to_csv(out_csv, index=False)
+    print(f"[PACK][CSV] Combined {len(dfs)} files -> {out_csv} (rows={len(combined_df)})")
+else:
+    print("[PACK][CSV] No CSV files found under run dir.")
+
+# ---------- Collect & combine JSONs ----------
+# EN: we merge all top-level JSON objects/arrays into one big list
+json_paths = [p for p in glob.glob(os.path.join(RUN_DIR, "**", "*.json"), recursive=True)]
+all_items = []
+for p in json_paths:
+    try:
+        with open(p, "r") as f:
+            obj = json.load(f)
+        if isinstance(obj, list):
+            for it in obj:
+                if isinstance(it, dict):
+                    it["__source_file"] = os.path.relpath(p, RUN_DIR)
+                all_items.append(it)
+        else:
+            if isinstance(obj, dict):
+                obj["__source_file"] = os.path.relpath(p, RUN_DIR)
+            all_items.append(obj)
+    except Exception as e:
+        print(f"[PACK][JSON][SKIP] {p} -> {e}")
+
+if all_items:
+    with open(out_json, "w") as f:
+        json.dump(all_items, f, indent=2)
+    print(f"[PACK][JSON] Combined {len(json_paths)} files -> {out_json} (items={len(all_items)})")
+else:
+    print("[PACK][JSON] No JSON files found under run dir.")
+
+# ---------- Optional: copy to Drive run folder if available ----------
+if DRIVE_DIR and os.path.isdir(DRIVE_DIR):
+    try:
+        import shutil
+        shutil.copy2(out_csv,  os.path.join(DRIVE_DIR, os.path.basename(out_csv)))
+        shutil.copy2(out_json, os.path.join(DRIVE_DIR, os.path.basename(out_json)))
+        print(f"[PACK][DRIVE] Copied combined files to: {DRIVE_DIR}")
+    except Exception as e:
+        print(f"[PACK][DRIVE][WARN] Could not copy to Drive -> {e}")
+else:
+    print("[PACK] DRIVE_DIR not set or missing; skipping Drive copy.")
+
 main_progress_bar.close()
