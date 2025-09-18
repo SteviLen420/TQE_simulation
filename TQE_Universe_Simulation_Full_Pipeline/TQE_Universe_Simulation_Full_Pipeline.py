@@ -155,8 +155,8 @@ MASTER_CTRL = {
     "BEST_MAX_FIGS": 50,          # safety clamp
 
     # --- Best-universe: phase-change knobs ---
-    "BEST_SIGMA_PRE":   0.06,   # Stronger noise before lock-in
-    "BEST_SIGMA_POST":  0.01,   # Weaker noise after lock-in
+    "BEST_SIGMA_PRE":   0.065,   # Stronger noise before lock-in
+    "BEST_SIGMA_POST":  0.012,   # Weaker noise after lock-in
     "BEST_SMOOTH_PRE":  8,      # Smaller smoothing window before lock-in
     "BEST_SMOOTH_POST": 36,     # Larger smoothing window after lock-in
     "BEST_SIGMA_DECAY_TAU": 250, # Time constant (steps) for how fast the noise decays/cleans up
