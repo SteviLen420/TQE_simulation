@@ -1,0 +1,2 @@
+target,variant,featset,acc,auc,n_train,n_test
+stability_cls,E+I(+X),EIX,0.596,0.6467283237882627,7500,2500

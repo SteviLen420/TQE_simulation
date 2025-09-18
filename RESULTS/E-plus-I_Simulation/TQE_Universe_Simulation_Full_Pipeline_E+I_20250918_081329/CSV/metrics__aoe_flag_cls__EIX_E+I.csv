@@ -1,0 +1,2 @@
+target,variant,featset,acc,auc,n_train,n_test
+aoe_flag_cls,E+I(+X),EIX,0.9996,0.4919967987194878,7500,2500

@@ -1,0 +1,2 @@
+target,variant,featset,r2,n_train,n_test
+aoe_align_reg,E+I(+X),EIX,0.6519983905464092,6,3

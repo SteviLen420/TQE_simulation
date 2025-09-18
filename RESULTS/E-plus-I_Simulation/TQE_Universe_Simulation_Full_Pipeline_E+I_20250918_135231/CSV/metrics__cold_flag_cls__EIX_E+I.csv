@@ -1,0 +1,2 @@
+target,variant,featset,acc,auc,n_train,n_test
+cold_flag_cls,E+I(+X),EIX,0.9996,0.49839935974389754,7500,2500
