@@ -23,9 +23,9 @@ ClearAll[say, safeImport, toDS, pickCol, binStats, pct, niceName, tryCols, colEx
 (* Pretty printing for headers *)
 say[txt_] := Print[Style[txt, 14, Bold, RGBColor[0.1, 0.2, 0.6]]];
 
-(* Explicit CSV import -> raw rows -> wrap into Dataset *)
+(* read CSV as header-aware Dataset (associations per row) *)
 safeImport[f_] := Quiet@Check[
-  Dataset @ Import[f, {"CSV","Data"}],
+  Import[f, "Dataset"],
   Missing["NotAvailable"]
 ];
 
@@ -119,6 +119,22 @@ findFiles[asc_, patterns_List] :=
 combineDS[asc_, files_List] := Module[
   {rows = DeleteMissing[toDS /@ (asc /@ files)]},
   If[rows === {}, Missing["NotAvailable"], Dataset @ Flatten[Normal /@ rows, 1]]
+];
+
+(* std dev of global_entropy after lock epoch *)
+postLockStd[ds_] := Module[
+  {
+    lock = tryCols[ds, {"lock_epoch","lockin_epoch","lock_ep","lock_step","lockin_step"}],
+    ge   = tryCols[ds, {"global_entropy","entropy_global","H_global","entropy"}],
+    t    = tryCols[ds, {"time_step","t","step","epoch"}]
+  },
+  If[ Or[MissingQ[lock], MissingQ[ge], MissingQ[t]], Return[Missing["NA"]] ];
+  Module[{lv = First@Normal@DeleteMissing@lock, tt = Normal@t, gg = Normal@ge},
+    If[ !NumericQ[lv], Return[Missing["NA"]] ];
+    With[{mask = Boole[tt >= lv]},
+      If[ Total@mask < 5, Missing["NA"], StandardDeviation@Pick[gg, mask, 1] ]
+    ]
+  ]
 ];
 
 (* ============================= *)
@@ -245,8 +261,6 @@ Grid[
 
 say["3) CMB cold-spots"];
 
-pickColdFile[asc_] := SelectFirst[Keys@asc, 
-  StringContainsQ[#, {"cmb_coldspots", "coldspots_summary", "coldspot", "cold_spot"}, IgnoreCase->True] &];
 coldAFiles = findFiles[assocA, {"cmb_coldspots","coldspots_summary","coldspot","cold_spot"}];
 coldBFiles = findFiles[assocB, {"cmb_coldspots","coldspots_summary","coldspot","cold_spot"}];
 
@@ -384,6 +398,8 @@ Column@{
 (* 11) SAVE RESULTS TO DISK      *)
 (* ============================= *)
 
+CleanForJSON[x_] := x /. Missing[_] -> Null;
+
 say["11) Saving results to disk"];
 
 (* --- Safe output dir, even if the notebook isn't saved --- *)
@@ -404,12 +420,8 @@ Export[FileNameJoin[{outDir, "stability_comparison.csv"}],
   }
 ];
 
-(* 11.2 Save Goldilocks peaks as JSON *)
-Export[FileNameJoin[{outDir, "goldilocks_peaks.json"}],
-  <|"E+I" -> peakA, "E-only" -> peakB|>
-];
 
-(* 11.3 Save cold-spot statistics as JSON *)
+(* Save cold-spot statistics as JSON *)
 CleanForJSON[x_] := x /. Missing[_] -> Null;
 
 Export[FileNameJoin[{outDir, "goldilocks_peaks.json"}],
@@ -424,18 +436,13 @@ Export[FileNameJoin[{outDir, "xai_top_features.json"}],
   CleanForJSON@<|"E+I" -> Normal@topK[fiA,3], "E-only" -> Normal@topK[fiB,3]|>
 ];
 
-(* 11.4 Save Best Universe entropy stddev as CSV *)
+(* Save Best Universe entropy stddev as CSV *)
 Export[FileNameJoin[{outDir, "best_universe_entropy.csv"}],
   {
     {"Dataset","Post-lock std(global_entropy)"},
     {"E+I (A)", stdA},
     {"E-only (B)", stdB}
   }
-];
-
-(* 11.5 Save XAI top features as JSON *)
-Export[FileNameJoin[{outDir, "xai_top_features.json"}],
-  <|"E+I" -> Normal@topK[fiA,3], "E-only" -> Normal@topK[fiB,3]|>
 ];
 
 say["Results exported to: " <> outDir];
