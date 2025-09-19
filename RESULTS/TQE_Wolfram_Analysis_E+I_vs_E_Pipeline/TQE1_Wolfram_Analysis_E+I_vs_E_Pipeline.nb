@@ -1,0 +1,121 @@
+(* SPDX-License-Identifier: MIT *)
+(* Copyright (c) 2025 Stefan Len *)
+
+(* =================================================================================== *)
+(* TQE_Wolfram_Analysis_E+I_vs_E_Pipeline.nb *)
+(* =================================================================================== *)
+(* Author: Stefan Len *)
+(* =================================================================================== *)
+
+(* ============================= *)
+(* 1) SET INPUT DIRECTORIES      *)
+(* ============================= *)
+
+dirA = "/Users/stevilen/Desktop/TQE_COMBINED_CSV/dataset_A_E+I";
+dirB = "/Users/stevilen/Desktop/TQE_COMBINED_CSV/dataset_B_E_only";
+
+(* ============================= *)
+(* 2) HELPER FUNCTIONS           *)
+(* ============================= *)
+
+ClearAll[say, safeImport, toDS, CleanForJSON];
+
+say[txt_] := Print[Style[txt, 14, Bold, RGBColor[0.1, 0.2, 0.6]]];
+
+safeImport[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
+toDS[x_] := Which[Head[x] === Dataset, x, ListQ[x], Dataset[x], True, Dataset[{}]];
+CleanForJSON[x_] := x /. Missing[_] -> Null;
+
+baseName[path_] := StringReplace[
+  FileBaseName[path],
+  {"_E+I" -> "", "_E-Only" -> "", "_E_only" -> "", "_EOnly" -> ""}
+];
+
+mergeFiles[fileList_] := Module[{all},
+  all = DeleteMissing[toDS /@ (Import /@ fileList)];
+  If[all === {}, Dataset[{}], Dataset @ Flatten[Normal /@ all, 1]]
+];
+
+(* ============================= *)
+(* 3) LOAD AND GROUP FILES       *)
+(* ============================= *)
+
+filesA = FileNames["*.csv", dirA, Infinity];
+filesB = FileNames["*.csv", dirB, Infinity];
+
+say["File Loading Summary"];
+Grid[{
+  {"A (E+I) files found", Length[filesA]},
+  {"B (E-only) files found", Length[filesB]}
+}, Frame -> All]
+
+groupsA = GroupBy[filesA, baseName];
+groupsB = GroupBy[filesB, baseName];
+commonGroups = Intersection[Keys[groupsA], Keys[groupsB]];
+
+say["Matched groups: " <> ToString[commonGroups]];
+
+(* ============================= *)
+(* 4) GENERAL COMPARISON         *)
+(* ============================= *)
+
+groupResults = Association@Table[
+   g -> Module[{dsA, dsB, colsA, colsB, commonCols, stats},
+     dsA = mergeFiles[groupsA[g]];
+     dsB = mergeFiles[groupsB[g]];
+     If[dsA === Dataset[{}] || dsB === Dataset[{}], Return[g -> <||>]];
+     
+     colsA = Keys@First@Normal[dsA];
+     colsB = Keys@First@Normal[dsB];
+     commonCols = Intersection[colsA, colsB];
+     
+     If[commonCols === {}, Return[g -> <||>]];
+     
+     stats = Association@Table[
+       col -> <|
+         "mean_E+I"   -> Quiet@Mean@DeleteMissing[Normal@dsA[All, col]],
+         "mean_E-only"-> Quiet@Mean@DeleteMissing[Normal@dsB[All, col]],
+         "diff_mean"  -> Quiet[(Mean@DeleteMissing[Normal@dsA[All, col]] -
+                               Mean@DeleteMissing[Normal@dsB[All, col]])],
+         "std_E+I"    -> Quiet@StandardDeviation@DeleteMissing[Normal@dsA[All, col]],
+         "std_E-only" -> Quiet@StandardDeviation@DeleteMissing[Normal@dsB[All, col]],
+         "min_E+I"    -> Quiet@Min@DeleteMissing[Normal@dsA[All, col]],
+         "min_E-only" -> Quiet@Min@DeleteMissing[Normal@dsB[All, col]],
+         "max_E+I"    -> Quiet@Max@DeleteMissing[Normal@dsA[All, col]],
+         "max_E-only" -> Quiet@Max@DeleteMissing[Normal@dsB[All, col]]
+       |>,
+       {col, commonCols}
+     ];
+     stats
+   ],
+   {g, commonGroups}
+];
+
+(* ============================= *)
+(* 5) EXPORT RESULTS             *)
+(* ============================= *)
+
+nbDir   = Quiet@NotebookDirectory[];
+baseDir = If[StringQ[nbDir], nbDir, FileNameJoin[{$HomeDirectory, "Desktop"}]];
+outDir  = FileNameJoin[{baseDir, "TQE_Wolfram_Analysis_Output"}];
+If[!DirectoryQ[outDir], CreateDirectory[outDir, CreateIntermediateDirectories -> True]];
+
+Export[FileNameJoin[{outDir, "grouped_comparisons.json"}], Normal @ groupResults];
+
+Export[FileNameJoin[{outDir, "grouped_comparisons.csv"}],
+  Prepend[
+    Flatten[
+      KeyValueMap[
+        (Function[{group, vals},
+          KeyValueMap[{group, #1, #2["mean_E+I"], #2["mean_E-only"], #2["diff_mean"],
+                       #2["std_E+I"], #2["std_E-only"], #2["min_E+I"], #2["min_E-only"],
+                       #2["max_E+I"], #2["max_E-only"]} &, vals]
+        ]) @@ {#1, #2} & /@ Normal[groupResults],
+      1
+    ],
+    {"Group","Column","Mean_E+I","Mean_E-only","Diff_Mean",
+     "Std_E+I","Std_E-only","Min_E+I","Min_E-only","Max_E+I","Max_E-only"}
+  ]
+];
+
+say["Results exported to: " <> outDir];
