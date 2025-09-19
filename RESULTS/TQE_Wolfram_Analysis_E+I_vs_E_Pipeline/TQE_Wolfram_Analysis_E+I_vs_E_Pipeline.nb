@@ -414,8 +414,63 @@ If[!DirectoryQ[outDir],
   CreateDirectory[outDir, CreateIntermediateDirectories -> True]
 ];
 
-Export[FileNameJoin[{outDir, "coldspot_stats.json"}],
-  CleanForJSON @ Normal @ <|"E+I" -> cA, "E-only" -> cB|>
+(* ---------- 1) Stability ---------- *)
+stabCSV = {
+  {"Metric", "E+I (A)", "E-only (B)"},
+  {"Total Universes", stabA["n"], stabB["n"]},
+  {"Stable %", stabA["stable_pct"], stabB["stable_pct"]},
+  {"Lock-in %", stabA["lockin_pct"], stabB["lockin_pct"]}
+};
+Export[FileNameJoin[{outDir, "stability_comparison.csv"}], stabCSV];
+Export[FileNameJoin[{outDir, "stability_comparison.json"}],
+  CleanForJSON @ <|"E+I" -> stabA, "E-only" -> stabB|>
 ];
 
-say["Results exported to: " <> outDir];
+(* ---------- 2) Goldilocks ---------- *)
+Export[FileNameJoin[{outDir, "goldilocks_peaks.csv"}],
+  {
+    {"Dataset","Peak stability","edge_min","edge_max"},
+    {"E+I (X)", If[MissingQ[peakA], "NA", 100*peakA["stability_rate"]], 
+                If[MissingQ[peakA], "NA", peakA["edge_min"]],
+                If[MissingQ[peakA], "NA", peakA["edge_max"]]},
+    {"E-only (E)", If[MissingQ[peakB], "NA", 100*peakB["stability_rate"]], 
+                   If[MissingQ[peakB], "NA", peakB["edge_min"]],
+                   If[MissingQ[peakB], "NA", peakB["edge_max"]]}
+  }
+];
+Export[FileNameJoin[{outDir, "goldilocks_peaks.json"}],
+  CleanForJSON @ <|"E+I" -> peakA, "E-only" -> peakB|>
+];
+
+(* ---------- 3) Cold-spots ---------- *)
+Export[FileNameJoin[{outDir, "coldspot_stats.csv"}],
+  {
+    {"Metric","E+I (A)","E-only (B)"},
+    {"Total Spots Found", cA["count"], cB["count"]},
+    {"Deepest Spot", cA["min"], cB["min"]},
+    {"Average Depth", cA["mean"], cB["mean"]},
+    {"Median Depth", cA["median"], cB["median"]},
+    {"Count ≤ -70 µK", cA["below_-70"], cB["below_-70"]}
+  }
+];
+Export[FileNameJoin[{outDir, "coldspot_stats.json"}],
+  CleanForJSON @ <|"E+I" -> cA, "E-only" -> cB|>
+];
+
+(* ---------- 4) Best universe entropy ---------- *)
+Export[FileNameJoin[{outDir, "best_universe_entropy.csv"}],
+  {
+    {"Dataset","Post-lock std(global_entropy)"},
+    {"E+I (A)", stdA},
+    {"E-only (B)", stdB}
+  }
+];
+Export[FileNameJoin[{outDir, "best_universe_entropy.json"}],
+  CleanForJSON @ <|"E+I" -> stdA, "E-only" -> stdB|>
+];
+
+(* ---------- 5) XAI Feature importance ---------- *)
+Export[FileNameJoin[{outDir, "xai_top_features.csv"}],
+  Prepend[
+    Join[
+      Thread[{"E+I (A)", Keys@Normal@topA
