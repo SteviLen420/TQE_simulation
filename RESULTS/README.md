@@ -42,6 +42,7 @@ I conducted the analysis presented here with a focus on rigor and transparency, 
     * **Gemini 2.5** (Google)
     * **GPT-5** (OpenAI)
     * An offline, locally-run **DeepSeek-R1-Distill-Qwen-14B** for data processing and prompt-based analysis.
+* **Reproducibility:** All random seeds and configuration files are archived for reproducibility.
  
 ## How to Reproduce the Analysis
 
