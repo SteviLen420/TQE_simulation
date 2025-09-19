@@ -77,53 +77,42 @@ keysB = FileBaseName /@ Keys[assocB];
 
 say["1) Stability + Lock-in"];
 
-(* FIX: Added missing file gathering and dataset creation for stability metrics *)
+(* külön stability és lock fájlok *)
 stabAFiles = Select[Keys@assocA, StringContainsQ[#, "stability_cls", IgnoreCase -> True] &];
-lockAFiles = Select[Keys@assocA, StringContainsQ[#, "lock_epoch", IgnoreCase -> True] &];
-
 stabBFiles = Select[Keys@assocB, StringContainsQ[#, "stability_cls", IgnoreCase -> True] &];
+
+lockAFiles = Select[Keys@assocA, StringContainsQ[#, "lock_epoch", IgnoreCase -> True] &];
 lockBFiles = Select[Keys@assocB, StringContainsQ[#, "lock_epoch", IgnoreCase -> True] &];
 
 stabA = Dataset @ Flatten[Normal /@ (assocA /@ stabAFiles), 1];
-lockA = Dataset @ Flatten[Normal /@ (assocA /@ lockAFiles), 1];
-
 stabB = Dataset @ Flatten[Normal /@ (assocB /@ stabBFiles), 1];
+
+lockA = Dataset @ Flatten[Normal /@ (assocA /@ lockAFiles), 1];
 lockB = Dataset @ Flatten[Normal /@ (assocB /@ lockBFiles), 1];
 
-
-stabilitySummary[ds_] := Module[
-  {stableCol, lockCol, n, nStable, nLock},
-  
-  n = Length[ds];
-  If[n == 0, 
-    Return@<|"n" -> 0, "stable_n" -> Missing["NA"], "lockin_n" -> Missing["NA"]|>
-  ];
-  
-  stableCol = tryCols[ds, {"stability_cls","stable","is_stable","stable_flag","stability"}];
-  nStable = If[MissingQ[stableCol], 
-    Missing["NA"],
-    Total@Boole[DeleteMissing@Normal@stableCol == 1]
-  ];
-  
-  lockCol   = tryCols[ds, {"lock_epoch","lockin_epoch","lock_step","lockin_step","lock"}];
-  nLock = If[MissingQ[lockCol], 
-    Missing["NA"],
-    Count[DeleteMissing@Normal@lockCol, _?NumericQ]
-  ];
-  
-  <|"n" -> n, "stable_n" -> nStable, "lockin_n" -> nLock|>
+stabilityCount[ds_] := Module[{col},
+  If[Length[ds] == 0, Missing["NA"],
+    col = tryCols[ds, {"stability_cls","stable","is_stable"}];
+    If[MissingQ[col], Missing["NA"], Total@Boole[DeleteMissing@Normal@col == 1]]
+  ]
 ];
 
-stabResA = stabilitySummary[stabA];
-stabResB = stabilitySummary[stabB];
+lockCount[ds_] := Module[{col},
+  If[Length[ds] == 0, Missing["NA"],
+    col = tryCols[ds, {"lock_epoch","lockin_epoch"}];
+    If[MissingQ[col], Missing["NA"], Count[DeleteMissing@Normal@col, _?NumericQ]]
+  ]
+];
+
+stabResA = <|"n" -> Length[stabA], "stable_n" -> stabilityCount[stabA], "lockin_n" -> lockCount[lockA]|>;
+stabResB = <|"n" -> Length[stabB], "stable_n" -> stabilityCount[stabB], "lockin_n" -> lockCount[lockB]|>;
 
 Grid[{
   {"Metric", "E+I", "E-only"},
   {"Total Universes", stabResA["n"], stabResB["n"]},
-  {"Stable Count", stabResA["stable_n"], stabResB["n"]},
+  {"Stable Count", stabResA["stable_n"], stabResB["stable_n"]},
   {"Lock-in Count", stabResA["lockin_n"], stabResB["lockin_n"]}
 }, Frame -> All]
-
 
 (* ============================= *)
 (* 4) CMB COLD-SPOTS             *)
@@ -211,34 +200,23 @@ Grid[{
 
 say["4) Fine-tuning metrics"];
 
-ftAFiles = Select[Keys@assocA, StringContainsQ[#, "finetune", IgnoreCase -> True] &];
-ftBFiles = Select[Keys@assocB, StringContainsQ[#, "finetune", IgnoreCase -> True] &];
+ftAccAFiles = Select[Keys@assocA, StringContainsQ[#, "finetune_acc_delta", IgnoreCase -> True] &];
+ftAccBFiles = Select[Keys@assocB, StringContainsQ[#, "finetune_acc_delta", IgnoreCase -> True] &];
 
-ftA = Dataset @ Flatten[Normal /@ (assocA /@ ftAFiles), 1];
-ftB = Dataset @ Flatten[Normal /@ (assocB /@ ftBFiles), 1];
+ftAucAFiles = Select[Keys@assocA, StringContainsQ[#, "finetune_auc_delta", IgnoreCase -> True] &];
+ftAucBFiles = Select[Keys@assocB, StringContainsQ[#, "finetune_auc_delta", IgnoreCase -> True] &];
 
-bestACC[ds_] := Max@DeleteMissing@Normal@tryCols[ds, {"acc","finetune_acc_delta"}];
-bestAUC[ds_] := Max@DeleteMissing@Normal@tryCols[ds, {"auc","finetune_auc_delta"}];
+ftAccA = Dataset @ Flatten[Normal /@ (assocA /@ ftAccAFiles), 1];
+ftAccB = Dataset @ Flatten[Normal /@ (assocB /@ ftAccBFiles), 1];
 
-ftResA = <|"best_acc" -> bestACC[ftA], "best_auc" -> bestAUC[ftA]|>;
-ftResB = <|"best_acc" -> bestACC[ftB], "best_auc" -> bestAUC[ftB]|>;
+ftAucA = Dataset @ Flatten[Normal /@ (assocA /@ ftAucAFiles), 1];
+ftAucB = Dataset @ Flatten[Normal /@ (assocB /@ ftAucBFiles), 1];
 
-summFT[ds_] := Module[{acc, auc},
-  If[Length[ds] == 0, 
-    Return@<|"best_acc" -> Missing["NA"], "best_auc" -> Missing["NA"]|>
-  ];
-  
-  acc = tryCols[ds, {"acc","accuracy","val_acc","acc_delta"}];
-  auc = tryCols[ds, {"auc","roc_auc","val_auc","auc_delta"}];
-  
-  <|
-    "best_acc" -> If[MissingQ[acc], Missing["NA"], Max@DeleteMissing@Normal@acc],
-    "best_auc" -> If[MissingQ[auc], Missing["NA"], Max@DeleteMissing@Normal@auc]
-  |>
-];
+bestACC[ds_] := If[Length[ds]==0, Missing["NA"], Max@DeleteMissing@Normal@tryCols[ds, {"finetune_acc_delta"}]];
+bestAUC[ds_] := If[Length[ds]==0, Missing["NA"], Max@DeleteMissing@Normal@tryCols[ds, {"finetune_auc_delta"}]];
 
-ftResA = summFT[ftA];
-ftResB = summFT[ftB];
+ftResA = <|"best_acc" -> bestACC[ftAccA], "best_auc" -> bestAUC[ftAucA]|>;
+ftResB = <|"best_acc" -> bestACC[ftAccB], "best_auc" -> bestAUC[ftAucB]|>;
 
 Grid[{
   {"Metric", "E+I", "E-only"},
