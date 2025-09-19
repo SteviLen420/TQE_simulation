@@ -11,25 +11,16 @@
 (* 1) SET INPUT DIRECTORIES      *)
 (* ============================= *)
 
-rootDir = CloudObject["/user/StefanLengyel/"]; 
+rootDir = CloudObject["/Users/StefanLen420/"];
 
+(* Keressük az összes CSV-t minden almappában *)
+allFiles = FileNames["*.csv", FileNameJoin[{rootDir, "**/CSV"}], Infinity];
 
-allFiles = FileNames["*.csv", rootDir, Infinity];
+(* Szétválogatás E+I és E-only *)
+filesA = Select[allFiles, StringContainsQ[#, "_EI_"] &];
+filesB = Select[allFiles, StringContainsQ[#, "energy_only"] &];
 
-
-filesA = Select[allFiles, StringContainsQ[#, "_E+I_"] &];        
-filesB = Select[allFiles, StringContainsQ[#, "energy_only"] &];  
-
-
-say["File counts"];
-Grid[{
-  {"E+I simulations", Length[filesA]},
-  {"E-only simulations", Length[filesB]}
-}, Frame -> All];
-
-
-assocA = AssociationMap[safeImport, filesA];
-assocB = AssociationMap[safeImport, filesB];
+{Length[filesA], Length[filesB]}
 
 (* ============================= *)
 (* 2) HELPER FUNCTIONS           *)
