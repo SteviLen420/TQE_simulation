@@ -137,6 +137,16 @@ postLockStd[ds_] := Module[
   ]
 ];
 
+(* test if a dataset has any of the given column name alternatives *)
+hasAnyCol[ds_, alts_List] := AnyTrue[alts, colExistsQ[ds, #] &];
+
+(* return file keys that contain ALL required groups of columns (each group = alternatives) *)
+filesWithColumns[asc_, req_List] := Select[Keys@asc, 
+  With[{ds = toDS@asc[#]}, 
+    MatchQ[ds, _Dataset] && Length[ds] > 0 && AllTrue[req, hasAnyCol[ds, #] &]
+  ] &
+];
+
 (* ============================= *)
 (* 3) LOAD AND PAIR FILES        *)
 (* ============================= *)
@@ -229,8 +239,32 @@ Grid[{
 
 say["2) Goldilocks zone (A: X, B: E)"];
 
-goldA = If[MissingQ[sumA], Missing["NA"], binStats[sumA, "X", 40]];
-goldB = If[MissingQ[sumB], Missing["NA"], binStats[sumB, "E", 40]];
+(* build Goldilocks sources by scanning ALL CSVs for the needed cols *)
+reqA = { {"stable","is_stable","stable_flag","stable_cls","stability"},
+         {"X","x","E_times_I","E_mul_I"} };
+
+reqB = { {"stable","is_stable","stable_flag","stable_cls","stability"},
+         {"E","e"} };
+
+goldAFiles = filesWithColumns[assocA, reqA];
+goldBFiles = filesWithColumns[assocB, reqB];
+
+goldSrcA = combineDS[assocA, goldAFiles];
+goldSrcB = combineDS[assocB, goldBFiles];
+
+(* compute binned stability; binStats can also accept a list, so adapt accordingly: *)
+binStatsVar[ds_, names_List, n_:40] := Module[{v = tryCols[ds, names]},
+  If[MissingQ[v], Missing["NoData"], binStats[ds, First@names, n] /. 
+     {"stability_rate" -> "stability_rate"}]
+];
+
+(* if the 'binStats' function above only accepts a single name, use it like this: *)
+goldA = If[MissingQ[goldSrcA], Missing["NoData"], binStats[goldSrcA, "X", 40]];
+If[MissingQ[goldA], goldA = binStats[goldSrcA, "E_times_I", 40]];
+If[MissingQ[goldA], goldA = binStats[goldSrcA, "E_mul_I", 40]];
+
+goldB = If[MissingQ[goldSrcB], Missing["NoData"], binStats[goldSrcB, "E", 40]];
+If[MissingQ[goldB], goldB = binStats[goldSrcB, "e", 40]];
 
 (* Compare peaks of the stability curves *)
 peakInfo[ds_] := If[MissingQ[ds], Missing["NA"],
@@ -419,10 +453,6 @@ Export[FileNameJoin[{outDir, "stability_comparison.csv"}],
     {"Lock-in %", stabA["lockin_pct"], stabB["lockin_pct"]}
   }
 ];
-
-
-(* Save cold-spot statistics as JSON *)
-CleanForJSON[x_] := x /. Missing[_] -> Null;
 
 Export[FileNameJoin[{outDir, "goldilocks_peaks.json"}],
   CleanForJSON@<|"E+I" -> peakA, "E-only" -> peakB|>
