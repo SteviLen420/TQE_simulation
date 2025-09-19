@@ -224,6 +224,21 @@ Grid[{
   {"Best AUC", ftResA["best_auc"], ftResB["best_auc"]}
 }, Frame -> All]
 
+safeMax[list_] := If[list === {} || list === { }, Missing["NA"], Max[list]];
+
+summFT[ds_] := Module[{acc, auc},
+  If[Length[ds] == 0, 
+    Return@<|"best_acc" -> Missing["NA"], "best_auc" -> Missing["NA"]|>
+  ];
+  
+  acc = DeleteMissing@Normal@tryCols[ds, {"acc","accuracy","val_acc","acc_delta"}];
+  auc = DeleteMissing@Normal@tryCols[ds, {"auc","roc_auc","val_auc","auc_delta"}];
+  
+  <|
+    "best_acc" -> safeMax[acc],
+    "best_auc" -> safeMax[auc]
+  |>
+];
 
 (* ============================= *)
 (* 7) SAVE RESULTS               *)
