@@ -1,0 +1,3 @@
+group,n,stable_n,stable_ratio,lockin_n,lockin_ratio
+I == 0,0,0,,0,
+I > 0,10000,5093,0.5093,2209,0.2209

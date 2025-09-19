@@ -1,0 +1,2 @@
+target,variant,featset,r2,n_train,n_test
+lock_epoch_reg,E+I(+X),EIX,0.08503414072702631,1656,553

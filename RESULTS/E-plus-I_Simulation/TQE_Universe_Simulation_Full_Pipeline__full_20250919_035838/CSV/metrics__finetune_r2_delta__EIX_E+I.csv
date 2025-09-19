@@ -1,0 +1,2 @@
+target,variant,featset,r2,n_train,n_test
+finetune_r2_delta,E+I(+X),EIX,-16995.6176,7500,2500
