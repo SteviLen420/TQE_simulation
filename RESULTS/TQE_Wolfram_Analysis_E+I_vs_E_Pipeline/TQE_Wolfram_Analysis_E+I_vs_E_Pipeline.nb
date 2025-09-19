@@ -11,8 +11,25 @@
 (* 1) SET INPUT DIRECTORIES      *)
 (* ============================= *)
 
-dirA = CloudObject["/user/stevilen/EI_simulations"];
-dirB = CloudObject["/user/stevilen/E_only_simulations"];
+rootDir = CloudObject["/user/stevilen/"]; 
+
+
+allFiles = FileNames["*.csv", rootDir, Infinity];
+
+
+filesA = Select[allFiles, StringContainsQ[#, "_E+I_"] &];        
+filesB = Select[allFiles, StringContainsQ[#, "energy_only"] &];  
+
+
+say["File counts"];
+Grid[{
+  {"E+I simulations", Length[filesA]},
+  {"E-only simulations", Length[filesB]}
+}, Frame -> All];
+
+
+assocA = AssociationMap[safeImport, filesA];
+assocB = AssociationMap[safeImport, filesB];
 
 (* ============================= *)
 (* 2) HELPER FUNCTIONS           *)
