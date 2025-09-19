@@ -319,9 +319,13 @@ Column@{
 
 say["11) Saving results to disk"];
 
-(* Create an output directory next to the notebook *)
-outDir = FileNameJoin[{NotebookDirectory[], "TQE_Wolfram_Analysis_Output"}];
-If[!DirectoryQ[outDir], CreateDirectory[outDir]];
+(* --- Safe output dir, even if the notebook isn't saved --- *)
+nbDir   = Quiet@NotebookDirectory[];
+baseDir = If[StringQ[nbDir], nbDir, FileNameJoin[{$HomeDirectory, "Desktop"}]];
+outDir  = FileNameJoin[{baseDir, "TQE_Wolfram_Analysis_Output"}];
+If[!DirectoryQ[outDir],
+  CreateDirectory[outDir, CreateIntermediateDirectories -> True]
+];
 
 (* 11.1 Save stability comparison as CSV *)
 Export[FileNameJoin[{outDir, "stability_comparison.csv"}],
