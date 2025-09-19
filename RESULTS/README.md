@@ -11,12 +11,12 @@ This directory contains the complete set of results, raw data, and analysis scri
 This repository is organized to provide a clear and transparent overview of the entire TQE research project. All code, data, and documentation are structured as follows, based on the project's root directory:
 
 * ➡️ **Main Documents:**
-    * [README.md](./README.md): (This file) The main entry point and guide to the project.
-    * [STORY.md](.STORY.md): Explains the scientific motivation and the narrative behind the TQE framework.
-    * [TQE_MANUSCRIPT.md](.TQE_MANUSCRIPT.md): The formal scientific paper detailing the theoretical framework and findings.
+    * [README.md](../README.md): (This file) The main entry point and guide to the project.
+    * [STORY.md](../STORY.md): Explains the scientific motivation and the narrative behind the TQE framework.
+    * [TQE_MANUSCRIPT.md](../TQE_MANUSCRIPT.md): The formal scientific paper detailing the theoretical framework and findings.
 
 * ➡️ **Code & Pipelines:**
-    * **[TQE_Universe_Simulation_Full_Pipeline.py](./TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py/):** Contains the primary Python simulation pipeline used to generate the universe ensembles.
+    * **[TQE_Universe_Simulation_Full_Pipeline.py](../TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py/):** Contains the primary Python simulation pipeline used to generate the universe ensembles.
     * **[TQE_Wolfram_Math_Check_Pipeline](./TQE_Wolfram_Math_Check_Pipeline):** Contains the Wolfram Language notebooks used for detailed statistical validation and comparative analysis of the results.
 
 * ➡️ **Simulation Results:**
@@ -24,8 +24,8 @@ This repository is organized to provide a clear and transparent overview of the 
     * **[E-Only_Simulation](./E-Only_Simulation):** Each directory with this naming pattern contains the complete output for a specific simulation run where only the Energy parameter was active.
 
 * ➡️ **Project Files:**
-    * **[CITATION.cff](./CITATION.cff):** Provides the citation information for this work.
-    * **[LICENSE](./LICENSE):** The MIT License under which this project is distributed.
+    * **[CITATION.cff](../CITATION.cff):** Provides the citation information for this work.
+    * **[LICENSE](../LICENSE):** The MIT License under which this project is distributed.
 
 ## Methodology & Tools
 
