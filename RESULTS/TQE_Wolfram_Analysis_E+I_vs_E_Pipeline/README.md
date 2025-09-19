@@ -53,4 +53,13 @@ The notebook executes a multi-stage, robust analysis pipeline designed for clari
 
 ## Output
 
-The output of the notebook is a series of formatted **summary tables** and values displayed directly within the notebook's output cells. These tables present the results from the two run types side-by-side for easy comparison and are formatted to be directly usable in the final scientific publication.
+The notebook's primary output is a series of formatted **summary tables** and values displayed directly within the notebook's output cells. These tables present the results from the two run types side-by-side for easy comparison.
+
+Additionally, the script automatically saves the final, summarized results to disk for archival and external use. An output directory named `TQE_Wolfram_Analysis_Output` is created next to the notebook file, containing the following structured data files:
+- `stability_comparison.csv`
+- `goldilocks_peaks.json`
+- `coldspot_stats.json`
+- `best_universe_entropy.csv`
+- `xai_top_features.json`
+
+This ensures that the key findings are preserved in a machine-readable format.
