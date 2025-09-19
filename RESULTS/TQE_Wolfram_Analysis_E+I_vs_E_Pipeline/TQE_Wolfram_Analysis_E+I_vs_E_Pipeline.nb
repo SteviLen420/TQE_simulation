@@ -346,7 +346,7 @@ topK[ds_, k_:3] := Module[
   If[MissingQ[score] || MissingQ[name], Dataset[{}],
     Module[{n = Normal@name, s = Normal@score},
       If[Length@n != Length@s, Dataset[{}],
-        Dataset @ TakeLargestBy[Thread[Rule[n, s]], Last, UpTo[k]]
+        Dataset @ TakeLargestBy[Thread[Rule[n, s]], Last, All]
       ]
     ]
   ]
@@ -480,7 +480,7 @@ Export[FileNameJoin[{outDir, "xai_top_features.csv"}],
   ]
 ];
 Export[FileNameJoin[{outDir, "xai_top_features.json"}],
-  CleanForJSON @ <|"E+I" -> Normal@topA, "E-only" -> Normal@topB|>
+  CleanForJSON @ <|"E+I" -> Normal[topA], "E-only" -> Normal[topB]|>
 ];
 
 (* ---------- 6) Finetune metrics ---------- *)
