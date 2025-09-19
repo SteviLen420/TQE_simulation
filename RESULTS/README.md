@@ -23,7 +23,7 @@ This repository is organized to provide a clear and transparent overview of the 
 
 * ➡️ **Code & Pipelines:**
     * [/TQE_Universe_Simulation_Full_Pipeline/](../TQE_Universe_Simulation_Full_Pipeline/): Contains the primary Python simulation pipeline.
-    * [/analysis/TQE_Wolfram_Math_Check_Pipeline/](./TQE_Wolfram_Math_Check_Pipeline/): Contains the Wolfram Language notebooks for analysis. *(Assuming this is a subfolder of results)*
+    * [/TQE_Wolfram_Math_Check_Pipeline/](./TQE_Wolfram_Math_Check_Pipeline/): Contains the Wolfram Language notebooks for analysis. *(Assuming this is a subfolder of results)*
 
 * ➡️ **Simulation Data:**
     * [/E-plus-I_Simulation/](./E-plus-I_Simulation/): Contains the full output for the `E+I` simulation runs.
