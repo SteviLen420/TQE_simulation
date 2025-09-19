@@ -498,3 +498,64 @@ Export[FileNameJoin[{outDir, "finetune_metrics.json"}],
 ];
 
 say["Results exported to: " <> outDir];
+
+(* ============================= *)
+(* 12) GROUPED COMPARISON        *)
+(* ============================= *)
+
+say["10) Grouped comparison (all files per type)"];
+
+(* Alapnév fájlnévből — így tudjuk párosítani a csoportokat *)
+baseName[path_] := StringReplace[
+  FileBaseName[path],
+  {"_E+I" -> "", "_E-Only" -> "", "_E_only" -> "", "_EOnly" -> ""}
+];
+
+(* Merge: több azonos típusú CSV összevonása *)
+mergeFiles[fileList_] := Module[{all},
+  all = DeleteMissing[toDS /@ (Import /@ fileList)];
+  If[all === {}, Dataset[{}], Dataset@Flatten[Normal /@ all, 1]]
+];
+
+(* Csoportosítsuk az összes fájlt típus szerint *)
+groupsA = GroupBy[filesA, baseName];
+groupsB = GroupBy[filesB, baseName];
+commonGroups = Intersection[Keys[groupsA], Keys[groupsB]];
+
+(* Hasonlítás minden közös csoportnál *)
+groupResults = Association@Table[
+   g -> Module[{dsA, dsB, cols, commonCols, stats},
+     dsA = mergeFiles[groupsA[g]];
+     dsB = mergeFiles[groupsB[g]];
+     If[dsA === Dataset[{}] || dsB === Dataset[{}], 
+       Return[g -> <||>]];
+     cols = {Keys@First@Normal@dsA, Keys@First@Normal@dsB};
+     commonCols = Intersection @@ cols;
+     stats = Association@Table[
+       col -> <|
+         "mean_E+I" -> Mean@DeleteMissing[Normal@dsA[All, col]],
+         "mean_E-only" -> Mean@DeleteMissing[Normal@dsB[All, col]],
+         "diff" -> (Mean@DeleteMissing[Normal@dsA[All, col]] -
+                    Mean@DeleteMissing[Normal@dsB[All, col]])
+       |>,
+       {col, commonCols}
+     ];
+     stats
+   ],
+   {g, commonGroups}
+];
+
+(* Export összesített csoporteredmény *)
+Export[FileNameJoin[{outDir, "grouped_comparisons.json"}], CleanForJSON@groupResults];
+Export[FileNameJoin[{outDir, "grouped_comparisons.csv"}],
+  Prepend[
+    Flatten[
+      KeyValueMap[
+        (Function[{group, vals}, 
+          KeyValueMap[{group, #1, #2["mean_E+I"], #2["mean_E-only"], #2["diff"]} &, vals]
+        ]) @@ {#1, #2} & /@ Normal[groupResults],
+      1
+    ],
+    {"Group","Column","Mean_E+I","Mean_E-only","Difference"}
+  ]
+];
