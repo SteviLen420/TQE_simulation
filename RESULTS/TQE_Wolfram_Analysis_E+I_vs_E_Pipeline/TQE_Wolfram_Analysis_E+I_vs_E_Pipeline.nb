@@ -11,7 +11,7 @@
 (* 1) SET INPUT DIRECTORIES      *)
 (* ============================= *)
 
-rootDir = CloudObject["/user/stevilen/"]; 
+rootDir = CloudObject["/user/StefanLengyel/"]; 
 
 
 allFiles = FileNames["*.csv", rootDir, Infinity];
