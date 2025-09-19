@@ -1,144 +1,348 @@
 (* SPDX-License-Identifier: MIT *)
 (* Author: Stefan Len, 2025 *)
 
-(* ====================================== *)
-(* 1) SET DIRECTORIES                     *)
-(* ====================================== *)
+(* ============================= *)
+(* 1) HELPER FUNCTIONS           *)
+(* ============================= *)
 
-dirA = "./dataset_A_E+I";
-dirB = "./dataset_B_E_only";
-
-(* ====================================== *)
-(* 2) HELPER FUNCTIONS                    *)
-(* ====================================== *)
-
-ClearAll[safeImport, toDS, colExistsQ, niceName];
-
-safeImport[f_] := Quiet @ Check[
-   Import[f, "Dataset"],
+(* Convert input to a Dataset safely *)
+toDS[x_] := Quiet@Check[
+   Which[
+    Head[x] === Dataset, x,
+    ListQ[x] && Length[x] > 0, Dataset[x],
+    StringQ[x], Import[x, "Dataset"],
+    True, Dataset[{}]
+    ],
    Dataset[{}]
-];
+   ];
 
-toDS[x_] := Which[
-   Head[x] === Dataset, x,
-   ListQ[x] && Length[x] > 0, Dataset[x],
-   True, Dataset[{}]
-];
+(* Replace Missing with Null for JSON export *)
+cleanForJSON[x_] := x /. Missing[_] -> Null;
 
-colExistsQ[ds_, name_] := 
-  MatchQ[ds, _Dataset] && Length[ds] > 0 && 
-   Quiet@Check[KeyExistsQ[Normal@First@ds, name], False];
+(* ============================= *)
+(* 2) LOAD FILES INTO DATASETS   *)
+(* ============================= *)
 
-niceName[path_] := StringReplace[FileBaseName[path],
-   {"_E+I" -> "", "_E-Only" -> "", "_E_only" -> "", "_EOnly" -> ""}];
+(* List of E+I CSV files *)
+filesA = {
+""CSV_E+I_20250918_143859/pre_fluctuation_pairs_E+I.csv", \
+"CSV_E+I_20250918_143859/cmb_aoe_summary_E+I.csv", \
+"CSV_E+I_20250918_143859/ft_metrics_cls_E+I.csv", \
+"CSV_E+I_20250918_143859/ft_metrics_reg_E+I.csv", \
+"CSV_E+I_20250918_143859/fl_fluctuation_timeseries_E+I.csv", \
+"CSV_E+I_20250918_143859/metrics_joined_E+I.csv", \
+"CSV_E+I_20250918_143859/stability_by_I_eps_sweep_E+I.csv", \
+"CSV_E+I_20250918_143859/ft_slice_adaptive_E+I.csv", \
+"CSV_E+I_20250918_143859/universe_seeds_E+I.csv", \
+"CSV_E+I_20250918_143859/ft_feat_importance_EIX_E+I.csv", \
+"CSV_E+I_20250918_143859/cmb_coldspots_summary_E+I.csv", \
+"CSV_E+I_20250918_143859/tqe_runs_E+I.csv", \
+"CSV_E+I_20250918_143859/ft_delta_summary_E+I.csv", \
+"CSV_E+I_20250918_143859/stability_by_I_zero_E+I.csv", \
+"CSV_E+I_20250918_143859/fl_superposition_timeseries_E+I.csv", \
+"CSV_E+I_20250918_143859/fl_collapse_timeseries_E+I.csv", \
+"CSV_E+I_20250918_143859/metrics__aoe_flag_cls__EIX_E+I.csv", \
+"CSV_E+I_20250918_143859/finetune_stability_vs_gap_quantiles_E+I.csv",\
+ "CSV_E+I_20250918_143859/metrics__aoe_align_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_143859/metrics__finetune_r2_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_143859/metrics__stability_cls__EIX_E+I.csv", \
+"CSV_E+I_20250918_143859/fl_expansion_timeseries_E+I.csv", \
+"CSV_E+I_20250918_143859/metrics__lock_epoch_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_143859/metrics__finetune_auc_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_143859/metrics__cold_min_z_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_143859/ft_feat_importance_E_E+I.csv", \
+"CSV_E+I_20250918_143859/metrics__finetune_acc_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_143859/metrics__cold_flag_cls__EIX_E+I.csv", \
+".DS_Store", "CSV_E+I_20250918_183522/pre_fluctuation_pairs_E+I.csv", \
+"CSV_E+I_20250918_183522/cmb_aoe_summary_E+I.csv", \
+"CSV_E+I_20250918_183522/ft_metrics_cls_E+I.csv", \
+"CSV_E+I_20250918_183522/ft_metrics_reg_E+I.csv", \
+"CSV_E+I_20250918_183522/fl_fluctuation_timeseries_E+I.csv", \
+"CSV_E+I_20250918_183522/metrics_joined_E+I.csv", \
+"CSV_E+I_20250918_183522/stability_by_I_eps_sweep_E+I.csv", \
+"CSV_E+I_20250918_183522/ft_slice_adaptive_E+I.csv", \
+"CSV_E+I_20250918_183522/universe_seeds_E+I.csv", \
+"CSV_E+I_20250918_183522/ft_feat_importance_EIX_E+I.csv", \
+"CSV_E+I_20250918_183522/cmb_coldspots_summary_E+I.csv", \
+"CSV_E+I_20250918_183522/tqe_runs_E+I.csv", \
+"CSV_E+I_20250918_183522/ft_delta_summary_E+I.csv", \
+"CSV_E+I_20250918_183522/stability_by_I_zero_E+I.csv", \
+"CSV_E+I_20250918_183522/fl_superposition_timeseries_E+I.csv", \
+"CSV_E+I_20250918_183522/fl_collapse_timeseries_E+I.csv", \
+"CSV_E+I_20250918_183522/metrics__aoe_flag_cls__EIX_E+I.csv", \
+"CSV_E+I_20250918_183522/finetune_stability_vs_gap_quantiles_E+I.csv",\
+ "CSV_E+I_20250918_183522/metrics__aoe_align_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_183522/metrics__finetune_r2_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_183522/metrics__stability_cls__EIX_E+I.csv", \
+"CSV_E+I_20250918_183522/fl_expansion_timeseries_E+I.csv", \
+"CSV_E+I_20250918_183522/metrics__lock_epoch_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_183522/metrics__finetune_auc_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_183522/metrics__cold_min_z_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_183522/ft_feat_importance_E_E+I.csv", \
+"CSV_E+I_20250918_183522/metrics__finetune_acc_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_183522/metrics__cold_flag_cls__EIX_E+I.csv", \
+"CSV_E+I_20250918_135231/pre_fluctuation_pairs_E+I.csv", \
+"CSV_E+I_20250918_135231/cmb_aoe_summary_E+I.csv", \
+"CSV_E+I_20250918_135231/ft_metrics_cls_E+I.csv", \
+"CSV_E+I_20250918_135231/.DS_Store", \
+"CSV_E+I_20250918_135231/ft_metrics_reg_E+I.csv", \
+"CSV_E+I_20250918_135231/fl_fluctuation_timeseries_E+I.csv", \
+"CSV_E+I_20250918_135231/metrics_joined_E+I.csv", \
+"CSV_E+I_20250918_135231/stability_by_I_eps_sweep_E+I.csv", \
+"CSV_E+I_20250918_135231/ft_slice_adaptive_E+I.csv", \
+"CSV_E+I_20250918_135231/universe_seeds_E+I.csv", \
+"CSV_E+I_20250918_135231/ft_feat_importance_EIX_E+I.csv", \
+"CSV_E+I_20250918_135231/cmb_coldspots_summary_E+I.csv", \
+"CSV_E+I_20250918_135231/tqe_runs_E+I.csv", \
+"CSV_E+I_20250918_135231/ft_delta_summary_E+I.csv", \
+"CSV_E+I_20250918_135231/stability_by_I_zero_E+I.csv", \
+"CSV_E+I_20250918_135231/fl_superposition_timeseries_E+I.csv", \
+"CSV_E+I_20250918_135231/fl_collapse_timeseries_E+I.csv", \
+"CSV_E+I_20250918_135231/metrics__aoe_flag_cls__EIX_E+I.csv", \
+"CSV_E+I_20250918_135231/finetune_stability_vs_gap_quantiles_E+I.csv",\
+ "CSV_E+I_20250918_135231/metrics__aoe_align_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_135231/metrics__finetune_r2_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_135231/metrics__stability_cls__EIX_E+I.csv", \
+"CSV_E+I_20250918_135231/fl_expansion_timeseries_E+I.csv", \
+"CSV_E+I_20250918_135231/metrics__lock_epoch_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_135231/metrics__finetune_auc_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_135231/metrics__cold_min_z_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_135231/ft_feat_importance_E_E+I.csv", \
+"CSV_E+I_20250918_135231/metrics__finetune_acc_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_135231/metrics__cold_flag_cls__EIX_E+I.csv", \
+"CSV_E+I_20250918_081329/pre_fluctuation_pairs_E+I.csv", \
+"CSV_E+I_20250918_081329/cmb_aoe_summary_E+I.csv", \
+"CSV_E+I_20250918_081329/ft_metrics_cls_E+I.csv", \
+"CSV_E+I_20250918_081329/.DS_Store", \
+"CSV_E+I_20250918_081329/ft_metrics_reg_E+I.csv", \
+"CSV_E+I_20250918_081329/fl_fluctuation_timeseries_E+I.csv", \
+"CSV_E+I_20250918_081329/metrics_joined_E+I.csv", \
+"CSV_E+I_20250918_081329/stability_by_I_eps_sweep_E+I.csv", \
+"CSV_E+I_20250918_081329/ft_slice_adaptive_E+I.csv", \
+"CSV_E+I_20250918_081329/universe_seeds_E+I.csv", \
+"CSV_E+I_20250918_081329/ft_feat_importance_EIX_E+I.csv", \
+"CSV_E+I_20250918_081329/cmb_coldspots_summary_E+I.csv", \
+"CSV_E+I_20250918_081329/tqe_runs_E+I.csv", \
+"CSV_E+I_20250918_081329/ft_delta_summary_E+I.csv", \
+"CSV_E+I_20250918_081329/stability_by_I_zero_E+I.csv", \
+"CSV_E+I_20250918_081329/fl_superposition_timeseries_E+I.csv", \
+"CSV_E+I_20250918_081329/fl_collapse_timeseries_E+I.csv", \
+"CSV_E+I_20250918_081329/metrics__aoe_flag_cls__EIX_E+I.csv", \
+"CSV_E+I_20250918_081329/finetune_stability_vs_gap_quantiles_E+I.csv",\
+ "CSV_E+I_20250918_081329/metrics__aoe_align_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_081329/metrics__finetune_r2_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_081329/metrics__stability_cls__EIX_E+I.csv", \
+"CSV_E+I_20250918_081329/fl_expansion_timeseries_E+I.csv", \
+"CSV_E+I_20250918_081329/metrics__lock_epoch_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_081329/metrics__finetune_auc_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_081329/metrics__cold_min_z_reg__EIX_E+I.csv", \
+"CSV_E+I_20250918_081329/ft_feat_importance_E_E+I.csv", \
+"CSV_E+I_20250918_081329/metrics__finetune_acc_delta__EIX_E+I.csv", \
+"CSV_E+I_20250918_081329/metrics__cold_flag_cls__EIX_E+I.csv", \
+"CSV_E+I_20250919_035838/pre_fluctuation_pairs_E+I.csv", \
+"CSV_E+I_20250919_035838/cmb_aoe_summary_E+I.csv", \
+"CSV_E+I_20250919_035838/ft_metrics_cls_E+I.csv", \
+"CSV_E+I_20250919_035838/ft_metrics_reg_E+I.csv", \
+"CSV_E+I_20250919_035838/fl_fluctuation_timeseries_E+I.csv", \
+"CSV_E+I_20250919_035838/metrics_joined_E+I.csv", \
+"CSV_E+I_20250919_035838/stability_by_I_eps_sweep_E+I.csv", \
+"CSV_E+I_20250919_035838/ft_slice_adaptive_E+I.csv", \
+"CSV_E+I_20250919_035838/universe_seeds_E+I.csv", \
+"CSV_E+I_20250919_035838/ft_feat_importance_EIX_E+I.csv", \
+"CSV_E+I_20250919_035838/cmb_coldspots_summary_E+I.csv", \
+"CSV_E+I_20250919_035838/tqe_runs_E+I.csv", \
+"CSV_E+I_20250919_035838/ft_delta_summary_E+I.csv", \
+"CSV_E+I_20250919_035838/stability_by_I_zero_E+I.csv", \
+"CSV_E+I_20250919_035838/fl_superposition_timeseries_E+I.csv", \
+"CSV_E+I_20250919_035838/fl_collapse_timeseries_E+I.csv", \
+"CSV_E+I_20250919_035838/metrics__aoe_flag_cls__EIX_E+I.csv", \
+"CSV_E+I_20250919_035838/finetune_stability_vs_gap_quantiles_E+I.csv",\
+ "CSV_E+I_20250919_035838/metrics__aoe_align_reg__EIX_E+I.csv", \
+"CSV_E+I_20250919_035838/metrics__finetune_r2_delta__EIX_E+I.csv", \
+"CSV_E+I_20250919_035838/metrics__stability_cls__EIX_E+I.csv", \
+"CSV_E+I_20250919_035838/fl_expansion_timeseries_E+I.csv", \
+"CSV_E+I_20250919_035838/metrics__lock_epoch_reg__EIX_E+I.csv", \
+"CSV_E+I_20250919_035838/metrics__finetune_auc_delta__EIX_E+I.csv", \
+"CSV_E+I_20250919_035838/metrics__cold_min_z_reg__EIX_E+I.csv", \
+"CSV_E+I_20250919_035838/ft_feat_importance_E_E+I.csv", \
+"CSV_E+I_20250919_035838/metrics__finetune_acc_delta__EIX_E+I.csv", \
+"CSV_E+I_20250919_035838/metrics__cold_flag_cls__EIX_E+I.csv"",
+   (* add all E+I CSV files you listed here *)
+};
 
-(* ====================================== *)
-(* 3) LOAD FILES                          *)
-(* ====================================== *)
+(* List of E-only CSV files *)
+filesB = {
+   ""CSV_energy_only_20250918_214751/cmb_coldspots_summary_E-Only.csv", \
+"CSV_energy_only_20250918_214751/metrics__finetune_acc_delta__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_214751/ft_feat_importance_E_E-Only.csv", \
+"CSV_energy_only_20250918_214751/universe_seeds_E-Only.csv", \
+"CSV_energy_only_20250918_214751/cmb_aoe_summary_E-Only.csv", \
+"CSV_energy_only_20250918_214751/fl_expansion_timeseries_E-Only.csv", \
+"CSV_energy_only_20250918_214751/ft_metrics_reg_E-Only.csv", \
+"CSV_energy_only_20250918_214751/tqe_runs_E-Only.csv", \
+"CSV_energy_only_20250918_214751/metrics__cold_flag_cls__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_214751/metrics_joined_E-Only.csv", \
+"CSV_energy_only_20250918_214751/metrics__finetune_r2_delta__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_214751/metrics__cold_min_z_reg__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_214751/stability_by_I_zero_E-Only.csv", \
+"CSV_energy_only_20250918_214751/metrics__aoe_align_reg__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_214751/metrics__stability_cls__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_214751/metrics__aoe_flag_cls__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_214751/ft_delta_summary_E-Only.csv", \
+"CSV_energy_only_20250918_214751/fl_collapse_timeseries_E-Only.csv", \
+"CSV_energy_only_20250918_214751/pre_fluctuation_pairs_E-Only.csv", \
+"CSV_energy_only_20250918_214751/ft_feat_importance_EIX_E-Only.csv", \
+"CSV_energy_only_20250918_214751/metrics__lock_epoch_reg__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_214751/metrics__finetune_auc_delta__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_214751/ft_slice_adaptive_E-Only.csv", \
+"CSV_energy_only_20250918_214751/finetune_stability_vs_gap_quantiles_\
+E-Only.csv", \
+"CSV_energy_only_20250918_214751/ft_metrics_cls_E-Only.csv", \
+"CSV_energy_only_20250918_214751/fl_superposition_timeseries_\
+E-Only.csv", \
+"CSV_energy_only_20250918_214751/stability_by_I_eps_sweep_E-Only.csv",\
+ "CSV_energy_only_20250918_214751/fl_fluctuation_timeseries_\
+E-Only.csv", ".DS_Store", \
+"CSV_energy_only_20250918_194717/cmb_coldspots_summary_E-Only.csv", \
+"CSV_energy_only_20250918_194717/metrics__finetune_acc_delta__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_194717/ft_feat_importance_E_E-Only.csv", \
+"CSV_energy_only_20250918_194717/universe_seeds_E-Only.csv", \
+"CSV_energy_only_20250918_194717/cmb_aoe_summary_E-Only.csv", \
+"CSV_energy_only_20250918_194717/.DS_Store", \
+"CSV_energy_only_20250918_194717/fl_expansion_timeseries_E-Only.csv", \
+"CSV_energy_only_20250918_194717/ft_metrics_reg_E-Only.csv", \
+"CSV_energy_only_20250918_194717/tqe_runs_E-Only.csv", \
+"CSV_energy_only_20250918_194717/metrics__cold_flag_cls__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_194717/metrics_joined_E-Only.csv", \
+"CSV_energy_only_20250918_194717/metrics__finetune_r2_delta__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_194717/metrics__cold_min_z_reg__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_194717/stability_by_I_zero_E-Only.csv", \
+"CSV_energy_only_20250918_194717/metrics__aoe_align_reg__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_194717/metrics__stability_cls__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_194717/metrics__aoe_flag_cls__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_194717/ft_delta_summary_E-Only.csv", \
+"CSV_energy_only_20250918_194717/fl_collapse_timeseries_E-Only.csv", \
+"CSV_energy_only_20250918_194717/pre_fluctuation_pairs_E-Only.csv", \
+"CSV_energy_only_20250918_194717/ft_feat_importance_EIX_E-Only.csv", \
+"CSV_energy_only_20250918_194717/metrics__lock_epoch_reg__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_194717/metrics__finetune_auc_delta__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_194717/ft_slice_adaptive_E-Only.csv", \
+"CSV_energy_only_20250918_194717/finetune_stability_vs_gap_quantiles_\
+E-Only.csv", \
+"CSV_energy_only_20250918_194717/ft_metrics_cls_E-Only.csv", \
+"CSV_energy_only_20250918_194717/fl_superposition_timeseries_\
+E-Only.csv", \
+"CSV_energy_only_20250918_194717/stability_by_I_eps_sweep_E-Only.csv",\
+ "CSV_energy_only_20250918_194717/fl_fluctuation_timeseries_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/cmb_coldspots_summary_E-Only.csv", \
+"CSV_energy_only_20250918_203906/metrics__finetune_acc_delta__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/ft_feat_importance_E_E-Only.csv", \
+"CSV_energy_only_20250918_203906/universe_seeds_E-Only.csv", \
+"CSV_energy_only_20250918_203906/cmb_aoe_summary_E-Only.csv", \
+"CSV_energy_only_20250918_203906/fl_expansion_timeseries_E-Only.csv", \
+"CSV_energy_only_20250918_203906/ft_metrics_reg_E-Only.csv", \
+"CSV_energy_only_20250918_203906/tqe_runs_E-Only.csv", \
+"CSV_energy_only_20250918_203906/metrics__cold_flag_cls__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/metrics_joined_E-Only.csv", \
+"CSV_energy_only_20250918_203906/metrics__finetune_r2_delta__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/metrics__cold_min_z_reg__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/stability_by_I_zero_E-Only.csv", \
+"CSV_energy_only_20250918_203906/metrics__aoe_align_reg__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/metrics__stability_cls__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/metrics__aoe_flag_cls__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/ft_delta_summary_E-Only.csv", \
+"CSV_energy_only_20250918_203906/fl_collapse_timeseries_E-Only.csv", \
+"CSV_energy_only_20250918_203906/pre_fluctuation_pairs_E-Only.csv", \
+"CSV_energy_only_20250918_203906/ft_feat_importance_EIX_E-Only.csv", \
+"CSV_energy_only_20250918_203906/metrics__lock_epoch_reg__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/metrics__finetune_auc_delta__Eonly_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/ft_slice_adaptive_E-Only.csv", \
+"CSV_energy_only_20250918_203906/finetune_stability_vs_gap_quantiles_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/ft_metrics_cls_E-Only.csv", \
+"CSV_energy_only_20250918_203906/fl_superposition_timeseries_\
+E-Only.csv", \
+"CSV_energy_only_20250918_203906/stability_by_I_eps_sweep_E-Only.csv",\
+ "CSV_energy_only_20250918_203906/fl_fluctuation_timeseries_\
+E-Only.csv"",
+   (* add all E-only CSV files you listed here *)
+   };
 
-filesA = FileNames["*.csv", dirA, Infinity];
-filesB = FileNames["*.csv", dirB, Infinity];
+(* Import all CSVs into datasets, ignoring missing *)
+dsA = DeleteMissing[toDS /@ filesA];
+dsB = DeleteMissing[toDS /@ filesB];
 
-assocA = AssociationMap[safeImport, filesA];
-assocB = AssociationMap[safeImport, filesB];
+(* Merge all datasets into one big dataset per group *)
+bigA = If[dsA === {}, Dataset[{}], Dataset@Flatten[Normal /@ dsA, 1]];
+bigB = If[dsB === {}, Dataset[{}], Dataset@Flatten[Normal /@ dsB, 1]];
 
-(* ====================================== *)
-(* 4) GROUP BY BASE NAMES                 *)
-(* ====================================== *)
+(* ============================= *)
+(* 3) COMPARE MEAN VALUES        *)
+(* ============================= *)
 
-groupsA = GroupBy[filesA, niceName];
-groupsB = GroupBy[filesB, niceName];
-commonGroups = Intersection[Keys[groupsA], Keys[groupsB]];
+(* Find common columns between both groups *)
+commonCols = 
+  Intersection[Keys@First@Normal@bigA, Keys@First@Normal@bigB];
 
-(* ====================================== *)
-(* 5) COMPARE EACH GROUP                  *)
-(* ====================================== *)
+(* Build comparison association for each column *)
+comp = Association@Table[
+    col -> <|
+      "mean_E+I" -> Mean@DeleteMissing[Normal@bigA[All, col]],
+      "mean_E-only" -> Mean@DeleteMissing[Normal@bigB[All, col]],
+      "diff" -> (Mean@DeleteMissing[Normal@bigA[All, col]] - 
+         Mean@DeleteMissing[Normal@bigB[All, col]])
+      |>,
+    {col, commonCols}
+    ];
 
-mergeFiles[fileList_] := Module[{all},
-  all = DeleteMissing[toDS /@ (Import /@ fileList)];
-  If[all === {}, Dataset[{}], Dataset @ Flatten[Normal /@ all, 1]]
-];
+(* ============================= *)
+(* 4) EXPORT TO DESKTOP          *)
+(* ============================= *)
 
-groupResults = Association@Table[
-    g -> Module[{dsA, dsB, commonCols, stats},
-      dsA = mergeFiles[groupsA[g]];
-      dsB = mergeFiles[groupsB[g]];
-      If[dsA === Dataset[{}] || dsB === Dataset[{}], Return[g -> <||>]];
-      commonCols = Intersection[Keys@First@Normal@dsA, Keys@First@Normal@dsB];
-      stats = Association@Table[
-        col -> <|
-          "mean_E+I" -> Mean@DeleteMissing[Normal@dsA[All, col]],
-          "mean_E-only" -> Mean@DeleteMissing[Normal@dsB[All, col]],
-          "diff" -> (Mean@DeleteMissing[Normal@dsA[All, col]] -
-                     Mean@DeleteMissing[Normal@dsB[All, col]])
-        |>,
-        {col, commonCols}
-      ];
-      stats
-    ],
-    {g, commonGroups}
-];
+(* Create output folder on Desktop *)
+outDir = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_Comparison"}];
+If[! DirectoryQ[outDir], 
+   CreateDirectory[outDir, CreateIntermediateDirectories -> True]];
 
-(* ====================================== *)
-(* 6) GLOBAL AVERAGE ACROSS EVERYTHING    *)
-(* ====================================== *)
-
-allStats = Flatten[
-   Table[
-     KeyValueMap[
-       ( {g, #1, #2["mean_E+I"], #2["mean_E-only"]} ) &,
-       groupResults[g]
-     ],
-     {g, Keys[groupResults]}
-   ],
-   1
-];
-
-
-globalAvg = GroupBy[allStats, #[[2]] &, 
-   Function[rows,
-     <|
-       "mean_E+I" -> Mean[DeleteMissing[rows[[All, 3]]]],
-       "mean_E-only" -> Mean[DeleteMissing[rows[[All, 4]]]],
-       "diff" -> (Mean[DeleteMissing[rows[[All, 3]]]] - 
-                  Mean[DeleteMissing[rows[[All, 4]]]])
-     |>
+(* Export CSV: one row per column with mean values and difference *)
+Export[FileNameJoin[{outDir, "comparison_table.csv"}],
+  Prepend[
+   KeyValueMap[{#1, #2["mean_E+I"], #2["mean_E-only"], #2["diff"]} &, comp],
+   {"Column", "Mean_E+I", "Mean_E-only", "Difference"}
    ]
-];
+  ];
 
-(* ====================================== *)
-(* 7) SAVE RESULTS                        *)
-(* ====================================== *)
-
-CleanForJSON[x_] := x /. Missing[_] -> Null;
-
-nbDir   = Quiet@NotebookDirectory[];
-baseDir = If[StringQ[nbDir], nbDir, FileNameJoin[{$HomeDirectory, "Desktop"}]];
-outDir  = FileNameJoin[{baseDir, "TQE_Wolfram_Global_Comparison"}];
-If[!DirectoryQ[outDir], CreateDirectory[outDir, CreateIntermediateDirectories -> True]];
-
-(* Save group results *)
-Export[FileNameJoin[{outDir, "grouped_comparisons.json"}], CleanForJSON@groupResults];
-Export[FileNameJoin[{outDir, "grouped_comparisons.csv"}],
-  Prepend[
-    Flatten[
-      KeyValueMap[
-        Function[{group, vals},
-          KeyValueMap[{group, #1, #2["mean_E+I"], #2["mean_E-only"], #2["diff"]} &, vals]
-        ] /@ Normal[groupResults],
-      1
-    ],
-    {"Group","Column","Mean_E+I","Mean_E-only","Difference"}
-  ]
-];
-
-(* Save global average *)
-Export[FileNameJoin[{outDir, "global_avg_comparison.json"}], CleanForJSON@globalAvg];
-Export[FileNameJoin[{outDir, "global_avg_comparison.csv"}],
-  Prepend[
-    KeyValueMap[{#1, #2["mean_E+I"], #2["mean_E-only"], #2["diff"]} &, globalAvg],
-    {"Column","Mean_E+I","Mean_E-only","Difference"}
-  ]
-];
+(* Export JSON: association of all results *)
+Export[FileNameJoin[{outDir, "comparison_table.json"}],
+  cleanForJSON@comp
+  ];
 
 Print["Results exported to: ", outDir];
