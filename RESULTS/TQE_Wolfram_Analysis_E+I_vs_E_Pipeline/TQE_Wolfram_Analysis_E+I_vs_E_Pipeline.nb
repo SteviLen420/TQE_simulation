@@ -23,9 +23,9 @@ ClearAll[say, safeImport, toDS, pickCol, binStats, pct, niceName, tryCols, colEx
 (* Pretty printing for headers *)
 say[txt_] := Print[Style[txt, 14, Bold, RGBColor[0.1, 0.2, 0.6]]];
 
-(* Explicit CSV import wrapped into Dataset *)
+(* Explicit CSV import -> raw rows -> wrap into Dataset *)
 safeImport[f_] := Quiet@Check[
-  Import[f, "Dataset"],
+  Dataset @ Import[f, {"CSV","Data"}],
   Missing["NotAvailable"]
 ];
 
@@ -84,6 +84,29 @@ xCol      = tryCols[#, {"X","x","E_times_I","E_mul_I"}] &;
 eCol      = tryCols[#, {"E","e"}] &;
 tCol      = tryCols[#, {"time_step","t","step","epoch"}] &;
 geCol     = tryCols[#, {"global_entropy","entropy_global","H_global","entropy"}] &;
+
+(* Calculate the binned stability curve *)
+binStats[ds_, var_, nbins_:40] := Module[
+  {
+    varname = ToString[var], 
+    v, st, data, min, max, edges, idx, grp, means
+  },
+  v  = tryCols[ds, {varname}];
+  st = tryCols[ds, {"stable","is_stable","stable_flag","stable_cls","stability"}];
+  If[MissingQ[v] || MissingQ[st], Return[Missing["NoData"]]];
+  data = Cases[Transpose[{Normal@v, Normal@st}], {x_?NumericQ, y_?NumericQ}];
+  If[data === {}, Return[Missing["NoData"]]];
+  {min, max} = {Min[data[[All,1]]], Max[data[[All,1]]]};
+  If[!NumericQ[min] || !NumericQ[max] || min==max, Return[Missing["NoData"]]];
+  edges = Subdivide[min, max, nbins];
+  idx   = Clip[Floor@Rescale[data[[All,1]], {min, max}, {1, nbins}], {1, nbins}];
+  grp   = GroupBy[Transpose[{idx, data[[All,2]]}], First -> Last];
+  means = Table[If[KeyExistsQ[grp,i], Mean@grp[i], Missing["NA"]], {i,1,nbins}];
+  Dataset @ Table[
+    <|"bin"->i, "edge_min"->edges[[i]], "edge_max"->edges[[i+1]], "stability_rate"->means[[i]]|>,
+    {i,1,nbins}
+  ]
+];
 
 (* ============================= *)
 (* 3) LOAD AND PAIR FILES        *)
@@ -368,8 +391,18 @@ Export[FileNameJoin[{outDir, "goldilocks_peaks.json"}],
 ];
 
 (* 11.3 Save cold-spot statistics as JSON *)
+CleanForJSON[x_] := x /. Missing[_] -> Null;
+
+Export[FileNameJoin[{outDir, "goldilocks_peaks.json"}],
+  CleanForJSON@<|"E+I" -> peakA, "E-only" -> peakB|>
+];
+
 Export[FileNameJoin[{outDir, "coldspot_stats.json"}],
-  <|"E+I" -> cA, "E-only" -> cB|>
+  CleanForJSON@<|"E+I" -> cA, "E-only" -> cB|>
+];
+
+Export[FileNameJoin[{outDir, "xai_top_features.json"}],
+  CleanForJSON@<|"E+I" -> Normal@topK[fiA,3], "E-only" -> Normal@topK[fiB,3]|>
 ];
 
 (* 11.4 Save Best Universe entropy stddev as CSV *)
