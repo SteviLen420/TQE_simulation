@@ -20,64 +20,62 @@ dirB = "/Users/stevilen/Desktop/TQE_COMBINED_CSV/dataset_B_E_only";
 
 ClearAll[say, safeImport, toDS, pickCol, binStats, pct, niceName, tryCols, colExistsQ];
 
-(* Print a styled header *)
+(* Pretty printing for headers *)
 say[txt_] := Print[Style[txt, 14, Bold, RGBColor[0.1, 0.2, 0.6]]];
 
-(* Safely import a CSV file, returning Missing[] on failure *)
+(* Explicit CSV import wrapped into Dataset *)
 safeImport[f_] := Quiet@Check[
-    Import[f, "Dataset"],
-    Missing["NotAvailable"]
+  Dataset@Import[f, {"CSV", "Data"}],
+  Missing["NotAvailable"]
 ];
 
-(* Ensure the input is a Dataset *)
+(* Ensure input is a Dataset *)
 toDS[x_] := Which[
-    Head[x] === Dataset, x,
-    MatchQ[x, _List], Dataset[x],
-    True, Missing["NotAvailable"]
+  Head[x] === Dataset, x,
+  MatchQ[x, _List], Dataset[x],
+  True, Missing["NotAvailable"]
 ];
 
-(* Check if a column key exists in a dataset *)
+(* Check if a column exists in dataset *)
 colExistsQ[ds_, name_] := Module[{ok = MatchQ[ds, _Dataset] && Length[ds] > 0},
   If[!ok, False, Quiet@Check[KeyExistsQ[Normal@First@ds, name], False]]
-]
-
-(* Try to select a column from a list of possible names *)
-tryCols[ds_, names_List] := With[
-    {hit = SelectFirst[names, colExistsQ[ds, #] & , None]},
-    If[hit === None, Missing["NotAvailable"], ds[All, hit]]
 ];
 
-(* Format a percentage nicely, including the sample size *)
+(* Try multiple column name candidates *)
+tryCols[ds_, names_List] := With[
+  {hit = SelectFirst[names, colExistsQ[ds, #] & , None]},
+  If[hit === None, Missing["NotAvailable"], ds[All, hit]]
+];
+
+(* Format percentage nicely *)
 pct[num_, den_] := If[den > 0, NumberForm[100.0*num/den, {4, 2}], Missing["NA"]];
 
-(* Normalize a filename to get a logical base name for comparison *)
+(* Normalize file base name for pairing *)
 niceName[path_, tag_] := Module[{b = FileBaseName[path]},
-    StringReplace[b, {
-      "_E+I" -> "", "_E-Only" -> "", "_E_only" -> "", "_EOnly" -> "",
-      "_E" -> "", tag -> ""
-    }]
+  StringReplace[b, {
+    "_E+I" -> "", "_E-Only" -> "", "_E_only" -> "", "_EOnly" -> "",
+    "_E" -> "", tag -> ""
+  }]
 ];
 
-(* Calculate the binned stability curve for a given variable *)
-binStats[ds_, var_, nbins_: 40] := Module[
-    {v = ds[All, var], st = tryCols[ds, {"stable", "is_stable", "stable_flag"}], bins, data},
-    If[MissingQ[v] || MissingQ[st], Missing["NoData"],
-      data = Cases[Transpose[{Normal@v, Normal@st}], {x_?NumericQ, y_?NumericQ}];
-      bins = BinCounts[data[[All, 1]], nbins];
-      (* Bin lists *)
-      With[{min = Min[data[[All, 1]]], max = Max[data[[All, 1]]]},
-        Module[{edges = Subdivide[min, max, nbins], idx, grp, means},
-          idx = Clip[Floor[Rescale[data[[All, 1]], {min, max}, {1, nbins}]], {1, nbins}];
-          grp = GroupBy[Transpose[{idx, data[[All, 2]]}], First -> Last];
-          means = Table[If[KeyExistsQ[grp, i], Mean[grp[i]], Missing["NA"]], {i, 1, nbins}];
-          Dataset@Table[
-            <|"bin" -> i, "edge_min" -> edges[[i]], "edge_max" -> edges[[i + 1]], "stability_rate" -> means[[i]]|>,
-            {i, 1, nbins}
-          ]
-        ]
-      ]
-    ]
+(* Prefer summary files: joined > stability > tqe_runs > cls; fallback = biggest table *)
+pickSummaryFile[asc_] := Module[
+  {keys = Keys@asc, prefs, hits},
+  prefs = {"metrics_joined", "metrics_stability", "tqe_runs", "metrics_cls"};
+  hits  = Select[keys, StringContainsQ[#, prefs] &];
+  If[hits === {},
+    First@MaximalBy[keys, (Length@toDS@asc[#] /. _Missing -> 0) &],
+    First@MaximalBy[hits, (Length@toDS@asc[#] /. _Missing -> 0) &]
+  ]
 ];
+
+(* Column name variants *)
+stableCol = tryCols[#, {"stable","is_stable","stable_flag","stable_cls","stability"}] &;
+lockCol   = tryCols[#, {"lock_epoch","lockin_epoch","lock_ep","lock_step","lockin_step"}] &;
+xCol      = tryCols[#, {"X","x","E_times_I","E_mul_I"}] &;
+eCol      = tryCols[#, {"E","e"}] &;
+tCol      = tryCols[#, {"time_step","t","step","epoch"}] &;
+geCol     = tryCols[#, {"global_entropy","entropy_global","H_global","entropy"}] &;
 
 (* ============================= *)
 (* 3) LOAD AND PAIR FILES        *)
@@ -89,7 +87,7 @@ filesB = FileNames["*.csv", dirB, Infinity];
 assocA = AssociationMap[safeImport, filesA];
 assocB = AssociationMap[safeImport, filesB];
 
-(* Match files based on their logical name *)
+(* Match files by normalized key *)
 keyA = AssociationThread[niceName[#, "A"] & /@ Keys[assocA] -> Keys[assocA]];
 keyB = AssociationThread[niceName[#, "B"] & /@ Keys[assocB] -> Keys[assocB]];
 
@@ -97,10 +95,32 @@ commonKeys = Intersection[Keys[keyA], Keys[keyB]];
 
 say["File Loading Summary"];
 Grid[{
-    {"A (E+I) files found", Length[assocA]},
-    {"B (E-only) files found", Length[assocB]},
-    {"Matched file pairs", Length[commonKeys]}
+  {"A (E+I) files found", Length[assocA]},
+  {"B (E-only) files found", Length[assocB]},
+  {"Matched file pairs", Length[commonKeys]}
 }, Frame -> All]
+
+(* Debug: show which files were picked *)
+say["Chosen files"];
+sumAfile   = pickSummaryFile[assocA];
+sumBfile   = pickSummaryFile[assocB];
+Print["Summary A: ", sumAfile];
+Print["Summary B: ", sumBfile];
+
+timeAfile = SelectFirst[Keys@assocA, StringContainsQ[#, {"timeseries","time_series"}] &];
+timeBfile = SelectFirst[Keys@assocB, StringContainsQ[#, {"timeseries","time_series"}] &];
+Print["Timeseries A: ", timeAfile];
+Print["Timeseries B: ", timeBfile];
+
+coldAfile = SelectFirst[Keys@assocA, StringContainsQ[#, {"cmb_coldspots","coldspot","cold_spot"}] &];
+coldBfile = SelectFirst[Keys@assocB, StringContainsQ[#, {"cmb_coldspots","coldspot","cold_spot"}] &];
+Print["Coldspots A: ", coldAfile];
+Print["Coldspots B: ", coldBfile];
+
+featAfile = SelectFirst[Keys@assocA, StringContainsQ[#, {"feat_importance","feature_importance"}] &];
+featBfile = SelectFirst[Keys@assocB, StringContainsQ[#, {"feat_importance","feature_importance"}] &];
+Print["FeatImp A: ", featAfile];
+Print["FeatImp B: ", featBfile];
 
 (* ============================= *)
 (* 4) STABILITY & LOCK-IN ANALYSIS *)
