@@ -12,9 +12,8 @@ ClearAll["Global`*"];
 safeImport[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
 
 (* Analyze one CSV file *)
-analyzeCSV[file_String] := Module[{ds},
+analyzeCSV[file_String] := Module[{ds, nums},
   
-  (* Import CSV safely *)
   ds = safeImport[file];
   
   (* If file is empty, return simple status *)
@@ -22,14 +21,16 @@ analyzeCSV[file_String] := Module[{ds},
     Return[<|"File" -> FileBaseName[file], "Status" -> "Empty"|>]
   ];
   
-  (* Basic mathematical sanity checks *)
+  (* Keep only numeric values for math checks *)
+  nums = Cases[Flatten[Normal[ds]], _?NumericQ];
+  
   <|
     "File" -> FileBaseName[file],
     "TotalRows" -> Length[ds],
-    "AnyNaN" -> AnyTrue[Flatten[Normal[ds]], NumericQ[#] && Not[NumberQ[#]] &],
-    "AnyInfinity" -> AnyTrue[Flatten[Normal[ds]], # === Infinity || # === -Infinity &],
-    "Mean" -> Quiet@Mean[Flatten[Normal[ds]]],
-    "StdDev" -> Quiet@StandardDeviation[Flatten[Normal[ds]]]
+    "AnyNaN" -> AnyTrue[nums, Not@*NumberQ],
+    "AnyInfinity" -> AnyTrue[nums, # === Infinity || # === -Infinity &],
+    "Mean" -> If[Length[nums] > 0, Mean[nums], Missing["NA"]],
+    "StdDev" -> If[Length[nums] > 0, StandardDeviation[nums], Missing["NA"]]
   |>
 ];
 
