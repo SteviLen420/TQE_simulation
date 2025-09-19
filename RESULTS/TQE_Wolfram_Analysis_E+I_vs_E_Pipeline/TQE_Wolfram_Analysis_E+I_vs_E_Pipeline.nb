@@ -13,18 +13,18 @@
 
 (* Energy-only simulations *)
 dirB = {
-  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline__energy_only_20250918_194717/"],
-  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline__energy_only_20250918_203906/"],
-  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline__energy_only_20250918_214751/"]
+  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline__energy_only_20250918_194717"],
+  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline__energy_only_20250918_203906"],
+  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline__energy_only_20250918_214751"]
 };
 
 (* E+I simulations *)
 dirA = {
-  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_full_Pipeline_EI_20250918_081329/"],
-  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline_EI_20250918_135231/"],
-  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline_EI_20250918_143859/"],
-  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline_EI_20250918_183522/"],
-  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline_EI_20250919_035838/"]
+  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_full_Pipeline_EI_20250918_081329"],
+  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline_EI_20250918_135231"],
+  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline_EI_20250918_143859"],
+  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline_EI_20250918_183522"],
+  CloudObject["https://www.wolframcloud.com/obj/stefanlen420/TQE_Universe_Simulation_Full_Pipeline_EI_20250919_035838"]
 };
 
 (* Collect all CSVs inside each group *)
