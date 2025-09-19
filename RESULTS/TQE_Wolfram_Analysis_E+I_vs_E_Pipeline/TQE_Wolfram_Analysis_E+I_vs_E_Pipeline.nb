@@ -58,11 +58,18 @@ tryCols[ds_, names_List] := Module[{firstRow, hit},
 ];
 
 (* Convert Missing[] to Null for JSON export *)
-sanitizeForJSON[expr_] := expr /. Missing[_] -> Null;
+sanitizeForJSON[expr_] := expr /. {
+   Missing[_] -> Null,
+   ds_Dataset :> Normal[ds],
+   Quantity[val_, _] :> val
+};
 
 (* Build associations for quick access *)
 assocA = AssociationMap[safeImport, filesA];
 assocB = AssociationMap[safeImport, filesB];
+
+keysA = FileBaseName /@ Keys[assocA];
+keysB = FileBaseName /@ Keys[assocB];
 
 (* ============================= *)
 (* 3) STABILITY + LOCK-IN        *)
@@ -74,8 +81,8 @@ say["1) Stability + Lock-in"];
 stabAFiles = Select[Keys@assocA, StringContainsQ[#, "stability", IgnoreCase -> True] &];
 stabBFiles = Select[Keys@assocB, StringContainsQ[#, "stability", IgnoreCase -> True] &];
 
-stabA = Dataset@Flatten[Normal /@ Values@Select[assocA, StringContainsQ[#,"stability", IgnoreCase->True]&], 1];
-stabB = Dataset@Flatten[Normal /@ Values@Select[assocB, StringContainsQ[#,"stability", IgnoreCase->True]&], 1];
+stabA = Dataset @ Flatten[Normal /@ (assocA /@ stabAFiles), 1];
+stabB = Dataset @ Flatten[Normal /@ (assocB /@ stabBFiles), 1];
 
 
 stabilitySummary[ds_] := Module[
@@ -175,7 +182,7 @@ aoeB = Dataset @ Flatten[Normal /@ (toDS /@ (assocB /@ aoeBFiles)), 1]; (* This 
 
 aoeSummary[ds_] := Module[{vals},
   If[Length[ds] == 0, Return@<|"count" -> 0, "mean" -> Missing["NA"]|>];
-  vals = DeleteMissing@Flatten@Normal@Values[ds];
+  vals = DeleteMissing@Cases[Flatten@Normal[ds], _?NumericQ];
   <|
     "count" -> Length[ds],
     "mean" -> If[Length[vals] > 0, Mean[vals], Missing["NA"]]
@@ -201,14 +208,16 @@ say["4) Fine-tuning metrics"];
 ftAFiles = Select[Keys@assocA, StringContainsQ[#, "finetune", IgnoreCase -> True] &];
 ftBFiles = Select[Keys@assocB, StringContainsQ[#, "finetune", IgnoreCase -> True] &];
 
-ftA = Dataset @ Flatten[Normal /@ (toDS /@ (assocA /@ ftAFiles)), 1];
-ftB = Dataset @ Flatten[Normal /@ (toDS /@ ftBFiles), 1];
+ftA = Dataset @ Flatten[Normal /@ (assocA /@ ftAFiles), 1];
+ftB = Dataset @ Flatten[Normal /@ (assocB /@ ftBFiles), 1];
 
 summFT[ds_] := Module[{acc, auc},
-  If[Length[ds] == 0, Return@<|"best_acc" -> Missing["NA"], "best_auc" -> Missing["NA"]|>];
+  If[Length[ds] == 0, 
+    Return@<|"best_acc" -> Missing["NA"], "best_auc" -> Missing["NA"]|>
+  ];
   
-  acc = tryCols[ds, {"acc", "accuracy"}];
-  auc = tryCols[ds, {"auc", "roc_auc"}];
+  acc = tryCols[ds, {"acc", "accuracy", "val_acc"}];
+  auc = tryCols[ds, {"auc", "roc_auc", "val_auc"}];
   
   <|
     "best_acc" -> If[MissingQ[acc], Missing["NA"], Max@DeleteMissing@Normal@acc],
