@@ -56,23 +56,31 @@ assocB = AssociationMap[safeImport, filesB];
 (* 3) STABILITY + LOCK-IN        *)
 (* ============================= *)
 
-say["1) Stability and Lock-in"];
-
-stabAFiles = Select[Keys@assocA, 
-   StringContainsQ[#, {"stability", "lock_epoch", "metrics__stability"}, IgnoreCase -> True] &];
-stabBFiles = Select[Keys@assocB, 
-   StringContainsQ[#, {"stability", "lock_epoch", "metrics__stability"}, IgnoreCase -> True] &];
-
-stabA = Dataset @ Flatten[Normal /@ (toDS /@ (assocA /@ stabAFiles)), 1];
-stabB = Dataset @ Flatten[Normal /@ (toDS /@ stabBFiles), 1];
-
-stabSummary[ds_] := Module[{stable, lock},
-  stable = tryCols[ds, {"stable", "stable_flag", "stability"}];
-  lock   = tryCols[ds, {"lock_epoch", "lockin_step"}];
+stabilitySummary[ds_] := Module[
+  {stableCol, lockCol, n, nStable, nLock, rateStable, rateLock},
+  
+  n = Length[ds];
+  
+ 
+  stableCol = tryCols[ds, {"stable","is_stable","stable_flag","stable_cls","stability"}];
+  nStable = If[MissingQ[stableCol], Missing["NA"],
+    Total@Boole[DeleteMissing@Normal@stableCol == 1]
+  ];
+  
+  
+  lockCol = tryCols[ds, {"lock_epoch","lockin_epoch","lock_step","lockin_step","lock"}];
+  nLock = If[MissingQ[lockCol], Missing["NA"],
+    Count[DeleteMissing@Normal@lockCol, _?NumericQ]
+  ];
+  
+  
+  rateStable = If[MissingQ[nStable] || n == 0, Missing["NA"], 100.0*nStable/n];
+  rateLock   = If[MissingQ[nLock] || n == 0, Missing["NA"], 100.0*nLock/n];
+  
   <|
-    "n" -> Length[ds],
-    "stable_n" -> Count[DeleteMissing@Normal@stable, 1],
-    "lockin_n" -> Count[DeleteMissing@Normal@lock, _?NumericQ]
+    "n" -> n,
+    "stable_n" -> nStable, "stable_pct" -> rateStable,
+    "lockin_n" -> nLock, "lockin_pct" -> rateLock
   |>
 ];
 
