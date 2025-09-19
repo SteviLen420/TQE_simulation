@@ -84,11 +84,14 @@ jsonResults = Normal @ Map[
        "TotalRows" -> fileAssoc["TotalRows"],
        "AnyNaN" -> fileAssoc["AnyNaN"],
        "AnyInfinity" -> fileAssoc["AnyInfinity"],
-       "Columns" -> Normal[fileAssoc["Columns"] /. Null -> None]
+       "Columns" -> Normal[fileAssoc["Columns"] /. (Null | None) -> Null]
      ]
    ],
    results
 ];
+
+(* Save clean JSON *)
+Export[FileNameJoin[{outDir, "math_check_results.json"}], jsonResults, "JSON"];
 
 (* Save clean JSON *)
 Export[FileNameJoin[{outDir, "math_check_results.json"}], jsonResults, "JSON"];
