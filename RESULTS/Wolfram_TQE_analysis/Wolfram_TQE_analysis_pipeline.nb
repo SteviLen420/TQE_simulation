@@ -1,0 +1,303 @@
+(* ============================= *)
+(* 1) SET INPUT DIRECTORIES      *)
+(* ============================= *)
+
+dirA = "/Users/stevilen/Desktop/TQE_COMBINED_CSV/dataset_A_E+I";
+dirB = "/Users/stevilen/Desktop/TQE_COMBINED_CSV/dataset_B_E_only";
+
+(* ============================= *)
+(* 2) HELPER FUNCTIONS           *)
+(* ============================= *)
+
+ClearAll[say, safeImport, toDS, pickCol, binStats, pct, niceName, tryCols, colExistsQ];
+
+(* Print a styled header *)
+say[txt_] := Print[Style[txt, 14, Bold, RGBColor[0.1, 0.2, 0.6]]];
+
+(* Safely import a CSV file, returning Missing[] on failure *)
+safeImport[f_] := Quiet@Check[
+    Import[f, "Dataset"],
+    Missing["NotAvailable"]
+];
+
+(* Ensure the input is a Dataset *)
+toDS[x_] := Which[
+    Head[x] === Dataset, x,
+    MatchQ[x, _List], Dataset[x],
+    True, Missing["NotAvailable"]
+];
+
+(* Check if a column key exists in a dataset *)
+colExistsQ[ds_, name_] := Dataset`HasKey[ds[1 ;; 1], name] /. _Missing -> False;
+
+(* Try to select a column from a list of possible names *)
+tryCols[ds_, names_List] := With[
+    {hit = SelectFirst[names, colExistsQ[ds, #] & , None]},
+    If[hit === None, Missing["NotAvailable"], ds[All, hit]]
+];
+
+(* Format a percentage nicely, including the sample size *)
+pct[num_, den_] := If[den > 0, NumberForm[100.0*num/den, {4, 2}], Missing["NA"]];
+
+(* Normalize a filename to get a logical base name for comparison *)
+niceName[path_, tag_] := Module[{b = FileBaseName[path]},
+    StringReplace[b, {
+      "_E+I" -> "", "_E-Only" -> "", "_E_only" -> "", "_EOnly" -> "",
+      "_E" -> "", tag -> ""
+    }]
+];
+
+(* Calculate the binned stability curve for a given variable *)
+binStats[ds_, var_, nbins_: 40] := Module[
+    {v = ds[All, var], st = tryCols[ds, {"stable", "is_stable", "stable_flag"}], bins, data},
+    If[MissingQ[v] || MissingQ[st], Missing["NoData"],
+      data = Normal@Dataset[Select[Transpose[{Normal@v, Normal@st}], VectorQ[#, NumericQ /@ #] &]];
+      bins = BinCounts[data[[All, 1]], nbins];
+      (* Bin lists *)
+      With[{min = Min[data[[All, 1]]], max = Max[data[[All, 1]]]},
+        Module[{edges = Subdivide[min, max, nbins], idx, grp, means},
+          idx = Clip[Floor[Rescale[data[[All, 1]], {min, max}, {1, nbins}]], {1, nbins}];
+          grp = GroupBy[Transpose[{idx, data[[All, 2]]}], First -> Last];
+          means = Table[If[KeyExistsQ[grp, i], Mean[grp[i]], Missing["NA"]], {i, 1, nbins}];
+          Dataset@Table[
+            <|"bin" -> i, "edge_min" -> edges[[i]], "edge_max" -> edges[[i + 1]], "stability_rate" -> means[[i]]|>,
+            {i, 1, nbins}
+          ]
+        ]
+      ]
+    ]
+];
+
+(* ============================= *)
+(* 3) LOAD AND PAIR FILES        *)
+(* ============================= *)
+
+filesA = FileNames["*.csv", dirA, Infinity];
+filesB = FileNames["*.csv", dirB, Infinity];
+
+assocA = AssociationMap[safeImport, filesA];
+assocB = AssociationMap[safeImport, filesB];
+
+(* Match files based on their logical name *)
+keyA = AssociationThread[niceName[#, "A"] & /@ Keys[assocA] -> Keys[assocA]];
+keyB = AssociationThread[niceName[#, "B"] & /@ Keys[assocB] -> Keys[assocB]];
+
+commonKeys = Intersection[Keys[keyA], Keys[keyB]];
+
+say["File Loading Summary"];
+Grid[{
+    {"A (E+I) files found", Length[assocA]},
+    {"B (E-only) files found", Length[assocB]},
+    {"Matched file pairs", Length[commonKeys]}
+}, Frame -> All]
+
+(* ============================= *)
+(* 4) STABILITY & LOCK-IN ANALYSIS *)
+(* ============================= *)
+
+stabilitySummary[ds_] := Module[
+    {stableCol, lockCol, n, nStable, nLock, rateStable, rateLock},
+    n = Length[ds];
+    stableCol = tryCols[ds, {"stable", "is_stable", "stable_flag"}];
+    nStable = If[MissingQ[stableCol], Missing["NA"], Total@Boole[Normal@stableCol == 1]];
+    lockCol = tryCols[ds, {"lock_epoch", "lockin_epoch", "lock_ep"}];
+    nLock = If[MissingQ[lockCol], Missing["NA"], Total@Boole[Normal@lockCol >= 0]];
+    rateStable = If[MissingQ[nStable] || n == 0, Missing["NA"], 100.0*nStable/n];
+    rateLock = If[MissingQ[nLock] || n == 0, Missing["NA"], 100.0*nLock/n];
+    <|"n" -> n, "stable_n" -> nStable, "stable_pct" -> rateStable,
+      "lockin_n" -> nLock, "lockin_pct" -> rateLock|>
+];
+
+say["1) Overall stability / lock-in"];
+
+(* Pick a master summary table from the available files *)
+pickSummaryFile[asc_] := Module[
+    {cands = Select[Keys@asc, StringContainsQ[#, {"metrics_stability", "metrics_joined", "tqe_runs", "metrics_cls"}] &]},
+    If[cands === {}, Missing["NA"], First@cands]
+];
+
+sumAfile = pickSummaryFile[assocA];
+sumBfile = pickSummaryFile[assocB];
+
+sumA = If[MissingQ[sumAfile], Missing["NA"], assocA[sumAfile] // toDS];
+sumB = If[MissingQ[sumBfile], Missing["NA"], assocB[sumBfile] // toDS];
+
+stabA = If[MissingQ[sumA], Missing["NA"], stabilitySummary[sumA]];
+stabB = If[MissingQ[sumB], Missing["NA"], stabilitySummary[sumB]];
+
+Grid[{
+    {"Metric", "E+I (A)", "E-only (B)"},
+    {"Total Universes", stabA["n"], stabB["n"]},
+    {"Stable Count / %", Row[{stabA["stable_n"], " / ", NumberForm[stabA["stable_pct"], {4, 2}], "%"}],
+                        Row[{stabB["stable_n"], " / ", NumberForm[stabB["stable_pct"], {4, 2}], "%"}]},
+    {"Lock-in Count / %", Row[{stabA["lockin_n"], " / ", NumberForm[stabA["lockin_pct"], {4, 2}], "%"}],
+                        Row[{stabB["lockin_n"], " / ", NumberForm[stabB["lockin_pct"], {4, 2}], "%"}]}
+}, Frame -> All]
+
+(* ============================= *)
+(* 5) GOLDILOCKS ZONE ANALYSIS   *)
+(* ============================= *)
+
+say["2) Goldilocks zone (A: X, B: E)"];
+
+goldA = If[MissingQ[sumA], Missing["NA"], binStats[sumA, "X", 40]];
+goldB = If[MissingQ[sumB], Missing["NA"], binStats[sumB, "E", 40]];
+
+(* Compare peaks of the stability curves *)
+peakInfo[ds_] := If[MissingQ[ds], Missing["NA"],
+    Module[{tbl = Normal@ds // DeleteMissing},
+      If[tbl === {}, Missing["NA"],
+        First@Reverse@SortBy[tbl, #["stability_rate"] /. Missing[__] -> -Infinity &]
+      ]
+    ]
+];
+
+peakA = peakInfo[goldA];
+peakB = peakInfo[goldB];
+
+Grid[
+    {
+        {"Dataset", "Peak stability", "At (edge_min..edge_max)"},
+        {"E+I (X)", If[MissingQ[peakA], "NA", NumberForm[100*peakA["stability_rate"], {4, 2}]~StringJoin~"%"],
+                    If[MissingQ[peakA], "NA", Row[{NumberForm[peakA["edge_min"], {4, 3}], " .. ", NumberForm[peakA["edge_max"], {4, 3}]}]]},
+        {"E-only (E)", If[MissingQ[peakB], "NA", NumberForm[100*peakB["stability_rate"], {4, 2}]~StringJoin~"%"],
+                      If[MissingQ[peakB], "NA", Row[{NumberForm[peakB["edge_min"], {4, 3}], " .. ", NumberForm[peakB["edge_max"], {4, 3}]}]]}
+    },
+    Frame -> All
+]
+
+(* ============================= *)
+(* 6) CMB ANOMALIES (COLD SPOT)   *)
+(* ============================= *)
+
+say["3) CMB cold-spots"];
+
+pickColdFile[asc_] := SelectFirst[Keys@asc, StringContainsQ[#, {"cmb_coldspots", "coldspot", "cold_spot"}] &, Missing["NA"]];
+coldA = With[{f = pickColdFile[assocA]}, If[MissingQ[f], Missing["NA"], assocA[f]//toDS]];
+coldB = With[{f = pickColdFile[assocB]}, If[MissingQ[f], Missing["NA"], assocB[f]//toDS]];
+
+coldStats[ds_] := Module[{z = tryCols[ds, {"z_value", "z", "depth_uK", "depth_microK"}]},
+    If[MissingQ[z], <|"count"->0, "min"->Missing["NA"], "mean"->Missing["NA"], "median"->Missing["NA"], "below_-70"->Missing["NA"]|>,
+      With[{v = Normal@z // DeleteMissing},
+        <|"count" -> Length[v],
+          "min" -> Min[v],
+          "mean" -> Mean[v],
+          "median" -> Median[v],
+          "below_-70" -> Count[v, x_ /; x <= -70] (* µK threshold *)
+        |>
+      ]
+    ]
+];
+
+cA = If[MissingQ[coldA], <||>, coldStats[coldA]];
+cB = If[MissingQ[coldB], <||>, coldStats[coldB]];
+
+Grid[{
+    {"Metric", "E+I (A)", "E-only (B)"},
+    {"Total Spots Found", cA["count"], cB["count"]},
+    {"Deepest Spot (µK or z)", cA["min"], cB["min"]},
+    {"Average Depth", cA["mean"], cB["mean"]},
+    {"Median Depth", cA["median"], cB["median"]},
+    {"Count ≤ -70 µK", cA["below_-70"], cB["below_-70"]}
+}, Frame -> All]
+
+(* ============================= *)
+(* 7) “BEST UNIVERSE” POST-LOCK NOISE *)
+(* ============================= *)
+
+say["4) Best-universe post-lock entropy noise"];
+
+(* Find time series files and measure the std dev of global_entropy after lock_epoch *)
+pickTimeSeries[asc_] := SelectFirst[Keys@asc, StringContainsQ[#, {"timeseries", "time_series"}] &, Missing["NA"]];
+timeA = With[{f = pickTimeSeries[assocA]}, If[MissingQ[f], Missing["NA"], assocA[f]//toDS]];
+timeB = With[{f = pickTimeSeries[assocB]}, If[MissingQ[f], Missing["NA"], assocB[f]//toDS]];
+
+postLockStd[ds_] := Module[
+    {lock = tryCols[ds, {"lock_epoch", "lockin_epoch", "lock_ep"}],
+      ge = tryCols[ds, {"global_entropy","entropy_global","H_global"}],
+      t = tryCols[ds, {"time_step","t","step"}]},
+    If[Or[MissingQ[lock], MissingQ[ge], MissingQ[t]], Missing["NA"],
+      Module[{lv = First@Normal@DeleteMissing@lock, tt = Normal@t, gg = Normal@ge},
+        If[!NumericQ[lv], Missing["NA"],
+          With[{mask = Boole[tt >= lv]},
+            If[Total@mask < 5, Missing["NA"], StandardDeviation@Pick[gg, mask, 1]]
+          ]
+        ]
+      ]
+    ]
+];
+
+stdA = If[MissingQ[timeA], Missing["NA"], postLockStd[timeA]];
+stdB = If[MissingQ[timeB], Missing["NA"], postLockStd[timeB]];
+
+Grid[{
+    {"Dataset", "Post-lock std(global_entropy)"},
+    {"E+I (A)", stdA},
+    {"E-only (B)", stdB}
+}, Frame -> All]
+
+(* ============================= *)
+(* 8) XAI FEATURE IMPORTANCE     *)
+(* ============================= *)
+
+say["5) XAI feature importance"];
+
+pickFeatImp[asc_] := SelectFirst[Keys@asc, StringContainsQ[#, {"feat_importance", "feature_importance"}] &, Missing["NA"]];
+fiA = With[{f = pickFeatImp[assocA]}, If[MissingQ[f], Missing["NA"], assocA[f]//toDS]];
+fiB = With[{f = pickFeatImp[assocB]}, If[MissingQ[f], Missing["NA"], assocB[f]//toDS]];
+
+topK[ds_, k_:3] := Module[
+    {score = tryCols[ds, {"importance","gain","weight","score"}],
+      name = tryCols[ds, {"feature","name"}]},
+    If[MissingQ[score] || MissingQ[name], Dataset[{}],
+      Dataset @ TakeLargestBy[
+        Thread[Rule[Normal@name, Normal@score]] // Normal,
+        Last, UpTo[k]
+      ]
+    ]
+];
+
+Grid[{
+    {"Top-3 Features (E+I)", topK[fiA, 3]},
+    {"Top-3 Features (E-only)", topK[fiB, 3]}
+}]
+
+(* ============================= *)
+(* 9) FINETUNE METRICS           *)
+(* ============================= *)
+
+say["6) Fine-tuning metrics (if available)"];
+
+pickFinetune[asc_] := Select[Keys@asc, StringContainsQ[#, {"finetune", "fine_tune"}] &];
+ftA = (assocA /@ pickFinetune[assocA]) // toDS /@ List;
+ftB = (assocB /@ pickFinetune[assocB]) // toDS /@ List;
+
+summFT[ds_] := Module[
+    {acc = tryCols[ds, {"acc","accuracy","val_acc"}],
+      auc = tryCols[ds, {"auc","roc_auc","val_auc"}]},
+    <|"best_acc" -> If[MissingQ[acc], Missing["NA"], Max@Normal@acc],
+      "best_auc" -> If[MissingQ[auc], Missing["NA"], Max@Normal@auc]|>
+];
+
+ftARes = If[ftA === {}, <||>, AssociationThread[Range@Length@ftA -> (summFT /@ ftA)]];
+ftBRes = If[ftB === {}, <||>, AssociationThread[Range@Length@ftB -> (summFT /@ ftB)]];
+
+Grid[{
+    {"Finetune Metrics (E+I)", ftARes},
+    {"Finetune Metrics (E-only)", ftBRes}
+}, Frame -> All]
+
+(* ============================= *)
+(* 10) FINAL CONCLUSION OUTLINE  *)
+(* ============================= *)
+
+say["Summary notes for final interpretation:"];
+Column@{
+    "- Stability: compare A vs B table above (higher/lower).",
+    "- Lock-in: compare percentages.",
+    "- Goldilocks: compare peak stability && location (X vs E).",
+    "- Cold spots: min/mean/median and ≤-70 count difference.",
+    "- Best universe: post-lock std(global_entropy) lower ⇒ ‘cleaner’ stability.",
+    "- XAI: compare top-3 features (multi-factor in A vs E-only).",
+    "- Finetune: best AUC/ACC differences if present."
+}
