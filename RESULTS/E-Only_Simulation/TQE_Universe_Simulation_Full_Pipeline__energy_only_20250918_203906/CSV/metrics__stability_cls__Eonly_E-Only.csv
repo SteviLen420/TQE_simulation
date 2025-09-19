@@ -1,2 +1,0 @@
-target,variant,featset,acc,auc,n_train,n_test
-stability_cls,E-only,E_ONLY,0.5728,0.6252890339927021,7500,2500

@@ -1,2 +1,0 @@
-target,variant,featset,acc,auc,n_train,n_test
-aoe_flag_cls,E-only,E_ONLY,0.9992,0.4991996798719488,7500,2500
