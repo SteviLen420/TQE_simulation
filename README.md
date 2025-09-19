@@ -76,12 +76,12 @@ The pipeline's code was developed through a combination of high-level architectu
 
 * **Google's Gemini 2.5 Pro & OpenAI's GPT-5**: Served as high-level architectural consultants, assisting in the overall pipeline design, complex refactoring, and the implementation of advanced features.
 
-* **DeepSeek Coder (v2, 7B, via Ollama)**: Employed as a local, offline model for the core iterative development loop, including real-time code generation, debugging, and algorithm refinement.
+* **DeepSeek-R1-Distill-Qwen-14B (via Ollama)**: Employed as a local, offline model for the core iterative development loop, including real-time code generation, debugging, and algorithm refinement.
 
 **2. Data Analysis and Mathematical Validation**
 The raw outputs of the simulation were processed and validated using a combination of general and specialized AI.
 
-* **Gemini 2.5 Pro & DeepSeek**: Used for the primary analysis of simulation outputs, helping to structure statistical tests and interpret the results from the XAI modules.
+* **Gemini 2.5 Pro & DeepSeek-R1-Distill-Qwen-14B**: Used for the primary analysis of simulation outputs, helping to structure statistical tests and interpret the results from the XAI modules.
 
 * **Wolfram|One & Wolfram|Alpha**: Utilized for the rigorous validation of the mathematical formalisms and equations presented in the documentation, ensuring their correctness and internal consistency.
 
