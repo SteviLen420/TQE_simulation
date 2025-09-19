@@ -37,7 +37,9 @@ toDS[x_] := Which[
 ];
 
 (* Check if a column key exists in a dataset *)
-colExistsQ[ds_, name_] := Dataset`HasKey[ds[1 ;; 1], name] /. _Missing -> False;
+colExistsQ[ds_, name_] := Module[{ok = MatchQ[ds, _Dataset] && Length[ds] > 0},
+  If[!ok, False, Quiet@Check[KeyExistsQ[Normal@First@ds, name], False]]
+]
 
 (* Try to select a column from a list of possible names *)
 tryCols[ds_, names_List] := With[
@@ -60,7 +62,7 @@ niceName[path_, tag_] := Module[{b = FileBaseName[path]},
 binStats[ds_, var_, nbins_: 40] := Module[
     {v = ds[All, var], st = tryCols[ds, {"stable", "is_stable", "stable_flag"}], bins, data},
     If[MissingQ[v] || MissingQ[st], Missing["NoData"],
-      data = Normal@Dataset[Select[Transpose[{Normal@v, Normal@st}], VectorQ[#, NumericQ /@ #] &]];
+      data = Cases[Transpose[{Normal@v, Normal@st}], {x_?NumericQ, y_?NumericQ}];
       bins = BinCounts[data[[All, 1]], nbins];
       (* Bin lists *)
       With[{min = Min[data[[All, 1]]], max = Max[data[[All, 1]]]},
@@ -154,11 +156,11 @@ goldB = If[MissingQ[sumB], Missing["NA"], binStats[sumB, "E", 40]];
 
 (* Compare peaks of the stability curves *)
 peakInfo[ds_] := If[MissingQ[ds], Missing["NA"],
-    Module[{tbl = Normal@ds // DeleteMissing},
-      If[tbl === {}, Missing["NA"],
-        First@Reverse@SortBy[tbl, #["stability_rate"] /. Missing[__] -> -Infinity &]
-      ]
+  Module[{tbl = Normal@ds // DeleteMissing},
+    If[tbl === {} || !AssociationQ@First@tbl, Missing["NA"],
+      First@Reverse@SortBy[tbl, Lookup[#, "stability_rate", -Infinity] &]
     ]
+  ]
 ];
 
 peakA = peakInfo[goldA];
@@ -278,8 +280,8 @@ Grid[{
 say["6) Fine-tuning metrics (if available)"];
 
 pickFinetune[asc_] := Select[Keys@asc, StringContainsQ[#, {"finetune", "fine_tune"}] &];
-ftA = (assocA /@ pickFinetune[assocA]) // toDS /@ List;
-ftB = (assocB /@ pickFinetune[assocB]) // toDS /@ List;
+ftA = toDS /@ (assocA /@ pickFinetune[assocA]);
+ftB = toDS /@ (assocB /@ pickFinetune[assocB]);
 
 summFT[ds_] := Module[
     {acc = tryCols[ds, {"acc","accuracy","val_acc"}],
@@ -310,3 +312,49 @@ Column@{
     "- XAI: compare top-3 features (multi-factor in A vs E-only).",
     "- Finetune: best AUC/ACC differences if present."
 }
+
+(* ============================= *)
+(* 11) SAVE RESULTS TO DISK      *)
+(* ============================= *)
+
+say["11) Saving results to disk"];
+
+(* Create an output directory next to the notebook *)
+outDir = FileNameJoin[{NotebookDirectory[], "TQE_Wolfram_Analysis_Output"}];
+If[!DirectoryQ[outDir], CreateDirectory[outDir]];
+
+(* 11.1 Save stability comparison as CSV *)
+Export[FileNameJoin[{outDir, "stability_comparison.csv"}],
+  {
+    {"Metric", "E+I (A)", "E-only (B)"},
+    {"Total Universes", stabA["n"], stabB["n"]},
+    {"Stable %", stabA["stable_pct"], stabB["stable_pct"]},
+    {"Lock-in %", stabA["lockin_pct"], stabB["lockin_pct"]}
+  }
+];
+
+(* 11.2 Save Goldilocks peaks as JSON *)
+Export[FileNameJoin[{outDir, "goldilocks_peaks.json"}],
+  <|"E+I" -> peakA, "E-only" -> peakB|>
+];
+
+(* 11.3 Save cold-spot statistics as JSON *)
+Export[FileNameJoin[{outDir, "coldspot_stats.json"}],
+  <|"E+I" -> cA, "E-only" -> cB|>
+];
+
+(* 11.4 Save Best Universe entropy stddev as CSV *)
+Export[FileNameJoin[{outDir, "best_universe_entropy.csv"}],
+  {
+    {"Dataset","Post-lock std(global_entropy)"},
+    {"E+I (A)", stdA},
+    {"E-only (B)", stdB}
+  }
+];
+
+(* 11.5 Save XAI top features as JSON *)
+Export[FileNameJoin[{outDir, "xai_top_features.json"}],
+  <|"E+I" -> Normal@topK[fiA,3], "E-only" -> Normal@topK[fiB,3]|>
+];
+
+say["Results exported to: " <> outDir];
