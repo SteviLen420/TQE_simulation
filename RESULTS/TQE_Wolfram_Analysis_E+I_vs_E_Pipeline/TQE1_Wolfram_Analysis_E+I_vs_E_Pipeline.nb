@@ -33,7 +33,7 @@ summaryStats[data_, col_] := <|
 (* ============================= *)
 
 (* Choose directory with CSVs (change path if needed) *)
-inputDir = "/ /Users/stevilen/Desktop/TQE_EI_SIMULATION_COLAB_GPU/TQE_Universe_Simulation_full_Pipeline_E+I_20250918_081329/CSV "; 
+inputDir = "/Users/stevilen/Desktop/TQE_EI_SIMULATION_COLAB_GPU/TQE_Universe_Simulation_full_Pipeline_E+I_20250918_081329/CSV";
 
 files = FileNames["*.csv", inputDir, Infinity];
 
