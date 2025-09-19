@@ -281,9 +281,9 @@ peakB = peakInfo[goldB];
 Grid[
     {
         {"Dataset", "Peak stability", "At (edge_min..edge_max)"},
-        {"E+I (X)", If[MissingQ[peakA], "NA", NumberForm[100*peakA["stability_rate"], {4, 2}]~StringJoin~"%"],
+        {"E+I (X)", If[MissingQ[peakA], "NA", Row[{NumberForm[100*peakA["stability_rate"], {4, 2}], "%"}]],
                     If[MissingQ[peakA], "NA", Row[{NumberForm[peakA["edge_min"], {4, 3}], " .. ", NumberForm[peakA["edge_max"], {4, 3}]}]]},
-        {"E-only (E)", If[MissingQ[peakB], "NA", NumberForm[100*peakB["stability_rate"], {4, 2}]~StringJoin~"%"],
+        {"E-only (E)", If[MissingQ[peakB], "NA", Row[{NumberForm[100*peakB["stability_rate"], {4, 2}], "%"}]],
                       If[MissingQ[peakB], "NA", Row[{NumberForm[peakB["edge_min"], {4, 3}], " .. ", NumberForm[peakB["edge_max"], {4, 3}]}]]}
     },
     Frame -> All
