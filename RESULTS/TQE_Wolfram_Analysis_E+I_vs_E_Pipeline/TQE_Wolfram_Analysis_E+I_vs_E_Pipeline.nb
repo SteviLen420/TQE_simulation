@@ -12,7 +12,7 @@
 (* ============================= *)
 
 dirA = CloudObject["/user/stevilen/EI_simulations"];
-dirB = CloudObject["/user/stevilen/Eonly_simulations"];
+dirB = CloudObject["/user/stevilen/E_only_simulations"];
 
 (* ============================= *)
 (* 2) HELPER FUNCTIONS           *)
