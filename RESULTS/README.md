@@ -14,20 +14,20 @@ This directory contains the complete set of results, raw data, and analysis scri
 
 ## Navigating This Repository
 
-This repository is organized to provide a clear and transparent overview of the entire TQE research project. All code, data, and documentation are structured as follows, based on the project's root directory:
+This repository is organized to provide a clear and transparent overview of the entire TQE research project. All code, data, and documentation are structured as follows:
 
-* ➡️ **Main Documents:**
-    * [README.md](../README.md): (This file) The main entry point and guide to the project.
-    * [STORY.md](../STORY.md): Explains the scientific motivation and the narrative behind the TQE framework.
-    * [TQE_MANUSCRIPT.md](../TQE_MANUSCRIPT.md): The formal scientific paper detailing the theoretical framework and findings.
+* ➡️ **Main Documents (in project root):**
+    * [README.md](../README.md): The main entry point and guide to the project.
+    * [STORY.md](../STORY.md): Explains the scientific motivation and narrative behind the TQE framework.
+    * [TQE_MANUSCRIPT.md](../TQE_MANUSCRIPT.md): The formal scientific paper.
 
 * ➡️ **Code & Pipelines:**
-    * **[TQE_Universe_Simulation_Full_Pipeline.py](../TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py/):** Contains the primary Python simulation pipeline used to generate the universe ensembles.
-    * **[TQE_Wolfram_Math_Check_Pipeline](./TQE_Wolfram_Math_Check_Pipeline):** Contains the Wolfram Language notebooks used for detailed statistical validation and comparative analysis of the results.
+    * [/TQE_Universe_Simulation_Full_Pipeline/](../TQE_Universe_Simulation_Full_Pipeline/): Contains the primary Python simulation pipeline.
+    * [/analysis/TQE_Wolfram_Math_Check_Pipeline/](./TQE_Wolfram_Math_Check_Pipeline/): Contains the Wolfram Language notebooks for analysis. *(Assuming this is a subfolder of results)*
 
-* ➡️ **Simulation Results:**
-    * **[E-plus-I_Simulation](./E-plus-I_Simulation):** Each directory with this naming pattern contains the complete output (data, figures, and a summary README) for a specific simulation run where both Energy and Information parameters were active.
-    * **[E-Only_Simulation](./E-Only_Simulation):** Each directory with this naming pattern contains the complete output for a specific simulation run where only the Energy parameter was active.
+* ➡️ **Simulation Data:**
+    * [/E-plus-I_Simulation/](./E-plus-I_Simulation/): Contains the full output for the `E+I` simulation runs.
+    * [/E-Only_Simulation/](./E-Only_Simulation/): Contains the full output for the `E-only` simulation runs.
 
 * ➡️ **Project Files:**
     * **[CITATION.cff](../CITATION.cff):** Provides the citation information for this work.
@@ -42,6 +42,14 @@ I conducted the analysis presented here with a focus on rigor and transparency, 
     * **Gemini 2.5** (Google)
     * **GPT-5** (OpenAI)
     * An offline, locally-run **DeepSeek-R1-Distill-Qwen-14B** for data processing and prompt-based analysis.
+ 
+## How to Reproduce the Analysis
+
+The quantitative results presented in the manuscript can be reproduced using the tools and data in this archive.
+
+1.  **Data:** The raw `.csv` files from the simulations are located in the `/E-plus-I_Simulation/DATA/` and `/E-Only_Simulation/DATA/` subdirectories.
+2.  **Analysis Script:** The Wolfram Language notebook located in the `/analysis/` folder (`TQE_Wolfram_Math_Check_Pipeline.nb`) was used to perform the final comparative analysis.
+3.  **Execution:** To reproduce the summary tables, open the notebook, set the input directories to point to the respective data folders, and evaluate the notebook.
 
 ## Current Status & Known Issues
 
