@@ -51,7 +51,7 @@ except Exception:
 # ======================================================
 MASTER_CTRL = {
     # --- Core simulation ---
-    "NUM_UNIVERSES":        30000,   # number of universes in Monte Carlo run
+    "NUM_UNIVERSES":        5000,   # number of universes in Monte Carlo run
     "TIME_STEPS":           8000,    # epochs per stability run (if used elsewhere)
     "LOCKIN_EPOCHS":        2000,    # epochs for law lock-in dynamics
     "EXPANSION_EPOCHS":     3000,    # epochs for expansion dynamics
@@ -188,7 +188,7 @@ MASTER_CTRL = {
     "CMB_PIXSIZE_ARCMIN": 3.0,         # Pixel size in arcmin for flat-sky
     "CMB_POWER_SLOPE": 1.5,            # Power spectrum slope (Pk ~ k^-slope)
     "CMB_SMOOTH_FWHM_DEG": 0.5,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
-    "CMB_AMPLITUDE_SCALE": 2e-10,    # Overall amplitude of CMB fluctuations
+    "CMB_AMPLITUDE_SCALE": 1e-10,    # Overall amplitude of CMB fluctuations
 
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
