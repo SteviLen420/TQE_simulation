@@ -20,8 +20,8 @@ This repository is organized to provide a clear and transparent overview of the 
     * **[TQE_Wolfram_Math_Check_Pipeline](./TQE_Wolfram_Math_Check_Pipeline):** Contains the Wolfram Language notebooks used for detailed statistical validation and comparative analysis of the results.
 
 * ➡️ **Simulation Results:**
-    * **[E-plus-I_Simulation](./RESULTS/E-plus-I_Simulation):** Each directory with this naming pattern contains the complete output (data, figures, and a summary README) for a specific simulation run where both Energy and Information parameters were active.
-    * **[E-Only_Simulation](./RESULTS/E-plus-I_Simulation):** Each directory with this naming pattern contains the complete output for a specific simulation run where only the Energy parameter was active.
+    * **[E-plus-I_Simulation](./E-plus-I_Simulation):** Each directory with this naming pattern contains the complete output (data, figures, and a summary README) for a specific simulation run where both Energy and Information parameters were active.
+    * **[E-Only_Simulation](./E-Only_Simulation):** Each directory with this naming pattern contains the complete output for a specific simulation run where only the Energy parameter was active.
 
 * ➡️ **Project Files:**
     * **[CITATION.cff](./CITATION.cff):** Provides the citation information for this work.
