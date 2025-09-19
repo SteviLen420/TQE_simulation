@@ -16,8 +16,8 @@ This repository is organized to provide a clear and transparent overview of the 
     * [TQE_MANUSCRIPT.md](./TQE_simulation/TQE_MANUSCRIPT.md): The formal scientific paper detailing the theoretical framework and findings.
 
 * ➡️ **Code & Pipelines:**
-    * **[TQE_Universe_Simulation_Full_Pipeline.py](./TQE_Universe_Simulation_Full_Pipeline.py):** Contains the primary Python simulation pipeline used to generate the universe ensembles.
-    * **[TQE_Wolfram_Math_Check_Pipeline.nb](./TQE_Wolfram_Math_Check_Pipeline.nb):** Contains the Wolfram Language notebooks used for detailed statistical validation and comparative analysis of the results.
+    * **[TQE_Universe_Simulation_Full_Pipeline.py](./TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py):** Contains the primary Python simulation pipeline used to generate the universe ensembles.
+    * **[TQE_Wolfram_Math_Check_Pipeline](./RESULTS/TQE_Wolfram_Math_Check_Pipeline):** Contains the Wolfram Language notebooks used for detailed statistical validation and comparative analysis of the results.
 
 * ➡️ **Simulation Results:**
     * **[E-plus-I_Simulation](./E-plus-I_Simulation):** Each directory with this naming pattern contains the complete output (data, figures, and a summary README) for a specific simulation run where both Energy and Information parameters were active.
