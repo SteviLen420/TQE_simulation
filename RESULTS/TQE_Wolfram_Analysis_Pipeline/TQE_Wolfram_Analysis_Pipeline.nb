@@ -43,7 +43,8 @@ simDir = "/Users/stevilen/Desktop/TQE_EI_SIMULATION_COLAB_GPU/TQE_Universe_Simul
 files = FileNames["*.csv", simDir];
 Print["📂 Found CSV files: ", Length[files]];
 
-results = checkCSV /@ files;
+(* Use analyzeCSV instead of undefined checkCSV *)
+results = analyzeCSV /@ files;
 
 (* Show results as a nice table *)
 Dataset[results]
