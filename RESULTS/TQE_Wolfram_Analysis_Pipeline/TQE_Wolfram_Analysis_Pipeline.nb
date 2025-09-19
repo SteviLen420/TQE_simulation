@@ -11,6 +11,16 @@ ClearAll["Global`*"];
 (* Safe import of CSV as Dataset, empty if error *)
 safeImport[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
 
+(* Safe stddev: 0 if fewer than 2 elements *)
+safeStdDev[list_] := If[Length[list] >= 2, StandardDeviation[list], 0];
+
+(* Sanitize results for JSON export *)
+sanitizeForJSON[expr_] := expr /. {
+   Missing[_] -> Null,
+   Times -> Null, Power -> Null,
+   _Symbol?(!NumericQ[#] &) :> Null
+};
+
 (* Analyze one CSV file column by column *)
 analyzeCSV[file_String] := Module[{ds, cols, summary},
   
@@ -26,7 +36,7 @@ analyzeCSV[file_String] := Module[{ds, cols, summary},
     col -> Module[{vals = DeleteMissing@Cases[Normal[ds[All, col]], _?NumericQ]},
       If[Length[vals] == 0,
         <|"Mean" -> Null, "StdDev" -> Null|>,
-        <|"Mean" -> Mean[vals], "StdDev" -> StandardDeviation[vals]|>
+        <|"Mean" -> Mean[vals], "StdDev" -> safeStdDev[vals]|>
       ]
     ],
     {col, cols}
@@ -51,7 +61,6 @@ simDir = "/Users/stevilen/Desktop/TQE_EI_SIMULATION_COLAB_GPU/TQE_Universe_Simul
 files = FileNames["*.csv", simDir];
 Print["📂 Found CSV files: ", Length[files]];
 
-(* Use analyzeCSV instead of undefined checkCSV *)
 results = analyzeCSV /@ files;
 
 (* Show results as a nice table *)
@@ -67,7 +76,7 @@ If[!DirectoryQ[outDir], CreateDirectory[outDir, CreateIntermediateDirectories ->
 
 Export[FileNameJoin[{outDir, "math_check_results.csv"}], results];
 Export[FileNameJoin[{outDir, "math_check_results.json"}],
-  results /. Missing[_] -> Null
+  sanitizeForJSON[results]
 ];
 
 Print["✅ Math check finished, results saved to: ", outDir];
