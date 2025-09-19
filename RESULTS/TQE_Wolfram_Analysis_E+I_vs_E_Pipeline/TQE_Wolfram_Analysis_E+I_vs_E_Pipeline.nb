@@ -11,16 +11,26 @@
 (* 1) SET INPUT DIRECTORIES      *)
 (* ============================= *)
 
+(* ============================= *)
+(* 1) SET INPUT DIRECTORIES (AUTO) *)
+(* ============================= *)
+
+(* A te Wolfram Cloud felhasználói gyökered *)
 rootDir = CloudObject["/Users/StefanLen420/"];
 
-(* Keressük az összes CSV-t minden almappában *)
+(* Összes CSV fájl kigyűjtése minden almappából *)
 allFiles = FileNames["*.csv", FileNameJoin[{rootDir, "**/CSV"}], Infinity];
 
 (* Szétválogatás E+I és E-only *)
 filesA = Select[allFiles, StringContainsQ[#, "_EI_"] &];
 filesB = Select[allFiles, StringContainsQ[#, "energy_only"] &];
 
-{Length[filesA], Length[filesB]}
+say["File counts"];
+Grid[{
+  {"Total CSVs found", Length[allFiles]},
+  {"E+I (A) files", Length[filesA]},
+  {"E-only (B) files", Length[filesB]}
+}, Frame -> All]
 
 (* ============================= *)
 (* 2) HELPER FUNCTIONS           *)
