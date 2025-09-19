@@ -11,8 +11,8 @@
 (* 1) SET INPUT DIRECTORIES      *)
 (* ============================= *)
 
-dirA = "/Users/stevilen/Desktop/TQE_COMBINED_CSV/dataset_A_E+I";
-dirB = "/Users/stevilen/Desktop/TQE_COMBINED_CSV/dataset_B_E_only";
+dirA = CloudObject["/user/stevilen/EI_simulations"];
+dirB = CloudObject["/user/stevilen/Eonly_simulations"];
 
 (* ============================= *)
 (* 2) HELPER FUNCTIONS           *)
@@ -330,7 +330,7 @@ Grid[{
 
 say["5) XAI feature importance"];
 
-(* Keressük az összes feature importance fájlt *)
+
 pickFeatImp[asc_] := Select[Keys@asc, StringContainsQ[#, {"feat_importance", "feature_importance"}] &];
 
 fiAFiles = pickFeatImp[assocA];
@@ -339,7 +339,7 @@ fiBFiles = pickFeatImp[assocB];
 fiAList = DeleteMissing[toDS /@ (assocA /@ fiAFiles)];
 fiBList = DeleteMissing[toDS /@ (assocB /@ fiBFiles)];
 
-(* Egy datasetből kiszedi a Top-K feature-t *)
+
 topK[ds_, k_:3] := Module[
   {score = tryCols[ds, {"importance","gain","weight","score"}],
    name  = tryCols[ds, {"feature","name"}]},
@@ -352,7 +352,7 @@ topK[ds_, k_:3] := Module[
   ]
 ];
 
-(* Ha több fájl van, összevonjuk és nézzük a Top-3-at átlagolt score szerint *)
+
 mergeFeatImp[dsList_, k_:3] := Module[{all},
   If[dsList === {}, Dataset[{}],
     all = Flatten[Normal /@ (topK[#, All] & /@ dsList), 1];
@@ -407,9 +407,15 @@ CleanForJSON[x_] := x /. Missing[_] -> Null;
 
 say["11) Saving results to disk"];
 
+(* Generate unique timestamp string *)
+timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
+
+(* Base directory: notebook location if possible, else Desktop *)
 nbDir   = Quiet@NotebookDirectory[];
 baseDir = If[StringQ[nbDir], nbDir, FileNameJoin[{$HomeDirectory, "Desktop"}]];
-outDir  = FileNameJoin[{baseDir, "TQE_Wolfram_Analysis_Output"}];
+
+(* Create output folder with timestamp in name *)
+outDir  = FileNameJoin[{baseDir, "TQE_Wolfram_Analysis_Output_" <> timestamp}];
 If[!DirectoryQ[outDir],
   CreateDirectory[outDir, CreateIntermediateDirectories -> True]
 ];
@@ -497,65 +503,4 @@ Export[FileNameJoin[{outDir, "finetune_metrics.json"}],
   CleanForJSON @ <|"E+I" -> ftARes, "E-only" -> ftBRes|>
 ];
 
-say["Results exported to: " <> outDir];
-
-(* ============================= *)
-(* 12) GROUPED COMPARISON        *)
-(* ============================= *)
-
-say["10) Grouped comparison (all files per type)"];
-
-(* Alapnév fájlnévből — így tudjuk párosítani a csoportokat *)
-baseName[path_] := StringReplace[
-  FileBaseName[path],
-  {"_E+I" -> "", "_E-Only" -> "", "_E_only" -> "", "_EOnly" -> ""}
-];
-
-(* Merge: több azonos típusú CSV összevonása *)
-mergeFiles[fileList_] := Module[{all},
-  all = DeleteMissing[toDS /@ (Import /@ fileList)];
-  If[all === {}, Dataset[{}], Dataset@Flatten[Normal /@ all, 1]]
-];
-
-(* Csoportosítsuk az összes fájlt típus szerint *)
-groupsA = GroupBy[filesA, baseName];
-groupsB = GroupBy[filesB, baseName];
-commonGroups = Intersection[Keys[groupsA], Keys[groupsB]];
-
-(* Hasonlítás minden közös csoportnál *)
-groupResults = Association@Table[
-   g -> Module[{dsA, dsB, cols, commonCols, stats},
-     dsA = mergeFiles[groupsA[g]];
-     dsB = mergeFiles[groupsB[g]];
-     If[dsA === Dataset[{}] || dsB === Dataset[{}], 
-       Return[g -> <||>]];
-     cols = {Keys@First@Normal@dsA, Keys@First@Normal@dsB};
-     commonCols = Intersection @@ cols;
-     stats = Association@Table[
-       col -> <|
-         "mean_E+I" -> Mean@DeleteMissing[Normal@dsA[All, col]],
-         "mean_E-only" -> Mean@DeleteMissing[Normal@dsB[All, col]],
-         "diff" -> (Mean@DeleteMissing[Normal@dsA[All, col]] -
-                    Mean@DeleteMissing[Normal@dsB[All, col]])
-       |>,
-       {col, commonCols}
-     ];
-     stats
-   ],
-   {g, commonGroups}
-];
-
-(* Export összesített csoporteredmény *)
-Export[FileNameJoin[{outDir, "grouped_comparisons.json"}], CleanForJSON@groupResults];
-Export[FileNameJoin[{outDir, "grouped_comparisons.csv"}],
-  Prepend[
-    Flatten[
-      KeyValueMap[
-        (Function[{group, vals}, 
-          KeyValueMap[{group, #1, #2["mean_E+I"], #2["mean_E-only"], #2["diff"]} &, vals]
-        ]) @@ {#1, #2} & /@ Normal[groupResults],
-      1
-    ],
-    {"Group","Column","Mean_E+I","Mean_E-only","Difference"}
-  ]
-];
+say["✅ Results exported to: " <> outDir];
