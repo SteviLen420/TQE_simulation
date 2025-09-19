@@ -1,4 +1,5 @@
 Copyright (c) 2025 Stefan Len
+
 License: MIT License
 
 # Theory of The Question of Existance (TQE)
