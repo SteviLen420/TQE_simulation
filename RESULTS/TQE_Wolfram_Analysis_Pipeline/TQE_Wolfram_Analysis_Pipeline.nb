@@ -84,5 +84,5 @@ analyzeSimulation[simDir_String] := Module[{files, results, timestamp, outDir, c
 (* Példa: futtass egy teljes szimulációs mappát *)
 analyzeSimulation[
   FileNameJoin[{$HomeDirectory,"Desktop","TQE_EI_SIMULATION_COLAB_GPU",
-    "TQE_Universe_Simulation_Full_Pipeline_EI_20250917_131723"}]
+    "TQE_Universe_Simulation_full_Pipeline_EI_20250918_081329"}]
 ]
