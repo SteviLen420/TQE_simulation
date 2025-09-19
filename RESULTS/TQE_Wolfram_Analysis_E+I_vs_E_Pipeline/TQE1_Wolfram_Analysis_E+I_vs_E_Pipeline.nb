@@ -61,9 +61,15 @@ results = Association@Table[
 (* 4) EXPORT RESULTS             *)
 (* ============================= *)
 
-outDir = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_AllStats"}];
-If[! DirectoryQ[outDir], 
-   CreateDirectory[outDir, CreateIntermediateDirectories -> True]];
+timestamp = DateString[{"Year", "Month", "Day", "-", "Hour", "Minute", "Second"}];
+
+outDir = FileNameJoin[{
+   $HomeDirectory, "Desktop", "TQE_AllStats_" <> timestamp
+}];
+
+If[!DirectoryQ[outDir],
+  CreateDirectory[outDir, CreateIntermediateDirectories -> True]
+];
 
 (* Export JSON *)
 Export[FileNameJoin[{outDir, "all_stats.json"}], cleanForJSON@results];
