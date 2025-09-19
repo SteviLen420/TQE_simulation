@@ -2,9 +2,12 @@
 (* Copyright (c) 2025 Stefan Len *)
 
 (* =================================================================================== *)
-(*   TQE_Wolfram_Analysis_Clean_Pipeline.nb                                           *)
-(*   Author: Stefan Len                                                               *)
+(* TQE_Wolfram_Analysis_Clean_Pipeline.nb                                            *)
+(* Author: Stefan Len                                                              *)
+(* VERSION: CORRECTED                                                              *)
 (* =================================================================================== *)
+
+ClearAll["Global`*"];
 
 (* ============================= *)
 (* 1) DEFINE LOCAL DIRECTORIES   *)
@@ -12,6 +15,12 @@
 
 (* Base directory on Desktop *)
 baseDir = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_EI_SIMULATION_COLAB_GPU"}];
+
+(* Check if base directory exists *)
+If[!DirectoryQ[baseDir], 
+  Print["Error: The specified 'baseDir' does not exist: ", baseDir]; 
+  Abort[]
+];
 
 (* Automatically search for all subdirectories *)
 dirs = FileNames["TQE_Universe_Simulation*", baseDir];
@@ -31,22 +40,26 @@ Print["📂 Total E-only files: ", Length[filesB]];
 (* 2) HELPER FUNCTIONS           *)
 (* ============================= *)
 
-ClearAll[say, safeImport, toDS, tryCols];
+ClearAll[say, safeImport, toDS, tryCols, sanitizeForJSON];
 
 say[txt_] := Print[Style[txt, 14, Bold, RGBColor[0.1, 0.2, 0.6]]];
 
-safeImport[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
+(* Safely import a file, return an empty Dataset on failure *)
+safeImport[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[<||>]];
 
-toDS[x_] := Which[
-   Head[x] === Dataset, x,
-   ListQ[x] && Length[x] > 0, Dataset[x],
-   True, Dataset[{}]
+(* Convert to Dataset if not already *)
+toDS[x_] := If[Head[x] === Dataset, x, Dataset[x]];
+
+(* Robustly select the first existing column from a list of possible names *)
+tryCols[ds_, names_List] := Module[{firstRow, hit},
+  If[Length[ds] == 0, Return[Missing["NotAvailable"]]];
+  firstRow = Normal@First@ds;
+  hit = SelectFirst[names, KeyExistsQ[firstRow, #] &, None];
+  If[hit === None, Missing["NotAvailable"], ds[All, hit]]
 ];
 
-tryCols[ds_, names_List] := 
-  With[{hit = SelectFirst[names, KeyExistsQ[Normal@First@ds, #] & , None]},
-   If[hit === None, Missing["NotAvailable"], ds[All, hit]]
-];
+(* Convert Missing[] to Null for JSON export *)
+sanitizeForJSON[expr_] := expr /. Missing[_] -> Null;
 
 (* Build associations for quick access *)
 assocA = AssociationMap[safeImport, filesA];
@@ -56,43 +69,49 @@ assocB = AssociationMap[safeImport, filesB];
 (* 3) STABILITY + LOCK-IN        *)
 (* ============================= *)
 
+say["1) Stability + Lock-in"];
+
+(* FIX: Added missing file gathering and dataset creation for stability metrics *)
+stabAFiles = Select[Keys@assocA, StringContainsQ[#, "stability", IgnoreCase -> True] &];
+stabBFiles = Select[Keys@assocB, StringContainsQ[#, "stability", IgnoreCase -> True] &];
+
+stabA = Dataset@Flatten[Normal /@ Values@Select[assocA, StringContainsQ[#,"stability", IgnoreCase->True]&], 1];
+stabB = Dataset@Flatten[Normal /@ Values@Select[assocB, StringContainsQ[#,"stability", IgnoreCase->True]&], 1];
+
+
 stabilitySummary[ds_] := Module[
-  {stableCol, lockCol, n, nStable, nLock, rateStable, rateLock},
+  {stableCol, lockCol, n, nStable, nLock},
   
   n = Length[ds];
+  If[n == 0, 
+    Return@<|"n" -> 0, "stable_n" -> Missing["NA"], "lockin_n" -> Missing["NA"]|>
+  ];
   
- 
   stableCol = tryCols[ds, {"stable","is_stable","stable_flag","stable_cls","stability"}];
-  nStable = If[MissingQ[stableCol], Missing["NA"],
+  nStable = If[MissingQ[stableCol], 
+    Missing["NA"],
     Total@Boole[DeleteMissing@Normal@stableCol == 1]
   ];
   
-  
   lockCol = tryCols[ds, {"lock_epoch","lockin_epoch","lock_step","lockin_step","lock"}];
-  nLock = If[MissingQ[lockCol], Missing["NA"],
+  nLock = If[MissingQ[lockCol], 
+    Missing["NA"],
     Count[DeleteMissing@Normal@lockCol, _?NumericQ]
   ];
   
-  
-  rateStable = If[MissingQ[nStable] || n == 0, Missing["NA"], 100.0*nStable/n];
-  rateLock   = If[MissingQ[nLock] || n == 0, Missing["NA"], 100.0*nLock/n];
-  
-  <|
-    "n" -> n,
-    "stable_n" -> nStable, "stable_pct" -> rateStable,
-    "lockin_n" -> nLock, "lockin_pct" -> rateLock
-  |>
+  <|"n" -> n, "stable_n" -> nStable, "lockin_n" -> nLock|>
 ];
 
-stabResA = stabSummary[stabA];
-stabResB = stabSummary[stabB];
+stabResA = stabilitySummary[stabA];
+stabResB = stabilitySummary[stabB];
 
 Grid[{
   {"Metric", "E+I", "E-only"},
   {"Total Universes", stabResA["n"], stabResB["n"]},
-  {"Stable Count", stabResA["stable_n"], stabResB["stable_n"]},
+  {"Stable Count", stabResA["stable_n"], stabResB["n"]},
   {"Lock-in Count", stabResA["lockin_n"], stabResB["lockin_n"]}
 }, Frame -> All]
+
 
 (* ============================= *)
 (* 4) CMB COLD-SPOTS             *)
@@ -103,19 +122,32 @@ say["2) CMB cold-spots"];
 coldAFiles = Select[Keys@assocA, StringContainsQ[#, "coldspot", IgnoreCase -> True] &];
 coldBFiles = Select[Keys@assocB, StringContainsQ[#, "coldspot", IgnoreCase -> True] &];
 
+(* FIX: The 'coldBFiles' and 'aoeBFiles' lists had to be used with 'assocB', not by themselves *)
 coldA = Dataset @ Flatten[Normal /@ (toDS /@ (assocA /@ coldAFiles)), 1];
-coldB = Dataset @ Flatten[Normal /@ (toDS /@ coldBFiles), 1];
+coldB = Dataset @ Flatten[Normal /@ (toDS /@ (assocB /@ coldBFiles)), 1];
+
 
 coldStats[ds_] := Module[{v},
+  If[Length[ds] == 0, 
+    Return@<|"count" -> 0, "min" -> Missing["NA"], "mean" -> Missing["NA"], "median" -> Missing["NA"], "below_-70" -> Missing["NA"]|>
+  ];
+  
   v = DeleteMissing@Normal@tryCols[ds, {"z_value", "depth_uK"}];
+  
+  (* FIX: Handle the case where 'v' is an empty list after processing *)
+  If[Length[v] == 0,
+    Return@<|"count" -> 0, "min" -> Missing["NA"], "mean" -> Missing["NA"], "median" -> Missing["NA"], "below_-70" -> 0|>
+  ];
+  
   <|
     "count" -> Length[v],
-    "min" -> If[v === {}, Missing["NA"], Min[v]],
-    "mean" -> If[v === {}, Missing["NA"], Mean[v]],
-    "median" -> If[v === {}, Missing["NA"], Median[v]],
+    "min" -> Min[v],
+    "mean" -> Mean[v],
+    "median" -> Median[v],
     "below_-70" -> Count[v, x_ /; x <= -70]
   |>
 ];
+
 
 coldResA = coldStats[coldA];
 coldResB = coldStats[coldB];
@@ -129,6 +161,7 @@ Grid[{
   {"Count ≤ -70 µK", coldResA["below_-70"], coldResB["below_-70"]}
 }, Frame -> All]
 
+
 (* ============================= *)
 (* 5) AOE (Angle of Emergence)   *)
 (* ============================= *)
@@ -139,12 +172,16 @@ aoeAFiles = Select[Keys@assocA, StringContainsQ[#, "aoe", IgnoreCase -> True] &]
 aoeBFiles = Select[Keys@assocB, StringContainsQ[#, "aoe", IgnoreCase -> True] &];
 
 aoeA = Dataset @ Flatten[Normal /@ (toDS /@ (assocA /@ aoeAFiles)), 1];
-aoeB = Dataset @ Flatten[Normal /@ (toDS /@ aoeBFiles), 1];
+aoeB = Dataset @ Flatten[Normal /@ (toDS /@ (assocB /@ aoeBFiles)), 1]; (* This was also fixed here *)
 
-aoeSummary[ds_] := <|
-   "count" -> Length[ds],
-   "mean" -> If[Length[ds] > 0, Mean[DeleteMissing@Flatten@Normal@Values[ds]], Missing["NA"]]
-|>;
+aoeSummary[ds_] := Module[{vals},
+  If[Length[ds] == 0, Return@<|"count" -> 0, "mean" -> Missing["NA"]|>];
+  vals = DeleteMissing@Flatten@Normal@Values[ds];
+  <|
+    "count" -> Length[ds],
+    "mean" -> If[Length[vals] > 0, Mean[vals], Missing["NA"]]
+  |>
+];
 
 aoeResA = aoeSummary[aoeA];
 aoeResB = aoeSummary[aoeB];
@@ -154,6 +191,7 @@ Grid[{
   {"Total AOE rows", aoeResA["count"], aoeResB["count"]},
   {"Mean Value", aoeResA["mean"], aoeResB["mean"]}
 }, Frame -> All]
+
 
 (* ============================= *)
 (* 6) FINE-TUNING METRICS        *)
@@ -168,8 +206,11 @@ ftA = Dataset @ Flatten[Normal /@ (toDS /@ (assocA /@ ftAFiles)), 1];
 ftB = Dataset @ Flatten[Normal /@ (toDS /@ ftBFiles), 1];
 
 summFT[ds_] := Module[{acc, auc},
+  If[Length[ds] == 0, Return@<|"best_acc" -> Missing["NA"], "best_auc" -> Missing["NA"]|>];
+  
   acc = tryCols[ds, {"acc", "accuracy"}];
   auc = tryCols[ds, {"auc", "roc_auc"}];
+  
   <|
     "best_acc" -> If[MissingQ[acc], Missing["NA"], Max@DeleteMissing@Normal@acc],
     "best_auc" -> If[MissingQ[auc], Missing["NA"], Max@DeleteMissing@Normal@auc]
@@ -185,19 +226,21 @@ Grid[{
   {"Best AUC", ftResA["best_auc"], ftResB["best_auc"]}
 }, Frame -> All]
 
+
 (* ============================= *)
 (* 7) SAVE RESULTS               *)
 (* ============================= *)
 
 say["Saving results to disk"];
 
-timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
+timestamp = DateString[{"Year", "Month", "Day", "Hour", "Minute", "Second"}];
 outDir = FileNameJoin[{baseDir, "TQE_Wolfram_Clean_Output_" <> timestamp}];
 If[!DirectoryQ[outDir], CreateDirectory[outDir, CreateIntermediateDirectories -> True]];
 
-Export[FileNameJoin[{outDir, "stability.json"}], <|"E+I" -> stabResA, "E-only" -> stabResB|>];
-Export[FileNameJoin[{outDir, "cmb_coldspots.json"}], <|"E+I" -> coldResA, "E-only" -> coldResB|>];
-Export[FileNameJoin[{outDir, "aoe.json"}], <|"E+I" -> aoeResA, "E-only" -> aoeResB|>];
-Export[FileNameJoin[{outDir, "finetune.json"}], <|"E+I" -> ftResA, "E-only" -> ftResB|>];
+(* FIX: Sanitize results before exporting to make them JSON-compatible *)
+Export[FileNameJoin[{outDir, "stability.json"}], sanitizeForJSON@<|"E+I" -> stabResA, "E-only" -> stabResB|>];
+Export[FileNameJoin[{outDir, "cmb_coldspots.json"}], sanitizeForJSON@<|"E+I" -> coldResA, "E-only" -> coldResB|>];
+Export[FileNameJoin[{outDir, "aoe.json"}], sanitizeForJSON@<|"E+I" -> aoeResA, "E-only" -> aoeResB|>];
+Export[FileNameJoin[{outDir, "finetune.json"}], sanitizeForJSON@<|"E+I" -> ftResA, "E-only" -> ftResB|>];
 
 say["✅ Results exported to: " <> outDir];
