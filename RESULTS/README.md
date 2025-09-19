@@ -49,7 +49,7 @@ I conducted the analysis presented here with a focus on rigor and transparency, 
 The quantitative results presented in the manuscript can be reproduced using the tools and data in this archive.
 
 1.  **Data:** The raw `.csv` files from the simulations are located in the `/E-plus-I_Simulation/DATA/` and `/E-Only_Simulation/DATA/` subdirectories.
-2.  **Analysis Script:** The Wolfram Language notebook located in the `/analysis/` folder (`TQE_Wolfram_Math_Check_Pipeline.nb`) was used to perform the final comparative analysis.
+2.  **Analysis Script:** The Wolfram Language notebook located in the `/RESULTS/` folder (`TQE_Wolfram_Math_Check_Pipeline.nb`) was used to perform the final comparative analysis.
 3.  **Execution:** To reproduce the summary tables, open the notebook, set the input directories to point to the respective data folders, and evaluate the notebook.
 
 ## Current Status & Known Issues
