@@ -154,6 +154,97 @@ Grid[{
 }, Frame -> All]
 
 (* ============================= *)
+(* 4) STABILITY & LOCK-IN ANALYSIS *)
+(* ============================= *)
+
+stabilitySummary[ds_] := Module[
+    {stableCol, lockCol, n, nStable, nLock, rateStable, rateLock},
+    n = Length[ds];
+    stableCol = tryCols[ds, {"stable", "is_stable", "stable_flag","stable_cls","stability"}];
+    nStable = If[MissingQ[stableCol], Missing["NA"], Total@Boole[DeleteMissing@Normal@stableCol == 1]];
+    lockCol = tryCols[ds, {"lock_epoch", "lockin_epoch", "lock_ep","lock_step","lockin_step"}];
+    nLock = If[MissingQ[lockCol], Missing["NA"], Total@Boole[DeleteMissing@Normal@lockCol >= 0]];
+    rateStable = If[MissingQ[nStable] || n == 0, Missing["NA"], 100.0*nStable/n];
+    rateLock = If[MissingQ[nLock] || n == 0, Missing["NA"], 100.0*nLock/n];
+    <|"n" -> n, "stable_n" -> nStable, "stable_pct" -> rateStable,
+      "lockin_n" -> nLock, "lockin_pct" -> rateLock|>
+];
+
+say["1) Overall stability / lock-in"];
+
+(* Pick a master summary file more robustly *)
+pickSummaryFile[asc_] := Module[
+    {cands = Select[Keys@asc, 
+        StringContainsQ[#, {"metrics_stability", "metrics_joined", "tqe_runs", "metrics_cls","stability"}] &]},
+    If[cands === {}, Missing["NA"], First@cands]
+];
+
+sumAfile = pickSummaryFile[assocA];
+sumBfile = pickSummaryFile[assocB];
+
+sumA = If[MissingQ[sumAfile], Dataset[{}], assocA[sumAfile] // toDS];
+sumB = If[MissingQ[sumBfile], Dataset[{}], assocB[sumBfile] // toDS];
+
+stabA = If[MatchQ[sumA,_Dataset] && Length[sumA]>0, stabilitySummary[sumA], <||>];
+stabB = If[MatchQ[sumB,_Dataset] && Length[sumB]>0, stabilitySummary[sumB], <||>];
+
+stabGrid = Grid[{
+    {"Metric", "E+I (A)", "E-only (B)"},
+    {"Total Universes", stabA["n"], stabB["n"]},
+    {"Stable Count / %", If[KeyExistsQ[stabA,"stable_n"], 
+       Row[{stabA["stable_n"], " / ", NumberForm[stabA["stable_pct"], {4, 2}], "%"}], "NA"],
+     If[KeyExistsQ[stabB,"stable_n"], 
+       Row[{stabB["stable_n"], " / ", NumberForm[stabB["stable_pct"], {4, 2}], "%"}], "NA"]},
+    {"Lock-in Count / %", If[KeyExistsQ[stabA,"lockin_n"], 
+       Row[{stabA["lockin_n"], " / ", NumberForm[stabA["lockin_pct"], {4, 2}], "%"}], "NA"],
+     If[KeyExistsQ[stabB,"lockin_n"], 
+       Row[{stabB["lockin_n"], " / ", NumberForm[stabB["lockin_pct"], {4, 2}], "%"}], "NA"]}
+}, Frame -> All];
+
+stabGrid
+
+(* ============================= *)
+(* 5) GOLDILOCKS ZONE ANALYSIS   *)
+(* ============================= *)
+
+say["2) Goldilocks zone (A: X, B: E)"];
+
+(* Bin stats for A and B, with fallback column names *)
+goldA = If[MatchQ[sumA, _Dataset] && Length[sumA] > 0, 
+   binStats[sumA, "X", 40], Missing["NoData"]];
+If[MissingQ[goldA] || goldA === Missing["NoData"], goldA = binStats[sumA, "E_times_I", 40]];
+If[MissingQ[goldA] || goldA === Missing["NoData"], goldA = binStats[sumA, "E_mul_I", 40]];
+
+goldB = If[MatchQ[sumB, _Dataset] && Length[sumB] > 0, 
+   binStats[sumB, "E", 40], Missing["NoData"]];
+If[MissingQ[goldB] || goldB === Missing["NoData"], goldB = binStats[sumB, "e", 40]];
+
+(* Compare peaks of the stability curves *)
+peakInfo[ds_] := If[MissingQ[ds] || ds === Missing["NoData"], Missing["NA"],
+  Module[{tbl = DeleteMissing[Normal@ds]},
+    If[tbl === {} || !AssociationQ[First@tbl], Missing["NA"],
+      First@Reverse@SortBy[tbl, Lookup[#, "stability_rate", -Infinity] &]
+    ]
+  ]
+];
+
+peakA = peakInfo[goldA];
+peakB = peakInfo[goldB];
+
+Grid[
+  {
+    {"Dataset", "Peak stability", "At (edge_min..edge_max)"},
+    {"E+I (X)", 
+      If[MissingQ[peakA], "NA", Row[{NumberForm[100*peakA["stability_rate"], {4, 2}], "%"}]],
+      If[MissingQ[peakA], "NA", Row[{NumberForm[peakA["edge_min"], {4, 3}], " .. ", NumberForm[peakA["edge_max"], {4, 3}]}]]},
+    {"E-only (E)", 
+      If[MissingQ[peakB], "NA", Row[{NumberForm[100*peakB["stability_rate"], {4, 2}], "%"}]],
+      If[MissingQ[peakB], "NA", Row[{NumberForm[peakB["edge_min"], {4, 3}], " .. ", NumberForm[peakB["edge_max"], {4, 3}]}]]}
+  },
+  Frame -> All
+]
+
+(* ============================= *)
 (* 6) CMB ANOMALIES (COLD SPOT)   *)
 (* ============================= *)
 
@@ -186,6 +277,126 @@ Grid[{
     {"Average Depth", cA["mean"], cB["mean"]},
     {"Median Depth", cA["median"], cB["median"]},
     {"Count ≤ -70 µK", cA["below_-70"], cB["below_-70"]}
+}, Frame -> All]
+
+(* ============================= *)
+(* 7) “BEST UNIVERSE” POST-LOCK NOISE *)
+(* ============================= *)
+
+say["4) Best-universe post-lock entropy noise"];
+
+(* Find all time series files *)
+pickTimeSeries[asc_] := Select[Keys@asc, StringContainsQ[#, {"timeseries", "time_series","fl_timeseries"}] &];
+
+timeAFiles = pickTimeSeries[assocA];
+timeBFiles = pickTimeSeries[assocB];
+
+timeAList = DeleteMissing[toDS /@ (assocA /@ timeAFiles)];
+timeBList = DeleteMissing[toDS /@ (assocB /@ timeBFiles)];
+
+(* Std dev of global_entropy after lock_epoch *)
+postLockStd[ds_] := Module[
+    {lock = tryCols[ds, {"lock_epoch", "lockin_epoch", "lock_ep","lock_step","lockin_step"}],
+     ge   = tryCols[ds, {"global_entropy","entropy_global","H_global","entropy"}],
+     t    = tryCols[ds, {"time_step","t","step","epoch"}],
+     lvList, lv, tt, gg},
+    If[Or[MissingQ[lock], MissingQ[ge], MissingQ[t]], Return[Missing["NA"]]];
+    lvList = DeleteMissing@Normal@lock;
+    If[lvList === {}, Return[Missing["NA"]]];
+    lv = First@lvList; tt = Normal@t; gg = Normal@ge;
+    If[!NumericQ[lv], Return[Missing["NA"]]];
+    With[{mask = Boole[tt >= lv]},
+      If[Total@mask < 5, Missing["NA"], StandardDeviation@Pick[gg, mask, 1]]
+    ]
+];
+
+(* Compute average across all timeseries *)
+postLockStdList[dsList_List] := Module[{vals = DeleteMissing[postLockStd /@ dsList]},
+  If[vals === {}, Missing["NA"], Mean@vals]
+];
+
+stdA = postLockStdList[timeAList];
+stdB = postLockStdList[timeBList];
+
+Grid[{
+    {"Dataset", "Post-lock std(global_entropy)"},
+    {"E+I (A)", stdA},
+    {"E-only (B)", stdB}
+}, Frame -> All]
+
+(* ============================= *)
+(* 8) XAI FEATURE IMPORTANCE     *)
+(* ============================= *)
+
+say["5) XAI feature importance"];
+
+(* Keressük az összes feature importance fájlt *)
+pickFeatImp[asc_] := Select[Keys@asc, StringContainsQ[#, {"feat_importance", "feature_importance"}] &];
+
+fiAFiles = pickFeatImp[assocA];
+fiBFiles = pickFeatImp[assocB];
+
+fiAList = DeleteMissing[toDS /@ (assocA /@ fiAFiles)];
+fiBList = DeleteMissing[toDS /@ (assocB /@ fiBFiles)];
+
+(* Egy datasetből kiszedi a Top-K feature-t *)
+topK[ds_, k_:3] := Module[
+  {score = tryCols[ds, {"importance","gain","weight","score"}],
+   name  = tryCols[ds, {"feature","name"}]},
+  If[MissingQ[score] || MissingQ[name], Dataset[{}],
+    Module[{n = Normal@name, s = Normal@score},
+      If[Length@n != Length@s, Dataset[{}],
+        Dataset @ TakeLargestBy[Thread[Rule[n, s]], Last, UpTo[k]]
+      ]
+    ]
+  ]
+];
+
+(* Ha több fájl van, összevonjuk és nézzük a Top-3-at átlagolt score szerint *)
+mergeFeatImp[dsList_, k_:3] := Module[{all},
+  If[dsList === {}, Dataset[{}],
+    all = Flatten[Normal /@ (topK[#, All] & /@ dsList), 1];
+    Dataset @ TakeLargestBy[Merge[all, Mean], Last, UpTo[k]]
+  ]
+];
+
+topA = mergeFeatImp[fiAList, 3];
+topB = mergeFeatImp[fiBList, 3];
+
+Grid[{
+    {"Top-3 Features (E+I)", topA},
+    {"Top-3 Features (E-only)", topB}
+}]
+
+(* ============================= *)
+(* 9) FINETUNE METRICS           *)
+(* ============================= *)
+
+say["6) Fine-tuning metrics (if available)"];
+
+pickFinetune[asc_] := Select[Keys@asc, StringContainsQ[#, {"finetune", "fine_tune"}] &];
+
+ftAFiles = pickFinetune[assocA];
+ftBFiles = pickFinetune[assocB];
+
+ftAList = DeleteMissing[toDS /@ (assocA /@ ftAFiles)];
+ftBList = DeleteMissing[toDS /@ (assocB /@ ftBFiles)];
+
+summFT[ds_] := Module[
+  {acc = tryCols[ds, {"acc","accuracy","val_acc"}],
+   auc = tryCols[ds, {"auc","roc_auc","val_auc"}]},
+  <|
+    "best_acc" -> If[MissingQ[acc], Missing["NA"], Max@DeleteMissing@Normal@acc],
+    "best_auc" -> If[MissingQ[auc], Missing["NA"], Max@DeleteMissing@Normal@auc]
+  |>
+];
+
+ftARes = If[ftAList === {}, {}, summFT /@ ftAList];
+ftBRes = If[ftBList === {}, {}, summFT /@ ftBList];
+
+Grid[{
+    {"Finetune Metrics (E+I)", If[ftARes === {}, "NA", Dataset[ftARes]]},
+    {"Finetune Metrics (E-only)", If[ftBRes === {}, "NA", Dataset[ftBRes]]}
 }, Frame -> All]
 
 (* ============================= *)
