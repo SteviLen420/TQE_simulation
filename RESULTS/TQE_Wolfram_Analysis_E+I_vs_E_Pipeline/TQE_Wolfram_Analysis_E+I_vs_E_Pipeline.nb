@@ -25,7 +25,7 @@ say[txt_] := Print[Style[txt, 14, Bold, RGBColor[0.1, 0.2, 0.6]]];
 
 (* Explicit CSV import wrapped into Dataset *)
 safeImport[f_] := Quiet@Check[
-  Dataset@Import[f, {"CSV", "Data"}],
+  Import[f, "Dataset"],
   Missing["NotAvailable"]
 ];
 
@@ -141,17 +141,14 @@ stabilitySummary[ds_] := Module[
 
 say["1) Overall stability / lock-in"];
 
-(* Pick a master summary table from the available files *)
-pickSummaryFile[asc_] := Module[
-    {cands = Select[Keys@asc, StringContainsQ[#, {"metrics_stability", "metrics_joined", "tqe_runs", "metrics_cls"}] &]},
-    If[cands === {}, Missing["NA"], First@cands]
-];
-
 sumAfile = pickSummaryFile[assocA];
 sumBfile = pickSummaryFile[assocB];
 
 sumA = If[MissingQ[sumAfile], Missing["NA"], assocA[sumAfile] // toDS];
 sumB = If[MissingQ[sumBfile], Missing["NA"], assocB[sumBfile] // toDS];
+
+If[MatchQ[sumA, _Dataset] && Length[sumA] > 0, Print["Cols in Summary A: ", Keys@Normal@First@sumA]];
+If[MatchQ[sumB, _Dataset] && Length[sumB] > 0, Print["Cols in Summary B: ", Keys@Normal@First@sumB]];
 
 stabA = If[MissingQ[sumA], Missing["NA"], stabilitySummary[sumA]];
 stabB = If[MissingQ[sumB], Missing["NA"], stabilitySummary[sumB]];
