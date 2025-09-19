@@ -1,3 +1,7 @@
+Copyright (c) 2025 Stefan Len
+
+License: MIT License
+
 # TQE Wolfram Math Check Pipeline
 
 **Author:** Stefan Len
