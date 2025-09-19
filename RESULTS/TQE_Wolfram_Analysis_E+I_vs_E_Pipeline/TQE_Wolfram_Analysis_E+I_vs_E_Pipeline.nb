@@ -242,13 +242,25 @@ Grid[{
 say["Saving results to disk"];
 
 timestamp = DateString[{"Year", "Month", "Day", "Hour", "Minute", "Second"}];
-outDir = FileNameJoin[{baseDir, "TQE_Wolfram_Clean_Output_" <> timestamp}];
+
+(* Save directly to Desktop, not inside baseDir *)
+desktopDir = FileNameJoin[{$HomeDirectory, "Desktop"}];
+outDir = FileNameJoin[{desktopDir, "TQE_Wolfram_Clean_Output_" <> timestamp}];
+
 If[!DirectoryQ[outDir], CreateDirectory[outDir, CreateIntermediateDirectories -> True]];
 
-(* FIX: Sanitize results before exporting to make them JSON-compatible *)
-Export[FileNameJoin[{outDir, "stability.json"}], sanitizeForJSON@<|"E+I" -> stabResA, "E-only" -> stabResB|>];
-Export[FileNameJoin[{outDir, "cmb_coldspots.json"}], sanitizeForJSON@<|"E+I" -> coldResA, "E-only" -> coldResB|>];
-Export[FileNameJoin[{outDir, "aoe.json"}], sanitizeForJSON@<|"E+I" -> aoeResA, "E-only" -> aoeResB|>];
-Export[FileNameJoin[{outDir, "finetune.json"}], sanitizeForJSON@<|"E+I" -> ftResA, "E-only" -> ftResB|>];
+(* Sanitize + export *)
+Export[FileNameJoin[{outDir, "stability.json"}],
+  sanitizeForJSON@<|"E+I" -> stabResA, "E-only" -> stabResB|>
+];
+Export[FileNameJoin[{outDir, "cmb_coldspots.json"}],
+  sanitizeForJSON@<|"E+I" -> coldResA, "E-only" -> coldResB|>
+];
+Export[FileNameJoin[{outDir, "aoe.json"}],
+  sanitizeForJSON@<|"E+I" -> aoeResA, "E-only" -> aoeResB|>
+];
+Export[FileNameJoin[{outDir, "finetune.json"}],
+  sanitizeForJSON@<|"E+I" -> ftResA, "E-only" -> ftResB|>
+];
 
 say["✅ Results exported to: " <> outDir];
