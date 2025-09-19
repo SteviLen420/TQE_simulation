@@ -149,15 +149,15 @@ postLockStd[ds_] := Module[
 (* 3) LOAD AND PAIR FILES        *)
 (* ============================= *)
 
-filesA = FileNames["*.csv", dirA, Infinity];
-filesB = FileNames["*.csv", dirB, Infinity];
-
+(* Build associations from the automatically found files *)
 assocA = AssociationMap[safeImport, filesA];
 assocB = AssociationMap[safeImport, filesB];
 
-keyA = AssociationThread[niceName[#, "A"] & /@ Keys[assocA] -> Keys[assocA]];
-keyB = AssociationThread[niceName[#, "B"] & /@ Keys[assocB] -> Keys[assocB]];
+(* Just use the basenames as keys for pairing *)
+keyA = AssociationThread[FileBaseName /@ Keys[assocA] -> Keys[assocA]];
+keyB = AssociationThread[FileBaseName /@ Keys[assocB] -> Keys[assocB]];
 
+(* Intersection based on simplified basenames *)
 commonKeys = Intersection[Keys[keyA], Keys[keyB]];
 
 say["File Loading Summary"];
