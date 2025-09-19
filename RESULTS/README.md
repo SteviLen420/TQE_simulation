@@ -51,6 +51,7 @@ This project is a **research-grade proof-of-concept** and is under my active dev
 * **Code Synchronization:** I am doing further work to synchronize the code across different modules to achieve even more precise and consistent results.
 * **Data Availability:** Despite these minor issues, all available data from the completed simulation runs can be found in the `/DATA/` directory.
 
-## Main Project Documents
+## Contact
 
-For the complete scientific context, theoretical framework, and the narrative behind this project, please refer to the main documents I have written, located in the `/docs/` folder or the root of the repository.
+Got questions, ideas, or feedback?  
+Drop me an email at **tqe.simulation@gmail.com** 
