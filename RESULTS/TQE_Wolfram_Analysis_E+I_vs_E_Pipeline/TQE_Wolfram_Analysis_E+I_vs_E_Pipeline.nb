@@ -58,15 +58,23 @@ niceName[path_, tag_] := Module[{b = FileBaseName[path]},
   }]
 ];
 
-(* Prefer summary files: joined > stability > tqe_runs > cls; fallback = biggest table *)
+(* pick a table that actually has stable/lock/E/X columns and many rows *)
 pickSummaryFile[asc_] := Module[
-  {keys = Keys@asc, prefs, hits},
-  prefs = {"metrics_joined", "metrics_stability", "tqe_runs", "metrics_cls"};
-  hits  = Select[keys, StringContainsQ[#, prefs] &];
-  If[hits === {},
-    First@MaximalBy[keys, (Length@toDS@asc[#] /. _Missing -> 0) &],
-    First@MaximalBy[hits, (Length@toDS@asc[#] /. _Missing -> 0) &]
-  ]
+  {keys = Keys@asc, score, best},
+  score[f_] := Module[{ds = toDS@asc[f], s = 0},
+    If[MatchQ[ds, _Dataset] && Length[ds] > 0,
+      s += 2*Boole[colExistsQ[ds, "stable"] || colExistsQ[ds, "is_stable"] || colExistsQ[ds, "stable_flag"] || colExistsQ[ds, "stable_cls"] || colExistsQ[ds, "stability"]];
+      s += 2*Boole[colExistsQ[ds, "lock_epoch"] || colExistsQ[ds, "lockin_epoch"] || colExistsQ[ds, "lock_ep"] || colExistsQ[ds, "lock_step"]];
+      s += Boole[colExistsQ[ds, "E"] || colExistsQ[ds, "e"]];
+      s += Boole[colExistsQ[ds, "X"] || colExistsQ[ds, "x"] || colExistsQ[ds, "E_times_I"] || colExistsQ[ds, "E_mul_I"]];
+      s *= (1 + Log[1 + Length[ds]]);
+      ,
+      s = -Infinity
+    ];
+    s
+  ];
+  best = MaximalBy[keys, score];
+  If[best === {}, Missing["NotAvailable"], First@best]
 ];
 
 (* Column name variants *)
