@@ -8,31 +8,25 @@
 (* =================================================================================== *)
 
 (* ============================= *)
-(* 1) DEFINE CLOUD DIRECTORIES   *)
+(* 1) DEFINE LOCAL DIRECTORIES   *)
 (* ============================= *)
 
-(* Energy-only simulations *)
-dirB = {
-  CloudObject["TQE_Universe_Simulation_Full_Pipeline__energy_only_20250918_194717/"],
-  CloudObject["TQE_Universe_Simulation_Full_Pipeline__energy_only_20250918_203906/"],
-  CloudObject["TQE_Universe_Simulation_Full_Pipeline__energy_only_20250918_214751/"]
-};
+(* Base directory on Desktop *)
+baseDir = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_EI_SIMULATION_COLAB_GPU"}];
 
-(* E+I simulations *)
-dirA = {
-  CloudObject["TQE_Universe_Simulation_Full_Pipeline_EI_20250918_081329/"],
-  CloudObject["TQE_Universe_Simulation_Full_Pipeline_EI_20250918_135231/"],
-  CloudObject["TQE_Universe_Simulation_Full_Pipeline_EI_20250918_143859/"],
-  CloudObject["TQE_Universe_Simulation_Full_Pipeline_EI_20250918_183522/"],
-  CloudObject["TQE_Universe_Simulation_Full_Pipeline_EI_20250919_035838/"]
-};
+(* Automatically search for all subdirectories *)
+dirs = FileNames["TQE_Universe_Simulation*", baseDir];
 
-(* Collect all CSVs inside each group *)
-filesA = Flatten[FileNames["*.csv", #, Infinity] & /@ dirA];
-filesB = Flatten[FileNames["*.csv", #, Infinity] & /@ dirB];
+(* Separate into E+I vs. Energy-only based on folder name *)
+dirsA = Select[dirs, StringContainsQ[#, "_EI_"] &];
+dirsB = Select[dirs, StringContainsQ[#, "energy_only"] &];
 
-Print["Total E+I files: ", Length[filesA]];
-Print["Total E-only files: ", Length[filesB]];
+(* Collect all CSV files recursively *)
+filesA = Flatten[FileNames["*.csv", #, Infinity] & /@ dirsA];
+filesB = Flatten[FileNames["*.csv", #, Infinity] & /@ dirsB];
+
+Print["📂 Total E+I files: ", Length[filesA]];
+Print["📂 Total E-only files: ", Length[filesB]];
 
 (* ============================= *)
 (* 2) HELPER FUNCTIONS           *)
