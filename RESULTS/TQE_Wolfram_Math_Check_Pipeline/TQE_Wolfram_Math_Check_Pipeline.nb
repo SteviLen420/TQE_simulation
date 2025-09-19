@@ -2,9 +2,10 @@
 (* Copyright (c) 2025 Stefan Len *)
 
 (* ================================================================== *)
-(*  Simple mathematical check for all CSV files in a simulation run   *)
+(*  TQE_Wolfram_Math_Check_Pipeline.nb                                *)
 (*  Author: Stefan Len                                                *)
 (* ================================================================== *)
+(*  Simple mathematical check for all CSV files in a simulation run   *)
 
 ClearAll["Global`*"];
 
