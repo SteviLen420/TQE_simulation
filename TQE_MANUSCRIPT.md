@@ -30,7 +30,11 @@ Importantly, the framework yields falsifiable implications. If correct, one expe
 
 ### **2. Theoretical Framework**
 
-Let the state of the universe be represented by a superpositional probability distribution **P(ψ)**. During early cosmogenesis, I assume this distribution is not static but subject to modulation by energy fluctuations and I:
+The foundation of our model rests on three key concepts: the quantum state of the universe, energy fluctuations, and a previously unaddressed, intrinsic property of energy, which we term Information (I).
+
+Information (I) as an Intrinsic Property of Energy: We postulate that energy possesses a fundamental, intrinsic property: a directionality towards complexity. We call this property Information (I). This is not an external field but an inseparable aspect of energy itself that carries the structure-forming potential.
+
+Let the state of the universe be represented by a superpositional probability distribution P(ψ). During early cosmogenesis, we assume this distribution is not static but subject to modulation by vacuum energy fluctuations (E) and the aforementioned Information parameter (I):
 
 **P’(ψ) = P(ψ) f(E, I)**
 
