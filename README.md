@@ -115,4 +115,4 @@ Got questions, ideas, or feedback?
 Drop me an email at **tqe.simulation@gmail.com** 
 
 ## TQE pipeline
-[TQE_Universe_Simulation_Full_Pipeline.py](./TQE_simulation/TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py)
+[TQE_Universe_Simulation_Full_Pipeline.py](./TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline.py)
