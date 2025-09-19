@@ -1,88 +1,65 @@
 (* SPDX-License-Identifier: MIT *)
 (* Copyright (c) 2025 Stefan Len *)
 
-(* =================================================================================== *)
-(* TQE_Wolfram_Analysis_E+I_vs_E_Pipeline.nb *)
-(* =================================================================================== *)
-(* Author: Stefan Len *)
-(* =================================================================================== *)
+(* ================================================================== *)
+(*  Simple mathematical check for all CSV files in a simulation run   *)
+(*  Author: Stefan Len                                                *)
+(* ================================================================== *)
 
-(* Universal simulation analyzer - auto export *)
+ClearAll["Global`*"];
 
-ClearAll[safeImport, tryCols, analyzeCSV, analyzeSimulation, sanitizeForJSON];
-
-(* Safe import of a CSV *)
+(* Safe import of CSV as Dataset, empty if error *)
 safeImport[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
 
-(* Try multiple column name variants *)
-tryCols[ds_, names_List] := Module[{firstRow, hit},
-  If[Length[ds] == 0, Return[Missing["NA"]]];
-  firstRow = Normal@First@ds;
-  hit = SelectFirst[names, KeyExistsQ[firstRow, #] &, None];
-  If[hit === None, Missing["NA"], ds[All, hit]]
-];
-
-(* Make JSON safe *)
-sanitizeForJSON[expr_] := expr /. {
-   Missing[_] -> Null,
-   DirectedInfinity[_] -> Null,
-   Indeterminate -> Null,
-   ds_Dataset :> Normal[ds]
-};
-
-(* Analyze one CSV file *)
-analyzeCSV[file_String] := Module[{ds, stable, lock, acc, auc, z, aoe},
-  ds = safeImport[file];
-  If[Length[ds] == 0, Return[<|"File"->FileBaseName[file],"Status"->"Empty"|>]];
+(* Function to check one CSV file *)
+checkCSV[file_] := Module[{ds, nums},
   
-  stable = tryCols[ds, {"stable","stability","stable_flag","stability_cls"}];
-  lock   = tryCols[ds, {"lock_epoch","lockin_epoch","lock_step"}];
-  acc    = tryCols[ds, {"acc","accuracy","val_acc","acc_delta"}];
-  auc    = tryCols[ds, {"auc","roc_auc","val_auc","auc_delta"}];
-  z      = tryCols[ds, {"z_value","depth_uK"}];
-  aoe    = tryCols[ds, {"aoe","angle","theta"}];
+  ds = safeImport[file];
+  If[Length[ds] == 0,
+    Return[<|"File" -> FileBaseName[file], "Status" -> "Empty">]
+  ];
+  
+  (* Collect all numeric values in the dataset *)
+  nums = Cases[Flatten@Normal[ds], _?NumericQ, ∞];
   
   <|
-    "File"          -> FileBaseName[file],
-    "Total Rows"    -> Length[ds],
-    "Stable %"      -> If[MissingQ[stable], Missing["NA"], 
-                          N[Mean[Boole[Normal@DeleteMissing@stable==1]]*100]],
-    "Lock-in Count" -> If[MissingQ[lock], Missing["NA"], 
-                          Count[DeleteMissing@Normal@lock, _?NumericQ]],
-    "Best ACC"      -> If[MissingQ[acc], Missing["NA"], 
-                          Max@DeleteMissing@Normal@acc],
-    "Best AUC"      -> If[MissingQ[auc], Missing["NA"], 
-                          Max@DeleteMissing@Normal@auc],
-    "CMB mean"      -> If[MissingQ[z], Missing["NA"], 
-                          Mean@DeleteMissing@Normal@z],
-    "AOE mean"      -> If[MissingQ[aoe], Missing["NA"], 
-                          Mean@DeleteMissing@Normal@aoe]
+    "File"         -> FileBaseName[file],
+    "Rows"         -> Length[ds],
+    "Numeric Count"-> Length[nums],
+    "Missing?"     -> Count[nums, _Missing],
+    "NaN?"         -> Count[nums, _?(Not@*NumericQ)],
+    "Infinity?"    -> Count[nums, x_ /; Abs[x] === ∞],
+    "Mean"         -> If[nums === {}, "NA", Mean[nums]],
+    "StdDev"       -> If[nums === {}, "NA", StandardDeviation[nums]]
   |>
 ];
 
-(* Analyze all CSV files in a simulation folder *)
-analyzeSimulation[simDir_String] := Module[{files, results, timestamp, outDir, csvOut, jsonOut},
-  
-  files = FileNames["*.csv", simDir];
-  results = analyzeCSV /@ files;
-  
-  (* Save to Desktop with timestamp *)
-  timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
-  outDir = FileNameJoin[{$HomeDirectory,"Desktop","TQE_SingleRun_Analysis_"<>timestamp}];
-  If[!DirectoryQ[outDir], CreateDirectory[outDir, CreateIntermediateDirectories->True]];
-  
-  csvOut = FileNameJoin[{outDir,"analysis_results.csv"}];
-  jsonOut = FileNameJoin[{outDir,"analysis_results.json"}];
-  
-  Export[csvOut, results];
-  Export[jsonOut, sanitizeForJSON@results];
-  
-  Print["✅ Results exported to: ", outDir];
-  Dataset[results]
+(* ================================================================== *)
+(*  Main execution: scan all CSVs in the chosen simulation directory  *)
+(* ================================================================== *)
+
+(* Path to your simulation folder with CSV files *)
+simDir = "/Users/stevilen/Desktop/TQE_EI_SIMULATION_COLAB_GPU/TQE_Universe_Simulation_full_Pipeline_E+I_20250918_081329/CSV";
+
+files = FileNames["*.csv", simDir];
+Print["📂 Found CSV files: ", Length[files]];
+
+results = checkCSV /@ files;
+
+(* Show results as a nice table *)
+Dataset[results]
+
+(* ================================================================== *)
+(*  Export results to Desktop (both CSV + JSON)                       *)
+(* ================================================================== *)
+
+timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
+outDir = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_Math_Check_" <> timestamp}];
+If[!DirectoryQ[outDir], CreateDirectory[outDir, CreateIntermediateDirectories -> True]];
+
+Export[FileNameJoin[{outDir, "math_check_results.csv"}], results];
+Export[FileNameJoin[{outDir, "math_check_results.json"}],
+  results /. Missing[_] -> Null
 ];
 
-(* Példa: futtass egy teljes szimulációs mappát *)
-analyzeSimulation[
-  FileNameJoin[{$HomeDirectory,"Desktop","TQE_EI_SIMULATION_COLAB_GPU",
-    "TQE_Universe_Simulation_full_Pipeline_EI_20250918_081329"}]
-]
+Print["✅ Math check finished, results saved to: ", outDir];
