@@ -473,4 +473,28 @@ Export[FileNameJoin[{outDir, "best_universe_entropy.json"}],
 Export[FileNameJoin[{outDir, "xai_top_features.csv"}],
   Prepend[
     Join[
-      Thread[{"E+I (A)", Keys@Normal@topA
+      Thread[{"E+I (A)", Keys@Normal@topA, Values@Normal@topA}],
+      Thread[{"E-only (B)", Keys@Normal@topB, Values@Normal@topB}]
+    ],
+    {"Dataset","Feature","Score"}
+  ]
+];
+Export[FileNameJoin[{outDir, "xai_top_features.json"}],
+  CleanForJSON @ <|"E+I" -> Normal@topA, "E-only" -> Normal@topB|>
+];
+
+(* ---------- 6) Finetune metrics ---------- *)
+Export[FileNameJoin[{outDir, "finetune_metrics.csv"}],
+  Prepend[
+    Join[
+      If[ftARes === {}, {}, Thread[{"E+I (A)", #["best_acc"], #["best_auc"]}] & /@ ftARes],
+      If[ftBRes === {}, {}, Thread[{"E-only (B)", #["best_acc"], #["best_auc"]}] & /@ ftBRes]
+    ],
+    {"Dataset","Best ACC","Best AUC"}
+  ]
+];
+Export[FileNameJoin[{outDir, "finetune_metrics.json"}],
+  CleanForJSON @ <|"E+I" -> ftARes, "E-only" -> ftBRes|>
+];
+
+say["Results exported to: " <> outDir];
