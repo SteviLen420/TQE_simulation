@@ -12,8 +12,8 @@ This repository is organized to provide a clear and transparent overview of the 
 
 * ➡️ **Main Documents:**
     * **[README.md](./TQE_simulation/README.md):** (This file) The main entry point and guide to the project.
-    * **[STORY.md](./STORY.md):** Explains the scientific motivation and the narrative behind the TQE framework.
-    * **[TQE_MANUSCRIPT.md](./TQE_MANUSCRIPT.md):** The formal scientific paper detailing the theoretical framework and findings.
+    * **[STORY.md](./TQE_simulation/STORY.md):** Explains the scientific motivation and the narrative behind the TQE framework.
+    * **[TQE_MANUSCRIPT.md](./TQE_simulation/TQE_MANUSCRIPT.md):** The formal scientific paper detailing the theoretical framework and findings.
 
 * ➡️ **Code & Pipelines:**
     * **[TQE_Universe_Simulation_Full_Pipeline.py](./TQE_Universe_Simulation_Full_Pipeline.py):** Contains the primary Python simulation pipeline used to generate the universe ensembles.
