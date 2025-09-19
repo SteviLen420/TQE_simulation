@@ -1,3 +1,6 @@
+Copyright (c) 2025 Stefan Len
+License: MIT License
+
 # TQE Comparative Analysis Notebook (Wolfram)
 
 **Author:** Stefan Len
