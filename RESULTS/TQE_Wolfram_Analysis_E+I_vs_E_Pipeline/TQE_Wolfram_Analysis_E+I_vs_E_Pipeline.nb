@@ -93,13 +93,13 @@ stabilitySummary[ds_] := Module[
     Return@<|"n" -> 0, "stable_n" -> Missing["NA"], "lockin_n" -> Missing["NA"]|>
   ];
   
-  stableCol = tryCols[ds, {"stable","is_stable","stable_flag","stable_cls","stability"}];
+  stableCol = tryCols[ds, {"stability_cls","stable","is_stable","stable_flag","stability"}];
   nStable = If[MissingQ[stableCol], 
     Missing["NA"],
     Total@Boole[DeleteMissing@Normal@stableCol == 1]
   ];
   
-  lockCol = tryCols[ds, {"lock_epoch","lockin_epoch","lock_step","lockin_step","lock"}];
+  lockCol   = tryCols[ds, {"lock_epoch","lockin_epoch","lock_step","lockin_step","lock"}];
   nLock = If[MissingQ[lockCol], 
     Missing["NA"],
     Count[DeleteMissing@Normal@lockCol, _?NumericQ]
@@ -216,8 +216,8 @@ summFT[ds_] := Module[{acc, auc},
     Return@<|"best_acc" -> Missing["NA"], "best_auc" -> Missing["NA"]|>
   ];
   
-  acc = tryCols[ds, {"acc", "accuracy", "val_acc"}];
-  auc = tryCols[ds, {"auc", "roc_auc", "val_auc"}];
+  acc = tryCols[ds, {"acc","accuracy","val_acc","acc_delta"}];
+  auc = tryCols[ds, {"auc","roc_auc","val_auc","auc_delta"}];
   
   <|
     "best_acc" -> If[MissingQ[acc], Missing["NA"], Max@DeleteMissing@Normal@acc],
