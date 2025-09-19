@@ -86,29 +86,25 @@ groupResults = Association@Table[
 allStats = Flatten[
    Table[
      KeyValueMap[
-       Function[{col, vals},
-         {col, vals["mean_E+I"], vals["mean_E-only"]}
-       ],
+       ( {g, #1, #2["mean_E+I"], #2["mean_E-only"]} ) &,
        groupResults[g]
      ],
-     {g, commonGroups}
+     {g, Keys[groupResults]}
    ],
    1
 ];
 
-(* rendezzük oszloponként és átlagoljuk *)
-globalAvg = Association @ 
-   KeyValueMap[
-     Function[{col, rows},
-       col -> <|
-         "mean_E+I" -> Mean@DeleteMissing[rows[[All, 2]]],
-         "mean_E-only" -> Mean@DeleteMissing[rows[[All, 3]]],
-         "diff" -> (Mean@DeleteMissing[rows[[All, 2]]] - 
-                    Mean@DeleteMissing[rows[[All, 3]]])
-       |>
-     ],
-     GroupBy[allStats, First -> Rest]
-   ];
+
+globalAvg = GroupBy[allStats, #[[2]] &, 
+   Function[rows,
+     <|
+       "mean_E+I" -> Mean[DeleteMissing[rows[[All, 3]]]],
+       "mean_E-only" -> Mean[DeleteMissing[rows[[All, 4]]]],
+       "diff" -> (Mean[DeleteMissing[rows[[All, 3]]]] - 
+                  Mean[DeleteMissing[rows[[All, 4]]]])
+     |>
+   ]
+];
 
 (* ====================================== *)
 (* 7) SAVE RESULTS                        *)
