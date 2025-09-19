@@ -73,9 +73,24 @@ timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
 outDir = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_Math_Check_" <> timestamp}];
 If[!DirectoryQ[outDir], CreateDirectory[outDir, CreateIntermediateDirectories -> True]];
 
+(* Save CSV as-is *)
 Export[FileNameJoin[{outDir, "math_check_results.csv"}], results];
-Export[FileNameJoin[{outDir, "math_check_results.json"}],
-  sanitizeForJSON[results]
+
+(* Prepare JSON-safe structure *)
+jsonResults = Normal @ Map[
+   Function[fileAssoc,
+     Association[
+       "File" -> fileAssoc["File"],
+       "TotalRows" -> fileAssoc["TotalRows"],
+       "AnyNaN" -> fileAssoc["AnyNaN"],
+       "AnyInfinity" -> fileAssoc["AnyInfinity"],
+       "Columns" -> Normal[fileAssoc["Columns"] /. Null -> None]
+     ]
+   ],
+   results
 ];
+
+(* Save clean JSON *)
+Export[FileNameJoin[{outDir, "math_check_results.json"}], jsonResults, "JSON"];
 
 Print["✅ Math check finished, results saved to: ", outDir];
