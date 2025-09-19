@@ -58,3 +58,5 @@ The script generates output in two forms:
 2.  **Exported Files:** A new, timestamped folder named `TQE_Math_Check_[timestamp]` is created on the user's Desktop. This folder contains the full analysis results in two standard formats for archival and external use:
     * `math_check_results.csv`
     * `math_check_results.json`
+
+[RESULTS](./RESULTS)
