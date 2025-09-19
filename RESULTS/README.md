@@ -2,7 +2,7 @@
 
 **Author:** Stefan Len
 
----
+
 ## About This Directory
 
 This directory contains the complete set of results, raw data, and analysis scripts for the **Theory of the Question of Existence (TQE)** simulation framework. It serves as a comprehensive archive for the various simulation runs and the tools used to interpret them.
