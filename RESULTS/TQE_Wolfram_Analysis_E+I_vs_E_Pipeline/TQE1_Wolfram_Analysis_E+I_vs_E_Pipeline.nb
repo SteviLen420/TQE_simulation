@@ -5,7 +5,7 @@
 (* 1) HELPER FUNCTIONS           *)
 (* ============================= *)
 
-(* Convert input to a Dataset safely *)
+(* Convert safely into Dataset *)
 toDS[x_] := Quiet@Check[
    Which[
     Head[x] === Dataset, x,
@@ -19,60 +19,72 @@ toDS[x_] := Quiet@Check[
 (* Replace Missing with Null for JSON export *)
 cleanForJSON[x_] := x /. Missing[_] -> Null;
 
-(* ============================= *)
-(* 2) LOAD FILES INTO DATASETS   *)
-(* ============================= *)
-
-filesA = FileNames["*.csv", "CSV_E+I_*", Infinity];
-filesB = FileNames["*.csv", "CSV_energy_only_*", Infinity];
-
-(* Import all CSVs into datasets, ignoring missing *)
-dsA = DeleteMissing[toDS /@ filesA];
-dsB = DeleteMissing[toDS /@ filesB];
-
-(* Merge all datasets into one big dataset per group *)
-bigA = If[dsA === {}, Dataset[{}], Dataset@Flatten[Normal /@ dsA, 1]];
-bigB = If[dsB === {}, Dataset[{}], Dataset@Flatten[Normal /@ dsB, 1]];
+(* Compute summary stats for a numeric column *)
+summaryStats[data_, col_] := <|
+   "Mean" -> N@Mean[DeleteMissing[data[All, col]]],
+   "StdDev" -> N@StandardDeviation[DeleteMissing[data[All, col]]],
+   "Min" -> N@Min[DeleteMissing[data[All, col]]],
+   "Max" -> N@Max[DeleteMissing[data[All, col]]],
+   "Count" -> Length[DeleteMissing[data[All, col]]]
+   |>;
 
 (* ============================= *)
-(* 3) COMPARE MEAN VALUES        *)
+(* 2) LOAD ALL FILES             *)
 (* ============================= *)
 
-(* Find common columns between both groups *)
-commonCols = 
-  Intersection[Keys@First@Normal@bigA, Keys@First@Normal@bigB];
+(* Choose directory with CSVs (change path if needed) *)
+inputDir = "/ /Users/stevilen/Desktop/TQE_EI_SIMULATION_COLAB_GPU/TQE_Universe_Simulation_full_Pipeline_E+I_20250918_081329/CSV "; 
 
-(* Build comparison association for each column *)
-comp = Association@Table[
-    col -> <|
-      "mean_E+I" -> Mean@DeleteMissing[Normal@bigA[All, col]],
-      "mean_E-only" -> Mean@DeleteMissing[Normal@bigB[All, col]],
-      "diff" -> (Mean@DeleteMissing[Normal@bigA[All, col]] - 
-         Mean@DeleteMissing[Normal@bigB[All, col]])
-      |>,
-    {col, commonCols}
+files = FileNames["*.csv", inputDir, Infinity];
+
+(* Import each file as Dataset *)
+datasets = AssociationMap[toDS, files];
+
+(* ============================= *)
+(* 3) ANALYZE EACH FILE          *)
+(* ============================= *)
+
+results = Association@Table[
+    file -> Module[{ds, cols},
+      ds = datasets[file];
+      cols = Select[Keys@First@Normal[ds], 
+        NumericQ[Quiet[ds[1, #]]] &]; (* only numeric columns *)
+      Association@Table[
+        col -> summaryStats[ds, col],
+        {col, cols}
+        ]
+      ],
+    {file, Keys[datasets]}
     ];
 
 (* ============================= *)
-(* 4) EXPORT TO DESKTOP          *)
+(* 4) EXPORT RESULTS             *)
 (* ============================= *)
 
-(* Create output folder on Desktop *)
-outDir = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_Comparison"}];
+outDir = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_AllStats"}];
 If[! DirectoryQ[outDir], 
    CreateDirectory[outDir, CreateIntermediateDirectories -> True]];
 
-(* Export CSV: one row per column with mean values and difference *)
-Export[FileNameJoin[{outDir, "comparison_table.csv"}],
-  Prepend[
-   KeyValueMap[{#1, #2["mean_E+I"], #2["mean_E-only"], #2["diff"]} &, comp],
-   {"Column", "Mean_E+I", "Mean_E-only", "Difference"}
-   ]
-  ];
+(* Export JSON *)
+Export[FileNameJoin[{outDir, "all_stats.json"}], cleanForJSON@results];
 
-(* Export JSON: association of all results *)
-Export[FileNameJoin[{outDir, "comparison_table.json"}],
-  cleanForJSON@comp
-  ];
+(* Export CSV (flattened for Excel) *)
+csvData = 
+  Flatten[KeyValueMap[
+    Function[{file, cols},
+      KeyValueMap[
+        Function[{col, stats}, 
+          Prepend[Values[stats], {file, col}]
+        ],
+        cols
+        ]
+      ],
+    results
+    ], 1];
 
-Print["Results exported to: ", outDir];
+csvHeader = {"File", "Column", "Mean", "StdDev", "Min", "Max", "Count"};
+
+Export[FileNameJoin[{outDir, "all_stats.csv"}], 
+  Prepend[csvData, csvHeader]];
+
+Print["✅ Results exported to: ", outDir];
