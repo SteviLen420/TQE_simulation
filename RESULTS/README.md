@@ -11,7 +11,7 @@ This directory contains the complete set of results, raw data, and analysis scri
 This repository is organized to provide a clear and transparent overview of the entire TQE research project. All code, data, and documentation are structured as follows, based on the project's root directory:
 
 * ➡️ **Main Documents:**
-    * **[TQE_simulation/README.md](./README.md):** (This file) The main entry point and guide to the project.
+    * **[README.md](/TQE_simulation/README.md):** (This file) The main entry point and guide to the project.
     * **[STORY.md](./STORY.md):** Explains the scientific motivation and the narrative behind the TQE framework.
     * **[TQE_MANUSCRIPT.md](./TQE_MANUSCRIPT.md):** The formal scientific paper detailing the theoretical framework and findings.
 
