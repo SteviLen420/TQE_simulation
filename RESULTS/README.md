@@ -6,14 +6,26 @@
 
 This directory contains the complete set of results, raw data, and analysis scripts for my **Theory of the Question of Existence (TQE)** simulation framework. It serves as a comprehensive archive for the various simulation runs and the tools I used to interpret them.
 
-## Navigating This Directory
+## Navigating This Repository
 
-This archive is organized into several key subdirectories to ensure clarity and reproducibility. All essential components of my analysis can be found within this structure.
+This repository is organized to provide a clear and transparent overview of the entire TQE research project. All code, data, and documentation are structured as follows, based on the project's root directory:
 
-* ➡️ **[/TQE_Universe_Simulation_Full_Pipeline/](./TQE_Universe_Simulation_Full_Pipeline/):** Contains the primary Python simulation code I developed. The `README.md` within this folder provides detailed usage instructions for running new simulations.
-* ➡️ **[/analysis/](./analysis/):** Contains the Wolfram Language notebooks I created for detailed statistical validation and comparative analysis of the simulation results.
-* ➡️ **[/DATA/](./DATA/):** Contains the raw and processed `.csv` and `.json` output files from my various simulation runs, organized into subfolders for each run type (e.g., `E+I` and `E-only`).
-* ➡️ **[/docs/](./docs/):** Contains my supporting documentation, including the main scientific manuscript (`TQE_MANUSCRIPT.md`) and the project's narrative (`STORY.md`).
+* ➡️ **Main Documents:**
+    * **[README.md](./README.md):** (This file) The main entry point and guide to the project.
+    * **[STORY.md](./STORY.md):** Explains the scientific motivation and the narrative behind the TQE framework.
+    * **[TQE_MANUSCRIPT.md](./TQE_MANUSCRIPT.md):** The formal scientific paper detailing the theoretical framework and findings.
+
+* ➡️ **Code & Pipelines:**
+    * **[/TQE_Universe_Simulation_Full_Pipeline/](./TQE_Universe_Simulation_Full_Pipeline/):** Contains the primary Python simulation pipeline used to generate the universe ensembles.
+    * **[/TQE_Wolfram_Analysis.../](./TQE_Wolfram_Analysis.../):** Contains the Wolfram Language notebooks used for detailed statistical validation and comparative analysis of the results.
+
+* ➡️ **Simulation Results:**
+    * **`/E+I_run_[timestamp]/`:** Each directory with this naming pattern contains the complete output (data, figures, and a summary README) for a specific simulation run where both Energy and Information parameters were active.
+    * **`/energy_only_run_[timestamp]/`:** Each directory with this naming pattern contains the complete output for a specific simulation run where only the Energy parameter was active.
+
+* ➡️ **Project Files:**
+    * **[CITATION.cff](./CITATION.cff):** Provides the citation information for this work.
+    * **[LICENSE](./LICENSE):** The MIT License under which this project is distributed.
 
 ## Methodology & Tools
 
