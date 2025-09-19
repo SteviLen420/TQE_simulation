@@ -11,26 +11,25 @@ ClearAll["Global`*"];
 (* Safe import of CSV as Dataset, empty if error *)
 safeImport[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
 
-(* Function to check one CSV file *)
-checkCSV[file_] := Module[{ds, nums},
+(* Analyze one CSV file *)
+analyzeCSV[file_String] := Module[{ds},
   
+  (* Import CSV safely *)
   ds = safeImport[file];
-  If[Length[ds] == 0,
-    Return[<|"File" -> FileBaseName[file], "Status" -> "Empty">]
+  
+  (* If file is empty, return simple status *)
+  If[Length[ds] == 0, 
+    Return[<|"File" -> FileBaseName[file], "Status" -> "Empty"|>]
   ];
   
-  (* Collect all numeric values in the dataset *)
-  nums = Cases[Flatten@Normal[ds], _?NumericQ, ∞];
-  
+  (* Basic mathematical sanity checks *)
   <|
-    "File"         -> FileBaseName[file],
-    "Rows"         -> Length[ds],
-    "Numeric Count"-> Length[nums],
-    "Missing?"     -> Count[nums, _Missing],
-    "NaN?"         -> Count[nums, _?(Not@*NumericQ)],
-    "Infinity?"    -> Count[nums, x_ /; Abs[x] === ∞],
-    "Mean"         -> If[nums === {}, "NA", Mean[nums]],
-    "StdDev"       -> If[nums === {}, "NA", StandardDeviation[nums]]
+    "File" -> FileBaseName[file],
+    "TotalRows" -> Length[ds],
+    "AnyNaN" -> AnyTrue[Flatten[Normal[ds]], NumericQ[#] && Not[NumberQ[#]] &],
+    "AnyInfinity" -> AnyTrue[Flatten[Normal[ds]], # === Infinity || # === -Infinity &],
+    "Mean" -> Quiet@Mean[Flatten[Normal[ds]]],
+    "StdDev" -> Quiet@StandardDeviation[Flatten[Normal[ds]]]
   |>
 ];
 
