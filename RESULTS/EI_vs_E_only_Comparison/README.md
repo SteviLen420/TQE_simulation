@@ -1,9 +1,9 @@
 # TQE Analysis of E+I vs. E-Only Universe Simulations
 This document provides a scientific analysis of simulation results comparing two distinct types of universes:
 
-### E+I Universes: Driven by both Energy (E) and Information (I).
+* **E+I Universes: Driven by both Energy (E) and Information (I).**
 
-### E-Only Universes: Driven solely by Energy (E).
+* **E-Only Universes: Driven solely by Energy (E).**
 
 The results and conclusions were derived not only through manual evaluation, but also based on a detailed analysis conducted with the assistance of several artificial intelligence models (**OpenAI GPT-5**, **Google Gemini 2.5 Pro**, **DeepSeek-R1:14B**).
 
