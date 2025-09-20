@@ -1,34 +1,44 @@
 (* SPDX-License-Identifier: MIT *)
 (* Copyright (c) 2025 Stefan Len *)
 
-(* ================================================================== *)
+(* ================================================================== \
+*)
 (*  TQE_Wolfram_EI_Math_Check_Summary_All_JSON.nb                    *)
-(* ================================================================== *)
-(*  Purpose: Summarize ALL statistics from ALL EI JSON files.         *)
-(*           Each file/column/statistic is flattened into a row.      *)
-(*           Then compute global averages across all files.           *)
-(* ================================================================== *)
+(* ================================================================== \
+*)
+(*  Purpose: Summarize ALL statistics from ALL EI JSON files.         \
+*)
+(*           Each file/column/statistic is flattened into a row.      \
+*)
+(*           Then compute global averages across all files.           \
+*)
+(* ================================================================== \
+*)
 
 (* ========= User input: folder that contains EI JSONs ========= *)
-rootEI = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/math_check_results_EI_JSON";
+rootEI = 
+  "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/math_check_results_\
+EI_JSON";
 
 (* ========= Find all EI JSON files ========= *)
 allFiles = Union[
-   FileNames["*.json", rootEI, Infinity],
-   FileNames["*.JSON", rootEI, Infinity]
-];
+      FileNames["*.json", rootEI, Infinity],
+      FileNames["*.JSON", rootEI, Infinity]
+   ];
 keepFiles = Select[allFiles,
-   StringContainsQ[
-     FileNameTake[#],
-     Alternatives["math_check_results_EI", "math_check_results_E_plus_I", "E+I"],
-     IgnoreCase -> True
-   ] &
-];
+      StringContainsQ[
+          FileNameTake[#],
+          
+     Alternatives["math_check_results_EI", 
+      "math_check_results_E_plus_I", "E+I"],
+          IgnoreCase -> True
+        ] &
+   ];
 
 If[keepFiles === {}, 
-  Print["❌ No EI JSON files found under: ", rootEI];
-  Abort[]
-];
+    Print["❌ No EI JSON files found under: ", rootEI];
+    Abort[]
+  ];
 
 Print["✅ Found ", Length[keepFiles], " EI JSON file(s)."];
 
@@ -37,24 +47,24 @@ allFlat = Dataset @ Flatten[flattenOne /@ datasets];
 
 (* ========= Flatten into long table ========= *)
 flattenOne[ds_] := Flatten[
-   Function[row,
-     KeyValueMap[
-       Function[{col, stats},
-         <|
-           "File" -> row["File"],
-           "TotalRows" -> row["TotalRows"],
-           "AnyNaN" -> row["AnyNaN"],
-           "AnyInfinity" -> row["AnyInfinity"],
-           "AnyMissing" -> row["AnyMissing"],
-           "Column" -> col,
-           "Mean" -> Lookup[stats, "Mean", Missing[]],
-           "StdDev" -> Lookup[stats, "StdDev", Missing[]]
-         |>
-       ],
-       row["Columns"]
-     ]
-   ] /@ Normal[ds]
-];
+      Function[row,
+          KeyValueMap[
+             Function[{col, stats},
+                <|
+                   "File" -> row["File"],
+                   "TotalRows" -> row["TotalRows"],
+                   "AnyNaN" -> row["AnyNaN"],
+                   "AnyInfinity" -> row["AnyInfinity"],
+                   "AnyMissing" -> row["AnyMissing"],
+                   "Column" -> col,
+                   "Mean" -> Lookup[stats, "Mean", Missing[]],
+                   "StdDev" -> Lookup[stats, "StdDev", Missing[]]
+                 |>
+              ],
+             row["Columns"]
+           ]
+        ] /@ Normal[ds]
+   ];
 
 (* ========= Flatten all datasets ========= *)
 
@@ -63,31 +73,34 @@ allFlat
 
 (* ========= Compute averages across all files ========= *)
 avgSummary = Dataset @ GroupBy[
-   Normal[allFlat],
-   #Column &,
-   Function[rows,
-     <|
-       "GlobalMean"   -> Mean[DeleteMissing[rows[[All, "Mean"]]]],
-       "GlobalStdDev" -> Mean[DeleteMissing[rows[[All, "StdDev"]]]],
-       "NumFiles"     -> Length[rows]
-     |>
-   ]
-];
+       Normal[allFlat],
+       #Column &,
+       Function[rows,
+          <|
+             "GlobalMean"   -> Mean[DeleteMissing[rows[[All, "Mean"]]]],
+             "GlobalStdDev" -> Mean[DeleteMissing[rows[[All, "StdDev"]]]],
+             "NumFiles"     -> Length[rows]
+           |>
+        ]
+    ];
 
 Print["\n=== EI Global Averages (by Column) ==="];
 avgSummary
 
 (* ========= Save outputs to Desktop with timestamp ========= *)
-timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
-outRoot = FileNameJoin[{$HomeDirectory, "Desktop", "EI_full_summary_" <> timestamp}];
-If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
+timestamp = 
+  DateString[{"Year", "Month", "Day", "Hour", "Minute", "Second"}];
+outRoot = 
+  FileNameJoin[{$HomeDirectory, "Desktop", 
+    "EI_full_summary_" <> timestamp}];
+If[! DirectoryQ[outRoot], CreateDirectory[outRoot]];
 
 cleanAvg = Normal @ avgSummary /. {
-   Missing[_] -> Null,
-   Indeterminate -> Null,
-   _Times -> Null,
-   _Complex -> Null
-};
+       Missing[_] -> Null,
+       Indeterminate -> Null,
+       _Times -> Null,
+       _Complex -> Null
+    };
 
 outCSV = FileNameJoin[{outRoot, "EI_global_avg.csv"}];
 outJSON = FileNameJoin[{outRoot, "EI_global_avg.json"}];
