@@ -77,11 +77,19 @@ timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
 outRoot = FileNameJoin[{$HomeDirectory, "Desktop", "E_only_allfiles_summary_" <> timestamp}];
 If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
 
-outCSV = FileNameJoin[{outRoot, "e_only_global_avg.csv"}];
-outJSON = FileNameJoin[{outRoot, "e_only_global_avg.json"}];
+cleanAvg = Normal @ avgSummary //. {
+   Missing[_] -> Null,
+   Indeterminate -> Null,
+   _Times -> Null,
+   _Complex -> Null,
+   Quantity[_, _] -> Null
+};
 
-Export[outCSV, Normal @ avgSummary];
-Export[outJSON, Normal @ avgSummary, "JSON"];
+outCSV = FileNameJoin[{outRoot, "E_only_global_avg.csv"}];
+outJSON = FileNameJoin[{outRoot, "E_only_global_avg.json"}];
+
+Export[outCSV, cleanAvg];
+Export[outJSON, cleanAvg, "JSON"];
 
 Print["\n✅ Saved average CSV:  ", outCSV];
 Print["✅ Saved average JSON: ", outJSON];
