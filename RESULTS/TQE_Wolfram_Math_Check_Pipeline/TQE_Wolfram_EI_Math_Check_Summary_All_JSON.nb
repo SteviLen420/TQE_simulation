@@ -12,31 +12,27 @@
 (* ========= User input: folder that contains EI JSONs ========= *)
 rootEI = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/math_check_results_EI_JSON";
 
-(* ========= Helper: find newest EI JSON file ========= *)
-findNewestEIJSON[root_] := Module[{all, keep, newest},
-  all = Union[
-    FileNames["*.json", root, Infinity],
-    FileNames["*.JSON", root, Infinity]
-  ];
-  (* Match common EI signatures *)
-  keep = Select[all, StringContainsQ[
-      FileNameTake[#],
-      Alternatives["math_check_results_EI", "math_check_results_E_plus_I", "E+I"],
-      IgnoreCase -> True
-    ] &];
-  newest = If[keep === {}, Missing["NotFound"], First @ Reverse @ SortBy[keep, FileDate]];
-  newest
+(* ========= Find all EI JSON files ========= *)
+allFiles = Union[
+   FileNames["*.json", rootEI, Infinity],
+   FileNames["*.JSON", rootEI, Infinity]
+];
+keepFiles = Select[allFiles,
+   StringContainsQ[
+     FileNameTake[#],
+     Alternatives["math_check_results_EI", "math_check_results_E_plus_I", "E+I"],
+     IgnoreCase -> True
+   ] &
 ];
 
-(* ========= Load JSON into Dataset ========= *)
-eiFile = findNewestEIJSON[rootEI];
-If[MissingQ[eiFile],
-  Print["❌ No EI JSON found under: ", rootEI];
+If[keepFiles === {}, 
+  Print["❌ No EI JSON files found under: ", rootEI];
   Abort[]
 ];
-Print["✅ Using EI file: ", eiFile];
 
-eiDS = Dataset @ Import[eiFile, "RawJSON"];
+Print["✅ Found ", Length[keepFiles], " EI JSON file(s)."];
+
+datasets = Dataset /@ (Import[#, "RawJSON"] & /@ keepFiles);
 
 (* ========= Flatten into long table ========= *)
 flattenOne[ds_] := Flatten[
