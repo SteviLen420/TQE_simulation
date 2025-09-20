@@ -24,20 +24,11 @@ listCSVs[root_] := Module[{all},
   all
 ];
 
-(* Find newest math_check_results CSV inside the single root, by variant tag *)
-(* variant = "EI" or "Eonly" *)
-findNewestMathCheck[root_, variant_] := Module[{all, keep, newest, pat},
-  (* decide filename signature by variant *)
-  pat = If[variant === "EI", "math_check_results_EI", "math_check_results_energy_only"];
-
-  (* search both .csv and .CSV recursively under one root *)
-  all  = Join[FileNames["*.csv", root, Infinity], FileNames["*.CSV", root, Infinity]];
-  (* keep only those that match the pattern in the basename *)
-  keep = Select[all, StringContainsQ[FileNameTake[#], pat, IgnoreCase -> True] &];
-
-  (* pick the newest (by modification time); Missing if none *)
-  newest = If[keep === {}, Missing["NotFound"], First @ Reverse @ SortBy[keep, FileDate]];
-  newest
+(* Find newest CSV whose basename matches any of the given patterns *)
+findNewestByPatterns[root_, patterns_List] := Module[{all, keep},
+  all = Join[FileNames["*.csv", root, Infinity], FileNames["*.CSV", root, Infinity]];
+  keep = Select[all, StringContainsQ[FileNameTake[#], Alternatives @@ patterns, IgnoreCase -> True] &];
+  If[keep === {}, Missing["NotFound"], First @ Reverse @ SortBy[keep, FileDate]]
 ];
 
 (* === collect all metrics from all rows (robust) === *)
@@ -70,9 +61,21 @@ getStat[ds_, fileTag_String, col_String, stat_:"Mean"] := Module[{row, cols, cel
   Lookup[cell, stat, Missing["NA"]]
 ];
 
-(* Load newest math_check_results CSV for the given variant ("EI" / "Eonly") *)
+(* Load newest math_check_results for EI / E-only from the single root *)
 loadMathCheck[root_, variant_] := Module[{f},
-  f = findNewestMathCheck[root, variant];
+  f = If[variant === "EI",
+    findNewestByPatterns[root, {
+      "math_check_results_EI",
+      "math_check_results_E_plus_I",
+      "math_check_results_E+I"
+    }],
+    findNewestByPatterns[root, {
+      "math_check_results_energy_only",
+      "math_check_results_E_only",
+      "math_check_results_energy-only",
+      "energy_only"
+    }]
+  ];
   If[MissingQ[f],
     <|"status" -> "not_found", "file" -> None, "data" -> Dataset[{}]|>,
     <|"status" -> "ok",       "file" -> f,    "data" -> safeImportDataset[f]|>
