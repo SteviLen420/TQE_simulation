@@ -1,0 +1,63 @@
+(* SPDX-License-Identifier: MIT *)
+(* Copyright (c) 2025 Stefan Len *)
+
+(* ================================================================== *)
+(*  TQE_Wolfram_Comparison_EI_vs_E_only.nb                             *)
+(* ================================================================== *)
+(*  Purpose: Compare EI vs E_only global averages.                    *)
+(*           Loads both JSON summaries, aligns by Column, and         *)
+(*           computes differences.                                    *)
+(* ================================================================== *)
+
+(* ========= User input: paths to summary JSONs ========= *)
+eiFile    = "/Users/stevilen/Desktop/TQE_UNI_Summary/EI_Summary/EI_global_avg.json";
+eonlyFile = "/Users/stevilen/Desktop/TQE_UNI_Summary/E_only_Summary/E_only_global_avg.json";
+
+eiData    = Import[eiFile, "RawJSON"];
+eonlyData = Import[eonlyFile, "RawJSON"];
+
+(* ========= Convert to Associations keyed by Column ========= *)
+eiAssoc    = Association @ Normal[eiData];
+eonlyAssoc = Association @ Normal[eonlyData];
+
+(* ========= Create comparison ========= *)
+allColumns = Union[Keys[eiAssoc], Keys[eonlyAssoc]];
+
+comparison = Dataset @ Table[
+   With[
+     {
+       ei = Lookup[eiAssoc, col, <||>],
+       eo = Lookup[eonlyAssoc, col, <||>]
+     },
+     <|
+       "Metric" -> col,
+       "EI_Value" -> Lookup[ei, "GlobalMean", Missing[]],
+       "Eonly_Value" -> Lookup[eo, "GlobalMean", Missing[]],
+       "Difference" -> If[MissingQ[Lookup[ei, "GlobalMean", Missing[]]] || 
+                        MissingQ[Lookup[eo, "GlobalMean", Missing[]]],
+                        Missing[],
+                        Lookup[ei, "GlobalMean"] - Lookup[eo, "GlobalMean"]
+                      ]
+     |>
+   ],
+   {col, allColumns}
+];
+
+Print["\n=== EI vs E_only Comparison Table ==="];
+comparison
+
+(* ========= Save outputs ========= *)
+timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
+outRoot   = FileNameJoin[{$HomeDirectory, "Desktop", "EI_vs_Eonly_Comparison_" <> timestamp}];
+If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
+
+outCSV  = FileNameJoin[{outRoot, "ei_vs_eonly_comparison.csv"}];
+outJSON = FileNameJoin[{outRoot, "ei_vs_eonly_comparison.json"}];
+
+cleanComp = Normal @ comparison /. {Missing[_] -> Null};
+
+Export[outCSV, cleanComp];
+Export[outJSON, cleanComp, "JSON"];
+
+Print["\n✅ Saved comparison CSV:  ", outCSV];
+Print["✅ Saved comparison JSON: ", outJSON];
