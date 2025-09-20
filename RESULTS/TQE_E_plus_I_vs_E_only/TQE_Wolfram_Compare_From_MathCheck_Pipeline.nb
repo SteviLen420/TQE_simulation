@@ -15,7 +15,7 @@ rootAll = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only";
 safeImportDataset[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
 
 listCSVs[root_] := Module[{all},
-  all = Join[
+  all = Union[
     FileNames["*.csv", root, Infinity],
     FileNames["*.CSV", root, Infinity]
   ];
