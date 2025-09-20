@@ -25,7 +25,7 @@ listCSVs[root_] := Module[{all},
 ];
 
 (* Find all CSV for EI or E-only *)
-findAllMathChecks[root_, variant_] := Module[{all, keep, pats},
+findAllMathChecks[root_, variant_] := Module[{all, pats, keep},
   pats = If[variant === "EI",
     {"_EI_", "E_plus_I", "E+I"},
     {"energy_only", "E_only", "energy-only"}
@@ -34,8 +34,7 @@ findAllMathChecks[root_, variant_] := Module[{all, keep, pats},
     FileNames["*.csv", root, Infinity],
     FileNames["*.CSV", root, Infinity]
   ];
-  keep = Select[all, AnyTrue[pats, StringContainsQ[FileNameTake[#], #, IgnoreCase -> True] &] &];
-  keep = Union[keep];
+  keep = Select[all, StringContainsQ[FileNameTake[#], Alternatives @@ pats, IgnoreCase -> True] &];
   SortBy[keep, FileDate]
 ];
 
