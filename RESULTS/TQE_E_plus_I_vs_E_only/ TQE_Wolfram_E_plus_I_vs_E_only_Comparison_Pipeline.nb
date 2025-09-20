@@ -9,8 +9,8 @@
 (*         Add your actual analysis implementation below this block.  *)
 
 (* ========= User inputs (root folders) ========= *)
-rootEI   = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E-plus-I_Simulation";
-rootEonly= "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E-Only_Simulation";
+rootEI   = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E_plus_I_Simulation";
+rootEonly= "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E_Only_Simulation";
 
 (* ========= Helpers ========= *)
 
