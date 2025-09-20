@@ -42,7 +42,7 @@ $$
 
 where:
 
-**P(ψ)** is the baseline quantum probability distribution.
+$P(ψ)$ is the baseline quantum probability distribution.
 
 **E** is vacuum fluctuation energy, sampled from a heavy-tailed (lognormal) distribution.
 
