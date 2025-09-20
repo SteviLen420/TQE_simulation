@@ -125,8 +125,8 @@ Export[
   outJSON,
   (Association[
      "files" -> <|
-       "E+I_source"    -> ei["file"],
-       "E-only_source" -> eonly["file"]
+       "EI_count"    -> Length[eiFiles],
+       "Eonly_count" -> Length[eonlyFiles]
      |>,
      "comparison_rows" -> Normal @ comparison
    ] /. {None -> Null, Missing[_] -> Null}),
