@@ -288,18 +288,24 @@ To further strengthen the project and improve its usability, maintainability, an
 
 The TQE Framework should be regarded as a stochastic research prototype rather than a fully developed cosmological simulator. While the pipeline demonstrates the feasibility of modeling emergent laws of physics through energy–information dynamics, several limitations remain:
 
-- **Simplified Physics**: Current implementations of anomalies (e.g., Cold Spot, multipole alignment) and fine-tuning diagnostics use heuristic or simplified metrics. They do not yet capture the full complexity of astrophysical analyses.
-- **Computational Scale**: The framework is designed for moderate ensemble sizes. Large-scale runs may encounter memory and runtime constraints without further optimization.
-- **Reproducibility Scope**: Results are reproducible within the same environment and dependency versions, but strict bitwise reproducibility across platforms is not guaranteed.
-- **Prototype XAI Integration**: `SHAP` is well integrated, but `LIME` and other interpretability methods remain in an early-stage prototype form.
+* **Simplified Physics:** Current implementations of anomalies (e.g., Cold Spot, multipole alignment) and fine-tuning diagnostics use heuristic or simplified metrics. They do not yet capture the full complexity of astrophysical analyses.
+* **Computational Scale:** The framework is designed for moderate ensemble sizes. Large-scale runs may encounter memory and runtime constraints without further optimization.
+* **Reproducibility Scope:** Results are reproducible within the same environment and dependency versions, but strict bitwise reproducibility across platforms is not guaranteed.
+* **Prototype XAI Integration:** SHAP is well integrated, but LIME and other interpretability methods remain in an early-stage prototype form.
+* **Predictive Modeling Constraints:** The analysis shows that while classifying the final state of a universe is moderately successful (AUC ≈ 0.65), predicting more nuanced outcomes is challenging with the current feature set. Specifically, predicting the precise *timing* of the lock-in event is difficult (R² ≈ 0.05), as is predicting second-order effects like the performance gain (`delta`) from including the `I` parameter (R² < 0). This highlights that the initial conditions alone may be insufficient to predict the full stochastic evolution.
 
-### Future Work
+## Future Work
+
 Planned and potential directions for extension include:
-- Incorporating additional physical models for greater realism.
-- Implementing GPU acceleration and distributed computing for scaling to very large ensembles.
-- Extending the anomaly detection suite to include Hemispherical Power Asymmetry (HPA) and Low-ℓ Alignment Correlation (LLAC).
-- Enhancing the XAI toolkit to provide deeper interpretability across different machine learning models.
-- Introducing a formal testing suite and containerization to support robust cross-platform reproducibility.
+
+* Incorporating additional physical models for greater realism.
+* Implementing GPU acceleration and distributed computing for scaling to very large ensembles.
+* Extending the anomaly detection suite to include Hemispherical Power Asymmetry (HPA) and Low-ℓ Alignment Correlation (LLAC).
+* Enhancing the XAI toolkit to provide deeper interpretability across different machine learning models.
+* Introducing a formal testing suite and containerization to support robust cross-platform reproducibility.
+* **Improving Predictive Accuracy:**
+    * Developing **time-series features** (e.g., early-stage volatility, parameter drift) to provide the predictive models with the dynamic history of a universe, which could significantly improve the prediction of the lock-in epoch.
+    * Conducting simulations with **much larger ensembles** (>10^5 universes) to provide a sufficient sample size for detecting subtle, second-order signals like the finetune-delta.
 
 
 ## Troubleshooting
