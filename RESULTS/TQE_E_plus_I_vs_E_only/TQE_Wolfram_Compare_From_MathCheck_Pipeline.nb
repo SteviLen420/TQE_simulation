@@ -52,85 +52,48 @@ safeNum[x_] := Which[
   True,       "NA"
 ];
 
-(* Summarize from math_check_results Dataset by taking the row File=="metrics_joined_*" *)
-summarizeFromMathCheck[ds_, which_] := Module[
-  {row, cols, getMean},
-(* which is "EI" or "E-Only" tag to match inside the File field *)
-row = SelectFirst[
-  Normal@ds,
-  (StringContainsQ[
-     ToString@Lookup[#, "File", ""],
-     If[which === "EI", "metrics_joined_EI", "metrics_joined_E-Only"],
-     IgnoreCase -> True
-   ] &),
-  Missing["NotFound"]
-];
-
-  If[MissingQ[row],
-    <||>, (* nothing found *)
-    cols = Lookup[row, "Columns", <||>];       (* nested association *)
-    getMean[name_] := Lookup[Lookup[cols, name, <||>], "Mean", Missing["NA"]];
-    <|
-      "stable_ratio"       -> getMean["stable"],
-      "lockin_ratio"       -> getMean["lockin"],
-      "stable_epoch_mean"  -> getMean["stable_epoch"],
-      "lock_epoch_mean"    -> getMean["lock_epoch"],
-      "E_mean"             -> getMean["E"],
-      "I_mean"             -> getMean["I"],
-      "X_mean"             -> getMean["X"],
-      "N_rows"             -> Lookup[row, "TotalRows", Missing["NA"]]
-    |>
+(* Summarize ALL rows from math_check_results, not just metrics_joined *)
+summarizeAllFromMathCheck[ds_] := Module[{rows},
+  rows = Normal@ds;
+  Association @ Table[
+    With[{fname = Lookup[row, "File", "unknown"],
+          cols = Lookup[row, "Columns", <||>]},
+      fname -> Association @ Table[
+        cname -> Lookup[Lookup[cols, cname, <||>], "Mean", Missing["NA"]],
+        {cname, Keys[cols]}
+      ]
+    ],
+    {row, rows}
   ]
 ];
 
-  (* Core ratios/flags *)
-  If[has["stable"],        take["stable_ratio"]       = N @ Mean[Normal @ ds[All, "stable"]]];
-  If[has["lockin"],        take["lockin_ratio"]       = N @ Mean[Normal @ ds[All, "lockin"]]];
-  If[has["stable_epoch"],
-    take["stable_epoch_mean"] = N @ Mean[Normal @ ds[All, "stable_epoch"]];
-    take["stable_epoch_std"]  = N @ StandardDeviation[Normal @ ds[All, "stable_epoch"]];
-  ];
-  If[has["lock_epoch"],
-    take["lock_epoch_mean"]   = N @ Mean[Normal @ ds[All, "lock_epoch"]];
-    take["lock_epoch_std"]    = N @ StandardDeviation[Normal @ ds[All, "lock_epoch"]];
-  ];
+(* Load math_check_results for both variants *)
+ei    = loadMathCheck[rootEI, "EI"];
+eonly = loadMathCheck[rootEonly, "Eonly"];
 
-  (* Energy/Information composites if present *)
-  If[has["E"],
-    take["E_mean"] = N @ Mean[Normal @ ds[All, "E"]];
-    take["E_std"]  = N @ StandardDeviation[Normal @ ds[All, "E"]];
-  ];
-  If[has["I"],
-    take["I_mean"] = N @ Mean[Normal @ ds[All, "I"]];
-    take["I_std"]  = N @ StandardDeviation[Normal @ ds[All, "I"]];
-  ];
-  If[has["X"],
-    take["X_mean"] = N @ Mean[Normal @ ds[All, "X"]];
-    take["X_std"]  = N @ StandardDeviation[Normal @ ds[All, "X"]];
-  ];
+sumEI    = summarizeAllFromMathCheck[ei["data"]];
+sumEonly = summarizeAllFromMathCheck[eonly["data"]];
 
-  (* Sample size *)
-  take["N_rows"] = Length[ds];
-
-  take
-];
-
-(* Load math_check_results CSV for the given variant ("EI" / "Eonly") *)
-loadMathCheck[root_, variant_] := Module[{f},
-  f = findNewestMathCheck[root, variant];
-  If[MissingQ[f],
-    <|"status"->"not_found", "file"->None, "data"->Dataset[{}]|>,
-    <|"status"->"ok", "file"->f, "data"->safeImportDataset[f]|>
-  ]
-];
-
-  (* 2) Else fall back to tqe_runs*.csv *)
-  f = findFirstFile[root, {"tqe_runs", "tqe-runs", "runs"}];
-  If[!MissingQ[f],
-    Return[<|"status" -> "ok", "file" -> f, "data" -> safeImportDataset[f]|>];
-  ];
-
-  <|"status" -> "not_found", "file" -> None, "data" -> Dataset[{}]|>
+(* Compare per file + per column *)
+allFiles = Union[Keys[sumEI], Keys[sumEonly]];
+comparison = Dataset @ Flatten @ Table[
+  With[{eiFile = Lookup[sumEI, file, <||>],
+        eoFile = Lookup[sumEonly, file, <||>]},
+    Table[
+      <|
+        "File"               -> file,
+        "metric"             -> col,
+        "E+I"                -> Lookup[eiFile, col, Missing["NA"]],
+        "E-only"             -> Lookup[eoFile, col, Missing["NA"]],
+        "diff(E+I - E-only)" -> Quiet @ Check[
+          Lookup[eiFile, col, Missing["NA"]] - Lookup[eoFile, col, Missing["NA"]],
+          Missing["NA"]
+        ]
+      |>,
+      {col, Union[Keys[eiFile], Keys[eoFile]]}
+    ]
+  ],
+  {file, allFiles}
 ];
 
 (* ========= Load data for both variants ========= *)
