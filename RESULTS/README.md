@@ -62,7 +62,7 @@ This project is a **research-grade proof-of-concept** and is under my active dev
 * **Data Availability:** Despite these minor issues, all available data from the completed simulation runs can be found in the `/DATA/` directory.
 
 ## License
-This project is licensed under the MIT License – see the [LICENSE](./LICENSE) file for details.
+This project is licensed under the MIT License – see the [LICENSE](../LICENSE) file for details.
 
 ## Contact
 
