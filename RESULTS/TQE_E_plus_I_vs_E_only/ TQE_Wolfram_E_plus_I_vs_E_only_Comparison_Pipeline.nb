@@ -19,8 +19,17 @@ safeImportDataset[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
 
 (* Search recursively for the first existing file that matches any of the patterns *)
 findFirstFile[root_, patterns_List] := Module[{all = FileNames["*.csv", root, Infinity]},
-  SelectFirst[all, With[{p = #}, AnyTrue[patterns, StringContainsQ[#, #2, IgnoreCase->True]&[p, #]&]]&,
-    Missing["NotFound"]]
+  SelectFirst[
+    all,
+    Function[f, AnyTrue[patterns, StringContainsQ[FileNameTake[f], #, IgnoreCase -> True] &]],
+    Missing["NotFound"]
+  ]
+];
+
+(* Safe numeric pretty-print *)
+safeNum[x_] := Which[
+  NumericQ[x], ToString @ NumberForm[N@x, {6, 4}],
+  True,       "NA"
 ];
 
 (* Aggregate a few canonical metrics from a dataset if the columns exist *)
@@ -127,16 +136,20 @@ md = StringRiffle[
     "",
     "### Table (top metrics)",
     "",
+    
     (* Render top interesting metrics if present *)
-    With[{tbl = Normal @ Select[Normal@comparison, MemberQ[{"stable_ratio","lockin_ratio","lock_epoch_mean","stable_epoch_mean","E_mean","I_mean","X_mean"}, #["metric"]]&]},
-      If[Length[tbl]>0,
+    With[{tbl = Normal @ Select[
+            Normal@comparison,
+            MemberQ[{"stable_ratio","lockin_ratio","lock_epoch_mean","stable_epoch_mean","E_mean","I_mean","X_mean"},
+                    #["metric"]] &]},
+      If[Length[tbl] > 0,
         StringRiffle[
           Join[
             {"| metric | E+I | E-only | Δ |","|---|---:|---:|---:|"},
-            (("| "<>ToString[#metric]<>" | "<>
-              ToString@NumberForm[#["E+I"],{6,4}]<>" | "<>
-              ToString@NumberForm[#["E-only"],{6,4}]<>" | "<>
-              ToString@NumberForm[#["diff(E+I - E-only)"],{6,4}]<>" |")& /@ tbl)
+            (("| " <> ToString[#metric] <> " | " <>
+               safeNum[#["E+I"]] <> " | " <>
+               safeNum[#["E-only"]] <> " | " <>
+               safeNum[#["diff(E+I - E-only)"]] <> " |") & /@ tbl)
           ],
           "\n"
         ],
