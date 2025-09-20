@@ -22,7 +22,7 @@ I propose that stability originates from an intrinsic information orientation pa
 
 ### **1.1 Extended Introduction**
 
-The model introduces an **information orientation parameter (I)**, defined operationally as a normalized asymmetry between successive probability distributions. Computed via Kullback–Leibler divergence, this parameter quantifies directional bias in quantum state evolution toward complexity-permitting outcomes. Unlike philosophical treatments of “information,” this definition is mathematically precise and can be applied in both simulation and, in principle, observational analysis.
+The model introduces an **information orientation parameter** $(I)$, defined operationally as a normalized asymmetry between successive probability distributions. Computed via Kullback–Leibler divergence, this parameter quantifies directional bias in quantum state evolution toward complexity-permitting outcomes. Unlike philosophical treatments of “information,” this definition is mathematically precise and can be applied in both simulation and, in principle, observational analysis.
 
 When coupled with vacuum energy fluctuations, this parameter enables a probabilistic selection mechanism for physical laws. Stability arises only within a narrow energetic window, analogous to critical thresholds in condensed matter systems, while the information bias enhances the likelihood of collapse into law-consistent states. This reframes the fine-tuning problem: stable physical laws are not imposed but dynamically selected through energy–information interaction.
 
