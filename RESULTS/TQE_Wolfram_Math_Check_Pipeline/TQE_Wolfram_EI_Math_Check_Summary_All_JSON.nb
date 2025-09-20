@@ -2,7 +2,7 @@
 (* Copyright (c) 2025 Stefan Len *)
 
 (* ================================================================== *)
-(*  TQE_Wolfram_EI_Math_Check_Summary_From_JSON.nb                    *)
+(*  TQE_Wolfram_EI_Math_Check_Summary_All_JSON.nb                    *)
 (* ================================================================== *)
 (*  Purpose: Summarize ALL statistics from ALL EI JSON files.         *)
 (*           Each file/column/statistic is flattened into a row.      *)
