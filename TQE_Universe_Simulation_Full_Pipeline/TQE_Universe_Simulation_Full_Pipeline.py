@@ -187,8 +187,8 @@ MASTER_CTRL = {
     "CMB_NPIX": 512,                   # Pixel count for flat-sky maps
     "CMB_PIXSIZE_ARCMIN": 1.5,         # Pixel size in arcmin for flat-sky
     "CMB_POWER_SLOPE": 2,            # Power spectrum slope (Pk ~ k^-slope)
-    "CMB_SMOOTH_FWHM_DEG": 0.2,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
-    "CMB_AMPLITUDE_SCALE": 1e-7,    # Overall amplitude of CMB fluctuations
+    "CMB_SMOOTH_FWHM_DEG": 0.5,        # Gaussian beam smoothing in degrees (FWHM); higher = blurrier map
+    "CMB_AMPLITUDE_SCALE": 1e-10,    # Overall amplitude of CMB fluctuations
 
     # --- CMB cold-spot detector ---
     "CMB_COLD_ENABLE":            True,                 # Enable/disable the cold-spot detector
@@ -207,7 +207,7 @@ MASTER_CTRL = {
     # --- CMB Axis-of-Evil detector ---
     "CMB_AOE_ENABLE":      True,        # Enable/disable the Axis-of-Evil detector
     "CMB_AOE_LMAX":        5,           # Maximum multipole ℓ to check (ℓ=3 is standard for AoE)
-    "CMB_AOE_NREALIZ":     5000,        # Number of Monte Carlo randomizations for significance (p-value)
+    "CMB_AOE_NREALIZ":     3000,        # Number of Monte Carlo randomizations for significance (p-value)
     "CMB_AOE_OVERLAY":     True,        # Overlay principal axes on the CMB map PNG
     "CMB_AOE_MODE":        "healpix",   # Backend selection: "auto" | "healpix" | "flat"
     "CMB_AOE_SEED_OFFSET": 909,         # Per-universe seed offset to keep AoE maps reproducible
