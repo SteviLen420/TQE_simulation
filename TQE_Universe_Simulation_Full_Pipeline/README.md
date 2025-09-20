@@ -294,7 +294,7 @@ The TQE Framework should be regarded as a stochastic research prototype rather t
 * **Prototype XAI Integration:** SHAP is well integrated, but LIME and other interpretability methods remain in an early-stage prototype form.
 * **Predictive Modeling Constraints:** The analysis shows that while classifying the final state of a universe is moderately successful (AUC ≈ 0.65), predicting more nuanced outcomes is challenging with the current feature set. Specifically, predicting the precise *timing* of the lock-in event is difficult (R² ≈ 0.05), as is predicting second-order effects like the performance gain (`delta`) from including the `I` parameter (R² < 0). This highlights that the initial conditions alone may be insufficient to predict the full stochastic evolution.
 
-## Future Work
+### Future Work
 
 The TQE Framework, in its current form, is a prototype, and the following extensions and research directions are planned:
 
