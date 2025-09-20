@@ -1,0 +1,2 @@
+target,variant,featset,r2,n_train,n_test
+finetune_r2_delta,E-only,E_ONLY,1.0,7500,2500
