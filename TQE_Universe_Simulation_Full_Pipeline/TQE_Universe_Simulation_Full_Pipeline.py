@@ -220,21 +220,21 @@ MASTER_CTRL = {
     "AOE_ALIGN_THRESHOLD":  0.5,       # fallback if only angle is present (score = 1 - angle/180)
 
        # --- XAI: enable targets and outputs ---
-    "XAI_ENABLE_STABILITY": True,    # run stability targets
-    "XAI_ENABLE_COLD": True,         # run cold-spot targets
-    "XAI_ENABLE_AOE": True,          # run AoE targets
-    "XAI_SAVE_SHAP": True,           # save SHAP plots
-    "XAI_SAVE_LIME": True,           # save LIME plots
-    "XAI_ALLOW_CONST_FINETUNE":True,
+    "XAI_ENABLE_STABILITY": False,    # run stability targets
+    "XAI_ENABLE_COLD": False,         # run cold-spot targets
+    "XAI_ENABLE_AOE": False,          # run AoE targets
+    "XAI_SAVE_SHAP": False,           # save SHAP plots
+    "XAI_SAVE_LIME": False,           # save LIME plots
+    "XAI_ALLOW_CONST_FINETUNE":False,
     "XAI_LIME_K": 50,                # samples for averaged LIME
     "XAI_RUN_BOTH_FEATSETS": False,  # only matching feature-set per variant
     "REGRESSION_MIN": 3,             # minimum finite rows for regression targets
 
     # --- Machine Learning / XAI ---
-    "RUN_XAI": True,                 # master switch for XAI section
-    "RUN_SHAP": True,                # SHAP on/off
-    "RUN_LIME": True,                # LIME on/off
-    "RUN_XGBOOST_XAI": True,         # XGBOOST on/off
+    "RUN_XAI": False,                 # master switch for XAI section
+    "RUN_SHAP": False,                # SHAP on/off
+    "RUN_LIME": False,                # LIME on/off
+    "RUN_XGBOOST_XAI": False,         # XGBOOST on/off
     "FT_METRIC_TARGET": "delta_ACC", # target column for XGBoost regression/analysis
     "LIME_NUM_FEATURES": 5,          # number of features in LIME plot
     "TEST_SIZE": 0.25,               # test split ratio
