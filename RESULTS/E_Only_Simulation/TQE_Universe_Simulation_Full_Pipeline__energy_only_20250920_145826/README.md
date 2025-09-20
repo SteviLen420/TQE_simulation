@@ -14,15 +14,13 @@ Please be aware that the results presented in this directory are **preliminary a
 
 The data generation pipeline is still under active development, may contain bugs, and requires further refinement. These outputs should be considered **representative**—their primary purpose is to serve as a proof-of-concept demonstrating that the theoretical simulations are operational and producing data as expected.
 
----
-
-### Directory Structure
+## Directory Structure
 
 This directory contains the complete, raw results from the `TQE_Universe_Simulation` runs, specifically for the **E-Only (Energy-Only) universe paradigm**.
 
 Each subdirectory named `TQE_Universe_Simulation_Full_Pipeline__energy_only` contains the full output of a single, independent simulation run. The timestamp in the directory name (`YYYYMMDD_HHMMSS`) indicates the precise execution time.
 
-### Contents of Each Directory
+## Contents of Each Directory
 
 Each simulation folder contains the following file types, documenting different aspects of the run:
 
