@@ -59,7 +59,9 @@ This is how my first equation was born. I took the probabilistic
 foundation of quantum mechanics, the Born rule, and modified it with a 
 function for consciousness:
 
-> P′(ψ) = P(ψ) · f(Φ)
+$$
+P′(ψ) = P(ψ) · f(Φ)
+$$
 
 Here, I interpreted f(Φ) as a "consciousness field." This was the equation
 that set me on this research path. The first question, of course, was
@@ -89,7 +91,9 @@ consciousness is *in* energy? What if consciousness originates from there?
 
 Thus, my second equation was born:
 
-> P′(ψ) = P(ψ) · f(E,Φ)
+$$
+P′(ψ) = P(ψ) · f(E,Φ)
+$$
 
 Here, I connected energy and consciousness in a common function. The
 definition of consciousness, however, remained "directionality"—but more on
@@ -121,7 +125,10 @@ it on a large scale. And thus, a universe like the one we know today can
 come into being without any creator or consciousness.
 
 And so, the final equation of TQE was born:
-> P′(ψ) = P(ψ) · f(E, I)
+
+$$$
+P′(ψ) = P(ψ) · f(E, I)
+$$$
 
 Now, I would like to tell you how I was able to develop such a theory
 without any university or research background, alongside my job, from my
