@@ -8,6 +8,7 @@ Copyright (c) 2025 Stefan Len
 # Theory of The Question of Existance (TQE)
 
 **Title: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy-Information Principles**
+
 **Author**: Stefan Len
 
 ## About The Project
