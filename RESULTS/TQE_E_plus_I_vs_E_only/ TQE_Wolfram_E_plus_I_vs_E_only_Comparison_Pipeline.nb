@@ -121,51 +121,6 @@ Export[outJSON, Association[
   "comparison_rows" -> Normal@comparison
 ], "JSON"];
 
-(* ========= Write a concise Markdown report ========= *)
-
-md = StringRiffle[
-  {
-    "# TQE: E+I vs E-only — Comparison",
-    "",
-    "**Sources**",
-    "- E+I file: `"<>ToString[ei["file"]]<> "`",
-    "- E-only file: `"<>ToString[eonly["file"]]<> "`",
-    "",
-    "## Key Differences",
-    "Values are population means (and where relevant, std).",
-    "",
-    "### Table (top metrics)",
-    "",
-    
-    (* Render top interesting metrics if present *)
-    With[{tbl = Normal @ Select[
-            Normal@comparison,
-            MemberQ[{"stable_ratio","lockin_ratio","lock_epoch_mean","stable_epoch_mean","E_mean","I_mean","X_mean"},
-                    #["metric"]] &]},
-      If[Length[tbl] > 0,
-        StringRiffle[
-          Join[
-            {"| metric | E+I | E-only | Δ |","|---|---:|---:|---:|"},
-            (("| " <> ToString[#metric] <> " | " <>
-               safeNum[#["E+I"]] <> " | " <>
-               safeNum[#["E-only"]] <> " | " <>
-               safeNum[#["diff(E+I - E-only)"]] <> " |") & /@ tbl)
-          ],
-          "\n"
-        ],
-        "_No standard metrics found in input tables._"
-      ]
-    ],
-    "",
-    "## Notes",
-    "- If `I_mean` is Missing in the E-only run (expected), that indicates no information channel.",
-    "- `diff` columns are simple E+I minus E-only differences."
-  },
-  "\n"
-];
-
-Export[outMD, md, "Text"];
-
 Print["✅ Saved: ", outCSV];
 Print["✅ Saved: ", outJSON];
 Print["✅ Saved: ", outMD];
