@@ -1,0 +1,156 @@
+(* SPDX-License-Identifier: MIT *)
+(* Copyright (c) 2025 Stefan Len *)
+
+(* ================================================================== *)
+(*  TQE_EplusI_vs_Eonly_Comparison.nb                                  *)
+(*  Author: Stefan Len                                                 *)
+(* ================================================================== *)
+
+(* ========= User inputs (root folders) ========= *)
+rootEI   = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E-plus-I_Simulation";
+rootEonly= "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E-Only_Simulation";
+
+(* ========= Helpers ========= *)
+
+(* Safe dataset import from CSV; empty Dataset on error *)
+safeImportDataset[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
+
+(* Search recursively for the first existing file that matches any of the patterns *)
+findFirstFile[root_, patterns_List] := Module[{all = FileNames["*.csv", root, Infinity]},
+  SelectFirst[all, With[{p = #}, AnyTrue[patterns, StringContainsQ[#, #2, IgnoreCase->True]&[p, #]&]]&,
+    Missing["NotFound"]]
+];
+
+(* Aggregate a few canonical metrics from a dataset if the columns exist *)
+summarizeRun[ds_] := Module[
+  {
+    take = Association[],
+    has = Function[c, MemberQ[Keys[Normal@First@ds], c]]
+  },
+  If[Length[ds]==0, Return[<||>]];
+
+  (* Core ratios/flags *)
+  If[has["stable"],    take["stable_ratio"]    = N@Mean[Normal@ds[All, "stable"]]];
+  If[has["lockin"],    take["lockin_ratio"]    = N@Mean[Normal@ds[All, "lockin"]]];
+  If[has["stable_epoch"], take["stable_epoch_mean"] = N@Mean[Normal@ds[All, "stable_epoch"]];
+                           take["stable_epoch_std"]  = N@StandardDeviation[Normal@ds[All, "stable_epoch"]]];
+  If[has["lock_epoch"],   take["lock_epoch_mean"]   = N@Mean[Normal@ds[All, "lock_epoch"]];
+                           take["lock_epoch_std"]    = N@StandardDeviation[Normal@ds[All, "lock_epoch"]]];
+
+  (* Energy/Information composites if present *)
+  If[has["E"],  take["E_mean"]  = N@Mean[Normal@ds[All, "E"]];
+                take["E_std"]   = N@StandardDeviation[Normal@ds[All, "E"]]];
+  If[has["I"],  take["I_mean"]  = N@Mean[Normal@ds[All, "I"]];
+                take["I_std"]   = N@StandardDeviation[Normal@ds[All, "I"]]];
+  If[has["X"],  take["X_mean"]  = N@Mean[Normal@ds[All, "X"]];
+                take["X_std"]   = N@StandardDeviation[Normal@ds[All, "X"]]];
+
+  (* Sample size *)
+  take["N_rows"] = Length[ds];
+
+  take
+];
+
+(* Try to load the most informative table for a run: prefer metrics_joined*, then tqe_runs* *)
+loadBestRunTable[root_] := Module[{f},
+  f = findFirstFile[root, {"metrics_joined", "metrics-joined", "joined"}];
+  If[MissingQ[f],
+    f = findFirstFile[root, {"tqe_runs", "tqe-runs", "runs"}];
+  ];
+  If[MissingQ[f],
+    <|"status"->"not_found", "file"->None, "data"->Dataset[{}]|>,
+    <|"status"->"ok", "file"->f, "data"->safeImportDataset[f]|>
+  ]
+];
+
+(* ========= Load data for both variants ========= *)
+
+ei   = loadBestRunTable[rootEI];
+eonly= loadBestRunTable[rootEonly];
+
+(* ========= Summaries ========= *)
+
+sumEI    = summarizeRun[ei["data"]];
+sumEonly = summarizeRun[eonly["data"]];
+
+(* Align keys and build comparison rows *)
+allKeys = Union[Keys[sumEI], Keys[sumEonly]];
+comparison = Dataset @ Table[
+  <|
+    "metric"   -> k,
+    "E+I"      -> Lookup[sumEI, k, Missing["NA"]],
+    "E-only"   -> Lookup[sumEonly, k, Missing["NA"]],
+    "diff(E+I - E-only)" -> Quiet@Check[Lookup[sumEI,k,Missing["NA"]] - Lookup[sumEonly,k,Missing["NA"]], Missing["NA"]]
+  |>,
+  {k, allKeys}
+];
+
+(* ========= Output paths ========= *)
+
+timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
+outRoot   = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_E_plus_I_vs_E_only_"<>timestamp}];
+If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
+
+outCSV  = FileNameJoin[{outRoot, "comparison_summary.csv"}];
+outJSON = FileNameJoin[{outRoot, "comparison_summary.json"}];
+outMD   = FileNameJoin[{outRoot, "comparison_report.md"}];
+
+(* ========= Save CSV & JSON ========= *)
+
+Export[outCSV, Normal@comparison];
+Export[outJSON, Association[
+  "files" -> <|
+     "E+I_source"   -> ei["file"],
+     "E-only_source"-> eonly["file"]
+  |>,
+  "summary" -> Association[
+     "E+I"    -> sumEI,
+     "E-only" -> sumEonly
+  ],
+  "comparison_rows" -> Normal@comparison
+], "JSON"];
+
+(* ========= Write a concise Markdown report ========= *)
+
+md = StringRiffle[
+  {
+    "# TQE: E+I vs E-only — Comparison",
+    "",
+    "**Sources**",
+    "- E+I file: `"<>ToString[ei["file"]]<> "`",
+    "- E-only file: `"<>ToString[eonly["file"]]<> "`",
+    "",
+    "## Key Differences",
+    "Values are population means (and where relevant, std).",
+    "",
+    "### Table (top metrics)",
+    "",
+    (* Render top interesting metrics if present *)
+    With[{tbl = Normal @ Select[Normal@comparison, MemberQ[{"stable_ratio","lockin_ratio","lock_epoch_mean","stable_epoch_mean","E_mean","I_mean","X_mean"}, #["metric"]]&]},
+      If[Length[tbl]>0,
+        StringRiffle[
+          Join[
+            {"| metric | E+I | E-only | Δ |","|---|---:|---:|---:|"},
+            (("| "<>ToString[#metric]<>" | "<>
+              ToString@NumberForm[#["E+I"],{6,4}]<>" | "<>
+              ToString@NumberForm[#["E-only"],{6,4}]<>" | "<>
+              ToString@NumberForm[#["diff(E+I - E-only)"],{6,4}]<>" |")& /@ tbl)
+          ],
+          "\n"
+        ],
+        "_No standard metrics found in input tables._"
+      ]
+    ],
+    "",
+    "## Notes",
+    "- If `I_mean` is Missing in the E-only run (expected), that indicates no information channel.",
+    "- `diff` columns are simple E+I minus E-only differences."
+  },
+  "\n"
+];
+
+Export[outMD, md, "Text"];
+
+Print["✅ Saved: ", outCSV];
+Print["✅ Saved: ", outJSON];
+Print["✅ Saved: ", outMD];
