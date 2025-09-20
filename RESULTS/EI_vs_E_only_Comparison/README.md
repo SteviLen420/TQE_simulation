@@ -52,11 +52,11 @@ Based on these findings, this analysis concludes that while a universe can exist
 The results and conclusions were derived not only through manual evaluation, but also based on a detailed analysis conducted with the assistance of several artificial intelligence models (**OpenAI GPT-5**, **Google Gemini 2.5 Pro**, **DeepSeek-R1:14B**).
 
 ## License
-This project is licensed under the MIT License – see the [LICENSE](.../LICENSE) file for details.
+This project is licensed under the MIT License – see the [LICENSE](../LICENSE) file for details.
 
 ## Contact
 
 Got questions, ideas, or feedback?  
 Drop me an email at **tqe.simulation@gmail.com** 
     
-[RESULTS](.../RESULTS)
+[RESULTS](../RESULTS)
