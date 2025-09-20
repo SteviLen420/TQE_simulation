@@ -16,6 +16,11 @@ This document provides a scientific analysis of simulation results comparing two
 
 The primary objective is to evaluate the hypothesis that Information (I) is a fundamental component necessary for the emergence of a realistic, complex, and stable universe. The analysis focuses on stability dynamics, complexity, entropy, cosmological anomalies, and the overall predictability of the systems.
 
+### Methodological Note
+
+I computed the summarized analysis based on the **average results of 5 E+I simulations and 5 E-Only simulations, which I processed and compared using Wolfram Language.
+In these simulations**, I generated each individual universe through **10,000 Monte Carlo** iterations to ensure the statistical robustness of the observed metrics and differences.
+
 ## Key Findings and Interpretation
 
 ### 1. Stability and Lock-in Dynamics
