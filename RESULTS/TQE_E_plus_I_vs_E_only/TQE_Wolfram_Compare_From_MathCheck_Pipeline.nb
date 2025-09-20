@@ -65,19 +65,10 @@ getStat[ds_, fileTag_String, col_String, stat_:"Mean"] := Module[{row, cols, cel
 
 (* Load newest math_check_results for EI / E-only from the single root *)
 loadMathCheck[root_, variant_] := Module[{f},
-  f = If[variant === "EI",
-    findNewestByPatterns[root, {
-      "math_check_results_EI",
-      "math_check_results_E_plus_I",
-      "math_check_results_E+I"
-    }],
-    findNewestByPatterns[root, {
-      "math_check_results_energy_only",
-      "math_check_results_E_only",
-      "math_check_results_energy-only",
-      "energy_only"
-    }]
-  ];
+f = If[variant === "EI",
+    findNewestMathCheck[root, "EI"],
+    findNewestMathCheck[root, "energy_only"]
+];
   If[MissingQ[f],
     <|"status" -> "not_found", "file" -> None, "data" -> Dataset[{}]|>,
     <|"status" -> "ok",       "file" -> f,    "data" -> safeImportDataset[f]|>
@@ -86,8 +77,9 @@ loadMathCheck[root_, variant_] := Module[{f},
 
 
 (* ========= Load both variants ========= *)
+(* ========= Load both variants ========= *)
 ei    = loadMathCheck[rootAll, "EI"];
-eonly = loadMathCheck[rootall, "Eonly"];
+eonly = loadMathCheck[rootAll, "Eonly"];
 
 sumEI    = summarizeAllFromMathCheck[ei["data"]];
 sumEonly = summarizeAllFromMathCheck[eonly["data"]];
