@@ -27,8 +27,8 @@ This repository is organized to provide a clear and transparent overview of the 
 
 * ➡️ **Simulation Data:**
     * [E_plus_I_Simulation](./E_plus_I_Simulation/): Contains the full output for the `E+I` simulation runs.
-    * [E_Only_Simulation](./E_Only_Simulation/): Contains the full output for the `E-only` simulation runs.
-    * [EI_vs_E_only_Comparison](./EI_vs_E_only_Comparison/): Contains the final comparison outputs between the `E+I` and `E-only` simulation runs.
+    * [E_Only_Simulation](./E_Only_Simulation/): Contains the full output for the `E_only` simulation runs.
+    * [EI_vs_E_only_Comparison](./EI_vs_E_only_Comparison/): Contains the final comparison outputs between the `E+I` and `E_only` simulation runs.
 
 * ➡️ **Project Files:**
     * **[CITATION.cff](../CITATION.cff):** Provides the citation information for this work.
@@ -49,7 +49,7 @@ I conducted the analysis presented here with a focus on rigor and transparency, 
 
 The quantitative results presented in the manuscript can be reproduced using the tools and data in this archive.
 
-1.  **Data:** The raw `.csv` files from the simulations are located in the `/E-plus-I_Simulation/DATA/` and `/E-Only_Simulation/DATA/` subdirectories.
+1.  **Data:** The raw `.csv` files from the simulations are located in the `/E_plus_I_Simulation/DATA/` and `/E_Only_Simulation/DATA/` subdirectories.
 2.  **Analysis Script:** The Wolfram Language notebook located in the `/RESULTS/` folder (`TQE_Wolfram_Math_Check_Pipeline.nb`) was used to perform the final comparative analysis.
 3.  **Execution:** To reproduce the summary tables, open the notebook, set the input directories to point to the respective data folders, and evaluate the notebook.
 
