@@ -296,16 +296,19 @@ The TQE Framework should be regarded as a stochastic research prototype rather t
 
 ## Future Work
 
-Planned and potential directions for extension include:
+The TQE Framework, in its current form, is a prototype, and the following extensions and research directions are planned:
 
-* Incorporating additional physical models for greater realism.
-* Implementing GPU acceleration and distributed computing for scaling to very large ensembles.
-* Extending the anomaly detection suite to include Hemispherical Power Asymmetry (HPA) and Low-ℓ Alignment Correlation (LLAC).
-* Enhancing the XAI toolkit to provide deeper interpretability across different machine learning models.
-* Introducing a formal testing suite and containerization to support robust cross-platform reproducibility.
+* **Refactoring into a Modular Pipeline:** Restructuring the current prototype script into a fully modular, automated pipeline to support large-scale, reproducible experimental campaigns and easier collaboration.
+* **Incorporating Additional Physical Models:** Adding more realism to the simulation by integrating more complex physical principles.
+* **Implementing GPU Acceleration:** Utilizing GPU and distributed computing to scale up to very large ensembles (>10⁵ universes).
+* **Extending the Anomaly Detection Suite:** Adding modules for additional cosmological anomalies, such as Hemispherical Power Asymmetry (HPA).
+* **Enhancing the XAI Toolkit:** Integrating different machine learning models (e.g., neural networks) to improve interpretability.
 * **Improving Predictive Accuracy:**
-    * Developing **time-series features** (e.g., early-stage volatility, parameter drift) to provide the predictive models with the dynamic history of a universe, which could significantly improve the prediction of the lock-in epoch.
-    * Conducting simulations with **much larger ensembles** (>10^5 universes) to provide a sufficient sample size for detecting subtle, second-order signals like the finetune-delta.
+    * Developing time-series features (e.g., early-stage volatility, parameter drift) to better predict the lock-in epoch.
+    * Running larger ensembles to capture subtle, second-order effects like the fine-tuning deltas.
+* **Introducing a Formal Testing Suite:** Implementing unit and integration tests, as well as containerization (e.g., Docker), to ensure robust cross-platform reproducibility.
+
+**Summary:** The TQE Framework is a living research project, open to expansion, scaling, and deeper physical realism.
 
 
 ## Troubleshooting
