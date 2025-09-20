@@ -17,8 +17,20 @@ rootEonly= "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E_Only_Simulation
 (* Safe dataset import from CSV; empty Dataset on error *)
 safeImportDataset[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
 
+(* List the first few CSVs we see under a root (for debugging) *)
+listCSVs[root_] := Module[{all},
+  all = Join[
+    FileNames["*.csv", root, Infinity],
+    FileNames["*.CSV", root, Infinity]
+  ];
+  Print["📄 CSVs under ", root, ": ", Length[all]];
+  Print /@ Take[all, UpTo[10]]; (* show first up to 10 *)
+  all
+];
+
 (* Search recursively for the first existing file that matches any of the patterns *)
-findFirstFile[root_, patterns_List] := Module[{all = FileNames["*.csv", root, Infinity]},
+findFirstFile[root_, patterns_List] := Module[{all},
+  all = listCSVs[root];  (* debug listing + gather both csv/CSV *)
   SelectFirst[
     all,
     Function[f, AnyTrue[patterns, StringContainsQ[FileNameTake[f], #, IgnoreCase -> True] &]],
@@ -128,17 +140,22 @@ outJSON = FileNameJoin[{outRoot, "comparison_summary.json"}];
 (* ========= Save CSV & JSON ========= *)
 
 Export[outCSV, Normal@comparison];
-Export[outJSON, Association[
-  "files" -> <|
-     "E+I_source"   -> ei["file"],
-     "E-only_source"-> eonly["file"]
-  |>,
-  "summary" -> Association[
-     "E+I"    -> sumEI,
-     "E-only" -> sumEonly
-  ],
-  "comparison_rows" -> Normal@comparison
-], "JSON"];
+
+Export[
+  outJSON,
+  (Association[
+     "files" -> <|
+        "E+I_source"    -> ei["file"],
+        "E-only_source" -> eonly["file"]
+     |>,
+     "summary" -> Association[
+        "E+I"    -> sumEI,
+        "E-only" -> sumEonly
+     ],
+     "comparison_rows" -> Normal@comparison
+   ] /. {None -> Null, Missing[_] -> Null}),
+  "JSON"
+];
 
 Print["✅ Saved: ", outCSV];
 Print["✅ Saved: ", outJSON];
