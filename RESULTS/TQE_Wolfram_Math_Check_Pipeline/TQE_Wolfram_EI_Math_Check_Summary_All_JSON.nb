@@ -2,38 +2,38 @@
 (* Copyright (c) 2025 Stefan Len *)
 
 (* ================================================================== *)
-(*  TQE_Wolfram_EI_Math_Check_Summary_All_JSON.nb                    *)
+(*  TQE_Wolfram_E_Only_Math_Check_Summary_All_JSON.nb                 *)
 (* ================================================================== *)
-(*  Purpose: Summarize ALL statistics from ALL EI JSON files.         *)
+(*  Purpose: Summarize ALL statistics from ALL E_only JSON files.     *)
 (*           Each file/column/statistic is flattened into a row.      *)
 (*           Then compute global averages across all files.           *)
 (* ================================================================== *)
 
-(* ========= User input: folder that contains EI JSONs ========= *)
-rootEI = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/math_check_results_EI_JSON";
+(* ========= User input: folder that contains E_only JSONs ========= *)
+rootEonly = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/math_check_results_E_only_JSON";
 
-(* ========= Find all EI JSON files ========= *)
+(* ========= Find all E_only JSON files ========= *)
 allFiles = Union[
-   FileNames["*.json", rootEI, Infinity],
-   FileNames["*.JSON", rootEI, Infinity]
+   FileNames["*.json", rootEonly, Infinity],
+   FileNames["*.JSON", rootEonly, Infinity]
 ];
 keepFiles = Select[allFiles,
    StringContainsQ[
      FileNameTake[#],
-     Alternatives["math_check_results_EI", "math_check_results_E_plus_I", "E+I"],
+     Alternatives["math_check_results_E_only", "E_only"],
      IgnoreCase -> True
    ] &
 ];
 
 If[keepFiles === {}, 
-  Print["❌ No EI JSON files found under: ", rootEI];
+  Print["❌ No E_only JSON files found under: ", rootEonly];
   Abort[]
 ];
 
-Print["✅ Found ", Length[keepFiles], " EI JSON file(s)."];
+Print["✅ Found ", Length[keepFiles], " E_only JSON file(s)."];
 
+(* ========= Import all files ========= *)
 datasets = Dataset /@ (Import[#, "RawJSON"] & /@ keepFiles);
-allFlat = Dataset @ Flatten[flattenOne /@ datasets];
 
 (* ========= Flatten into long table ========= *)
 flattenOne[ds_] := Flatten[
@@ -57,8 +57,9 @@ flattenOne[ds_] := Flatten[
 ];
 
 (* ========= Flatten all datasets ========= *)
+allFlat = Dataset @ Flatten[flattenOne /@ datasets];
 
-Print["\n=== EI Full Summary (flattened) ==="];
+Print["\n=== E_only Full Summary (flattened) ==="];
 allFlat
 
 (* ========= Compute averages across all files ========= *)
@@ -74,12 +75,12 @@ avgSummary = Dataset @ GroupBy[
    ]
 ];
 
-Print["\n=== EI Global Averages (by Column) ==="];
+Print["\n=== E_only Global Averages (by Column) ==="];
 avgSummary
 
 (* ========= Save outputs to Desktop with timestamp ========= *)
 timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
-outRoot = FileNameJoin[{$HomeDirectory, "Desktop", "EI_full_summary_" <> timestamp}];
+outRoot = FileNameJoin[{$HomeDirectory, "Desktop", "E_only_full_summary_" <> timestamp}];
 If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
 
 cleanAvg = Normal @ avgSummary /. {
@@ -89,8 +90,8 @@ cleanAvg = Normal @ avgSummary /. {
    _Complex -> Null
 };
 
-outCSV = FileNameJoin[{outRoot, "EI_global_avg.csv"}];
-outJSON = FileNameJoin[{outRoot, "EI_global_avg.json"}];
+outCSV = FileNameJoin[{outRoot, "E_only_global_avg.csv"}];
+outJSON = FileNameJoin[{outRoot, "E_only_global_avg.json"}];
 
 Export[outCSV, cleanAvg];
 Export[outJSON, cleanAvg, "JSON"];
