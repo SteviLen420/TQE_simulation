@@ -24,16 +24,15 @@ listCSVs[root_] := Module[{all},
   all
 ];
 
-(* Find newest CSV for EI or E-only *)
-findNewestMathCheck[root_, variant_] := Module[{all, keep, newest, pats},
+(* Find all CSV for EI or E-only *)
+findAllMathChecks[root_, variant_] := Module[{all, keep, pats},
   pats = If[variant === "EI",
     {"_EI_", "E_plus_I", "E+I"},
     {"energy_only", "E_only", "energy-only"}
   ];
   all  = Join[FileNames["*.csv", root, Infinity], FileNames["*.CSV", root, Infinity]];
   keep = Select[all, Or @@ (StringContainsQ[FileNameTake[#], #2, IgnoreCase -> True] & @@@ Tuples[{ {#}, pats}] ) &];
-  newest = If[keep === {}, Missing["NotFound"], First @ Reverse @ SortBy[keep, FileDate]];
-  newest
+  SortBy[keep, FileDate]
 ];
 
 (* === collect all metrics from all rows (robust) === *)
@@ -76,8 +75,11 @@ loadMathCheck[root_, variant_] := Module[{f},
 ];
 
 (* ========= Load both variants ========= *)
-ei    = loadMathCheck[rootAll, "EI"];
-eonly = loadMathCheck[rootAll, "Eonly"];
+eiFiles    = findAllMathChecks[rootAll, "EI"];
+eonlyFiles = findAllMathChecks[rootAll, "Eonly"];
+
+Print["📊 EI files found: ", Length[eiFiles]];
+Print["📊 E-only files found: ", Length[eonlyFiles]];
 
 sumEI    = summarizeAllFromMathCheck[ei["data"]];
 sumEonly = summarizeAllFromMathCheck[eonly["data"]];
