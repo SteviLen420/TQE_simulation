@@ -9,7 +9,7 @@
 (* ================================================================== *)
 
 (* ========= User input: folder that contains E_only JSONs ========= *)
-rootEonly = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/math_check_results_E_only_JSON";
+rootEonly = "/Users/stevilen/Desktop/TQE_Math_Check/math_check_results_E_only_JSON";
 
 (* ========= Find all E_only JSON files ========= *)
 allFiles = Union[
