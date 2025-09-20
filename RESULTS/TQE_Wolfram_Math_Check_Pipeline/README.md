@@ -33,7 +33,7 @@ graph TD;
 ```
 
 ## Requirements
-Software: Wolfram Mathematica 12.0 or newer.
+Software: Wolfram Mathematica 14.3 or newer.
 
 ## The Pipeline Steps
 ### Step 1: Initial Data Validation
