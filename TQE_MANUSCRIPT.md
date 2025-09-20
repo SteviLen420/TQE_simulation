@@ -80,11 +80,11 @@ While Eq. (1) provides the analytical form of $f(E, I)$, the **Monte Carlo** imp
 
 In the TQE framework, the modulation factor $f(E, I)$ is governed by a minimal set of parameters that encode the stability conditions for universes. These are not arbitrary fitting constants but structural elements of the model:
 
-$E_c$ – critical energy:** the center of the Goldilocks stability window. Universes with energies near $E_c$ can stabilize physical laws.
+$E_c$ – **critical energy**: the center of the Goldilocks stability window. Universes with energies near $E_c$ can stabilize physical laws.
 
-$σ$ – stability width:** determines the tolerance around $E_c$. Larger σ broadens the stability window, while smaller σ makes stabilization rarer.
+$σ$ – **stability width**: determines the tolerance around $E_c$. Larger σ broadens the stability window, while smaller σ makes stabilization rarer.
 
-$α$ – orientation bias strength:** quantifies the effect of informational orientation $I$. For $α = 0$, orientation is irrelevant; larger α increases the probability of complexity-permitting universes.
+$α$ – **orientation bias strength**: quantifies the effect of informational orientation $I$. For $α = 0$, orientation is irrelevant; larger α increases the probability of complexity-permitting universes.
 
 **Lock-in criterion:** operationally defined as stabilization when relative probability change satisfies $ΔP / P < 0.005$ over at least 6 consecutive epochs.
 
