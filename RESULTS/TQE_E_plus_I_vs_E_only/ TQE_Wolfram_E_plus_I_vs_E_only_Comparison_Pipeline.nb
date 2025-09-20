@@ -96,6 +96,26 @@ comparison = Dataset @ Table[
   {k, allKeys}
 ];
 
+(* ==== Show results inline in the notebook ==== *)
+Print["E+I source: ", ei["file"]];
+Print["E-only source: ", eonly["file"]];
+
+(* Show per-run summaries side-by-side *)
+summaryKeys = Union[Keys[sumEI], Keys[sumEonly]];
+summaryInline = Dataset @ Table[
+  <|
+    "metric" -> k,
+    "E+I"    -> Lookup[sumEI, k, Missing["NA"]],
+    "E-only" -> Lookup[sumEonly, k, Missing["NA"]]
+  |>,
+  {k, summaryKeys}
+];
+
+summaryInline
+
+(* Show full comparison table (already a Dataset) *)
+comparison
+
 (* ========= Output paths ========= *)
 
 timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
@@ -104,7 +124,6 @@ If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
 
 outCSV  = FileNameJoin[{outRoot, "comparison_summary.csv"}];
 outJSON = FileNameJoin[{outRoot, "comparison_summary.json"}];
-outMD   = FileNameJoin[{outRoot, "comparison_report.md"}];
 
 (* ========= Save CSV & JSON ========= *)
 
