@@ -2,7 +2,7 @@
 (* Copyright (c) 2025 Stefan Len *)
 
 (* ================================================================== *)
-(*  TQE_Wolfram_E_plus_I_vs_E_only_Comparison_Pipeline.nb             *)
+(*  TQE_Wolfram_Compare_From_MathCheck_Pipeline.nb                    *)
 (*  Author: Stefan Len                                                *)
 (* ================================================================== *)
 (*  Notes: This is ONLY the header adapted for the E+I vs E-only code.*)
