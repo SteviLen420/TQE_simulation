@@ -13,23 +13,19 @@ rootEonly = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E_Only_Simulatio
 
 (* ========= Helpers ========= *)
 
-(* Safe dataset import from CSV; returns empty Dataset on error *)
 safeImportDataset[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
 
-(* List CSV files under a root (debugging aid) *)
 listCSVs[root_] := Module[{all},
   all = Join[
     FileNames["*.csv", root, Infinity],
     FileNames["*.CSV", root, Infinity]
   ];
   Print["📄 CSVs under ", root, ": ", Length[all]];
-  Print /@ Take[all, UpTo[10]];  (* show up to the first 10 paths *)
+  Print /@ Take[all, UpTo[10]];
   all
 ];
 
-(* Find newest math_check_results CSV under a root. Silent, no debug spam. *)
 findNewestMathCheck[root_, variant_] := Module[{all, keep, newest},
-  (* variant is "EI" or "Eonly" selector via filename signature *)
   all = Join[
     FileNames["*.csv", root, Infinity],
     FileNames["*.CSV", root, Infinity]
@@ -41,18 +37,17 @@ findNewestMathCheck[root_, variant_] := Module[{all, keep, newest},
     ]
   ];
   newest = If[keep === {}, Missing["NotFound"],
-    First @ Reverse @ SortBy[keep, FileDate]   (* newest by mtime *)
+    First @ Reverse @ SortBy[keep, FileDate]
   ];
   newest
 ];
 
-(* Pretty-print numeric; otherwise NA *)
 safeNum[x_] := Which[
   NumericQ[x], ToString @ NumberForm[N@x, {6, 4}],
   True,       "NA"
 ];
 
-(* Summarize ALL rows from math_check_results, not just metrics_joined *)
+(* === NEW: collect all metrics from all rows === *)
 summarizeAllFromMathCheck[ds_] := Module[{rows},
   rows = Normal@ds;
   Association @ Table[
@@ -67,14 +62,14 @@ summarizeAllFromMathCheck[ds_] := Module[{rows},
   ]
 ];
 
-(* Load math_check_results for both variants *)
+(* ========= Load both variants ========= *)
 ei    = loadMathCheck[rootEI, "EI"];
 eonly = loadMathCheck[rootEonly, "Eonly"];
 
 sumEI    = summarizeAllFromMathCheck[ei["data"]];
 sumEonly = summarizeAllFromMathCheck[eonly["data"]];
 
-(* Compare per file + per column *)
+(* ========= Comparison ========= *)
 allFiles = Union[Keys[sumEI], Keys[sumEonly]];
 comparison = Dataset @ Flatten @ Table[
   With[{eiFile = Lookup[sumEI, file, <||>],
@@ -96,53 +91,12 @@ comparison = Dataset @ Flatten @ Table[
   {file, allFiles}
 ];
 
-(* ========= Load data for both variants ========= *)
+Print["E+I source: ", ei["file"]];
+Print["E-only source: ", eonly["file"]];
 
-ei    = loadMathCheck[rootEI, "E_plus_I"];
-eonly = loadMathCheck[rootEonly, "E_only"];
-
-(* ========= Summaries ========= *)
-
-sumEI    = summarizeFromMathCheck[ei["data"], "E_plus_I"];
-sumEonly = summarizeFromMathCheck[eonly["data"], "E_Only"];
-
-(* Align keys and build comparison rows *)
-allKeys = Union[Keys[sumEI], Keys[sumEonly]];
-comparison = Dataset @ Table[
-  <|
-    "metric"                -> k,
-    "E_plus_I"                   -> Lookup[sumEI, k, Missing["NA"]],
-    "E_only"                -> Lookup[sumEonly, k, Missing["NA"]],
-    "diff(E_plus_I - E_only)"    -> Quiet @ Check[
-      Lookup[sumEI, k, Missing["NA"]] - Lookup[sumEonly, k, Missing["NA"]],
-      Missing["NA"]
-    ]
-  |>,
-  {k, allKeys}
-];
-
-(* ==== Show results inline in the notebook ==== *)
-Print["E_plus_I source: ", ei["file"]];
-Print["E_only source: ", eonly["file"]];
-
-(* Side-by-side per-run summaries *)
-summaryKeys   = Union[Keys[sumEI], Keys[sumEonly]];
-summaryInline = Dataset @ Table[
-  <|
-    "metric" -> k,
-    "E_plus_I"    -> Lookup[sumEI, k, Missing["NA"]],
-    "E_only" -> Lookup[sumEonly, k, Missing["NA"]]
-  |>,
-  {k, summaryKeys}
-];
-
-summaryInline
-
-(* Full comparison table *)
 comparison
 
-(* ========= Output paths ========= *)
-
+(* ========= Output ========= *)
 timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
 outRoot   = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_E_plus_I_vs_E_only_" <> timestamp}];
 If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
@@ -150,21 +104,15 @@ If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
 outCSV  = FileNameJoin[{outRoot, "comparison_summary.csv"}];
 outJSON = FileNameJoin[{outRoot, "comparison_summary.json"}];
 
-(* ========= Save CSV & JSON ========= *)
-
 Export[outCSV, Normal @ comparison];
 
 Export[
   outJSON,
   (Association[
      "files" -> <|
-       "E_plus_I_source"    -> ei["file"],
-       "E_only_source" -> eonly["file"]
+       "E+I_source"    -> ei["file"],
+       "E-only_source" -> eonly["file"]
      |>,
-     "summary" -> Association[
-       "E_plus_I"    -> sumEI,
-       "E_only" -> sumEonly
-     ],
      "comparison_rows" -> Normal @ comparison
    ] /. {None -> Null, Missing[_] -> Null}),
   "JSON"
