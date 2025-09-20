@@ -74,9 +74,9 @@ summarizeRun[ds_] := Module[
   take
 ];
 
-(* Try to load the most informative table for a run: prefer metrics_joined*, then tqe_runs* *)
+(* Try to load the most informative table for a run *)
 loadBestRunTable[root_] := Module[{f},
-  f = findFirstFile[root, {"metrics_joined", "metrics-joined", "joined"}];
+  f = findFirstFile[root, {"metrics_joined", "metrics-joined", "joined", "math_check_results"}];
   If[MissingQ[f],
     f = findFirstFile[root, {"tqe_runs", "tqe-runs", "runs"}];
   ];
