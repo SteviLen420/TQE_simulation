@@ -1,24 +1,17 @@
 (* SPDX-License-Identifier: MIT *)
 (* Copyright (c) 2025 Stefan Len *)
 
-(* ================================================================== \
-*)
-(*  TQE_Wolfram_EI_Math_Check_Summary_All_JSON.nb                    *)
-(* ================================================================== \
-*)
-(*  Purpose: Summarize ALL statistics from ALL EI JSON files.         \
-*)
-(*           Each file/column/statistic is flattened into a row.      \
-*)
-(*           Then compute global averages across all files.           \
-*)
-(* ================================================================== \
-*)
+(* ================================================================== *)
+(*  TQE_Wolfram_EI_Math_Check_Summary_All_JSON.nb                     *)
+(* ================================================================== *)
+(*  Purpose: Summarize ALL statistics from ALL EI JSON files.         *)
+(*           Each file/column/statistic is flattened into a row.      *)
+(*           Then compute global averages across all files.           *)
+(* ================================================================== *)
+
 
 (* ========= User input: folder that contains EI JSONs ========= *)
-rootEI = 
-  "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/math_check_results_\
-EI_JSON";
+rootEI = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/math_check_results_EI_JSON";
 
 (* ========= Find all EI JSON files ========= *)
 allFiles = Union[
