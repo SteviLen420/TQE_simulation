@@ -53,6 +53,16 @@ summarizeAllFromMathCheck[ds_] := Module[{rows},
   ]
 ];
 
+(* Load newest math_check_results CSV for a given variant ("EI" / "Eonly") *)
+loadMathCheck[root_, variant_] := Module[{f},
+  (* use the finder that matches your real filenames *)
+  f = findNewestMathCheck[root, variant];
+  If[MissingQ[f],
+    <|"status" -> "not_found", "file" -> None, "data" -> Dataset[{}]|>,
+    <|"status" -> "ok",       "file" -> f,    "data" -> safeImportDataset[f]|>
+  ]
+];
+
 (* ========= Load both variants ========= *)
 ei    = loadMathCheck[rootEI, "EI"];
 eonly = loadMathCheck[rootEonly, "Eonly"];
