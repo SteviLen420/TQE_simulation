@@ -37,19 +37,21 @@ findNewestMathCheck[root_, variant_] := Module[{all, keep, newest, pat},
   newest
 ];
 
-(* === collect all metrics from all rows === *)
+(* === collect all metrics from all rows (robust) === *)
 summarizeAllFromMathCheck[ds_] := Module[{rows},
-  rows = Normal@ds;
-  Association @ Table[
-    With[{rowAssoc = Association[row],
-          fname    = Lookup[Association[row], "File", "unknown"],
-          cols     = Lookup[Association[row], "Columns", <||>]},
+  rows = Normal @ ds;  (* rows are already Associations *)
+  Association @ Cases[rows, r_Association :>
+    Module[{fname, cols},
+      (* read fields directly from the association 'r' *)
+      fname = Lookup[r, "File", "unknown"];
+      cols  = Lookup[r, "Columns", <||>];
+      If[!AssociationQ[cols], cols = <||>];  (* guard: if Columns isn't an association *)
+
       fname -> Association @ Table[
-        cname -> Lookup[Lookup[cols, cname, <||>], "Mean", Missing["NA"]],
-        {cname, Keys[cols]}
+        c -> Lookup[Lookup[cols, c, <||>], "Mean", Missing["NA"]],
+        {c, Keys[cols]}
       ]
-    ],
-    {row, rows}
+    ]
   ]
 ];
 
