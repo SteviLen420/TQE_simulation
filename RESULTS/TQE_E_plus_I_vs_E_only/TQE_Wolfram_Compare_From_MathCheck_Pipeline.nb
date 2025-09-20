@@ -25,26 +25,16 @@ listCSVs[root_] := Module[{all},
   all
 ];
 
-findNewestMathCheck[root_, variant_] := Module[{all, keep, newest},
-  all = Join[
-    FileNames["*.csv", root, Infinity],
-    FileNames["*.CSV", root, Infinity]
-  ];
-  keep = Select[all,
-    If[variant === "EI",
-      StringContainsQ[FileNameTake[#], "math_check_results_E_plus_I", IgnoreCase -> True]&,
-      StringContainsQ[FileNameTake[#], "math_check_results_energy_only", IgnoreCase -> True]&
-    ]
-  ];
-  newest = If[keep === {}, Missing["NotFound"],
-    First @ Reverse @ SortBy[keep, FileDate]
-  ];
-  newest
-];
+(* Find newest math_check_results CSV under a root, by variant tag *)
+findNewestMathCheck[root_, variant_] := Module[{all, keep, newest, pat},
+  (* pick the right filename signature *)
+  pat = If[variant === "EI", "math_check_results_EI", "math_check_results_energy_only"];
 
-safeNum[x_] := Which[
-  NumericQ[x], ToString @ NumberForm[N@x, {6, 4}],
-  True,       "NA"
+  all  = Join[FileNames["*.csv", root, Infinity], FileNames["*.CSV", root, Infinity]];
+  keep = Select[all, StringContainsQ[FileNameTake[#], pat, IgnoreCase -> True] &];
+
+  newest = If[keep === {}, Missing["NotFound"], First @ Reverse @ SortBy[keep, FileDate]];
+  newest
 ];
 
 (* === collect all metrics from all rows === *)
