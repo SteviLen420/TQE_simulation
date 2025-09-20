@@ -81,7 +81,7 @@ The pipeline's code was developed through a combination of high-level architectu
 **2. Data Analysis and Mathematical Validation**
 The raw outputs of the simulation were processed and validated using a combination of general and specialized AI.
 
-* **Gemini 2.5 Pro & DeepSeek-R1:14B**: Used for the primary analysis of simulation outputs, helping to structure statistical tests and interpret the results from the XAI modules.
+* **Gemini 2.5 Pro & DeepSeek-R1**: Used for the primary analysis of simulation outputs, helping to structure statistical tests and interpret the results from the XAI modules.
 
 * **Wolfram|One & Wolfram|Alpha**: Utilized for the rigorous validation of the mathematical formalisms and equations presented in the documentation, ensuring their correctness and internal consistency.
 
