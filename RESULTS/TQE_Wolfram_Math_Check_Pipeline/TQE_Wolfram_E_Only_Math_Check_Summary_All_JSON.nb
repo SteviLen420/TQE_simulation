@@ -16,13 +16,8 @@ allFiles = Union[
    FileNames["*.json", rootEonly, Infinity],
    FileNames["*.JSON", rootEonly, Infinity]
 ];
-keepFiles = Select[allFiles,
-   StringContainsQ[
-     FileNameTake[#],
-     Alternatives["math_check_results_E_only", "E_only"],
-     IgnoreCase -> True
-   ] &
-];
+
+keepFiles = allFiles;
 
 If[keepFiles === {}, 
   Print["❌ No E_only JSON files found under: ", rootEonly];
