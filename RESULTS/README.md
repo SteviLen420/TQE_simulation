@@ -26,8 +26,9 @@ This repository is organized to provide a clear and transparent overview of the 
     * [TQE_Wolfram_Math_Check_Pipeline](./TQE_Wolfram_Math_Check_Pipeline/): Contains the Wolfram Language notebooks for analysis. *(Assuming this is a subfolder of results)*
 
 * ➡️ **Simulation Data:**
-    * [E-plus-I_Simulation](./E-plus-I_Simulation/): Contains the full output for the `E+I` simulation runs.
-    * [E-Only_Simulation](./E-Only_Simulation/): Contains the full output for the `E-only` simulation runs.
+    * [E_plus_I_Simulation](./E_plus_I_Simulation/): Contains the full output for the `E+I` simulation runs.
+    * [E_Only_Simulation](./E_Only_Simulation/): Contains the full output for the `E-only` simulation runs.
+    * [EI_vs_E_only_Comparison](./EI_vs_E_only_Comparison/): Contains the final comparison outputs between the `E+I` and `E-only` simulation runs.
 
 * ➡️ **Project Files:**
     * **[CITATION.cff](../CITATION.cff):** Provides the citation information for this work.
