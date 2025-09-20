@@ -7,9 +7,8 @@
 (* ================================================================== *)
 (*  Notes: Compares E+I vs E-only based on CSV tables.                *)
 
-(* ========= User inputs (root folders) ========= *)
-rootEI    = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E_plus_I_Simulation";
-rootEonly = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E_Only_Simulation";
+(* ========= User inputs ========= *)
+rootAll = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only";
 
 (* ========= Helpers ========= *)
 
@@ -25,14 +24,18 @@ listCSVs[root_] := Module[{all},
   all
 ];
 
-(* Find newest math_check_results CSV under a root, by variant tag *)
+(* Find newest math_check_results CSV inside the single root, by variant tag *)
+(* variant = "EI" or "Eonly" *)
 findNewestMathCheck[root_, variant_] := Module[{all, keep, newest, pat},
-  (* pick the right filename signature *)
+  (* decide filename signature by variant *)
   pat = If[variant === "EI", "math_check_results_EI", "math_check_results_energy_only"];
 
+  (* search both .csv and .CSV recursively under one root *)
   all  = Join[FileNames["*.csv", root, Infinity], FileNames["*.CSV", root, Infinity]];
+  (* keep only those that match the pattern in the basename *)
   keep = Select[all, StringContainsQ[FileNameTake[#], pat, IgnoreCase -> True] &];
 
+  (* pick the newest (by modification time); Missing if none *)
   newest = If[keep === {}, Missing["NotFound"], First @ Reverse @ SortBy[keep, FileDate]];
   newest
 ];
@@ -67,9 +70,8 @@ getStat[ds_, fileTag_String, col_String, stat_:"Mean"] := Module[{row, cols, cel
   Lookup[cell, stat, Missing["NA"]]
 ];
 
-(* Load newest math_check_results CSV for a given variant ("EI" / "Eonly") *)
+(* Load newest math_check_results CSV for the given variant ("EI" / "Eonly") *)
 loadMathCheck[root_, variant_] := Module[{f},
-  (* use the finder that matches your real filenames *)
   f = findNewestMathCheck[root, variant];
   If[MissingQ[f],
     <|"status" -> "not_found", "file" -> None, "data" -> Dataset[{}]|>,
@@ -77,9 +79,10 @@ loadMathCheck[root_, variant_] := Module[{f},
   ]
 ];
 
+
 (* ========= Load both variants ========= *)
-ei    = loadMathCheck[rootEI, "EI"];
-eonly = loadMathCheck[rootEonly, "Eonly"];
+ei    = loadMathCheck[rootAll, "EI"];
+eonly = loadMathCheck[rootall, "Eonly"];
 
 sumEI    = summarizeAllFromMathCheck[ei["data"]];
 sumEonly = summarizeAllFromMathCheck[eonly["data"]];
