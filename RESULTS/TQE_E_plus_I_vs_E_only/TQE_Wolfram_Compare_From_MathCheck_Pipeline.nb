@@ -25,10 +25,13 @@ listCSVs[root_] := Module[{all},
 ];
 
 (* Find newest CSV for EI or E-only *)
-findNewestMathCheck[root_, variant_] := Module[{all, keep, newest, pat},
-  pat = If[variant === "EI", "_EI_", "energy_only"];
+findNewestMathCheck[root_, variant_] := Module[{all, keep, newest, pats},
+  pats = If[variant === "EI",
+    {"_EI_", "E_plus_I", "E+I"},
+    {"energy_only", "E_only", "energy-only"}
+  ];
   all  = Join[FileNames["*.csv", root, Infinity], FileNames["*.CSV", root, Infinity]];
-  keep = Select[all, StringContainsQ[FileNameTake[#], pat, IgnoreCase -> True] &];
+  keep = Select[all, Or @@ (StringContainsQ[FileNameTake[#], #2, IgnoreCase -> True] & @@@ Tuples[{ {#}, pats}] ) &];
   newest = If[keep === {}, Missing["NotFound"], First @ Reverse @ SortBy[keep, FileDate]];
   newest
 ];
