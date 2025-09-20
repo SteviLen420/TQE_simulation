@@ -36,7 +36,7 @@ findNewestMathCheck[root_, variant_] := Module[{all, keep, newest},
   ];
   keep = Select[all,
     If[variant === "EI",
-      StringContainsQ[FileNameTake[#], "math_check_results_EI", IgnoreCase -> True]&,
+      StringContainsQ[FileNameTake[#], "math_check_results_E_plus_I", IgnoreCase -> True]&,
       StringContainsQ[FileNameTake[#], "math_check_results_energy_only", IgnoreCase -> True]&
     ]
   ];
@@ -135,22 +135,22 @@ loadMathCheck[root_, variant_] := Module[{f},
 
 (* ========= Load data for both variants ========= *)
 
-ei    = loadMathCheck[rootEI, "EI"];
-eonly = loadMathCheck[rootEonly, "Eonly"];
+ei    = loadMathCheck[rootEI, "E_plus_I"];
+eonly = loadMathCheck[rootEonly, "E_only"];
 
 (* ========= Summaries ========= *)
 
-sumEI    = summarizeFromMathCheck[ei["data"], "EI"];
-sumEonly = summarizeFromMathCheck[eonly["data"], "E-Only"];
+sumEI    = summarizeFromMathCheck[ei["data"], "E_plus_I"];
+sumEonly = summarizeFromMathCheck[eonly["data"], "E_Only"];
 
 (* Align keys and build comparison rows *)
 allKeys = Union[Keys[sumEI], Keys[sumEonly]];
 comparison = Dataset @ Table[
   <|
     "metric"                -> k,
-    "E+I"                   -> Lookup[sumEI, k, Missing["NA"]],
-    "E-only"                -> Lookup[sumEonly, k, Missing["NA"]],
-    "diff(E+I - E-only)"    -> Quiet @ Check[
+    "E_plus_I"                   -> Lookup[sumEI, k, Missing["NA"]],
+    "E_only"                -> Lookup[sumEonly, k, Missing["NA"]],
+    "diff(E_plus_I - E_only)"    -> Quiet @ Check[
       Lookup[sumEI, k, Missing["NA"]] - Lookup[sumEonly, k, Missing["NA"]],
       Missing["NA"]
     ]
@@ -159,16 +159,16 @@ comparison = Dataset @ Table[
 ];
 
 (* ==== Show results inline in the notebook ==== *)
-Print["E+I source: ", ei["file"]];
-Print["E-only source: ", eonly["file"]];
+Print["E_plus_I source: ", ei["file"]];
+Print["E_only source: ", eonly["file"]];
 
 (* Side-by-side per-run summaries *)
 summaryKeys   = Union[Keys[sumEI], Keys[sumEonly]];
 summaryInline = Dataset @ Table[
   <|
     "metric" -> k,
-    "E+I"    -> Lookup[sumEI, k, Missing["NA"]],
-    "E-only" -> Lookup[sumEonly, k, Missing["NA"]]
+    "E_plus_I"    -> Lookup[sumEI, k, Missing["NA"]],
+    "E_only" -> Lookup[sumEonly, k, Missing["NA"]]
   |>,
   {k, summaryKeys}
 ];
@@ -195,12 +195,12 @@ Export[
   outJSON,
   (Association[
      "files" -> <|
-       "E+I_source"    -> ei["file"],
-       "E-only_source" -> eonly["file"]
+       "E_plus_I_source"    -> ei["file"],
+       "E_only_source" -> eonly["file"]
      |>,
      "summary" -> Association[
-       "E+I"    -> sumEI,
-       "E-only" -> sumEonly
+       "E_plus_I"    -> sumEI,
+       "E_only" -> sumEonly
      ],
      "comparison_rows" -> Normal @ comparison
    ] /. {None -> Null, Missing[_] -> Null}),
