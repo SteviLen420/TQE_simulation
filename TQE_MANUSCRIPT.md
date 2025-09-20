@@ -28,27 +28,27 @@ When coupled with vacuum energy fluctuations, this parameter enables a probabili
 
 Importantly, the framework yields falsifiable implications. If correct, one expects non-random statistical features in cosmic microwave background anomalies, such as the low quadrupole or large-scale alignments. These anomalies serve not as direct explanations but as diagnostic proxies of stabilization dynamics, offering a pathway to empirical validation of the model.
 
-### **2. Theoretical Framework**
+\subsection*{2. Theoretical Framework}
 
-The foundation of our model rests on three key concepts: the quantum state of the universe, energy fluctuations, and a previously unaddressed, intrinsic property of energy, which we term Information (I).
+The foundation of our model rests on three key concepts: the quantum state of the universe, energy fluctuations, and a previously unaddressed, intrinsic property of energy, which we term Information ($I$).
 
-Information (I) as an Intrinsic Property of Energy: We postulate that energy possesses a fundamental, intrinsic property: a directionality towards complexity. We call this property Information (I). This is not an external field but an inseparable aspect of energy itself that carries the structure-forming potential.
+\paragraph*{Information ($I$) as an Intrinsic Property of Energy:} We postulate that energy possesses a fundamental, intrinsic property: a directionality towards complexity. We call this property Information ($I$). This is not an external field but an inseparable aspect of energy itself that carries the structure-forming potential.
 
-Let the state of the universe be represented by a superpositional probability distribution P(ψ). During early cosmogenesis, we assume this distribution is not static but subject to modulation by vacuum energy fluctuations (E) and the aforementioned Information parameter (I):
+Let the state of the universe be represented by a superpositional probability distribution $P(\psi)$. During early cosmogenesis, we assume this distribution is not static but subject to modulation by vacuum energy fluctuations ($E$) and the aforementioned Information parameter ($I$):
 
-**P’(ψ) = P(ψ) f(E, I)**
+\[
+P'(\psi) = P(\psi) f(E, I)
+\]
 
 where:
 
-**P(ψ)** is the baseline quantum probability distribution.
-
-**E** is vacuum fluctuation energy, sampled from a heavy-tailed (lognormal) distribution.
-
-**I** is the information parameter, defined below as normalized asymmetry or orientation (0 ≤ I ≤ 1).
-
-**f(E, I)** is a fine-tuning function biasing outcomes toward stability.
-
-**P′(ψ)** is the modulated distribution after energy–information coupling.
+\begin{itemize}
+    \item \textbf{P($\psi$)} is the baseline quantum probability distribution.
+    \item \textbf{E} is vacuum fluctuation energy, sampled from a heavy-tailed (lognormal) distribution.
+    \item \textbf{I} is the information parameter, defined below as normalized asymmetry or orientation ($0 \leq I \leq 1$).
+    \item \textbf{f(E, I)} is a fine-tuning function biasing outcomes toward stability.
+    \item \textbf{P'($\psi$)} is the modulated distribution after energy–information coupling.
+\end{itemize}
 
 ### **2.1. Explicit Form of the Fine-Tuning Function**
 
