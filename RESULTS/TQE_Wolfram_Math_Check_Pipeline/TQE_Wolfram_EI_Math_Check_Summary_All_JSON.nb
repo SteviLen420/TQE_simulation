@@ -56,20 +56,38 @@ flattenOne[ds_] := Flatten[
    ] /@ Normal[ds]
 ];
 
-(* ========= Show inline ========= *)
+(* ========= Flatten all datasets ========= *)
+allFlat = Dataset @ Flatten[flattenOne /@ datasets];
+
 Print["\n=== EI Full Summary (flattened) ==="];
 allFlat
+
+(* ========= Compute averages across all files ========= *)
+avgSummary = Dataset @ GroupBy[
+   Normal[allFlat],
+   #Column &,
+   Function[rows,
+     <|
+       "GlobalMean"   -> Mean[DeleteMissing[rows[[All, "Mean"]]]],
+       "GlobalStdDev" -> Mean[DeleteMissing[rows[[All, "StdDev"]]]],
+       "NumFiles"     -> Length[rows]
+     |>
+   ]
+];
+
+Print["\n=== EI Global Averages (by Column) ==="];
+avgSummary
 
 (* ========= Save outputs to Desktop with timestamp ========= *)
 timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
 outRoot = FileNameJoin[{$HomeDirectory, "Desktop", "EI_full_summary_" <> timestamp}];
 If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
 
-outCSV = FileNameJoin[{outRoot, "ei_full_summary.csv"}];
-outJSON = FileNameJoin[{outRoot, "ei_full_summary.json"}];
+outCSV = FileNameJoin[{outRoot, "EI_global_avg.csv"}];
+outJSON = FileNameJoin[{outRoot, "EI_global_avg.json"}];
 
-Export[outCSV, Normal @ allFlat];
-Export[outJSON, Normal @ allFlat, "JSON"];
+Export[outCSV, Normal @ avgSummary];
+Export[outJSON, Normal @ avgSummary, "JSON"];
 
-Print["\n✅ Saved CSV:  ", outCSV];
-Print["✅ Saved JSON: ", outJSON];
+Print["\n✅ Saved average CSV:  ", outCSV];
+Print["✅ Saved average JSON: ", outJSON];
