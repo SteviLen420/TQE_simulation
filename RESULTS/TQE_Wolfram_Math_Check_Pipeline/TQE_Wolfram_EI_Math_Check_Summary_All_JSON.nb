@@ -57,7 +57,6 @@ flattenOne[ds_] := Flatten[
 ];
 
 (* ========= Flatten all datasets ========= *)
-allFlat = Dataset @ Flatten[flattenOne /@ datasets];
 
 Print["\n=== EI Full Summary (flattened) ==="];
 allFlat
@@ -85,14 +84,16 @@ If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
 
 cleanAvg = Normal @ avgSummary /. {
    Missing[_] -> Null,
-   Indeterminate -> Null
+   Indeterminate -> Null,
+   _Times -> Null,
+   _Complex -> Null
 };
 
 outCSV = FileNameJoin[{outRoot, "EI_global_avg.csv"}];
 outJSON = FileNameJoin[{outRoot, "EI_global_avg.json"}];
 
-Export[outCSV, Normal @ avgSummary];
-Export[outJSON, Normal @ avgSummary, "JSON"];
+Export[outCSV, cleanAvg];
+Export[outJSON, cleanAvg, "JSON"];
 
 Print["\n✅ Saved average CSV:  ", outCSV];
 Print["✅ Saved average JSON: ", outJSON];
