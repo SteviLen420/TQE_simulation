@@ -27,14 +27,23 @@ listCSVs[root_] := Module[{all},
   all
 ];
 
-(* Search for the first CSV whose basename contains any of the patterns *)
-findFirstFile[root_, patterns_List] := Module[{all},
-  all = listCSVs[root];
-  SelectFirst[
-    all,
-    Function[f, AnyTrue[patterns, StringContainsQ[FileNameTake[f], #, IgnoreCase -> True] &]],
-    Missing["NotFound"]
-  ]
+(* Find newest math_check_results CSV under a root. Silent, no debug spam. *)
+findNewestMathCheck[root_, variant_] := Module[{all, keep, newest},
+  (* variant is "EI" or "Eonly" selector via filename signature *)
+  all = Join[
+    FileNames["*.csv", root, Infinity],
+    FileNames["*.CSV", root, Infinity]
+  ];
+  keep = Select[all,
+    If[variant === "EI",
+      StringContainsQ[FileNameTake[#], "math_check_results_EI", IgnoreCase -> True]&,
+      StringContainsQ[FileNameTake[#], "math_check_results_energy_only", IgnoreCase -> True]&
+    ]
+  ];
+  newest = If[keep === {}, Missing["NotFound"],
+    First @ Reverse @ SortBy[keep, FileDate]   (* newest by mtime *)
+  ];
+  newest
 ];
 
 (* Pretty-print numeric; otherwise NA *)
@@ -43,11 +52,34 @@ safeNum[x_] := Which[
   True,       "NA"
 ];
 
-(* Aggregate canonical metrics from a dataset if columns exist *)
-summarizeRun[ds_] := Module[
-  {take = Association[], has},
-  If[Length[ds] == 0, Return[<||>]];
-  has = Function[c, MemberQ[Keys[Normal @ First @ ds], c]];
+(* Summarize from math_check_results Dataset by taking the row File=="metrics_joined_*" *)
+summarizeFromMathCheck[ds_, which_] := Module[
+  {row, cols, getMean},
+  (* which is "EI" or "E-Only" tag to match inside the File field *)
+  row = SelectFirst[Normal@ds,
+          StringContainsQ[ToString@Lookup[#, "File", ""], 
+            If[which === "EI", "metrics_joined_EI", "metrics_joined_E-Only"], 
+            IgnoreCase -> True
+          ]&
+        ,
+        Missing["NotFound"]
+        ];
+  If[MissingQ[row],
+    <||>, (* nothing found *)
+    cols = Lookup[row, "Columns", <||>];       (* nested association *)
+    getMean[name_] := Lookup[Lookup[cols, name, <||>], "Mean", Missing["NA"]];
+    <|
+      "stable_ratio"       -> getMean["stable"],
+      "lockin_ratio"       -> getMean["lockin"],
+      "stable_epoch_mean"  -> getMean["stable_epoch"],
+      "lock_epoch_mean"    -> getMean["lock_epoch"],
+      "E_mean"             -> getMean["E"],
+      "I_mean"             -> getMean["I"],
+      "X_mean"             -> getMean["X"],
+      "N_rows"             -> Lookup[row, "TotalRows", Missing["NA"]]
+    |>
+  ]
+];
 
   (* Core ratios/flags *)
   If[has["stable"],        take["stable_ratio"]       = N @ Mean[Normal @ ds[All, "stable"]]];
@@ -81,13 +113,14 @@ summarizeRun[ds_] := Module[
   take
 ];
 
-(* Try to load the most informative CSV table for a run *)
-loadBestRunTable[root_] := Module[{f},
-  (* 1) Prefer metrics_joined*.csv *)
-  f = findFirstFile[root, {"metrics_joined", "metrics-joined", "joined"}];
-  If[!MissingQ[f],
-    Return[<|"status" -> "ok", "file" -> f, "data" -> safeImportDataset[f]|>];
-  ];
+(* Load math_check_results CSV for the given variant ("EI" / "Eonly") *)
+loadMathCheck[root_, variant_] := Module[{f},
+  f = findNewestMathCheck[root, variant];
+  If[MissingQ[f],
+    <|"status"->"not_found", "file"->None, "data"->Dataset[{}]|>,
+    <|"status"->"ok", "file"->f, "data"->safeImportDataset[f]|>
+  ]
+];
 
   (* 2) Else fall back to tqe_runs*.csv *)
   f = findFirstFile[root, {"tqe_runs", "tqe-runs", "runs"}];
@@ -100,13 +133,13 @@ loadBestRunTable[root_] := Module[{f},
 
 (* ========= Load data for both variants ========= *)
 
-ei    = loadBestRunTable[rootEI];
-eonly = loadBestRunTable[rootEonly];
+ei    = loadMathCheck[rootEI, "EI"];
+eonly = loadMathCheck[rootEonly, "Eonly"];
 
 (* ========= Summaries ========= *)
 
-sumEI    = summarizeRun[ei["data"]];
-sumEonly = summarizeRun[eonly["data"]];
+sumEI    = summarizeFromMathCheck[ei["data"], "EI"];
+sumEonly = summarizeFromMathCheck[eonly["data"], "E-Only"];
 
 (* Align keys and build comparison rows *)
 allKeys = Union[Keys[sumEI], Keys[sumEonly]];
