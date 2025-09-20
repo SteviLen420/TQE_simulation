@@ -106,9 +106,6 @@ comparison = Dataset @ Flatten @ Table[
   {file, allFiles}
 ];
 
-Print["E+I source: ", ei["file"]];
-Print["E-only source: ", eonly["file"]];
-
 comparison
 
 (* ========= Output ========= *)
