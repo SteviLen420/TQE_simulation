@@ -1,7 +1,7 @@
 # **Theory of the Question of Existence (TQE):**
 
-**An Energy–Information Coupling Hypothesis for the Stabilization of Physical Law**
-## Author: Stefan Len
+### An Energy–Information Coupling Hypothesis for the Stabilization of Physical Law
+**Author: Stefan Len**
 
 ### **Abstract**
 
