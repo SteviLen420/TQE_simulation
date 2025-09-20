@@ -75,14 +75,6 @@ loadMathCheck[root_, variant_] := Module[{f},
   ]
 ];
 
-  If[MissingQ[f],
-    <|"status" -> "not_found", "file" -> None, "data" -> Dataset[{}]|>,
-    <|"status" -> "ok",       "file" -> f,    "data" -> safeImportDataset[f]|>
-  ]
-];
-
-
-(* ========= Load both variants ========= *)
 (* ========= Load both variants ========= *)
 ei    = loadMathCheck[rootAll, "EI"];
 eonly = loadMathCheck[rootAll, "Eonly"];
