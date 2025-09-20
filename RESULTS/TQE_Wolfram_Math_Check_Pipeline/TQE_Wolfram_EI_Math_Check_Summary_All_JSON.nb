@@ -72,7 +72,7 @@ outCSV = FileNameJoin[{outRoot, "ei_full_summary.csv"}];
 outJSON = FileNameJoin[{outRoot, "ei_full_summary.json"}];
 
 Export[outCSV, Normal @ allFlat];
-Export[outJSON, Normal @ avgSummary, "JSON"];
+Export[outJSON, Normal @ allFlat, "JSON"];
 
 Print["\n✅ Saved CSV:  ", outCSV];
 Print["✅ Saved JSON: ", outJSON];
