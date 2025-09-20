@@ -5,8 +5,6 @@ This document provides a scientific analysis of simulation results comparing two
 
 * **E-Only Universes: Driven solely by Energy (E).**
 
-The results and conclusions were derived not only through manual evaluation, but also based on a detailed analysis conducted with the assistance of several artificial intelligence models (**OpenAI GPT-5**, **Google Gemini 2.5 Pro**, **DeepSeek-R1:14B**).
-
 The primary objective is to evaluate the hypothesis that Information (I) is a fundamental component necessary for the emergence of a realistic, complex, and stable universe. The analysis focuses on stability dynamics, complexity, entropy, cosmological anomalies, and the overall predictability of the systems.
 
 ## Key Findings and Interpretation
@@ -42,6 +40,7 @@ The data provides a multi-faceted answer:
 
 Based on these findings, this analysis concludes that while a universe can exist on the basis of energy alone, the introduction of Information represents a critical phase transition. This transition enables the development of emergent complexity, leading to a more structured, predictable, and dynamically evolving cosmos. The data validates the thesis that Information is a fundamental, not peripheral, driver of cosmic evolution.
 
+The results and conclusions were derived not only through manual evaluation, but also based on a detailed analysis conducted with the assistance of several artificial intelligence models (**OpenAI GPT-5**, **Google Gemini 2.5 Pro**, **DeepSeek-R1:14B**).
 
 ## License
 This project is licensed under the MIT License – see the [LICENSE](./LICENSE) file for details.
