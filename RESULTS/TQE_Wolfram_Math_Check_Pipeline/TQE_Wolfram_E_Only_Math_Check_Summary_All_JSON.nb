@@ -31,20 +31,23 @@ datasets = Dataset /@ (Import[#, "RawJSON"] & /@ keepFiles);
 
 (* ========= Flatten each dataset ========= *)
 flattenOne[ds_] := Flatten[
-   KeyValueMap[
-     Function[{col, stats},
-       <|
-         "File" -> #File,
-         "TotalRows" -> #TotalRows,
-         "AnyNaN" -> #AnyNaN,
-         "AnyInfinity" -> #AnyInfinity,
-         "AnyMissing" -> #AnyMissing,
-         "Column" -> col,
-         "Mean" -> Lookup[stats, "Mean", Missing[]],
-         "StdDev" -> Lookup[stats, "StdDev", Missing[]]
-       |>
-     ] & /@ #Columns
-   ] & /@ Normal[ds]
+   Function[row,
+     KeyValueMap[
+       Function[{col, stats},
+         <|
+           "File" -> row["File"],
+           "TotalRows" -> row["TotalRows"],
+           "AnyNaN" -> row["AnyNaN"],
+           "AnyInfinity" -> row["AnyInfinity"],
+           "AnyMissing" -> row["AnyMissing"],
+           "Column" -> col,
+           "Mean" -> Lookup[stats, "Mean", Missing[]],
+           "StdDev" -> Lookup[stats, "StdDev", Missing[]]
+         |>
+       ],
+       row["Columns"]
+     ]
+   ] /@ Normal[ds]
 ];
 
 allFlat = Dataset @ Flatten[flattenOne /@ datasets];
