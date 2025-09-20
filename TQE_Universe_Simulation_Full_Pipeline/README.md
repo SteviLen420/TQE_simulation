@@ -7,14 +7,13 @@
 
 #  TQE UNIVERSE SIMULATION PIPELINE
 
-**Author**: Stefan Len
-
-
 **Title: The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo
 Simulation of Universe Evolution from Energy-Information Principles**
 
+**Author**: Stefan Len
 
-**Abstract**
+
+### Abstract
 
 
 The TQE Framework is a novel computational pipeline designed to investigate the hypothesis that the fundamental laws of physics are not axiomatic but emerge from a more primitive interplay of Energy (E) and Information (I). This framework provides an end-to-end, proof-of-concept environment for conducting Monte Carlo simulations of ensembles of universes, enabling the systematic exploration of a wide parameter space of initial conditions. The core of the pipeline is a multi-stage simulation that models the lifecycle of a universe: an initial pre-collapse phase, where physical laws are treated as fluctuating and stochastic; a probabilistic “law lock-in” event, where a stable set of effective physical constants is selected; and a subsequent expansion phase that generates large-scale structures. An integrated analysis suite processes the outputs of these simulations to generate cosmological observables analogous to the Cosmic Microwave Background (CMB) and to perform targeted scans for selected anomalies, such as the Cold Spot and hemispherical asymmetries. A key contribution of this work is the integration of an Explainable AI (XAI) module, which applies machine learning models together with interpretability techniques such as SHAP to explore the relationship between the initial (E,I) conditions and the emergent characteristics of a simulated universe. While some components (e.g., anomaly detection and LIME explanations) are implemented in simplified form, the framework is architected for reproducibility and extensibility, making it a solid research-grade prototype and a foundation for further development in theoretical cosmology.
