@@ -60,8 +60,8 @@ cleanComp = Normal @ comparison //. {
    Quantity[_, _] -> Null
 };
 
-outCSV  = FileNameJoin[{outRoot, "ei_vs_eonly_comparison.csv"}];
-outJSON = FileNameJoin[{outRoot, "ei_vs_eonly_comparison.json"}];
+outCSV  = FileNameJoin[{outRoot, "EI_vs_E_only_comparison.csv"}];
+outJSON = FileNameJoin[{outRoot, "EI_vs_E_only_comparison.json"}];
 
 Export[outCSV, cleanComp];
 Export[outJSON, cleanComp, "JSON"];
