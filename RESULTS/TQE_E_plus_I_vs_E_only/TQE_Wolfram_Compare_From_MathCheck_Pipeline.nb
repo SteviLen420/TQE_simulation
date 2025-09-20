@@ -5,32 +5,31 @@
 (*  TQE_Wolfram_Compare_From_MathCheck_Pipeline.nb                    *)
 (*  Author: Stefan Len                                                *)
 (* ================================================================== *)
-(*  Notes: This is ONLY the header adapted for the E+I vs E-only code.*)
-(*         Add your actual analysis implementation below this block.  *)
+(*  Notes: Compares E+I vs E-only based on CSV tables.                *)
 
 (* ========= User inputs (root folders) ========= *)
-rootEI   = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E_plus_I_Simulation";
-rootEonly= "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E_Only_Simulation";
+rootEI    = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E_plus_I_Simulation";
+rootEonly = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E_Only_Simulation";
 
 (* ========= Helpers ========= *)
 
-(* Safe dataset import from CSV; empty Dataset on error *)
+(* Safe dataset import from CSV; returns empty Dataset on error *)
 safeImportDataset[f_] := Quiet @ Check[Import[f, "Dataset"], Dataset[{}]];
 
-(* List the first few CSVs we see under a root (for debugging) *)
+(* List CSV files under a root (debugging aid) *)
 listCSVs[root_] := Module[{all},
   all = Join[
     FileNames["*.csv", root, Infinity],
     FileNames["*.CSV", root, Infinity]
   ];
   Print["📄 CSVs under ", root, ": ", Length[all]];
-  Print /@ Take[all, UpTo[10]]; (* show first up to 10 *)
+  Print /@ Take[all, UpTo[10]];  (* show up to the first 10 paths *)
   all
 ];
 
-(* Search recursively for the first existing file that matches any of the patterns *)
+(* Search for the first CSV whose basename contains any of the patterns *)
 findFirstFile[root_, patterns_List] := Module[{all},
-  all = listCSVs[root];  (* debug listing + gather both csv/CSV *)
+  all = listCSVs[root];
   SelectFirst[
     all,
     Function[f, AnyTrue[patterns, StringContainsQ[FileNameTake[f], #, IgnoreCase -> True] &]],
@@ -38,35 +37,43 @@ findFirstFile[root_, patterns_List] := Module[{all},
   ]
 ];
 
-(* Safe numeric pretty-print *)
+(* Pretty-print numeric; otherwise NA *)
 safeNum[x_] := Which[
   NumericQ[x], ToString @ NumberForm[N@x, {6, 4}],
   True,       "NA"
 ];
 
-(* Aggregate a few canonical metrics from a dataset if the columns exist *)
+(* Aggregate canonical metrics from a dataset if columns exist *)
 summarizeRun[ds_] := Module[
-  {
-    take = Association[],
-    has = Function[c, MemberQ[Keys[Normal@First@ds], c]]
-  },
-  If[Length[ds]==0, Return[<||>]];
+  {take = Association[], has},
+  If[Length[ds] == 0, Return[<||>]];
+  has = Function[c, MemberQ[Keys[Normal @ First @ ds], c]];
 
   (* Core ratios/flags *)
-  If[has["stable"],    take["stable_ratio"]    = N@Mean[Normal@ds[All, "stable"]]];
-  If[has["lockin"],    take["lockin_ratio"]    = N@Mean[Normal@ds[All, "lockin"]]];
-  If[has["stable_epoch"], take["stable_epoch_mean"] = N@Mean[Normal@ds[All, "stable_epoch"]];
-                           take["stable_epoch_std"]  = N@StandardDeviation[Normal@ds[All, "stable_epoch"]]];
-  If[has["lock_epoch"],   take["lock_epoch_mean"]   = N@Mean[Normal@ds[All, "lock_epoch"]];
-                           take["lock_epoch_std"]    = N@StandardDeviation[Normal@ds[All, "lock_epoch"]]];
+  If[has["stable"],        take["stable_ratio"]       = N @ Mean[Normal @ ds[All, "stable"]]];
+  If[has["lockin"],        take["lockin_ratio"]       = N @ Mean[Normal @ ds[All, "lockin"]]];
+  If[has["stable_epoch"],
+    take["stable_epoch_mean"] = N @ Mean[Normal @ ds[All, "stable_epoch"]];
+    take["stable_epoch_std"]  = N @ StandardDeviation[Normal @ ds[All, "stable_epoch"]];
+  ];
+  If[has["lock_epoch"],
+    take["lock_epoch_mean"]   = N @ Mean[Normal @ ds[All, "lock_epoch"]];
+    take["lock_epoch_std"]    = N @ StandardDeviation[Normal @ ds[All, "lock_epoch"]];
+  ];
 
   (* Energy/Information composites if present *)
-  If[has["E"],  take["E_mean"]  = N@Mean[Normal@ds[All, "E"]];
-                take["E_std"]   = N@StandardDeviation[Normal@ds[All, "E"]]];
-  If[has["I"],  take["I_mean"]  = N@Mean[Normal@ds[All, "I"]];
-                take["I_std"]   = N@StandardDeviation[Normal@ds[All, "I"]]];
-  If[has["X"],  take["X_mean"]  = N@Mean[Normal@ds[All, "X"]];
-                take["X_std"]   = N@StandardDeviation[Normal@ds[All, "X"]]];
+  If[has["E"],
+    take["E_mean"] = N @ Mean[Normal @ ds[All, "E"]];
+    take["E_std"]  = N @ StandardDeviation[Normal @ ds[All, "E"]];
+  ];
+  If[has["I"],
+    take["I_mean"] = N @ Mean[Normal @ ds[All, "I"]];
+    take["I_std"]  = N @ StandardDeviation[Normal @ ds[All, "I"]];
+  ];
+  If[has["X"],
+    take["X_mean"] = N @ Mean[Normal @ ds[All, "X"]];
+    take["X_std"]  = N @ StandardDeviation[Normal @ ds[All, "X"]];
+  ];
 
   (* Sample size *)
   take["N_rows"] = Length[ds];
@@ -74,22 +81,27 @@ summarizeRun[ds_] := Module[
   take
 ];
 
-(* Try to load the most informative table for a run *)
+(* Try to load the most informative CSV table for a run *)
 loadBestRunTable[root_] := Module[{f},
-  f = findFirstFile[root, {"metrics_joined", "metrics-joined", "joined", "math_check_results"}];
-  If[MissingQ[f],
-    f = findFirstFile[root, {"tqe_runs", "tqe-runs", "runs"}];
+  (* 1) Prefer metrics_joined*.csv *)
+  f = findFirstFile[root, {"metrics_joined", "metrics-joined", "joined"}];
+  If[!MissingQ[f],
+    Return[<|"status" -> "ok", "file" -> f, "data" -> safeImportDataset[f]|>];
   ];
-  If[MissingQ[f],
-    <|"status"->"not_found", "file"->None, "data"->Dataset[{}]|>,
-    <|"status"->"ok", "file"->f, "data"->safeImportDataset[f]|>
-  ]
+
+  (* 2) Else fall back to tqe_runs*.csv *)
+  f = findFirstFile[root, {"tqe_runs", "tqe-runs", "runs"}];
+  If[!MissingQ[f],
+    Return[<|"status" -> "ok", "file" -> f, "data" -> safeImportDataset[f]|>];
+  ];
+
+  <|"status" -> "not_found", "file" -> None, "data" -> Dataset[{}]|>
 ];
 
 (* ========= Load data for both variants ========= *)
 
-ei   = loadBestRunTable[rootEI];
-eonly= loadBestRunTable[rootEonly];
+ei    = loadBestRunTable[rootEI];
+eonly = loadBestRunTable[rootEonly];
 
 (* ========= Summaries ========= *)
 
@@ -100,10 +112,13 @@ sumEonly = summarizeRun[eonly["data"]];
 allKeys = Union[Keys[sumEI], Keys[sumEonly]];
 comparison = Dataset @ Table[
   <|
-    "metric"   -> k,
-    "E+I"      -> Lookup[sumEI, k, Missing["NA"]],
-    "E-only"   -> Lookup[sumEonly, k, Missing["NA"]],
-    "diff(E+I - E-only)" -> Quiet@Check[Lookup[sumEI,k,Missing["NA"]] - Lookup[sumEonly,k,Missing["NA"]], Missing["NA"]]
+    "metric"                -> k,
+    "E+I"                   -> Lookup[sumEI, k, Missing["NA"]],
+    "E-only"                -> Lookup[sumEonly, k, Missing["NA"]],
+    "diff(E+I - E-only)"    -> Quiet @ Check[
+      Lookup[sumEI, k, Missing["NA"]] - Lookup[sumEonly, k, Missing["NA"]],
+      Missing["NA"]
+    ]
   |>,
   {k, allKeys}
 ];
@@ -112,8 +127,8 @@ comparison = Dataset @ Table[
 Print["E+I source: ", ei["file"]];
 Print["E-only source: ", eonly["file"]];
 
-(* Show per-run summaries side-by-side *)
-summaryKeys = Union[Keys[sumEI], Keys[sumEonly]];
+(* Side-by-side per-run summaries *)
+summaryKeys   = Union[Keys[sumEI], Keys[sumEonly]];
 summaryInline = Dataset @ Table[
   <|
     "metric" -> k,
@@ -125,13 +140,13 @@ summaryInline = Dataset @ Table[
 
 summaryInline
 
-(* Show full comparison table (already a Dataset) *)
+(* Full comparison table *)
 comparison
 
 (* ========= Output paths ========= *)
 
 timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
-outRoot   = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_E_plus_I_vs_E_only_"<>timestamp}];
+outRoot   = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_E_plus_I_vs_E_only_" <> timestamp}];
 If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
 
 outCSV  = FileNameJoin[{outRoot, "comparison_summary.csv"}];
@@ -139,20 +154,20 @@ outJSON = FileNameJoin[{outRoot, "comparison_summary.json"}];
 
 (* ========= Save CSV & JSON ========= *)
 
-Export[outCSV, Normal@comparison];
+Export[outCSV, Normal @ comparison];
 
 Export[
   outJSON,
   (Association[
      "files" -> <|
-        "E+I_source"    -> ei["file"],
-        "E-only_source" -> eonly["file"]
+       "E+I_source"    -> ei["file"],
+       "E-only_source" -> eonly["file"]
      |>,
      "summary" -> Association[
-        "E+I"    -> sumEI,
-        "E-only" -> sumEonly
+       "E+I"    -> sumEI,
+       "E-only" -> sumEonly
      ],
-     "comparison_rows" -> Normal@comparison
+     "comparison_rows" -> Normal @ comparison
    ] /. {None -> Null, Missing[_] -> Null}),
   "JSON"
 ];
