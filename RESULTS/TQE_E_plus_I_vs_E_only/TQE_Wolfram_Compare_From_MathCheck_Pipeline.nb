@@ -55,15 +55,17 @@ safeNum[x_] := Which[
 (* Summarize from math_check_results Dataset by taking the row File=="metrics_joined_*" *)
 summarizeFromMathCheck[ds_, which_] := Module[
   {row, cols, getMean},
-  (* which is "EI" or "E-Only" tag to match inside the File field *)
-  row = SelectFirst[Normal@ds,
-          StringContainsQ[ToString@Lookup[#, "File", ""], 
-            If[which === "EI", "metrics_joined_EI", "metrics_joined_E-Only"], 
-            IgnoreCase -> True
-          ]&
-        ,
-        Missing["NotFound"]
-        ];
+(* which is "EI" or "E-Only" tag to match inside the File field *)
+row = SelectFirst[
+  Normal@ds,
+  (StringContainsQ[
+     ToString@Lookup[#, "File", ""],
+     If[which === "EI", "metrics_joined_EI", "metrics_joined_E-Only"],
+     IgnoreCase -> True
+   ] &),
+  Missing["NotFound"]
+];
+
   If[MissingQ[row],
     <||>, (* nothing found *)
     cols = Lookup[row, "Columns", <||>];       (* nested association *)
