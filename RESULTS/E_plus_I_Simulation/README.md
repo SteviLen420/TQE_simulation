@@ -28,7 +28,7 @@ Each simulation folder contains the following file types, documenting different 
 * **`JSON files (.json)`**: Structured output data, parameters, and summaries in a machine-readable format.
 * **`Images (.png)`**: Automatically generated visualizations, such as plots and diagrams, illustrating key findings.
 * **`CMB Maps (.fits)`**: Simulated Cosmic Microwave Background (CMB) maps in the standard astronomical `.fits` format. 
-* **`Wolfram Mathematica Notebooks (.nb)`**: The complete Wolfram Language analyses and code used to process and evaluate the data. 
+* **`Wolfram Mathematica Notebooks (.nb)`**: The complete Wolfram Language analyses used to process and evaluate the data. 
 
 ## License
 This project is licensed under the MIT License – see the [LICENSE](../../LICENSE) file for details.
