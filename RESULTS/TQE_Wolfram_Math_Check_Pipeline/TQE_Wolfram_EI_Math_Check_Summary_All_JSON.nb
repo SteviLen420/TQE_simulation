@@ -39,21 +39,24 @@ Print["✅ Using EI file: ", eiFile];
 eiDS = Dataset @ Import[eiFile, "RawJSON"];
 
 (* ========= Flatten into long table ========= *)
-flat = Dataset @ Flatten[
-   KeyValueMap[
-     Function[{col, stats},
-       <|
-         "File" -> #File,
-         "TotalRows" -> #TotalRows,
-         "AnyNaN" -> #AnyNaN,
-         "AnyInfinity" -> #AnyInfinity,
-         "AnyMissing" -> #AnyMissing,
-         "Column" -> col,
-         "Mean" -> Lookup[stats, "Mean", Missing[]],
-         "StdDev" -> Lookup[stats, "StdDev", Missing[]]
-       |>
-     ] & /@ #Columns
-   ] & /@ Normal[eiDS]
+flattenOne[ds_] := Flatten[
+   Function[row,
+     KeyValueMap[
+       Function[{col, stats},
+         <|
+           "File" -> row["File"],
+           "TotalRows" -> row["TotalRows"],
+           "AnyNaN" -> row["AnyNaN"],
+           "AnyInfinity" -> row["AnyInfinity"],
+           "AnyMissing" -> row["AnyMissing"],
+           "Column" -> col,
+           "Mean" -> Lookup[stats, "Mean", Missing[]],
+           "StdDev" -> Lookup[stats, "StdDev", Missing[]]
+         |>
+       ],
+       row["Columns"]
+     ]
+   ] /@ Normal[ds]
 ];
 
 (* ========= Show inline ========= *)
@@ -68,8 +71,8 @@ If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
 outCSV = FileNameJoin[{outRoot, "ei_full_summary.csv"}];
 outJSON = FileNameJoin[{outRoot, "ei_full_summary.json"}];
 
-Export[outCSV, Normal @ flat];
-Export[outJSON, Normal @ flat, "JSON"];
+Export[outCSV, Normal @ allFlat];
+Export[outJSON, Normal @ avgSummary, "JSON"];
 
 Print["\n✅ Saved CSV:  ", outCSV];
 Print["✅ Saved JSON: ", outJSON];
