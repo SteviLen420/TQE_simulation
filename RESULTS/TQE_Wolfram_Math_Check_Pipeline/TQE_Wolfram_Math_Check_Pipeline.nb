@@ -56,7 +56,7 @@ analyzeCSV[file_String] := Module[{ds, cols, summary, valsAll, anyNaN, anyInfini
 (*  Main execution: scan all CSVs in the chosen simulation directory  *)
 (* ================================================================== *)
 
-simDir = "/Users/stevilen/Desktop/TQE_EI_SIMULATION_COLAB_GPU/TQE_Universe_Simulation_Full_Pipeline__energy_only_20250917_131723/CSV";
+simDir = "/Users/stevilen/Desktop/TQE_Universe_Simulation_Full_Pipeline__energy_only_20250920_145826/CSV";
 
 files = FileNames["*.csv", simDir, Infinity];
 Print["📂 Found CSV files: ", Length[files]];
