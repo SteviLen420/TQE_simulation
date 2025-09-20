@@ -33,6 +33,7 @@ If[keepFiles === {},
 Print["✅ Found ", Length[keepFiles], " EI JSON file(s)."];
 
 datasets = Dataset /@ (Import[#, "RawJSON"] & /@ keepFiles);
+allFlat = Dataset @ Flatten[flattenOne /@ datasets];
 
 (* ========= Flatten into long table ========= *)
 flattenOne[ds_] := Flatten[
@@ -57,7 +58,7 @@ flattenOne[ds_] := Flatten[
 
 (* ========= Show inline ========= *)
 Print["\n=== EI Full Summary (flattened) ==="];
-flat
+allFlat
 
 (* ========= Save outputs to Desktop with timestamp ========= *)
 timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
