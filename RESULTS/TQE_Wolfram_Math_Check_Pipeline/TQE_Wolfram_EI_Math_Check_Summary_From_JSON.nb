@@ -1,0 +1,75 @@
+(* SPDX-License-Identifier: MIT *)
+(* Copyright (c) 2025 Stefan Len *)
+
+(* ================================================================== *)
+(*  TQE_Wolfram_EI_Math_Check_Summary_From_JSON.nb                    *)
+(* ================================================================== *)
+(*  Purpose: Summarize ALL statistics from ALL EI JSON files.         *)
+(*           Each file/column/statistic is flattened into a row.      *)
+(*           Then compute global averages across all files.           *)
+(* ================================================================== *)
+
+(* ========= User input: folder that contains EI JSONs ========= *)
+rootEI = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/math_check_results_EI_JSON";
+
+(* ========= Helper: find newest EI JSON file ========= *)
+findNewestEIJSON[root_] := Module[{all, keep, newest},
+  all = Union[
+    FileNames["*.json", root, Infinity],
+    FileNames["*.JSON", root, Infinity]
+  ];
+  (* Match common EI signatures *)
+  keep = Select[all, StringContainsQ[
+      FileNameTake[#],
+      Alternatives["math_check_results_EI", "math_check_results_E_plus_I", "E+I"],
+      IgnoreCase -> True
+    ] &];
+  newest = If[keep === {}, Missing["NotFound"], First @ Reverse @ SortBy[keep, FileDate]];
+  newest
+];
+
+(* ========= Load JSON into Dataset ========= *)
+eiFile = findNewestEIJSON[rootEI];
+If[MissingQ[eiFile],
+  Print["❌ No EI JSON found under: ", rootEI];
+  Abort[]
+];
+Print["✅ Using EI file: ", eiFile];
+
+eiDS = Dataset @ Import[eiFile, "RawJSON"];
+
+(* ========= Flatten into long table ========= *)
+flat = Dataset @ Flatten[
+   KeyValueMap[
+     Function[{col, stats},
+       <|
+         "File" -> #File,
+         "TotalRows" -> #TotalRows,
+         "AnyNaN" -> #AnyNaN,
+         "AnyInfinity" -> #AnyInfinity,
+         "AnyMissing" -> #AnyMissing,
+         "Column" -> col,
+         "Mean" -> Lookup[stats, "Mean", Missing[]],
+         "StdDev" -> Lookup[stats, "StdDev", Missing[]]
+       |>
+     ] & /@ #Columns
+   ] & /@ Normal[eiDS]
+];
+
+(* ========= Show inline ========= *)
+Print["\n=== EI Full Summary (flattened) ==="];
+flat
+
+(* ========= Save outputs to Desktop with timestamp ========= *)
+timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
+outRoot = FileNameJoin[{$HomeDirectory, "Desktop", "EI_full_summary_" <> timestamp}];
+If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
+
+outCSV = FileNameJoin[{outRoot, "ei_full_summary.csv"}];
+outJSON = FileNameJoin[{outRoot, "ei_full_summary.json"}];
+
+Export[outCSV, Normal @ flat];
+Export[outJSON, Normal @ flat, "JSON"];
+
+Print["\n✅ Saved CSV:  ", outCSV];
+Print["✅ Saved JSON: ", outJSON];
