@@ -2,9 +2,11 @@
 (* Copyright (c) 2025 Stefan Len *)
 
 (* ================================================================== *)
-(*  TQE_EplusI_vs_Eonly_Comparison.nb                                  *)
-(*  Author: Stefan Len                                                 *)
+(*  TQE_Wolfram_E_plus_I_vs_E_only_Comparison_Pipeline.nb             *)
+(*  Author: Stefan Len                                                *)
 (* ================================================================== *)
+(*  Notes: This is ONLY the header adapted for the E+I vs E-only code.*)
+(*         Add your actual analysis implementation below this block.  *)
 
 (* ========= User inputs (root folders) ========= *)
 rootEI   = "/Users/stevilen/Desktop/TQE_E_plus_I_vs_E_only/TQE_E-plus-I_Simulation";
