@@ -1,4 +1,5 @@
 # The Story of This Project
+### Author: Stefan Len
 
 Hello to everyone who reads this. In this short introduction, I want to
 share how I arrived at this point. My path was not a straight one; it
