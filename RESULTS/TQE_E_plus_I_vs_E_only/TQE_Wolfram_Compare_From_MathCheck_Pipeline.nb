@@ -55,6 +55,18 @@ summarizeAllFromMathCheck[ds_] := Module[{rows},
   ]
 ];
 
+(* -- pull a single stat from the raw math_check Dataset --
+   from a row whose "File" contains fileTag; then take column 'col'
+   and return its "Mean" or "StdDev" (default: "Mean"). *)
+getStat[ds_, fileTag_String, col_String, stat_:"Mean"] := Module[{row, cols, cell},
+  row  = SelectFirst[Normal@ds, StringContainsQ[ToString@Lookup[#, "File", ""], fileTag, IgnoreCase->True] &,
+                     Missing["NotFound"]];
+  If[MissingQ[row], Return[Missing["NA"]]];
+  cols = Lookup[row, "Columns", <||>];
+  cell = Lookup[cols, col, <||>];
+  Lookup[cell, stat, Missing["NA"]]
+];
+
 (* Load newest math_check_results CSV for a given variant ("EI" / "Eonly") *)
 loadMathCheck[root_, variant_] := Module[{f},
   (* use the finder that matches your real filenames *)
