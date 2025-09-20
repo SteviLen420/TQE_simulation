@@ -1,6 +1,6 @@
-Copyright (c) 2025 Stefan Len
+ SPDX-License-Identifier: MIT
 
-License: MIT License
+ Copyright (c) 2025 Stefan Len
 
 #  TQE UNIVERSE SIMULATION PIPELINE
 [![CI](https://github.com/SteviLen420/TQE_simulation/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SteviLen420/TQE_simulation/actions/workflows/ci.yml)  
@@ -288,18 +288,27 @@ To further strengthen the project and improve its usability, maintainability, an
 
 The TQE Framework should be regarded as a stochastic research prototype rather than a fully developed cosmological simulator. While the pipeline demonstrates the feasibility of modeling emergent laws of physics through energy–information dynamics, several limitations remain:
 
-- **Simplified Physics**: Current implementations of anomalies (e.g., Cold Spot, multipole alignment) and fine-tuning diagnostics use heuristic or simplified metrics. They do not yet capture the full complexity of astrophysical analyses.
-- **Computational Scale**: The framework is designed for moderate ensemble sizes. Large-scale runs may encounter memory and runtime constraints without further optimization.
-- **Reproducibility Scope**: Results are reproducible within the same environment and dependency versions, but strict bitwise reproducibility across platforms is not guaranteed.
-- **Prototype XAI Integration**: `SHAP` is well integrated, but `LIME` and other interpretability methods remain in an early-stage prototype form.
+* **Simplified Physics:** Current implementations of anomalies (e.g., Cold Spot, multipole alignment) and fine-tuning diagnostics use heuristic or simplified metrics. They do not yet capture the full complexity of astrophysical analyses.
+* **Computational Scale:** The framework is designed for moderate ensemble sizes. Large-scale runs may encounter memory and runtime constraints without further optimization.
+* **Reproducibility Scope:** Results are reproducible within the same environment and dependency versions, but strict bitwise reproducibility across platforms is not guaranteed.
+* **Prototype XAI Integration:** SHAP is well integrated, but LIME and other interpretability methods remain in an early-stage prototype form.
+* **Predictive Modeling Constraints:** The analysis shows that while classifying the final state of a universe is moderately successful (AUC ≈ 0.65), predicting more nuanced outcomes is challenging with the current feature set. Specifically, predicting the precise *timing* of the lock-in event is difficult (R² ≈ 0.05), as is predicting second-order effects like the performance gain (`delta`) from including the `I` parameter (R² < 0). This highlights that the initial conditions alone may be insufficient to predict the full stochastic evolution.
 
 ### Future Work
-Planned and potential directions for extension include:
-- Incorporating additional physical models for greater realism.
-- Implementing GPU acceleration and distributed computing for scaling to very large ensembles.
-- Extending the anomaly detection suite to include Hemispherical Power Asymmetry (HPA) and Low-ℓ Alignment Correlation (LLAC).
-- Enhancing the XAI toolkit to provide deeper interpretability across different machine learning models.
-- Introducing a formal testing suite and containerization to support robust cross-platform reproducibility.
+
+The TQE Framework, in its current form, is a prototype, and the following extensions and research directions are planned:
+
+* **Refactoring into a Modular Pipeline:** Restructuring the current prototype script into a fully modular, automated pipeline to support large-scale, reproducible experimental campaigns and easier collaboration.
+* **Incorporating Additional Physical Models:** Adding more realism to the simulation by integrating more complex physical principles.
+* **Implementing GPU Acceleration:** Utilizing GPU and distributed computing to scale up to very large ensembles (>10⁵ universes).
+* **Extending the Anomaly Detection Suite:** Adding modules for additional cosmological anomalies, such as Hemispherical Power Asymmetry (HPA).
+* **Enhancing the XAI Toolkit:** Integrating different machine learning models (e.g., neural networks) to improve interpretability.
+* **Improving Predictive Accuracy:**
+    * Developing time-series features (e.g., early-stage volatility, parameter drift) to better predict the lock-in epoch.
+    * Running larger ensembles to capture subtle, second-order effects like the fine-tuning deltas.
+* **Introducing a Formal Testing Suite:** Implementing unit and integration tests, as well as containerization (e.g., Docker), to ensure robust cross-platform reproducibility.
+
+**Summary:** The TQE Framework is a living research project, open to expansion, scaling, and deeper physical realism.
 
 
 ## Troubleshooting

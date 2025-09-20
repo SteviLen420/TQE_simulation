@@ -1,6 +1,6 @@
-Copyright (c) 2025 Stefan Len
+SPDX-License-Identifier: MIT
 
-License: MIT License
+Copyright (c) 2025 Stefan Len
 
 # Theory of The Question of Existance (TQE)
 [![CI](https://github.com/SteviLen420/TQE_simulation/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SteviLen420/TQE_simulation/actions/workflows/ci.yml)  

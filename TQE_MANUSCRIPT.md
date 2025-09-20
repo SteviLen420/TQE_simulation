@@ -1,6 +1,7 @@
 # **Theory of the Question of Existence (TQE):**
 
-**An Energy–Information Coupling Hypothesis for the Stabilization of Physical Law**
+### An Energy–Information Coupling Hypothesis for the Stabilization of Physical Law
+**Author: Stefan Len**
 
 ### **Abstract**
 
@@ -22,7 +23,7 @@ I propose that stability originates from an intrinsic information orientation pa
 
 ### **1.1 Extended Introduction**
 
-The model introduces an **information orientation parameter (I)**, defined operationally as a normalized asymmetry between successive probability distributions. Computed via Kullback–Leibler divergence, this parameter quantifies directional bias in quantum state evolution toward complexity-permitting outcomes. Unlike philosophical treatments of “information,” this definition is mathematically precise and can be applied in both simulation and, in principle, observational analysis.
+The model introduces an **information orientation parameter** $(I)$, defined operationally as a normalized asymmetry between successive probability distributions. Computed via Kullback–Leibler divergence, this parameter quantifies directional bias in quantum state evolution toward complexity-permitting outcomes. Unlike philosophical treatments of “information,” this definition is mathematically precise and can be applied in both simulation and, in principle, observational analysis.
 
 When coupled with vacuum energy fluctuations, this parameter enables a probabilistic selection mechanism for physical laws. Stability arises only within a narrow energetic window, analogous to critical thresholds in condensed matter systems, while the information bias enhances the likelihood of collapse into law-consistent states. This reframes the fine-tuning problem: stable physical laws are not imposed but dynamically selected through energy–information interaction.
 
@@ -30,61 +31,65 @@ Importantly, the framework yields falsifiable implications. If correct, one expe
 
 ### **2. Theoretical Framework**
 
-The foundation of our model rests on three key concepts: the quantum state of the universe, energy fluctuations, and a previously unaddressed, intrinsic property of energy, which we term Information (I).
+The foundation of our model rests on three key concepts: the quantum state of the universe, energy fluctuations, and a previously unaddressed, intrinsic property of energy, which we term Information $(I)$.
 
-Information (I) as an Intrinsic Property of Energy: We postulate that energy possesses a fundamental, intrinsic property: a directionality towards complexity. We call this property Information (I). This is not an external field but an inseparable aspect of energy itself that carries the structure-forming potential.
+Information $(I)$ as an Intrinsic Property of Energy: We postulate that energy possesses a fundamental, intrinsic property: a directionality towards complexity. We call this property Information $(I)$. This is not an external field but an inseparable aspect of energy itself that carries the structure-forming potential.
 
-Let the state of the universe be represented by a superpositional probability distribution P(ψ). During early cosmogenesis, we assume this distribution is not static but subject to modulation by vacuum energy fluctuations (E) and the aforementioned Information parameter (I):
+Let the state of the universe be represented by a superpositional probability distribution $P(ψ)$. During early cosmogenesis, we assume this distribution is not static but subject to modulation by vacuum energy fluctuations $(E)$ and the aforementioned Information parameter $(I)$:
 
-**P’(ψ) = P(ψ) f(E, I)**
+$$
+P’(ψ) = P(ψ)·f(E, I)
+$$
 
 where:
 
-**P(ψ)** is the baseline quantum probability distribution.
+$P(ψ)$ is the baseline quantum probability distribution.
 
-**E** is vacuum fluctuation energy, sampled from a heavy-tailed (lognormal) distribution.
+$E$ is vacuum fluctuation energy, sampled from a heavy-tailed (lognormal) distribution.
 
-**I** is the information parameter, defined below as normalized asymmetry or orientation (0 ≤ I ≤ 1).
+$I$ is the information parameter, defined below as normalized asymmetry or orientation (0 ≤ I ≤ 1).
 
-**f(E, I)** is a fine-tuning function biasing outcomes toward stability.
+$f(E, I)$ is a fine-tuning function biasing outcomes toward stability.
 
-**P′(ψ)** is the modulated distribution after energy–information coupling.
+$P′(ψ)$ is the modulated distribution after energy–information coupling.
 
 ### **2.1. Explicit Form of the Fine-Tuning Function**
 
 I use the functional form:
 
-**f(E, I) = exp(−(E − E_c)² / (2σ²)) · (1 + α · I)**
+$$
+f(E, I) = exp(−(E − E_c)² / (2σ²)) · (1 + α · I)
+$$
 
 where:
 
-E_c is the critical energy around which universes stabilize,
+$E_c$ is the critical energy around which universes stabilize,
 
-σ controls the width of the stability window,
+$σ$ controls the width of the stability window,
 
-α quantifies the strength of the information bias.
+$α$ quantifies the strength of the information bias.
 
 This captures two assumptions:
 
-**Energetic Goldilocks zone:** stability occurs only around E_c.
+**Energetic Goldilocks zone:** stability occurs only around $E_c$.
 
 **Information bias:** I increases the likelihood of collapse into complexity-permitting states.
 
-While Eq. (1) provides the analytical form of **f(E, I)**, the **Monte Carlo** implementation uses a stochastic approximation (**‘Goldilocks noise’)**, where noise amplitude scales with distance from the stability window. This probabilistic scheme captures the same underlying mechanism of stabilization.
+While Eq. (1) provides the analytical form of $f(E, I)$, the **Monte Carlo** implementation uses a stochastic approximation (**‘Goldilocks noise’)**, where noise amplitude scales with distance from the stability window. This probabilistic scheme captures the same underlying mechanism of stabilization.
 
 ### **2.2 Model Parameters**
 
-In the TQE framework, the modulation factor *f(E, I)* is governed by a minimal set of parameters that encode the stability conditions for universes. These are not arbitrary fitting constants but structural elements of the model:
+In the TQE framework, the modulation factor $f(E, I)$ is governed by a minimal set of parameters that encode the stability conditions for universes. These are not arbitrary fitting constants but structural elements of the model:
 
-**E_c – critical energy:** the center of the Goldilocks stability window. Universes with energies near *E_c* can stabilize physical laws.
+$E_c$ – **critical energy**: the center of the Goldilocks stability window. Universes with energies near $E_c$ can stabilize physical laws.
 
-**σ – stability width:** determines the tolerance around *E_c*. Larger σ broadens the stability window, while smaller σ makes stabilization rarer.
+$σ$ – **stability width**: determines the tolerance around $E_c$. Larger σ broadens the stability window, while smaller σ makes stabilization rarer.
 
-**α – orientation bias strength:** quantifies the effect of informational orientation *I*. For α = 0, orientation is irrelevant; larger α increases the probability of complexity-permitting universes.
+$α$ – **orientation bias strength**: quantifies the effect of informational orientation $I$. For $α = 0$, orientation is irrelevant; larger α increases the probability of complexity-permitting universes.
 
-**Lock-in criterion:** operationally defined as stabilization when relative probability change satisfies ΔP / P < 0.005 over at least 6 consecutive epochs.
+**Lock-in criterion:** operationally defined as stabilization when relative probability change satisfies $ΔP / P < 0.005$ over at least 6 consecutive epochs.
 
-In the default configuration of the numerical experiments, the values are set to (E_c = 4.0, σ = 4.0, α = 0.8) to yield a clear stability window. These parameters can be varied to probe the model's robustness.
+In the default configuration of the numerical experiments, the values are set to $(E_c = 4.0, σ = 4.0, α = 0.8)$ to yield a clear stability window. These parameters can be varied to probe the model's robustness.
 
 ### **2.3. Definition of the Information Parameter (I)**
 
@@ -92,11 +97,13 @@ I here define **I** formally as an **information-theoretic asymmetry measure** r
 
 Concretely, I is estimated via the **Kullback–Leibler (KL) divergence** between probability distributions at successive epochs:
 
+$$
 I = Dₖₗ(Pₜ || Pₜ₊₁) / (1 + Dₖₗ(Pₜ || Pₜ₊₁))
+$$
 
-ensuring 0 ≤ I ≤ 1.
+ensuring $0 ≤ I ≤ 1$.
 
-Thus, **I acts as a proxy for directional bias** in quantum state evolution, computable in both simulation and (in principle) observational contexts. The numerical implementation, however, explores a richer definition by also computing the Shannon entropy (H) of the state. In the default configuration, these two measures are combined via a product fusion **(I = I_kl × I_shannon)**, creating a composite parameter that captures both informational asymmetry and intrinsic complexity. However, this definition should be regarded as a first operational step: the precise formalization and physical grounding of **I** remain open questions that require further theoretical and empirical investigation.
+Thus, **I acts as a proxy for directional bias** in quantum state evolution, computable in both simulation and (in principle) observational contexts. The numerical implementation, however, explores a richer definition by also computing the Shannon entropy (H) of the state. In the default configuration, these two measures are combined via a product fusion **(I = I_kl × I_shannon)**, creating a composite parameter that captures both informational asymmetry and intrinsic complexity. However, this definition should be regarded as a first operational step: the precise formalization and physical grounding of $I$ remain open questions that require further theoretical and empirical investigation.
 
 ### **2.4. Stability Condition (Lock-In Criterion)**
 
@@ -108,7 +115,7 @@ This operational definition, directly implemented in the simulation's MASTER_CTR
 
 ### **2.5. Goldilocks Zone as Emergent Critical Points**
 
-The thresholds E_c^{low} and E_c^{high} are not arbitrary, but act as **emergent critical points**, analogous to phase transitions in condensed matter (e.g., superconducting T_c). They mark the energetic window where law stabilization becomes possible.
+The thresholds $E_c^{low}$ and $E_c^{high}$ are not arbitrary, but act as **emergent critical points**, analogous to phase transitions in condensed matter (e.g., superconducting T_c). They mark the energetic window where law stabilization becomes possible.
 
 Illustrative simulations support this interpretation. Both Kullback–Leibler divergence and Shannon entropy were tested independently as orientation measures, as well as in combined form. In all cases, stabilization appeared only within narrow energetic intervals, though the exact location and breadth of these “Goldilocks zones” varied between runs. This variability suggests that stabilization is not tied to a single fixed energy level but emerges as a critical region shaped by the interaction of fluctuations and orientation. These results should be regarded as preliminary; further work is required to characterize the stability windows in detail and to confront them with cosmological simulations and observational data.
 
