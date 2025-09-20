@@ -1,7 +1,7 @@
 (* SPDX-License-Identifier: MIT *)
 
 (* ================================================================== *)
-(*  TQE_Wolfram_E_Summary_All_JSON.nb                                 *)
+(*  TQE_Wolfram_E_Only_Math_Check_Summary_All_JSON.nb                 *)
 (* ================================================================== *)
 (*  Purpose: Summarize ALL statistics from ALL E_only JSON files.     *)
 (*           Each file/column/statistic is flattened into a row.      *)
