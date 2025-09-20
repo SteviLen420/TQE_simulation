@@ -103,11 +103,11 @@ To execute the full analysis pipeline, follow these steps:
 * Evaluate the entire notebook to generate the final comparison report.
 
 ## License
-This project is licensed under the MIT License – see the [LICENSE](../LICENSE) file for details.
+This project is licensed under the MIT License – see the [LICENSE](.../LICENSE) file for details.
 
 ## Contact
 
 Got questions, ideas, or feedback?  
 Drop me an email at **tqe.simulation@gmail.com** 
     
-[RESULTS](../RESULTS)
+[RESULTS](.../RESULTS)
