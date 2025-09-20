@@ -36,7 +36,9 @@ Information (I) as an Intrinsic Property of Energy: We postulate that energy pos
 
 Let the state of the universe be represented by a superpositional probability distribution P(ψ). During early cosmogenesis, we assume this distribution is not static but subject to modulation by vacuum energy fluctuations (E) and the aforementioned Information parameter (I):
 
-**P’(ψ) = P(ψ) f(E, I)**
+$$
+/P’(ψ) = P(ψ) f(E, I)
+$$
 
 where:
 
