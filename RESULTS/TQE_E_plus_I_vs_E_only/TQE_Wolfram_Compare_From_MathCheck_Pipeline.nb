@@ -47,12 +47,13 @@ safeNum[x_] := Which[
   True,       "NA"
 ];
 
-(* === NEW: collect all metrics from all rows === *)
+(* === collect all metrics from all rows === *)
 summarizeAllFromMathCheck[ds_] := Module[{rows},
   rows = Normal@ds;
   Association @ Table[
-    With[{fname = Lookup[row, "File", "unknown"],
-          cols = Lookup[row, "Columns", <||>]},
+    With[{rowAssoc = Association[row],
+          fname    = Lookup[Association[row], "File", "unknown"],
+          cols     = Lookup[Association[row], "Columns", <||>]},
       fname -> Association @ Table[
         cname -> Lookup[Lookup[cols, cname, <||>], "Mean", Missing["NA"]],
         {cname, Keys[cols]}
