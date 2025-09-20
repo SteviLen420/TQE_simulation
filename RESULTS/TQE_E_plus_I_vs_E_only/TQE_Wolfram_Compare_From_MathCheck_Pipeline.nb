@@ -34,7 +34,7 @@ findAllMathChecks[root_, variant_] := Module[{all, keep, pats},
     FileNames["*.csv", root, Infinity],
     FileNames["*.CSV", root, Infinity]
   ];
-  keep = Select[all, AnyTrue[pats, StringContainsQ[FileNameTake[#], #2, IgnoreCase -> True] &] &];
+  keep = Select[all, AnyTrue[pats, StringContainsQ[FileNameTake[#], #, IgnoreCase -> True] &] &];
   keep = Union[keep];
   SortBy[keep, FileDate]
 ];
