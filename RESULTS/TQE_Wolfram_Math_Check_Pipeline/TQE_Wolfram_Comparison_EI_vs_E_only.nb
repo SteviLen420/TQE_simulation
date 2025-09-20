@@ -51,10 +51,17 @@ timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
 outRoot   = FileNameJoin[{$HomeDirectory, "Desktop", "EI_vs_Eonly_Comparison_" <> timestamp}];
 If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
 
+cleanComp = Normal @ comparison //. {
+   Missing[_] -> Null,
+   Indeterminate -> Null,
+   _Times -> Null,
+   _Plus -> Null,
+   _Complex -> Null,
+   Quantity[_, _] -> Null
+};
+
 outCSV  = FileNameJoin[{outRoot, "ei_vs_eonly_comparison.csv"}];
 outJSON = FileNameJoin[{outRoot, "ei_vs_eonly_comparison.json"}];
-
-cleanComp = Normal @ comparison /. {Missing[_] -> Null};
 
 Export[outCSV, cleanComp];
 Export[outJSON, cleanComp, "JSON"];
