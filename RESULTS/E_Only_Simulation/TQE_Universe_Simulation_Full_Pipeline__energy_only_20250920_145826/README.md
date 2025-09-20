@@ -12,7 +12,7 @@ Copyright (c) 2025 Stefan Len
 
 Please be aware that the results presented in this directory are **preliminary and not conclusive**.
 
-The data generation pipeline is still under active development, may contain bugs, and requires further refinement. These outputs should be considered **representative**—their primary purpose is to serve as a proof-of-concept demonstrating that the theoretical simulations are operational and producing data as expected.
+The data generation pipeline is still under active development, may contain bugs, and requires further refinement. These outputs should be considered **representative**, their primary purpose is to serve as a proof-of-concept demonstrating that the theoretical simulations are operational and producing data as expected.
 
 ## Directory Structure
 
