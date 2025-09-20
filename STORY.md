@@ -126,9 +126,9 @@ come into being without any creator or consciousness.
 
 And so, the final equation of TQE was born:
 
-$$$
+$$
 P′(ψ) = P(ψ) · f(E, I)
-$$$
+$$
 
 Now, I would like to tell you how I was able to develop such a theory
 without any university or research background, alongside my job, from my
