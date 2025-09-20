@@ -83,6 +83,11 @@ timestamp = DateString[{"Year","Month","Day","Hour","Minute","Second"}];
 outRoot = FileNameJoin[{$HomeDirectory, "Desktop", "EI_full_summary_" <> timestamp}];
 If[!DirectoryQ[outRoot], CreateDirectory[outRoot]];
 
+cleanAvg = Normal @ avgSummary /. {
+   Missing[_] -> Null,
+   Indeterminate -> Null
+};
+
 outCSV = FileNameJoin[{outRoot, "EI_global_avg.csv"}];
 outJSON = FileNameJoin[{outRoot, "EI_global_avg.json"}];
 
