@@ -2,11 +2,12 @@
 
  Copyright (c) 2025 Stefan Len
 
-#  TQE UNIVERSE SIMULATION PIPELINE
 [![CI](https://github.com/SteviLen420/TQE_simulation/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SteviLen420/TQE_simulation/actions/workflows/ci.yml)  
 [![Python](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11-blue)](https://www.python.org/doc/)  
 
-## Author: Stefan Len
+#  TQE UNIVERSE SIMULATION PIPELINE
+
+**Author**: Stefan Len
 
 
 **Title: The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo
