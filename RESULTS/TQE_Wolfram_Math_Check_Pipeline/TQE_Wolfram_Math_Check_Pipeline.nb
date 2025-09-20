@@ -24,34 +24,33 @@ sanitizeForJSON[expr_] := expr /. {
 };
 
 (* Analyze one CSV file column by column *)
-analyzeCSV[file_String] := Module[{ds, cols, summary},
-  
+analyzeCSV[file_String] := Module[{ds, cols, summary, valsAll, anyNaN, anyInfinity, anyMissing},
   ds = safeImport[file];
-  
-  If[Length[ds] == 0, 
-    Return[<|"File" -> FileBaseName[file], "Status" -> "Empty"|>]
-  ];
-  
-  cols = Keys[Normal@First[ds]]; (* get column names *)
-  
-  summary = Association@Table[
-    col -> Module[{vals = DeleteMissing@Cases[Normal[ds[All, col]], _?NumericQ]},
-      If[Length[vals] == 0,
-        <|"Mean" -> Null, "StdDev" -> Null|>,
-        <|"Mean" -> N@Mean[vals], "StdDev" -> safeStdDev[vals]|>
-      ]
+  If[Length[ds] == 0, Return[<|"File" -> FileBaseName[file], "Status" -> "Empty"|>]];
+
+  valsAll      = Flatten[Values /@ Normal[ds[All, All]]];
+  anyNaN       = AnyTrue[valsAll, # === Indeterminate &];
+  anyInfinity  = AnyTrue[valsAll, MatchQ[#, Infinity | -Infinity | _DirectedInfinity] &];
+  anyMissing   = AnyTrue[valsAll, MatchQ[#, _Missing] &];
+
+  cols = Keys[Normal @ First[ds]];
+  summary = Association @ Table[
+    col -> Module[{vals = DeleteMissing @ Cases[Normal[ds[All, col]], _?NumericQ]},
+      If[Length[vals] == 0, <|"Mean" -> Null, "StdDev" -> Null|>,
+        <|"Mean" -> N@Mean[vals], "StdDev" -> safeStdDev[vals]|>]
     ],
     {col, cols}
   ];
-  
+
   <|
     "File" -> FileBaseName[file],
     "TotalRows" -> Length[ds],
-    "AnyNaN" -> AnyTrue[Flatten[Normal[ds]], Not@*NumberQ],
-    "AnyInfinity" -> AnyTrue[Flatten[Normal[ds]], # === Infinity || # === -Infinity &],
+    "AnyNaN" -> anyNaN,
+    "AnyInfinity" -> anyInfinity,
+    "AnyMissing" -> anyMissing,
     "Columns" -> summary
   |>
-];
+]
 
 (* ================================================================== *)
 (*  Main execution: scan all CSVs in the chosen simulation directory  *)
@@ -59,7 +58,7 @@ analyzeCSV[file_String] := Module[{ds, cols, summary},
 
 simDir = "/Users/stevilen/Desktop/TQE_EI_SIMULATION_COLAB_GPU/TQE_Universe_Simulation_full_Pipeline_EI_20250918_081329/CSV";
 
-files = FileNames["*.csv", simDir];
+files = FileNames["*.csv", simDir, Infinity];
 Print["📂 Found CSV files: ", Length[files]];
 
 results = analyzeCSV /@ files;
@@ -75,26 +74,23 @@ outDir = FileNameJoin[{$HomeDirectory, "Desktop", "TQE_Math_Check_" <> timestamp
 If[!DirectoryQ[outDir], CreateDirectory[outDir, CreateIntermediateDirectories -> True]];
 
 (* Save CSV as-is *)
-Export[FileNameJoin[{outDir, "math_check_results.csv"}], results];
+Export[FileNameJoin[{outDir, "math_check_results.csv"}],
+  Normal @ Dataset[results]
+]
 
 (* Prepare JSON-safe structure *)
 jsonResults = Normal @ Map[
-   Function[fileAssoc,
-     Association[
-       "File" -> fileAssoc["File"],
-       "TotalRows" -> fileAssoc["TotalRows"],
-       "AnyNaN" -> fileAssoc["AnyNaN"],
-       "AnyInfinity" -> fileAssoc["AnyInfinity"],
-       "Columns" -> Normal[fileAssoc["Columns"] /. (Null | None) -> Null]
-     ]
-   ],
-   results
+  Function[a, <|
+    "File"->a["File"], "TotalRows"->a["TotalRows"],
+    "AnyNaN"->a["AnyNaN"], "AnyInfinity"->a["AnyInfinity"],
+    "AnyMissing"->a["AnyMissing"],                 (* + *)
+    "Columns"->Normal[a["Columns"] /. (Null|None)->Null]
+  |>],
+  results
 ];
 
 (* Save clean JSON *)
 Export[FileNameJoin[{outDir, "math_check_results.json"}], jsonResults, "JSON"];
 
-(* Save clean JSON *)
-Export[FileNameJoin[{outDir, "math_check_results.json"}], jsonResults, "JSON"];
 
 Print["✅ Math check finished, results saved to: ", outDir];
