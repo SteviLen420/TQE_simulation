@@ -81,8 +81,8 @@ eonlyFiles = findAllMathChecks[rootAll, "Eonly"];
 Print["📊 EI files found: ", Length[eiFiles]];
 Print["📊 E-only files found: ", Length[eonlyFiles]];
 
-sumEI    = summarizeAllFromMathCheck[ei["data"]];
-sumEonly = summarizeAllFromMathCheck[eonly["data"]];
+sumEI    = AssociationThread[eiFiles -> (summarizeAllFromMathCheck /@ (safeImportDataset /@ eiFiles))];
+sumEonly = AssociationThread[eonlyFiles -> (summarizeAllFromMathCheck /@ (safeImportDataset /@ eonlyFiles))];
 
 (* ========= Comparison ========= *)
 allFiles = Union[Keys[sumEI], Keys[sumEonly]];
