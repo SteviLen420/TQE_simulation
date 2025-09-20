@@ -2,8 +2,9 @@
 	{
 		"File":"cmb_aoe_summary_EI",
 		"TotalRows":12,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"universe_id":{
 				"Mean":3.1819166666666665e3,
@@ -54,8 +55,9 @@
 	{
 		"File":"cmb_coldspots_summary_EI",
 		"TotalRows":4,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"universe_id":{
 				"Mean":2.051e3,
@@ -102,8 +104,9 @@
 	{
 		"File":"finetune_stability_vs_gap_quantiles_EI",
 		"TotalRows":10,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"q_lo":{
 				"Mean":0.45000000000000007,
@@ -146,8 +149,9 @@
 	{
 		"File":"fl_collapse_timeseries_EI",
 		"TotalRows":221,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"time":{
 				"Mean":5.124106267500723e-17,
@@ -166,8 +170,9 @@
 	{
 		"File":"fl_expansion_timeseries_EI",
 		"TotalRows":800,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"epoch":{
 				"Mean":3.995e2,
@@ -186,8 +191,9 @@
 	{
 		"File":"fl_fluctuation_timeseries_EI",
 		"TotalRows":301,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"time":{
 				"Mean":3.0,
@@ -206,8 +212,9 @@
 	{
 		"File":"fl_superposition_timeseries_EI",
 		"TotalRows":201,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"time":{
 				"Mean":5.0,
@@ -226,8 +233,9 @@
 	{
 		"File":"ft_delta_summary_EI",
 		"TotalRows":1,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"acc_delta":{
 				"Mean":5.9599999999999986e-2,
@@ -246,8 +254,9 @@
 	{
 		"File":"ft_feat_importance_E_EI",
 		"TotalRows":1,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"feature":{
 				"Mean":null,
@@ -262,8 +271,9 @@
 	{
 		"File":"ft_feat_importance_EIX_EI",
 		"TotalRows":3,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"feature":{
 				"Mean":null,
@@ -278,8 +288,9 @@
 	{
 		"File":"ft_metrics_cls_EI",
 		"TotalRows":2,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"label":{
 				"Mean":null,
@@ -302,8 +313,9 @@
 	{
 		"File":"ft_metrics_reg_EI",
 		"TotalRows":2,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"label":{
 				"Mean":null,
@@ -318,8 +330,9 @@
 	{
 		"File":"ft_slice_adaptive_EI",
 		"TotalRows":2,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"slice":{
 				"Mean":null,
@@ -354,8 +367,9 @@
 	{
 		"File":"metrics__aoe_align_reg__EIX_EI",
 		"TotalRows":1,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"target":{
 				"Mean":null,
@@ -386,8 +400,9 @@
 	{
 		"File":"metrics__aoe_flag_cls__EIX_EI",
 		"TotalRows":1,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"target":{
 				"Mean":null,
@@ -422,8 +437,9 @@
 	{
 		"File":"metrics__cold_flag_cls__EIX_EI",
 		"TotalRows":1,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"target":{
 				"Mean":null,
@@ -458,8 +474,9 @@
 	{
 		"File":"metrics__cold_min_z_reg__EIX_EI",
 		"TotalRows":1,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":true,
 		"Columns":{
 			"target":{
 				"Mean":null,
@@ -490,8 +507,9 @@
 	{
 		"File":"metrics__finetune_acc_delta__EIX_EI",
 		"TotalRows":1,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"target":{
 				"Mean":null,
@@ -522,8 +540,9 @@
 	{
 		"File":"metrics__finetune_auc_delta__EIX_EI",
 		"TotalRows":1,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"target":{
 				"Mean":null,
@@ -554,8 +573,9 @@
 	{
 		"File":"metrics__finetune_r2_delta__EIX_EI",
 		"TotalRows":1,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"target":{
 				"Mean":null,
@@ -586,8 +606,9 @@
 	{
 		"File":"metrics_joined_EI",
 		"TotalRows":10000,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":true,
 		"Columns":{
 			"universe_id":{
 				"Mean":4.9995e3,
@@ -698,8 +719,9 @@
 	{
 		"File":"metrics__lock_epoch_reg__EIX_EI",
 		"TotalRows":1,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"target":{
 				"Mean":null,
@@ -730,8 +752,9 @@
 	{
 		"File":"metrics__stability_cls__EIX_EI",
 		"TotalRows":1,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"target":{
 				"Mean":null,
@@ -766,8 +789,9 @@
 	{
 		"File":"pre_fluctuation_pairs_EI",
 		"TotalRows":10000,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"universe_id":{
 				"Mean":4.9995e3,
@@ -790,8 +814,9 @@
 	{
 		"File":"stability_by_I_eps_sweep_EI",
 		"TotalRows":14,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":true,
 		"Columns":{
 			"group":{
 				"Mean":null,
@@ -826,8 +851,9 @@
 	{
 		"File":"stability_by_I_zero_EI",
 		"TotalRows":2,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":true,
 		"Columns":{
 			"group":{
 				"Mean":null,
@@ -858,8 +884,9 @@
 	{
 		"File":"tqe_runs_EI",
 		"TotalRows":10000,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"universe_id":{
 				"Mean":4.9995e3,
@@ -902,8 +929,9 @@
 	{
 		"File":"universe_seeds_EI",
 		"TotalRows":10000,
-		"AnyNaN":true,
+		"AnyNaN":false,
 		"AnyInfinity":false,
+		"AnyMissing":false,
 		"Columns":{
 			"universe_id":{
 				"Mean":4.9995e3,
