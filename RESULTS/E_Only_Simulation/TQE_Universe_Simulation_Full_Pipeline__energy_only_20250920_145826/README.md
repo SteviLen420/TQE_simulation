@@ -5,10 +5,10 @@ Copyright (c) 2025 Stefan Len
 [![CI](https://github.com/SteviLen420/TQE_simulation/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SteviLen420/TQE_simulation/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11-blue)](https://www.python.org/doc/)
 
-## Simulation Results for E-Only Universes
+# TQE Simulation Results for E-Only Universes
 ### Author: Stefan Len
 
-### Important Note: Preliminary Data
+## Important Note: Preliminary Data
 
 Please be aware that the results presented in this directory are **preliminary and not conclusive**.
 
