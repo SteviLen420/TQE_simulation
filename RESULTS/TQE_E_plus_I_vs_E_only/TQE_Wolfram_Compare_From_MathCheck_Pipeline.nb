@@ -30,8 +30,13 @@ findAllMathChecks[root_, variant_] := Module[{all, keep, pats},
     {"_EI_", "E_plus_I", "E+I"},
     {"energy_only", "E_only", "energy-only"}
   ];
-  all  = Join[FileNames["*.csv", root, Infinity], FileNames["*.CSV", root, Infinity]];
-  keep = Select[all, Or @@ (StringContainsQ[FileNameTake[#], #2, IgnoreCase -> True] & @@@ Tuples[{ {#}, pats}] ) &];
+  all = Union[
+    FileNames["*.csv", root, Infinity],
+    FileNames["*.CSV", root, Infinity]
+  ];
+  keep = Union @ Select[all,
+    Or @@ (StringContainsQ[FileNameTake[#], p, IgnoreCase -> True] & /@ pats)
+  &];
   SortBy[keep, FileDate]
 ];
 
