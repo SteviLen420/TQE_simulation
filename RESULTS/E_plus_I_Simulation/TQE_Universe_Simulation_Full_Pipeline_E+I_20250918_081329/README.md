@@ -179,8 +179,6 @@ This visualization showcases the key thermodynamic characteristics of a well-beh
 
 **Key Insight**: This plot illustrates a successful outcome. The universe exhibits both a clear "arrow of time" (globally increasing entropy) and achieves a state of internal equilibrium and homogeneity. The early lock-in of physical laws appears to be a key factor in enforcing this stable, long-term behavior across all regions of the universe.
 
------------
-
 ### Figure 9: Entropy Dynamics in a Second High-Performing Universe (ID: 1089)
 
 This chart displays the entropy evolution for the second-ranked "best-case" universe (ID 1089). Similar to the top-ranked example, it plots the **Global entropy** against the entropy of its eight constituent **Regions**.
@@ -196,8 +194,6 @@ This universe's evolution strongly corroborates the findings from the top-ranked
 2. **Reproducible Lock-in Time**: The "Law lock-in" event for this universe occurs at **Time step ≈ 306**, a point in time remarkably close to the previous example's lock-in at step 305.
 
 **Key Insight**: The similarity between the top two "best" universes is a significant result. It demonstrates that the formation of a stable, homogeneous, and law-abiding cosmos is a **reproducible outcome** of the TQE model under favorable initial conditions. The consistency in the lock-in timing further suggests that there is a characteristic timescale for stabilization in these high-performing universes.
-
------------
 
 ### Figure 10: A Third Example of a Well-Behaved Universe (ID: 508)
 
