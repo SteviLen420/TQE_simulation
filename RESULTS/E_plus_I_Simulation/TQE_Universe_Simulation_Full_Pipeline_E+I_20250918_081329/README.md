@@ -364,6 +364,108 @@ The TQE model, driven solely by the interaction of Energy and Information, demon
 
 -------------
 
+### The Mathematics of the Simulation
+
+The TQE simulation is a multi-stage, Monte Carlo-based model. Its mathematical framework can be broken down into the following key components:
+
+---
+
+#### 1. Generation of Initial Parameters: Energy (E) and Information (I)
+
+Each simulated universe begins with two fundamental scalar parameters, which are sampled from statistical distributions.
+
+##### Energy (E)
+The Energy value is drawn from a **log-normal distribution**, which effectively models rare, high-energy events. Its probability density function is:
+
+$$f(E; \mu, \sigma) = \frac{1}{E \sigma \sqrt{2\pi}} \exp\left(-\frac{(\ln E - \mu)^2}{2\sigma^2}\right)$$
+
+Where:
+* **$E$**: The initial energy value of the universe.
+* **$\mu$**: The mean of the distribution on a logarithmic scale (`E_LOG_MU`).
+* **$\sigma$**: The standard deviation of the distribution on a logarithmic scale (`E_LOG_SIGMA`).
+
+##### Information (I)
+The Information parameter is a composite value normalized between 0 and 1, derived from the fusion of two quantum information-theoretic measures.
+
+1.  **Generate two random quantum states (kets)** in a $d$-dimensional Hilbert space: $|\psi_1\rangle$ and $|\psi_2\rangle$.
+2.  **Convert to probability distributions:** From these two states, probability distributions ($p_1$ and $p_2$) are obtained using the Born rule:
+    $$
+    p_{k,i} = |\langle i | \psi_k \rangle|^2
+    $$
+    where $|\ i \rangle$ is a basis vector.
+
+3.  **Kullback–Leibler (KL) Divergence ($I_{KL}$):** The asymmetry between the two distributions is measured and then normalized:
+    $$
+    D_{KL}(p_1 || p_2) = \sum_{i=1}^{d} p_{1,i} \log\left(\frac{p_{1,i}}{p_{2,i}}\right) \quad \rightarrow \quad I_{KL} = \frac{D_{KL}}{1 + D_{KL}}
+    $$
+
+4.  **Shannon Entropy ($I_H$):** The entropy (uncertainty) of one of the states is measured and then normalized by the maximum possible entropy:
+    $$
+    H(p_1) = -\sum_{i=1}^{d} p_{1,i} \log(p_{1,i}) \quad \rightarrow \quad I_H = \frac{H}{\log(d)}
+    $$
+
+5.  **Fusion:** The two values are combined in `product` mode to get the final `I` parameter:
+    $$
+    I = I_{KL} \cdot I_H
+    $$
+
+---
+
+#### 2. Creation of the Complexity Parameter (X)
+
+The two fundamental parameters are coupled into a single **Complexity** (`X`) parameter, which drives the subsequent dynamics of the simulation.
+
+$$X = (E \cdot (\alpha_I \cdot I)) \cdot S_X$$
+
+Where:
+* **$\alpha_I$**: The Information coupling factor (`ALPHA_I`), which controls the strength of the `I` parameter's influence.
+* **$S_X$**: A global scaling factor (`X_SCALE`).
+
+---
+
+#### 3. The "Lock-in" Simulation Loop
+
+This is the core of the simulation, where the "laws" of the universe (represented by the proxy variables `A`, `ns`, `H`) either stabilize or remain chaotic through an iterative process. The variables are updated via a stochastic process:
+
+$$P_{t+1} = P_t + \mathcal{N}(0, \sigma_{\text{eff}}^2)$$
+
+Where $P_t$ is the value of a parameter (e.g., `A`) at timestep `t`, and $\sigma_{\text{eff}}$ is an effective noise term whose magnitude is determined by several factors:
+
+##### The Effective Noise ($\sigma_{\text{eff}}$)
+
+1.  **Goldilocks Function ($\sigma_G(X)$):** The amount of noise depends on the Complexity (`X`).
+    * **Outside the Zone:** If `X` is outside the `[X_low, X_high]` Goldilocks Zone, the noise is amplified by a penalty factor (`OUTSIDE_PENALTY`).
+    * **Inside the Zone:** Within the zone, the noise increases with a quadratic function as it moves away from the center of the zone, modeling the "fine-tuning".
+        $$
+        \sigma_G(X) = \sigma_0 \cdot \left(1 + \alpha_G \left(\frac{|X - X_{\text{mid}}|}{X_{\text{width}}}\right)^2\right)
+        $$
+
+2.  **Temporal Decay ($\text{decay}(t)$):** The magnitude of the noise decays exponentially over time toward a defined minimum (`NOISE_FLOOR_FRAC`), which prevents the system from "freezing" prematurely.
+    $$
+    \text{decay}(t) = F + (1-F)e^{-t/\tau}
+    $$
+
+3.  **Per-Variable Coefficients ($C_P$):** Each proxy variable (`A`, `ns`, `H`) has a unique coefficient that scales the effect of the noise on it.
+
+The effective noise for a given parameter `P` is therefore: $\sigma_{\text{eff}, P}(t, X) = C_P \cdot \sigma_G(X) \cdot \text{decay}(t)$.
+
+---
+
+#### 4. Stability and "Lock-in" Criteria
+
+At each step, the simulation checks if the system has reached a state of stability or "lock-in".
+
+1.  **Relative Change ($\Delta_{rel}$):** First, the average relative change of the parameters from the previous step is calculated:
+    $$
+    \Delta_{rel}(t) = \frac{1}{3} \left( \frac{|A_t - A_{t-1}|}{|A_{t-1}|} + \frac{|ns_t - ns_{t-1}|}{|ns_{t-1}|} + \frac{|H_t - H_{t-1}|}{|H_{t-1}|} \right)
+    $$
+
+2.  **Stability:** A universe becomes **stable** at time $t_s$ if the value of $\Delta_{rel}$ remains below a threshold (`REL_EPS_STABLE`) for a specified number of consecutive steps (`CALM_STEPS_STABLE`).
+
+3.  **Lock-in:** A universe achieves **"lock-in"** at time $t_l$ if the **rolling average** of $\Delta_{rel}$ over a window (`LOCKIN_WINDOW`) falls below an even stricter threshold (`REL_EPS_LOCKIN`), and this condition persists for a specified number of steps (`CALM_STEPS_LOCKIN`). This can only occur after a minimum number of epochs has passed (`MIN_LOCKIN_EPOCH`).
+
+-------------
+
 ### Methodological Note on the Analytical Workflow
 
 The primary conclusions presented in this document are derived from the direct statistical analysis of the simulation's output data. This includes the aggregate statistics from the `summary_full.json`, the per-file checks from the Wolfram `math_check.json`, and the visual analysis of key plots. This direct approach yielded robust and consistent findings.
