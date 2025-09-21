@@ -240,3 +240,36 @@ The data presents a stark contrast between the two groups, providing conclusive 
 2. **Equilibrium, Low Success (`|E-I| ≤ 5.89`)**: In sharp contrast, universes where the E and I parameters are in close equilibrium achieve lock-in far less frequently, with a probability of only about 5%.
 
 **Key Insight**: This side-by-side comparison demonstrates that universes with a significant **imbalance** between Energy and Information are **five times more likely** to achieve a stable, law-abiding state than their more balanced counterparts. This reinforces the conclusion from the previous analysis: a "balanced" initial state is not optimal for forming a structured cosmos. Instead, a fundamental "tension" between the core E and I parameters appears to be a critical catalyst for the successful lock-in of physical laws in the TQE model.
+
+--------------
+
+### Figures 13-15: Emergent Cosmic Microwave Background (CMB) Analogues
+
+These three full-sky maps represent simulated analogues of the Cosmic Microwave Background (CMB) for the top three universes identified by a "best CMB" metric. These images depict the primordial temperature fluctuations—the "first light"—that would serve as the seeds for all future structure formation.
+
+### Figure 13: Best CMB, Rank 1 (uid 5646)
+
+<img width="1672" height="1073" alt="best_cmb_rank01_uid05646_E+I" src="https://github.com/user-attachments/assets/a8356e4b-2991-4440-853c-8935a709b3db" />
+
+### Figure 14: Best CMB, Rank 2 (uid 355)
+
+<img width="1672" height="1073" alt="best_cmb_rank02_uid00355_E+I" src="https://github.com/user-attachments/assets/f48d9d90-8833-42a5-a52c-4d1425acbbb0" />
+
+### Figure 15: Best CMB, Rank 3 (uid 1992)
+
+<img width="1672" height="1073" alt="best_cmb_rank03_uid01992_E+I" src="https://github.com/user-attachments/assets/61464d7b-1d76-4949-83f4-145a20108b92" />
+
+**Combined Analysis:**
+
+1. **Cosmological Plausibility**: The maps exhibit a statistically isotropic pattern of hot (red) and cold (blue) spots on various angular scales. The visual texture is qualitatively similar to the observed CMB in our own universe (e.g., from the Planck satellite). This demonstrates the TQE model's ability to generate cosmologically realistic large-scale features from the fundamental interplay of Energy and Information.
+
+2. **Convergence of "Best-Fit" Parameters**: The most significant finding is the remarkable consistency across these three top-performing, yet independently simulated, universes.
+
+    * Their initial conditions are clustered in a very narrow region of the parameter space (`E` ≈ 31-32, `I` ≈ 0.43-0.48).
+
+    * Most strikingly, all three universes achieved law lock-in at the **exact same time step: 305**.
+
+**Key Insight**: This strong convergence suggests that the emergence of universes with CMB-like properties is not a random accident within the TQE framework. Instead, it points to a specific "sweet spot" in the E-I parameter space that consistently produces cosmologically "successful" outcomes. The model appears to reveal a predictive link between specific initial E/I values and the macroscopic, observable features of the resulting universe.
+
+-------------
+
