@@ -21,7 +21,7 @@ This bar chart provides a statistical census of the final outcomes for the entir
 
 <img width="1511" height="1232" alt="stability_distribution_three_E+I" src="https://github.com/user-attachments/assets/67e28b4d-5c40-4f10-9da4-150f9eb4d947" />
 
-### Analysis:
+### Analysis: The chart displays the distribution of the three possible end-states:
 1.  **Unstable:** **5,125 universes (51.2%)** remained in a chaotic, disordered state. This is the most common outcome.
 2.  **Stable (no lock-in):** **2,797 universes (28.0%)** successfully stabilized but their laws did not "freeze," remaining dynamic.
 3.  **Lock-in:** **2,078 universes (20.8%)** not only became stable but also reached a final, fixed state of physical laws. This is the rarest but most favorable state for the formation of complex structures.
@@ -31,8 +31,7 @@ This plot details the relationship between a universe's initial Complexity (X = 
 
 <img width="1209" height="842" alt="A graph showing the Goldilocks zone for universe stability" src="https://github.com/user-attachments/assets/1b97e1fc-cce3-44d6-89aa-0bb942db0d51" />
 
-### Analysis:
-The spline fit provides compelling visual evidence for a finely-tuned "Goldilocks Zone" necessary for creating viable universes.
+### Analysis: The spline fit provides compelling visual evidence for a finely-tuned "Goldilocks Zone" necessary for creating viable universes.
 
 1. **Dynamic vs. Optimal Zone**: The simulation pipeline initially operated with a broad, dynamically-calculated "Goldilocks" window spanning from X_low = 1.78 to X_high = 39.79. The analysis shown in this plot refines this initial estimate, identifying a much narrower optimal performance window.
 
