@@ -390,30 +390,30 @@ The Information parameter is a composite value normalized between 0 and 1, deriv
 
 1.  **Generate two random quantum states (kets)** in a $d$-dimensional Hilbert space: $|\psi_1\rangle$ and $|\psi_2\rangle$.
 2.  **Convert to probability distributions:** From these two states, probability distributions ($p_1$ and $p_2$) are obtained using the Born rule:
-  
-    $$
-    p_{k,i} = |\langle i | \psi_k \rangle|^2
-    $$
+
+$$
+p_{k,i} = |\langle i | \psi_k \rangle|^2
+$$
     
-    where $|\ i \rangle$ is a basis vector.
+where $|\ i \rangle$ is a basis vector.
 
-3.  **Kullback–Leibler (KL) Divergence ($I_{KL}$):** The asymmetry between the two distributions is measured and then normalized:
-  
-    $$
-    D_{KL}(p_1 || p_2) = \sum_{i=1}^{d} p_{1,i} \log\left(\frac{p_{1,i}}{p_{2,i}}\right) \quad \rightarrow \quad I_{KL} = \frac{D_{KL}}{1 + D_{KL}}
-    $$
+4.  **Kullback–Leibler (KL) Divergence ($I_{KL}$):** The asymmetry between the two distributions is measured and then normalized:
 
-4.  **Shannon Entropy ($I_H$):** The entropy (uncertainty) of one of the states is measured and then normalized by the maximum possible entropy:
-  
-    $$
-    H(p_1) = -\sum_{i=1}^{d} p_{1,i} \log(p_{1,i}) \quad \rightarrow \quad I_H = \frac{H}{\log(d)}
-    $$
+$$
+D_{KL}(p_1 || p_2) = \sum_{i=1}^{d} p_{1,i} \log\left(\frac{p_{1,i}}{p_{2,i}}\right) \quad \rightarrow \quad I_{KL} = \frac{D_{KL}}{1 + D_{KL}}
+$$
+
+5.  **Shannon Entropy ($I_H$):** The entropy (uncertainty) of one of the states is measured and then normalized by the maximum possible entropy:
+
+$$
+H(p_1) = -\sum_{i=1}^{d} p_{1,i} \log(p_{1,i}) \quad \rightarrow \quad I_H = \frac{H}{\log(d)}
+$$
 
 5.  **Fusion:** The two values are combined in `product` mode to get the final `I` parameter:
-  
-    $$
-    I = I_{KL} \cdot I_H
-    $$
+
+$$
+I = I_{KL} \cdot I_H
+$$
 
 
 
@@ -435,9 +435,9 @@ Where:
 
 This is the core of the simulation, where the "laws" of the universe (represented by the proxy variables `A`, `ns`, `H`) either stabilize or remain chaotic through an iterative process. The variables are updated via a stochastic process:
 
-  $$
-  P_{t+1} = P_t + \mathcal{N}(0, \sigma_{\text{eff}}^2)
-  $$
+$$
+P_{t+1} = P_t + \mathcal{N}(0, \sigma_{\text{eff}}^2)
+$$
 
 Where $P_t$ is the value of a parameter (e.g., `A`) at timestep `t`, and $\sigma_{\text{eff}}$ is an effective noise term whose magnitude is determined by several factors:
 
@@ -447,17 +447,18 @@ Where $P_t$ is the value of a parameter (e.g., `A`) at timestep `t`, and $\sigma
     * **Outside the Zone:** If `X` is outside the `[X_low, X_high]` Goldilocks Zone, the noise is amplified by a penalty factor (`OUTSIDE_PENALTY`).
     * **Inside the Zone:** Within the zone, the noise increases with a quadratic function as it moves away from the center of the zone, modeling the "fine-tuning".
     
-    $$
-    \sigma_G(X) = \sigma_0 \cdot \left(1 + \alpha_G \left(\frac{|X - X_{\text{mid}}|}{X_{\text{width}}}\right)^2\right)
-    $$
+$$
+\sigma_G(X) = \sigma_0 \cdot \left(1 + \alpha_G \left(\frac{|X - X_{\text{mid}}|}{X_{\text{width}}}\right)^2\right)
+$$
 
 2.  **Temporal Decay ($\text{decay}(t)$):** The magnitude of the noise decays exponentially over time toward a defined minimum (`NOISE_FLOOR_FRAC`), which prevents the system from "freezing" prematurely.
-3.  
-    $$
-    \text{decay}(t) = F + (1-F)e^{-t/\tau}
-    $$
+  
 
-4.  **Per-Variable Coefficients ($C_P$):** Each proxy variable (`A`, `ns`, `H`) has a unique coefficient that scales the effect of the noise on it.
+$$
+\text{decay}(t) = F + (1-F)e^{-t/\tau}
+$$
+
+3.  **Per-Variable Coefficients ($C_P$):** Each proxy variable (`A`, `ns`, `H`) has a unique coefficient that scales the effect of the noise on it.
 
 The effective noise for a given parameter `P` is therefore: $\sigma_{\text{eff}, P}(t, X) = C_P \cdot \sigma_G(X) \cdot \text{decay}(t)$.
 
@@ -469,9 +470,9 @@ At each step, the simulation checks if the system has reached a state of stabili
 
 1.  **Relative Change ($\Delta_{rel}$):** First, the average relative change of the parameters from the previous step is calculated:
    
-    $$
-    \Delta_{rel}(t) = \frac{1}{3} \left( \frac{|A_t - A_{t-1}|}{|A_{t-1}|} + \frac{|ns_t - ns_{t-1}|}{|ns_{t-1}|} + \frac{|H_t - H_{t-1}|}{|H_{t-1}|} \right)
-    $$
+$$
+\Delta_{rel}(t) = \frac{1}{3} \left( \frac{|A_t - A_{t-1}|}{|A_{t-1}|} + \frac{|ns_t - ns_{t-1}|}{|ns_{t-1}|} + \frac{|H_t - H_{t-1}|}{|H_{t-1}|} \right)
+$$
 
 2.  **Stability:** A universe becomes **stable** at time $t_s$ if the value of $\Delta_{rel}$ remains below a threshold (`REL_EPS_STABLE`) for a specified number of consecutive steps (`CALM_STEPS_STABLE`).
 
