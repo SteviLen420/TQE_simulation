@@ -12,6 +12,7 @@ Copyright (c) 2025 Stefan Len
 
 
 This document summarizes the key findings from the TQE E+I simulation run `20250918_081329`. The analysis explores the conditions required for universe stability and the emergence of physical laws based on the interplay of Energy (E) and Information (I).
+
 ----------
 
 ### Figure 2: The Distribution of Universe Fates
