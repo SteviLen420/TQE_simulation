@@ -16,7 +16,7 @@ Simulation of Universe Evolution from Energy-Information Principles**
 ### Abstract
 
 
-The TQE Framework is a novel computational pipeline designed to investigate the hypothesis that the fundamental laws of physics are not axiomatic but emerge from a more primitive interplay of Energy (E) and Information (I). This framework provides an end-to-end, proof-of-concept environment for conducting Monte Carlo simulations of ensembles of universes, enabling the systematic exploration of a wide parameter space of initial conditions. The core of the pipeline is a multi-stage simulation that models the lifecycle of a universe: an initial pre-collapse phase, where physical laws are treated as fluctuating and stochastic; a probabilistic “law lock-in” event, where a stable set of effective physical constants is selected; and a subsequent expansion phase that generates large-scale structures. An integrated analysis suite processes the outputs of these simulations to generate cosmological observables analogous to the Cosmic Microwave Background (CMB) and to perform targeted scans for selected anomalies, such as the Cold Spot and hemispherical asymmetries. A key contribution of this work is the integration of an Explainable AI (XAI) module, which applies machine learning models together with interpretability techniques such as SHAP to explore the relationship between the initial (E,I) conditions and the emergent characteristics of a simulated universe. While some components (e.g., anomaly detection and LIME explanations) are implemented in simplified form, the framework is architected for reproducibility and extensibility, making it a solid research-grade prototype and a foundation for further development in theoretical cosmology.
+The TQE Framework is a novel computational pipeline designed to investigate the hypothesis that the fundamental laws of physics are not axiomatic but emerge from a more primitive interplay of Energy (E) and Information (I). This framework provides an end-to-end, proof-of-concept environment for conducting Monte Carlo simulations of ensembles of universes, enabling the systematic exploration of a wide parameter space of initial conditions. The core of the pipeline is a multi-stage simulation that models the lifecycle of a universe: an initial pre-collapse phase, where physical laws are treated as fluctuating and stochastic; a probabilistic “law lock-in” event, where a stable set of effective physical constants is selected; and a subsequent expansion phase that generates large-scale structures. An integrated analysis suite processes the outputs of these simulations to generate cosmological observables analogous to the Cosmic Microwave Background (CMB) and to perform targeted scans for selected anomalies, such as the Cold Spot and hemispherical asymmetries. A key contribution of this work is the integration of an experimental Explainable AI (XAI) module, designed to probe the relationship between initial (E,I) conditions and emergent characteristics. The initial application of this module has successfully established a baseline for future modeling and highlighted the complex, non-linear nature of predicting universe outcomes, framing a clear path for future research in this domain. While some components (e.g., anomaly detection and LIME explanations) are implemented in simplified form, the framework is architected for reproducibility and extensibility, making it a solid research-grade prototype and a foundation for further development in theoretical cosmology.
 
 
 ## How to Cite
@@ -119,7 +119,7 @@ The pipeline is organized into four sequential stages:
 
 **Analysis** – Performs post-processing on raw outputs, including calculation of cosmological observables, generation of CMB-like sky maps, and execution of diagnostic tests to score universes for fine-tuning and scan for selected anomalies.
 
-**Interpretation** – Applies Explainable AI (XAI) to synthesize ensemble results. Machine learning models are trained to predict outcomes from initial conditions, providing insights into causal relationships within the TQE model.
+**Interpretation (Experimental)** – The pipeline includes an experimental module for applying Explainable AI (XAI) to the simulation outputs. The goal of this stage is to train predictive models and use interpretability techniques to uncover causal relationships. This component is currently in a research and development phase, serving as a powerful diagnostic tool for hypothesis testing.
 
 This staged structure conceptually supports re-running individual components (e.g., re-analyzing simulation data with a new anomaly detector) without repeating upstream steps, although the current implementation realizes this in a more streamlined, script-based form.
 
@@ -173,21 +173,18 @@ Additional anomaly modules, such as the Hemispherical Power Asymmetry (HPA) and 
 
 
 ## Explainable AI (XAI) for Cosmological Interpretation
+The XAI module is designed to move beyond statistical description to causal interpretation, addressing the "why" behind the simulation's outcomes. The architecture is built to train predictive models on the ensemble data and then use state-of-the-art interpretability techniques to analyze the models' internal logic.
 
-The XAI module transforms the dataset generated by the simulation ensemble into interpretable scientific insights. By moving beyond what happens to why it happens, this module serves as the primary tool for extracting new, testable ideas from the simulation's results.
+•	**Models**: The framework employs models like RandomForest and XGBoost to predict outcomes (e.g., stability, lock-in epoch) from a universe's initial `E`, `I`, and `X` parameters.
 
-•	**Models** – The framework employs a multi-model strategy to suit different analytical goals. The primary model for general analysis and classification tasks is a RandomForest, chosen for its robust performance on tabular data and its relative interpretability. For targeted, high-performance regression tasks—such as predicting the fine_tuning_score or modeling the performance gains from including the Information parameter (I)—an **XGBoost (Extreme Gradient Boosting)** model is also utilized. XGBoost is capable of capturing more complex, non-linear patterns in the data, providing a deeper layer of analysis.
+•	**Interpretability Methods**: It integrates SHAP (SHapley Additive exPlanations) and LIME (Local Interpretable Model-agnostic Explanations) to diagnose these models.
 
-•	**Targets** – Models are trained on ensembles of simulated universes. Features include initial conditions (E, I) and emergent properties (e.g., lock_epoch), while target variables include outcomes such as the fine_tuning_score or anomaly flags (e.g., presence of a Cold Spot).
+### Preliminary Findings & Current Status
+Initial experiments with this module have proven to be highly instructive. The attempts to predict nuanced outcomes have revealed that the relationship between the base parameters and the system's evolution is highly complex and non-linear.
 
-### Interpretability Methods
-The framework integrates explainability tools to analyze the trained models:
+The models achieved limited success (e.g., AUC ≈ 0.65 for stability classification) or failed to generalize (R² < 0 for predicting second-order effects), a result diagnosed effectively by the SHAP and LIME tools. This indicates that more advanced feature engineering and potentially different modeling approaches are required to capture the full dynamics.
 
-•	**SHAP (SHapley Additive exPlanations)** – Used to quantify global feature importance. SHAP values answer questions such as: “What factors most influence whether a universe becomes fine-tuned?”
-
-•	**LIME (Local Interpretable Model-agnostic Explanations)** – Support for local explanations is included at a prototype stage. `LIME` can provide case-by-case insights (e.g., explaining why a specific simulated universe exhibits an anomaly), though its integration is less developed than `SHAP`.
-
-By combining ensemble simulation with `XAI`, the framework goes beyond description and supports hypothesis generation. It highlights the quantitative relationships between initial conditions and final observables, enabling new, testable ideas about the underlying physics of the TQE model.
+Therefore, the XAI module in its current state should be considered a powerful diagnostic and developmental tool for hypothesis testing, which has successfully guided the research by revealing the limitations of the initial feature set. It serves as a solid foundation for the future work described in the "Limitations" section.
 
 
 ## Results & Run Folder Structure
