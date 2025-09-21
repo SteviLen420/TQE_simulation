@@ -15,7 +15,7 @@ This document summarizes the key findings from the TQE E+I simulation run `20250
 
 ----------
 
-### Figure 2: The Distribution of Universe Fates
+### Figure 1: The Distribution of Universe Fates
 
 This bar chart provides a statistical census of the final outcomes for the entire ensemble of 10,000 simulated E+I universes, categorizing them into three mutually exclusive fates.
 
@@ -25,3 +25,6 @@ This bar chart provides a statistical census of the final outcomes for the entir
 1.  **Unstable:** **5,125 universes (51.2%)** remained in a chaotic, disordered state. This is the most common outcome.
 2.  **Stable (no lock-in):** **2,797 universes (28.0%)** successfully stabilized but their laws did not "freeze," remaining dynamic.
 3.  **Lock-in:** **2,078 universes (20.8%)** not only became stable but also reached a final, fixed state of physical laws. This is the rarest but most favorable state for the formation of complex structures.
+
+### Figure 2: Identification of the "Goldilocks Zone"
+<img width="1209" height="842" alt="stability_curve_E+I" src="https://github.com/user-attachments/assets/1b97e1fc-cce3-44d6-89aa-0bb942db0d51" />
