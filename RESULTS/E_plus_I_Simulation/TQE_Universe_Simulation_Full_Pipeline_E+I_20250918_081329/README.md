@@ -168,3 +168,75 @@ This visualization showcases the key thermodynamic characteristics of a well-beh
 3. **Early Law Lock-in**: The purple dashed line indicates that for this universe, the laws became fixed ("locked-in") at a relatively early **Time step ≈ 305**. It is noteworthy that following this event, the regional entropies maintain their remarkable coherence and stability for the remainder of the simulation.
 
 **Key Insight**: This plot illustrates a successful outcome. The universe exhibits both a clear "arrow of time" (globally increasing entropy) and achieves a state of internal equilibrium and homogeneity. The early lock-in of physical laws appears to be a key factor in enforcing this stable, long-term behavior across all regions of the universe.
+
+-----------
+
+### Figure 9: Entropy Dynamics in a Second High-Performing Universe (ID: 1089)
+
+This chart displays the entropy evolution for the second-ranked "best-case" universe (ID 1089). Similar to the top-ranked example, it plots the **Global entropy** against the entropy of its eight constituent **Regions**.
+
+<img width="1781" height="1093" alt="best_uni_rank02_uid01089_E+I" src="https://github.com/user-attachments/assets/9f0a0453-60df-49f5-9b0a-abee1cf8f9dc" />
+
+**Analysis:**
+
+This universe's evolution strongly corroborates the findings from the top-ranked example, showcasing a consistent pattern of successful stabilization.
+
+1. **Consistent Thermodynamic Behavior**: Once again, we observe a smoothly increasing Global entropy (black line), indicating a clear thermodynamic arrow of time. Concurrently, the Regional entropies (colored lines) rapidly synchronize and settle into a stable state of equilibrium, demonstrating the emergence of homogeneity.
+
+2. **Reproducible Lock-in Time**: The "Law lock-in" event for this universe occurs at **Time step ≈ 306**, a point in time remarkably close to the previous example's lock-in at step 305.
+
+**Key Insight**: The similarity between the top two "best" universes is a significant result. It demonstrates that the formation of a stable, homogeneous, and law-abiding cosmos is a **reproducible outcome** of the TQE model under favorable initial conditions. The consistency in the lock-in timing further suggests that there is a characteristic timescale for stabilization in these high-performing universes.
+
+-----------
+
+### Figure 10: A Third Example of a Well-Behaved Universe (ID: 508)
+
+Concluding the series of high-performing examples, this chart shows the entropy evolution for the third-ranked "best-case" universe (ID 508). It again plots the **Global entropy** against the entropy of its eight constituent **Regions**.
+
+<img width="1781" height="1093" alt="best_uni_rank03_uid00508_E+I" src="https://github.com/user-attachments/assets/616afa2c-5404-40bc-9ac3-78da5af567ed" />
+
+**Analysis:**
+
+This third example provides powerful confirmation of the trends observed in the previous top-ranked universes.
+
+1. **Convergent Evolution**: The universe once again exhibits the two primary markers of a successful outcome: a monotonically increasing **Global entropy** and the rapid convergence of its **Regional entropies** to a stable, homogeneous state.
+
+2. **Consistent Lock-in Timescale**: The lock-in event for this universe occurs at **Time step ≈ 308**, a value remarkably consistent with the other two examples (305 and 306).
+
+**Key Insight**: The fact that the top three performing universes, despite starting from independent random seeds, all evolved to exhibit nearly identical macroscopic characteristics is a profound result of the simulation. It strongly suggests that the interplay of Energy and Information creates a powerful "selection pressure," guiding viable universes toward a very specific and predictable end-state characterized by an arrow of time, homogeneity, and early stabilization of physical laws.
+
+------------
+
+### Figure 11: Fine-Tuning Analysis - The Role of Imbalance for Law Lock-in
+
+This plot investigates a deeper "fine-tuning" aspect of the TQE model: the relationship between the **absolute difference (or "gap") between Energy and Information** (`|E - I|`) and the probability of a universe achieving **Law Lock-in**.
+
+<img width="1513" height="1073" alt="finetune_gap_curve_E+I" src="https://github.com/user-attachments/assets/d36266ec-f16a-4256-897d-cfe7eb18c68d" />
+
+**Analysis:**
+
+The results reveal a powerful and somewhat counter-intuitive principle: a significant imbalance between the E and I parameters is not a hindrance, but rather a strong predictor of a successful lock-in event.
+
+1. **Low Probability at Equilibrium**: Universes where Energy and Information are nearly in balance (`|E - I|` is close to zero) have a vanishingly small probability of achieving a locked-in state. Perfect equilibrium appears to lead to stagnation or instability.
+
+2. **Strong Positive Correlation**: There is a clear and strong positive correlation between the `|E - I|` gap and the `P(lock-in)`. As the imbalance between the two fundamental parameters grows, the likelihood of the universe's laws becoming permanently fixed increases dramatically. For the universes with the largest measured imbalance (bin centered around ~155), the lock-in probability exceeds 50%.
+
+**Key Insight**: This finding provides a crucial nuance to the Goldilocks Zone concept. While the overall complexity `(X = E*I)` must be within an optimal range (as seen in Figure 2), this analysis shows that the composition of X is equally important. A state of "tension" or **asymmetry** between Energy and Information appears to be a necessary ingredient for a universe to fully mature and solidify its physical laws. This suggests that "fine-tuning" in the TQE model is not about achieving perfect balance, but about finding an optimal degree of imbalance.
+
+-------------
+
+### Figure 12: The Decisive Impact of E-I Imbalance on Law Lock-in
+
+This bar chart provides a direct comparison of lock-in probability between two distinct populations of universes, separated by a threshold of `|E-I| = 5.89`. This allows for a clear, quantitative assessment of how the balance between Energy and Information affects a universe's final state.
+
+<img width="1296" height="1074" alt="lockin_by_eqI_bar_E+I" src="https://github.com/user-attachments/assets/748b5646-a5b1-4782-8541-78feaa81a786" />
+
+**Analysis:**
+
+The data presents a stark contrast between the two groups, providing conclusive evidence for the role of parameter imbalance.
+
+1. **High Imbalance, High Success (`|E-I| > 5.89`)**: The universes with a significant gap between their Energy and Information values achieve a final, locked-in state with a probability of approximately 25%.
+
+2. **Equilibrium, Low Success (`|E-I| ≤ 5.89`)**: In sharp contrast, universes where the E and I parameters are in close equilibrium achieve lock-in far less frequently, with a probability of only about 5%.
+
+**Key Insight**: This side-by-side comparison demonstrates that universes with a significant **imbalance** between Energy and Information are **five times more likely** to achieve a stable, law-abiding state than their more balanced counterparts. This reinforces the conclusion from the previous analysis: a "balanced" initial state is not optimal for forming a structured cosmos. Instead, a fundamental "tension" between the core E and I parameters appears to be a critical catalyst for the successful lock-in of physical laws in the TQE model.
