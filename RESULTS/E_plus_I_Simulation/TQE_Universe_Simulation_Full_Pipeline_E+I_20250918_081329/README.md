@@ -441,7 +441,7 @@ $$
 
 Where $P_t$ is the value of a parameter (e.g., `A`) at timestep `t`, and $\sigma_{\text{eff}}$ is an effective noise term whose magnitude is determined by several factors:
 
-##### The Effective Noise ($\sigma_{\text{eff}}$)
+##### The Effective Noise ( $\sigma_{\text{eff}}$ )
 
 1.  **Goldilocks Function ($\sigma_G(X)$):** The amount of noise depends on the Complexity (`X`).
     * **Outside the Zone:** If `X` is outside the `[X_low, X_high]` Goldilocks Zone, the noise is amplified by a penalty factor (`OUTSIDE_PENALTY`).
@@ -451,14 +451,14 @@ $$
 \sigma_G(X) = \sigma_0 \cdot \left(1 + \alpha_G \left(\frac{|X - X_{\text{mid}}|}{X_{\text{width}}}\right)^2\right)
 $$
 
-2.  **Temporal Decay ($\text{decay}(t)$):** The magnitude of the noise decays exponentially over time toward a defined minimum (`NOISE_FLOOR_FRAC`), which prevents the system from "freezing" prematurely.
+2. ** Temporal Decay** ( $\text{decay}(t)$ ): The magnitude of the noise decays exponentially over time toward a defined minimum (`NOISE_FLOOR_FRAC`), which prevents the system from "freezing" prematurely.
   
 
 $$
 \text{decay}(t) = F + (1-F)e^{-t/\tau}
 $$
 
-3.  **Per-Variable Coefficients ($C_P$):** Each proxy variable (`A`, `ns`, `H`) has a unique coefficient that scales the effect of the noise on it.
+3.  **Per-Variable Coefficients ( $C_P$ ):** Each proxy variable (`A`, `ns`, `H`) has a unique coefficient that scales the effect of the noise on it.
 
 The effective noise for a given parameter `P` is therefore: $\sigma_{\text{eff}, P}(t, X) = C_P \cdot \sigma_G(X) \cdot \text{decay}(t)$.
 
@@ -468,7 +468,7 @@ The effective noise for a given parameter `P` is therefore: $\sigma_{\text{eff},
 
 At each step, the simulation checks if the system has reached a state of stability or "lock-in".
 
-1.  **Relative Change ($\Delta_{rel}$):** First, the average relative change of the parameters from the previous step is calculated:
+1.  **Relative Change ( $\Delta_{rel}$ ):** First, the average relative change of the parameters from the previous step is calculated:
    
 $$
 \Delta_{rel}(t) = \frac{1}{3} \left( \frac{|A_t - A_{t-1}|}{|A_{t-1}|} + \frac{|ns_t - ns_{t-1}|}{|ns_{t-1}|} + \frac{|H_t - H_{t-1}|}{|H_{t-1}|} \right)
