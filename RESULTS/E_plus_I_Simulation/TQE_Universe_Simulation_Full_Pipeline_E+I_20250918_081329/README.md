@@ -26,6 +26,8 @@ This bar chart provides a statistical census of the final outcomes for the entir
 2.  **Stable (no lock-in):** **2,797 universes (28.0%)** successfully stabilized but their laws did not "freeze," remaining dynamic.
 3.  **Lock-in:** **2,078 universes (20.8%)** not only became stable but also reached a final, fixed state of physical laws. This is the rarest but most favorable state for the formation of complex structures.
 
+----------
+
 ### Figure 2: Identification of the "Goldilocks Zone" 
 This plot details the relationship between a universe's initial Complexity (X = E·I) and its subsequent probability of reaching a favorable, structured outcome. The data is grouped into bins based on the X value (blue dots), with a spline curve (red line) fitted to show the clear trend.
 
