@@ -27,16 +27,6 @@ This bar chart provides a statistical census of the final outcomes for the entir
 3.  **Lock-in:** **2,078 universes (20.8%)** not only became stable but also reached a final, fixed state of physical laws. This is the rarest but most favorable state for the formation of complex structures.
 
 ### Figure 2: Identification of the "Goldilocks Zone" 
-
-This plot details the relationship between a universe's initial Complexity (X = E·I) and its subsequent probability of reaching a favorable, structured outcome. The data is grouped into bins based on the `X value`, with a spline curve fitted to show the clear trend.
-
-<img width="1209" height="842" alt="stability_curve_E+I" src="https://github.com/user-attachments/assets/1b97e1fc-cce3-44d6-89aa-0bb942db0d51" />
-
-Rendben, ez egy lényeges pont, ami mélyebb kontextust ad az ábrának. A szimuláció által használt tágabb, dinamikus zóna és a grafikonon látható, finomított optimális zóna közötti különbség fontos részlet.
-
-Beépítettem ezt az információt az elemzésbe, hogy még teljesebb legyen a kép.
-
-Figure 2: Identification of the "Goldilocks Zone" (Kibővített elemzés)
 This plot details the relationship between a universe's initial Complexity (X = E·I) and its subsequent probability of reaching a favorable, structured outcome. The data is grouped into bins based on the X value (blue dots), with a spline curve (red line) fitted to show the clear trend.
 
 <img width="1209" height="842" alt="A graph showing the Goldilocks zone for universe stability" src="https://github.com/user-attachments/assets/1b97e1fc-cce3-44d6-89aa-0bb942db0d51" />
