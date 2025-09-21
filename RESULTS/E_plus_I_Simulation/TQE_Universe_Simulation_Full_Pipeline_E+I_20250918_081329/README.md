@@ -273,3 +273,67 @@ These three full-sky maps represent simulated analogues of the Cosmic Microwave 
 
 -------------
 
+### Figures 16-20: Generation of CMB Cold Spot Anomalies
+
+This section analyzes the model's ability to generate features analogous to the CMB Cold Spot, a significant large-scale anomaly observed in our own universe. The analysis covers individual examples of simulated Cold Spots and their statistical properties across the entire ensemble of universes.
+
+### Figure 16, 17, 18: Examples of Cold Spot Overlays
+(These three images show the most significant Cold Spot found in three individual universes: uid 5646, 355, and 211 respectively.)
+
+<img width="1714" height="1101" alt="coldspots_overlay_uid05646_E+I" src="https://github.com/user-attachments/assets/12415eec-62d7-4063-8cf6-9f5429df00f1" />
+
+<img width="1714" height="1101" alt="coldspots_overlay_uid00355_E+I" src="https://github.com/user-attachments/assets/bbbaaa9e-dcda-461c-be1f-c0b212667e2e" />
+
+<img width="1714" height="1101" alt="coldspots_overlay_uid00211_E+I" src="https://github.com/user-attachments/assets/5c11816b-4a85-4509-9d0d-18433fac9237" />
+
+### Figure 19: Positional Distribution of All Detected Cold Spots
+
+<img width="1335" height="1124" alt="coldspots_pos_heatmap_E+I" src="https://github.com/user-attachments/assets/5441b220-d598-4ae9-acb9-3108c21c6522" />
+
+### Figure 20: Depth Distribution of Detected Cold Spots
+
+<img width="1320" height="816" alt="coldspots_z_hist_E+I" src="https://github.com/user-attachments/assets/0857fba6-7eac-4b39-ae18-80ad2095c885" />
+
+**Combined Analysis**:
+
+1. **Generation of Anomalies**: The first three figures (16-18) confirm that the TQE simulation is capable of producing CMB maps containing localized, statistically significant regions of cold temperature, analogous to the real-world Cold Spot. These are not artifacts but emergent features of the underlying E+I physics.
+
+2. **Rarity and Randomness**: The positional heatmap (Figure 19) and the depth histogram (Figure 20) provide crucial statistical context. They reveal that these Cold Spot events are **extremely rare**, with only four being detected across the entire 10,000-universe ensemble. Furthermore, their positions on the sky appear to be random, suggesting the model has no inherent directional bias.
+
+3. **Comparison with Observational Data**: The depth distribution (Figure 20) offers a direct comparison to reality. The red dashed line indicates the approximate depth (z-score of ≈ -70 µK) of the Cold Spot observed by the Planck satellite. The TQE model not only reproduces an anomaly of this magnitude but is also capable of generating events that are **significantly colder** (with z-scores surpassing -100 µK).
+
+**Key Insight**: The simulation's ability to endogenously generate rare, large-scale anomalies comparable to the observed CMB Cold Spot is a significant validation of the model's complexity. It demonstrates that the fundamental E-I dynamics can give rise to not only the general statistical properties of a CMB but also its specific, puzzling outliers. The fact that the simulated spots' depths are of a realistic magnitude makes the model a potentially valuable tool for investigating the physical origins of such cosmic anomalies.
+
+------------
+
+### Figures 21-24: Investigating the "Axis of Evil" Anomaly
+
+This final set of figures investigates the TQE model's ability to reproduce the "Axis of Evil" (AoE), another significant, large-scale anomaly observed in our universe's CMB. The AoE refers to the unexpected alignment of the largest-scale temperature fluctuations (the quadrupole and octupole modes).
+
+### Figure 21, 22, 23: Examples of Simulated CMBs with Measured Alignments
+
+(These three images show universes selected for AoE analysis, with their calculated quadrupole-octupole alignment angles noted in their titles.)
+
+<img width="1714" height="1101" alt="aoe_overlay_uid03235_E+I" src="https://github.com/user-attachments/assets/4cd9f73c-a75e-4eb2-978c-59c26180c0c3" />
+
+<img width="1714" height="1101" alt="aoe_overlay_uid01350_E+I" src="https://github.com/user-attachments/assets/6ac1b478-0cff-4480-a4ba-85119dacc177" />
+
+<img width="1714" height="1101" alt="aoe_overlay_uid09960_E+I" src="https://github.com/user-attachments/assets/ab3da63e-726d-4a9e-9ff5-e247e580cfef" />
+
+### Figure 24: Statistical Distribution of Alignment Angles
+
+<img width="1245" height="816" alt="aoe_angle_hist_E+I" src="https://github.com/user-attachments/assets/32ac5bf1-5c92-46e9-a9a2-209ad33cd992" />
+
+**Combined Analysis:**
+
+1. **Lack of Strong Alignment**: The example maps (Figures 21-23) showcase typical results from the simulation, with quadrupole-octupole alignment angles of 92.5°, 89.8°, and 80.2°. These large angles are close to 90°, indicating a lack of any significant alignment between these modes.
+
+2. **Statistical Null Result**: The alignment angle distribution for all analyzed universes is shown in the histogram (Figure 24). The results are scattered across a wide range of angles, consistent with a random, isotropic sky. The crucial observation is the comparison with the red dashed line, which marks the **≈20° alignment observed in our universe. The TQE simulation did not produce a single universe with an alignment as strong as the real-world Axis of Evil**.
+
+**Key Insight**: This "null result" is a significant finding. While the TQE model successfully generates CMB analogues with realistic temperature fluctuations and anomalies like Cold Spots, it does not naturally reproduce the large-scale alignments of the Axis of Evil. This suggests two possibilities:
+a) The alignment in our universe is a rare statistical fluke.
+b) The fundamental physics of the TQE model, in its current form, may be missing a specific mechanism required to generate such large-scale correlations.
+This provides a clear and compelling direction for future research and refinement of the TQE model.
+
+------------
+
