@@ -39,7 +39,7 @@ This plot details the relationship between a universe's initial Complexity (`X =
 
 2. **Refined Optimal Window**: This more precise Goldilocks Zone is marked by the vertical dashed lines, located between an `X` value of `16.40` and `27.43`. Universes within this specific range exhibit the highest probability of success.
 
-3. **Peak Stability Probability:** The analysis pinpoints the optimal complexity for *achieving stability* at **X ≈ 24.35**. At this value, the probability of a universe becoming stable reaches its maximum of approximately **60%**, as shown by the peak of the main curve.
+3. **Peak Stability Probability:** The analysis pinpoints the optimal complexity for *achieving stability* at `X` ≈ `24.35`. At this value, the probability of a universe becoming stable reaches its maximum of approximately **60%**, as shown by the peak of the main curve.
 
 4. **Conditional Lock-in Behavior:** For universes that have *already* become stable, the green curve (`P(Lock-in` | `Stable)`) reveals a different trend. The likelihood of these stable universes proceeding to a full lock-in state continues to increase with complexity, approaching rates as high as **95%** for very complex systems.
 
