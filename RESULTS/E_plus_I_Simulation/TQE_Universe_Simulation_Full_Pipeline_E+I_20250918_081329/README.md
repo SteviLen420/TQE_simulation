@@ -130,3 +130,41 @@ This graph captures the instant a universe's fundamental properties are determin
 **Key Insight:** The collapse event is the central mechanism in the TQE simulation that transforms quantum indeterminacy into a classical, predictable reality. The specific value that `X` locks into is critical; its position within or outside the "Goldilocks Zone" is a primary determinant of the universe's long-term fate and its potential to become stable.
 
 -----------
+
+### Figure 7: Post-Collapse Expansion and Law Evolution
+
+This chart tracks the long-term "classical" evolution of a representative universe's fundamental parameters after the initial quantum collapse at `t=0`. It shows the progression of the **Amplitude (A)** and **Orientation (I)** parameters, contextualized by the **average lock-in time** for all successful universes.
+
+<img width="1390" height="842" alt="fl_expansion_E+I" src="https://github.com/user-attachments/assets/6cb1cca0-ff3c-4444-8d86-ba605d3f03b3" />
+
+**Analysis:**
+
+This plot illustrates the dynamic "fine-tuning" process that a universe undergoes following its formation.
+
+1. **Expansionary Dynamics**: The **Amplitude** `A` (blue line) for this example universe exhibits a clear expansionary trend, representing an evolution in the scale or strength of its physical laws.
+
+2. **Stable Orientation**: In this specific example, the **Orientation** `I` parameter (orange line) remains stable at zero, indicating that this aspect of the universe's laws did not undergo significant evolution after the initial collapse.
+
+3. **Average Lock-in Time**: The red dashed vertical line marks **epoch ≈ 758**. This does not represent the lock-in for this single universe, but rather the **average lock-in time** for all **2,078 universes** that reached a locked-in state.
+
+**Key Insight**: The graph demonstrates that a universe's laws can undergo a prolonged period of evolution. The key observation is the existence of a statistically consistent average time for successful universes to reach their final, immutable state. This supports the conclusion that "lock-in" is not a random event but a predictable outcome of the simulation's physics.
+
+------------
+
+### Figure 8: Entropy Evolution in a High-Performing Universe (ID: 361)
+
+This plot provides a detailed look into the entropy dynamics of a top-performing ("best-case") universe. This specific universe (ID 361) successfully achieved both long-term stability and a final law lock-in. The chart tracks the **Global entropy** of the entire universe (black line) alongside the entropy of eight distinct **local Regions** within it.
+
+<img width="1781" height="1093" alt="best_uni_rank01_uid00361_E+I" src="https://github.com/user-attachments/assets/22099c23-b002-47a5-814f-d4b47bc94ccc" />
+
+**Analysis:**
+
+This visualization showcases the key thermodynamic characteristics of a well-behaved, viable universe in the TQE simulation.
+
+1. **Global Entropy (The Arrow of Time)**: The **Global entropy** (thick black line) exhibits a smooth, monotonic increase, asymptotically approaching a maximum value. This behavior is consistent with the second law of thermodynamics and represents the universe's overall expansion and evolution towards a state of maximum disorder.
+
+2. **Regional Homogenization**: After some initial turbulence, the entropy levels of the eight individual **Regions** (thin colored lines) rapidly converge to a shared, stable equilibrium around a value of ~5.1. This demonstrates the emergence of **homogeneity**; the universe evolves to have consistent thermodynamic properties across its different locations.
+
+3. **Early Law Lock-in**: The purple dashed line indicates that for this universe, the laws became fixed ("locked-in") at a relatively early **Time step ≈ 305**. It is noteworthy that following this event, the regional entropies maintain their remarkable coherence and stability for the remainder of the simulation.
+
+**Key Insight**: This plot illustrates a successful outcome. The universe exhibits both a clear "arrow of time" (globally increasing entropy) and achieves a state of internal equilibrium and homogeneity. The early lock-in of physical laws appears to be a key factor in enforcing this stable, long-term behavior across all regions of the universe.
