@@ -86,8 +86,28 @@ The graph demonstrates that the simulation's initial conditions are generated in
 
 1. **Unbiased Mean (`⟨A⟩`)**: The expectation value of `A` (blue dashed line) rapidly oscillates around zero before quickly converging to `⟨A⟩ = 0`. This is a crucial result, indicating that the fluctuation process is unbiased and does not introduce any preferred value or direction into the nascent universe's structure.
 
-2. **Stable Variance (`Var(A)`)**: The variance of `A `(orange solid line) immediately stabilizes at a constant value of `Var(A) = 1`. This normalization ensures that the magnitude of the initial fluctuations is consistent and well-defined for every simulation run.
+2. **Stable Variance (`Var(A)`)**: The variance of `A`(orange solid line) immediately stabilizes at a constant value of `Var(A) = 1`. This normalization ensures that the magnitude of the initial fluctuations is consistent and well-defined for every simulation run.
 
 **Key Insight:** The rapid convergence of these two metrics confirms that the "seed" for each universe's evolution is generated from a well-behaved, stable quantum process. This robust foundation is essential for the integrity of the subsequent simulation steps where these initial fluctuations evolve into larger structures.
 
 ----------
+
+### Figure 5: Evolution of Entropy and Purity in Quantum Superposition
+
+This plot illustrates the evolution of two fundamental quantum metrics, **Entropy** and **Purity**, during the initial superposition phase (`t < 0`). These inversely correlated measures describe the quantum state of the nascent universe before it collapses into a classical reality.
+
+<img width="1209" height="842" alt="fl_superposition_E+I" src="https://github.com/user-attachments/assets/798efc54-5e8c-4ef3-aecc-898d61f3ddbb" />
+
+**Analysis:**
+
+The chart captures the critical transition from a simple initial state to one of rich quantum potential.
+
+1. **Initial State**: At `t = 0`, the system begins in a well-defined state of **high Purity** (approaching 1) and **low Entropy** (approaching 0). This represents a simple, unmixed quantum origin.
+
+2. **Rapid Decoherence**: The system undergoes an extremely rapid evolution. The Purity (orange line) plummets, while the Entropy (blue line) skyrockets, with both metrics reaching a stable equilibrium by approximately `t = 2.0`.
+
+3. **Maximally Mixed State**: The system settles into a state of **maximal Entropy** (fluctuating around 1.0) and minimal Purity (fluctuating around 0.2-0.3). This is the signature of a maximally mixed state, where the universe exists in a rich superposition of all its possible basis states.
+
+**Key Insight**: This process is fundamental to the TQE model. It ensures that each universe begins without a predisposition toward any specific outcome. By evolving into a state of maximum superposition, the simulation creates a level playing field of possibilities. From this state, a single classical reality is later selected or "collapses," driven by the specific E and I parameters of that universe.
+
+------------
