@@ -356,7 +356,7 @@ This simulation run investigates the core principles of the **Theory of the Ques
 
 ### Conclusion
 
-The TQE model, driven solely by the interaction of Energy and Information, demonstrates a remarkable ability to generate complex, stable, and cosmologically plausible universes. The findings strongly indicate that the viability of a universe depends on a delicate, fine-tuned balance—not just of combined complexity, but also of the inherent asymmetry between its fundamental components. The model's success in producing CMB analogues and Cold Spots, combined with its failure to produce the Axis of Evil, provides both a powerful validation of its core principles and a clear direction for future research.
+The TQE model, driven solely by the interaction of Energy and Information, demonstrates a remarkable ability to generate complex, stable, and cosmologically plausible universes. The findings strongly indicate that the viability of a universe depends on a delicate, fine-tuned balance—not just of combined complexity, but also of the inherent asymmetry between its fundamental components. The model's success in producing CMB analogues and Cold Spots, combined with the stochastic nature of the Axis of Evil anomaly, provides both a powerful validation of its core principles and a clear direction for future research.
 
 -------------
 
