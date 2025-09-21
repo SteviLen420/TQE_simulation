@@ -155,6 +155,16 @@ This plot illustrates the dynamic "fine-tuning" process that a universe undergoe
 
 This plot provides a detailed look into the entropy dynamics of a top-performing ("best-case") universe. This specific universe (ID 361) successfully achieved both long-term stability and a final law lock-in. The chart tracks the **Global entropy** of the entire universe (black line) alongside the entropy of eight distinct **local Regions** within it.
 
+### Note on "Best Universe" Selection Criteria
+
+The "Best Universes" are selected based on a multi-step ranking process designed to identify the most efficiently stabilizing outcomes. The criteria are as follows:
+
+1. **Filtering for Success**: Only universes that achieved a "lock-in" state during the simulation are considered candidates.
+
+2. **Ranking by Speed**: The candidates are then ranked in ascending order based on their `lock_epoch` value. The universe with the lowest `lock_epoch` is considered the "best."
+
+3. **Tie-breaking**: In the event of a tie in `lock_epoch`, the universe with the smaller absolute difference between Energy and Information (`|E-I|`) is ranked higher.
+
 <img width="1781" height="1093" alt="best_uni_rank01_uid00361_E+I" src="https://github.com/user-attachments/assets/22099c23-b002-47a5-814f-d4b47bc94ccc" />
 
 **Analysis:**
