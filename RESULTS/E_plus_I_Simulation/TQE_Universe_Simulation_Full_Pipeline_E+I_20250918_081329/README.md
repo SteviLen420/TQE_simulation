@@ -21,9 +21,13 @@ This bar chart provides a statistical census of the final outcomes for the entir
 
 <img width="1511" height="1232" alt="stability_distribution_three_E+I" src="https://github.com/user-attachments/assets/67e28b4d-5c40-4f10-9da4-150f9eb4d947" />
 
-### Analysis: The chart displays the distribution of the three possible end-states:
+### Analysis: 
+The chart displays the distribution of the three possible end-states:
+
 1.  **Unstable:** **5,125 universes (51.2%)** remained in a chaotic, disordered state. This is the most common outcome.
+  
 2.  **Stable (no lock-in):** **2,797 universes (28.0%)** successfully stabilized but their laws did not "freeze," remaining dynamic.
+   
 3.  **Lock-in:** **2,078 universes (20.8%)** not only became stable but also reached a final, fixed state of physical laws. This is the rarest but most favorable state for the formation of complex structures.
 
 ----------
@@ -33,7 +37,8 @@ This plot details the relationship between a universe's initial Complexity (`X =
 
 <img width="1209" height="842" alt="A graph showing the Goldilocks zone for universe stability" src="https://github.com/user-attachments/assets/1b97e1fc-cce3-44d6-89aa-0bb942db0d51" />
 
-### Analysis: The spline fit provides compelling visual evidence for a finely-tuned "Goldilocks Zone" necessary for creating viable universes.
+### Analysis: 
+The spline fit provides compelling visual evidence for a finely-tuned "Goldilocks Zone" necessary for creating viable universes.
 
 1. **Dynamic vs. Optimal Zone**: The simulation pipeline initially operated with a broad, dynamically-calculated "Goldilocks" window spanning from `X_low` = `1.78` to `X_high` = `39.79`. The analysis shown in this plot refines this initial estimate, identifying a much narrower optimal performance window.
 
@@ -45,3 +50,22 @@ This plot details the relationship between a universe's initial Complexity (`X =
 
 5. **Key Insight**: This creates a crucial tension: while moderate complexity is best for achieving initial stability, higher complexity appears to be more conducive to finalizing the laws of physics via lock-in once stability is present.
 
+----------
+
+### Figure 3: Mapping the Island of Stability in the E-I Parameter Space
+
+This scatter plot visualizes the initial parameter space for all 10,000 simulated universes. Each point is plotted according to its initial **Energy (E)** and **Information (I)** values. The color indicates the universe's final fate: **stable (red)** or **unstable (blue)**.
+
+<img width="1066" height="981" alt="scatter_EI_E+I" src="https://github.com/user-attachments/assets/1a820eb5-3f5f-43ed-b663-ab9f722c7651" />
+
+### Analysis:
+
+The distribution of outcomes is not random, revealing a distinct **"island of stability"** in the parameter space.
+
+1. **Concentrated Stability**: Stable universes (red dots) are overwhelmingly concentrated in a region of low-to-moderate Energy (roughly `E < 75`) and moderate-to-high Information (roughly `I > 0.2`).
+
+2. **High-Energy Instability**: As the Energy parameter increases significantly (`E > 75`), stability becomes exceedingly rare. Universes with very high initial energy are almost universally fated to remain unstable, regardless of their Information content.
+
+3. **The Necessity of Information**: Similarly, universes with very low Information (`I < 0.2`) have a very low probability of becoming stable, even at low energy levels.
+
+**Key Insight**: This plot strongly suggests that stability is an emergent property arising from a **co-dependent relationship between E and I**. A sufficient level of Information appears necessary to structure a universe and guide it toward stability. However, this structuring effect seems to fail when the system's energy is overwhelmingly high, leading to inevitable chaos. This visualization provides a complementary view to the "Goldilocks Zone," showing how the individual components of `X` contribute to a universe's viability.
