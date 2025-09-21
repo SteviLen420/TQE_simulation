@@ -229,8 +229,6 @@ The results reveal a powerful and somewhat counter-intuitive principle: a signif
 
 **Key Insight**: This finding provides a crucial nuance to the Goldilocks Zone concept. While the overall complexity `(X = E*I)` must be within an optimal range (as seen in Figure 2), this analysis shows that the composition of X is equally important. A state of "tension" or **asymmetry** between Energy and Information appears to be a necessary ingredient for a universe to fully mature and solidify its physical laws. This suggests that "fine-tuning" in the TQE model is not about achieving perfect balance, but about finding an optimal degree of imbalance.
 
--------------
-
 ### Figure 12: The Decisive Impact of E-I Imbalance on Law Lock-in
 
 This bar chart provides a direct comparison of lock-in probability between two distinct populations of universes, separated by a threshold of `|E-I| = 5.89`. This allows for a clear, quantitative assessment of how the balance between Energy and Information affects a universe's final state.
