@@ -111,3 +111,22 @@ The chart captures the critical transition from a simple initial state to one of
 **Key Insight**: This process is fundamental to the TQE model. It ensures that each universe begins without a predisposition toward any specific outcome. By evolving into a state of maximum superposition, the simulation creates a level playing field of possibilities. From this state, a single classical reality is later selected or "collapses," driven by the specific E and I parameters of that universe.
 
 ------------
+
+### Figure 6: The Collapse Event - From Quantum Potential to Physical Reality
+
+This plot visualizes the pivotal "collapse" event at `t=0`. It shows the behavior of the **Complexity parameter (X)** for a single representative universe as it transitions from a fluctuating quantum state (`t < 0`) to a stable, classical state (`t > 0`).
+
+<img width="1219" height="842" alt="fl_collapse_E+I" src="https://github.com/user-attachments/assets/e4312dbe-9d86-4f67-a945-a15a6be7d20a" />
+
+Analysis:
+This graph captures the instant a universe's fundamental properties are determined.
+
+1. **Pre-Collapse Superposition (`t < 0`)**: Before the collapse, the `X` value (gray line) is highly volatile, exhibiting large and chaotic fluctuations. This represents the universe existing in a superposition of many different potential complexity values, with no single defined reality.
+
+2. **The Collapse Event (`t = 0`)**: The vertical red line marks the moment of collapse. At this instant, one specific value for X is "selected" from the quantum foam of possibilities, defining the physical nature of this particular universe.
+
+3. **Post-Collapse Lock-in (`t > 0`)**: Immediately following the collapse, the chaotic fluctuations cease entirely. The `X` parameter rapidly stabilizes, settling into minor oscillations around a fixed value of `X = 3.77` (indicated by the dashed red line). This becomes the locked-in value of Complexity that will govern the universe's subsequent classical evolution.
+
+**Key Insight:** The collapse event is the central mechanism in the TQE simulation that transforms quantum indeterminacy into a classical, predictable reality. The specific value that `X` locks into is critical; its position within or outside the "Goldilocks Zone" is a primary determinant of the universe's long-term fate and its potential to become stable.
+
+-----------
