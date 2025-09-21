@@ -389,7 +389,7 @@ Where:
 The Information parameter is a composite value normalized between 0 and 1, derived from the fusion of two quantum information-theoretic measures.
 
 1.  **Generate two random quantum states (kets)** in a $d$-dimensional Hilbert space: $|\psi_1\rangle$ and $|\psi_2\rangle$.
-2.  **Convert to probability distributions:** From these two states, probability distributions ($p_1$ and $p_2$) are obtained using the Born rule:
+2.  **Convert to probability distributions:** From these two states, probability distributions ( $p_1$ and $p_2$ ) are obtained using the Born rule:
 
 $$
 p_{k,i} = |\langle i | \psi_k \rangle|^2
@@ -397,13 +397,13 @@ $$
     
 where $|\ i \rangle$ is a basis vector.
 
-4.  **Kullback–Leibler (KL) Divergence ($I_{KL}$):** The asymmetry between the two distributions is measured and then normalized:
+4.  **Kullback–Leibler (KL) Divergence ( $I_{KL}$ ):** The asymmetry between the two distributions is measured and then normalized:
 
 $$
 D_{KL}(p_1 || p_2) = \sum_{i=1}^{d} p_{1,i} \log\left(\frac{p_{1,i}}{p_{2,i}}\right) \quad \rightarrow \quad I_{KL} = \frac{D_{KL}}{1 + D_{KL}}
 $$
 
-5.  **Shannon Entropy ($I_H$):** The entropy (uncertainty) of one of the states is measured and then normalized by the maximum possible entropy:
+5.  **Shannon Entropy ( $I_H$ ):** The entropy (uncertainty) of one of the states is measured and then normalized by the maximum possible entropy:
 
 $$
 H(p_1) = -\sum_{i=1}^{d} p_{1,i} \log(p_{1,i}) \quad \rightarrow \quad I_H = \frac{H}{\log(d)}
@@ -443,7 +443,7 @@ Where $P_t$ is the value of a parameter (e.g., `A`) at timestep `t`, and $\sigma
 
 ##### The Effective Noise ( $\sigma_{\text{eff}}$ )
 
-1.  **Goldilocks Function ($\sigma_G(X)$):** The amount of noise depends on the Complexity (`X`).
+1.  **Goldilocks Function ( $\sigma_G(X)$ ):** The amount of noise depends on the Complexity (`X`).
     * **Outside the Zone:** If `X` is outside the `[X_low, X_high]` Goldilocks Zone, the noise is amplified by a penalty factor (`OUTSIDE_PENALTY`).
     * **Inside the Zone:** Within the zone, the noise increases with a quadratic function as it moves away from the center of the zone, modeling the "fine-tuning".
     
@@ -451,7 +451,7 @@ $$
 \sigma_G(X) = \sigma_0 \cdot \left(1 + \alpha_G \left(\frac{|X - X_{\text{mid}}|}{X_{\text{width}}}\right)^2\right)
 $$
 
-2. ** Temporal Decay** ( $\text{decay}(t)$ ): The magnitude of the noise decays exponentially over time toward a defined minimum (`NOISE_FLOOR_FRAC`), which prevents the system from "freezing" prematurely.
+2.  **Temporal Decay ( $\text{decay}(t)$ )**: The magnitude of the noise decays exponentially over time toward a defined minimum (`NOISE_FLOOR_FRAC`), which prevents the system from "freezing" prematurely.
   
 
 $$
