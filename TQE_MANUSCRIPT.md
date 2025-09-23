@@ -655,11 +655,6 @@ In these simulations**, I generated each individual universe through **10,000 Mo
 
 * Interpretation: Information appears to exert a regularizing effect on the large-scale cosmic structure, smoothing out extreme random fluctuations like Cold Spots. Rather than simply eliminating anomalies, it seems to alter their nature, potentially fostering more ordered, non-random structural patterns.
 
-### 4. Predictability and Explainable AI (XAI) Metrics
-* Observation: The systemic states of E+I universes are fundamentally more predictable than their E-Only counterparts (`acc`: 0.799 vs. 0.764). Crucially, metrics measuring the added value of advanced models (`acc_delta`, `auc_delta`, `r2_delta`) are positive for E+I universes but zero for E-Only universes.
-
-* Interpretation: The Information component is not random noise but a structured, causal layer. Its presence makes the system's evolution more intelligible and modelable. The fact that its inclusion significantly improves predictive accuracy demonstrates that E+I universes are governed by a higher degree of understandable order.
-
 ## Overall Theoretical Conclusion
 **Is Information (I) necessary for a realistic, complex, and stable universe?**
 
