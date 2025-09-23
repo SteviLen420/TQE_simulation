@@ -587,55 +587,31 @@ On the other hand, the quantitative discrepancy in the anomaly's magnitude is a 
 
 -------------
 
-## Overall Summary and Key Findings
+### Overall Conclusion
 
-This research project investigated the **Theory of the Question of Existence (TQE)** by simulating a cohort of 10,000 universes governed by the interplay of Energy (E) and a hypothesized Information **(I) parameter**. The goal was to determine if this E-I coupling could provide a viable mechanism for the spontaneous emergence and stabilization of physical laws. The analysis of the simulation data has yielded several key findings that provide strong support for the TQE hypothesis and illuminate its core mechanisms.
+The Theory of the Question of Existence (TQE) proposes that the emergence of stable physical laws is not a given, but the outcome of a dual fine-tuning mechanism involving both Energy (E) and Information (I). The large-scale simulations conducted in this study support this view, while also highlighting the specific roles of each parameter.
 
-### 1. The E-I Coupling Forges a System of Predictable, Emergent Order
 
-The primary finding from the E+I simulation is that the coupling of Information with Energy creates a system with a rich internal structure and predictable, non-random behavior. This is not merely a universe where stability is possible, but one where the pathways to stability are governed by clear, emergent rules.
+**1. Energy Alone vs. Energy + Information**
 
-This emergent order is demonstrated by two key discoveries:
+Universes driven only by Energy can reach stability, but such stability tends to be rigid, premature, and lacking in genuine complexity. The introduction of Information enables complexity to emerge as an independent property, decoupled from pure energetic scale, and produces universes that are dynamically richer and structurally more realistic.
 
-* First, the existence of a well-defined "Goldilocks Zone" (Figure 2) shows that the probability of achieving a stable state is strongly determined by the initial `E·I` complexity.
+**2. Dual Selection Mechanism**
 
-* Second, the probability of achieving ultimate finality via "Law Lock-in" is strongly predicted by the initial asymmetry between the two parameters, `|E-I|` (`Figures 11 & 12`).
+The results reveal a two-step process of cosmic selection:
 
-These findings show that Information (I) acts as a guiding principle, creating a structured landscape of possibilities where outcomes are not left to pure chance but are a direct consequence of the initial parameter tuning. This capacity to generate predictable, rule-governed evolution is the model's core mechanism for producing "meaningful complexity."
+* **Stability** is gated by the product term `E·I`, which defines a narrow Goldilocks Zone of viable complexity.
+* **Finality** is triggered by the asymmetry `|E–I|`, with decisive imbalances strongly increasing the probability of rapid and permanent Law Lock-in.
 
-### 2. A Dual Fine-Tuning Mechanism Governs Stability and Finality
+This resolves the apparent paradox that the “best” universes occur at sub-peak complexity values (X ≈ 12–15) rather than at the maximum stability region (X ≈ 25.6). The most successful outcomes are not those with the highest a priori stability probability, but those that are both stable enough to survive and asymmetric enough to lock in rapidly.
 
-The analysis revealed two distinct and complementary fine-tuning criteria that govern different aspects of a universe's success:
+**3. Empirical Predictions and Discrepancies**
+The model successfully generates rare large-scale anomalies analogous to the Axis of Evil and the CMB Cold Spot, both emerging exclusively in the same small subset of early lock-in universes. Strikingly, one simulated alignment reproduces the observed ≈20° quadrupole–octupole correlation. However, the cold spot anomalies are consistently more extreme (z ≈ –78) than the Planck measurement (z ≈ –70). This quantitative mismatch provides a concrete direction for model refinement, rather than invalidation.
 
-* **The Goldilocks Zone for Stability (`driven by E·I`)**: The initial probability of a universe becoming stable is critically dependent on its Complexity parameter (`X = E·I`). As shown in Figure 2, there exists a narrow "Goldilocks Zone" for `X` (peaking at ≈25.6) where stability is almost certain. Universes with too little or too much complexity are overwhelmingly likely to fail.
+**4. Interpretation and Limits**
+The findings strongly support the view that Information is not a peripheral modifier but a fundamental driver of complexity and order. At the same time, these results are limited to a simulation-based framework. While the internal logic is consistent and the predictions falsifiable, empirical validation through cosmological data remains essential. AI-assisted reasoning checks provided useful consistency control, but cannot substitute for independent scientific verification.
 
-* **Asymmetry for Finality (`driven by |E-I|`)**: The probability of a universe achieving the ultimate state of "Law Lock-in" is governed by a different rule. As demonstrated in Figures 11 and 12, lock-in is over four times more likely in universes with a large Energy-Information gap (`|E-I|`). This suggests that while balance in the product of E and I is needed for stability, a decisive imbalance or asymmetry between them is required to force the universe into a final, immutable state.
-
-### 3. "Law Lock-in" is a Rapid, Coherence-Imposing Event
-The analysis of the "best" universes provided a clear, step-by-step model of cosmogenesis and the role of Law Lock-in:
-
-* The process begins with a standardized **Quantum Fluctuation**, establishing a normalized state of randomness.
-
-* This evolves into a high-entropy **Superposition** of all potential realities.
-
-* A **Collapse** event at `t=0` fixes the specific X parameter for the universe.
-
-* During the subsequent **Expansion** phase, the most successful universes undergo **Law Lock-in** at a very early stage (≈300-311 epochs).
-
-Crucially, the entropy evolution plots (Figures 8-10) visualized this lock-in as a **coherence event**, where previously chaotic and independent sub-regions of the universe are abruptly unified under a single, globally consistent set of physical laws.
-
-### 4. The Model Successfully Reproduces Key Cosmological Anomalies
-The TQE model's most significant achievement is its ability to generate testable predictions related to real-world cosmological observations. The analysis of simulated CMB maps revealed:
-
-* The model successfully produces universes containing rare, large-scale anomalies analogous to the **"Axis of Evil" (AoE)** and the **"CMB Cold Spot"**.
-
-* These anomalies were found to occur in the exact same three "best" universes, suggesting a shared physical origin rooted in the rapid lock-in dynamics that define these successful outcomes.
-
-* Most notably, the model produced an AoE with a quadrupole-octupole alignment of **≈20°**, a remarkable match to the value observed in our cosmos.
-
-* While the model also generated significant cold spots, their depths (z-scores) were consistently more extreme than the observed Planck Cold Spot, highlighting a clear area for future model refinement.
-
-In conclusion, the TQE simulation provides compelling evidence for a framework where stable physical laws are not a given, but an emergent and dynamically selected outcome of a fundamental Energy-Information coupling. The model successfully demonstrates this process and makes concrete, falsifiable predictions that show a promising, though not yet perfect, correspondence with observational data.
+In summary, the TQE framework demonstrates that stable, law-governed universes emerge only through a dual selection involving both balance (`E·I`) and imbalance (`|E–I|`). Energy alone can sustain existence, but Information transforms existence into complexity. The model makes concrete, testable predictions, and while some require refinement, the framework opens a promising pathway toward an information-theoretic account of cosmogenesis.
 
 ---------------
 
