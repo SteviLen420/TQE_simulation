@@ -11,7 +11,7 @@ Copyright (c) 2025 Stefan Len
 **Author**: Stefan Len
 
 
-This document summarizes the key findings from the TQE E+I simulation run `20250918_035838`. The analysis explores the conditions required for universe stability and the emergence of physical laws based on the interplay of Energy (E) and Information (I).
+This document summarizes the key findings from the TQE E+I simulation run `20250919_035838`. The analysis explores the conditions required for universe stability and the emergence of physical laws based on the interplay of Energy (E) and Information (I).
 
 ----------
 
@@ -147,13 +147,13 @@ This plot illustrates the post-collapse dynamics for the E+I universe cohort, fo
 
 The chart showcases the primary long-term evolutionary behavior of the simulated universes after their fundamental `X` parameter has been fixed.
 
-Sustained Cosmic Expansion: `The Amplitude A` (blue line) demonstrates a clear and persistent growth trend, representing the ongoing expansion of the universe's scale. The expansion appears roughly linear with small stochastic fluctuations, indicating a steady increase in size over time.
+1. **Sustained Cosmic Expansion**: `The Amplitude A` (blue line) demonstrates a clear and persistent growth trend, representing the ongoing expansion of the universe's scale. The expansion appears roughly linear with small stochastic fluctuations, indicating a steady increase in size over time.
 
-Parameter Decoupling: The `Orientation I` parameter (orange line) remains stable and close to zero throughout the entire epoch. This suggests that this particular parameter is decoupled from the expansion dynamics, having either been fixed at `t=0` or being a conserved quantity within the model.
+2. **Parameter Decoupling**: The `Orientation I` parameter (orange line) remains stable and close to zero throughout the entire epoch. This suggests that this particular parameter is decoupled from the expansion dynamics, having either been fixed at `t=0` or being a conserved quantity within the model.
 
-Late-Stage Law Lock-in: The vertical red dashed line identifies the average epoch for "Law Lock-in" at approximately `t = 747`. Based on the provided context, this is a mean value calculated only from the subset of universes (22.1% of the total) that successfully reached this ultimate state of stability. This confirms that Law Lock-in is not an initial condition but an emergent state achieved late in a universe's evolution.
+3. **Late-Stage Law Lock-in**: The vertical red dashed line identifies the average epoch for "Law Lock-in" at approximately `t = 747`. Based on the provided context, this is a mean value calculated only from the subset of universes (22.1% of the total) that successfully reached this ultimate state of stability. This confirms that Law Lock-in is not an initial condition but an emergent state achieved late in a universe's evolution.
 
-Independence of Expansion and Finality: A critical observation is that the universe's expansion (`Amplitude A`) continues unabated through and beyond the point of Law Lock-in. The freezing of the universe's fundamental physical rules does not halt or alter the metric expansion of spacetime.
+4. **Independence of Expansion and Finality**: A critical observation is that the universe's expansion (`Amplitude A`) continues unabated through and beyond the point of Law Lock-in. The freezing of the universe's fundamental physical rules does not halt or alter the metric expansion of spacetime.
 
 **Key Insight**: This figure provides a crucial distinction between a universe's dynamic evolution and the finalization of its laws. The "Law Lock-in" event is shown to be a late-stage achievement for a fraction of universes, not a universal starting point. The most significant insight is the **decoupling of physical law finality from spatial expansion**. In the TQE model, a universe can solidify its fundamental constants and rules while its spatial fabric continues to expand. This suggests that a universe's core identity (`laws`) and its dynamic behavior (`expansion`) are distinct and can operate on different evolutionary timescales.
 
