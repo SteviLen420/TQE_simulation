@@ -466,7 +466,7 @@ In this context, a higher value of ` $I$ ` represents a stronger directional bia
 The final, immutable state of "Law Lock-in" is not an assumption but an emergent state identified by a precise operational criterion. A universe is considered to have achieved Law Lock-in when the relative variation of its key parameters ( $\Delta P/P$ ) falls below a specific threshold for a sustained number of epochs. Based on the simulation configuration, this is defined as:
 
 $$
-\frac{\Delta P}{P} < 0.005    for at least 6 consecutive epochs.
+\frac{\Delta P}{P} < 0.005$ for at least 6 consecutive epochs.
 $$
 
 This criterion `(REL_EPS_LOCKIN = 0.005`, `CALM_STEPS_LOCKIN = 6)` provides an objective and reproducible method for distinguishing universes that successfully finalize their physical laws from those that remain stable but mutable, or those that descend into chaos.
