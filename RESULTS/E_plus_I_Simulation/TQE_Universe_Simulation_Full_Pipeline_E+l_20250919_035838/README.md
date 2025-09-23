@@ -437,7 +437,7 @@ $$
 
 This equation establishes that the final state of the universe is not a result of pure chance, but is actively selected based on the interplay between its energetic and informational content.
 
-#### 2. The Fine-Tuning Function
+### 2. The Fine-Tuning Function
 
 The fine-tuning function, $f(E,I)$ , combines two distinct physical hypotheses into a single mathematical form. It consists of an energetic "Goldilocks" filter and a linear Information bias term:
 
@@ -451,7 +451,7 @@ The two components of this function are:
    
 2.2  **The Information Bias:** The linear term, $(1 + \alpha I)$ , models the hypothesis that Information provides a direct bias towards ordered outcomes. The orientation bias strength $\alpha$ ( $\alpha = 0.8$ in this run) quantifies the strength of this effect. When $I > 0$ , the probability of collapse into a complexity-permitting state is enhanced.
 
-#### 3. The Information Parameter (I)
+### 3. The Information Parameter (I)
 
 The Information parameter $I$ is defined information-theoretically as a normalized measure of asymmetry between the probability distributions of the system at two successive time steps, $P_t$ and $P_{t+1}$ . This is calculated using the Kullback-Leibler (KL) divergence, $D_{KL}$, which quantifies the information lost when one distribution is used to approximate the other. The formula is normalized to ensure $0 \le I \le 1$ :
 
@@ -461,12 +461,12 @@ $$
 
 In this context, a higher value of $I$ represents a stronger directional bias in the evolution of the quantum state. The simulation also explores a composite definition where the KL-derived value is combined with the Shannon Entropy (H) of the state, often via product fusion ( $I = I_{kl} \times I_{shannon}$ ), to create a parameter that captures both asymmetry and intrinsic complexity.
 
-#### 4. The Lock-in Criterion
+### 4. The Lock-in Criterion
 
 The final, immutable state of "Law Lock-in" is not an assumption but an emergent state identified by a precise operational criterion. A universe is considered to have achieved Law Lock-in when the relative variation of its key parameters ( $\Delta P/P$ ) falls below a specific threshold for a sustained number of epochs. Based on the simulation configuration, this is defined as:
 
 $$
-\frac{\Delta P}{P} < 0.005, for at least 6 consecutive epochs.
+\frac{\Delta P}{P} < 0.005\  for\ at\ least\ 6\ consecutive\ epochs.
 $$
 
 This criterion `(REL_EPS_LOCKIN = 0.005`, `CALM_STEPS_LOCKIN = 6)` provides an objective and reproducible method for distinguishing universes that successfully finalize their physical laws from those that remain stable but mutable, or those that descend into chaos.
