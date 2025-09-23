@@ -77,7 +77,7 @@ The plot reveals the complex, non-linear relationship between the initial `E` an
 
 ### Figure 4: Statistical Evolution During the Quantum Fluctuation Phase
 
-This plot displays the time evolution of the expectation value (`⟨A`⟩, mean) and variance (`Var(A)`) of a fundamental observable 'A' during the initial quantum fluctuation stage of the simulation. These curves represent the averaged behavior across the entire 10,000-universe E+I cohort, providing insight into the primordial state from which each universe emerges.
+This plot displays the time evolution of the expectation value (`⟨A⟩`, mean) and variance (`Var(A)`) of a fundamental observable 'A' during the initial quantum fluctuation stage of the simulation. These curves represent the averaged behavior across the entire 10,000-universe E+I cohort, providing insight into the primordial state from which each universe emerges.
 
 <img width="1230" height="842" alt="fl_fluctuation_E+I" src="https://github.com/user-attachments/assets/e93edd4f-dd24-4831-905f-898afdb16658" />
 
