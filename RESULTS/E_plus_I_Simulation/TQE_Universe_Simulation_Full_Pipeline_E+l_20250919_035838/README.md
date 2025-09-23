@@ -447,19 +447,19 @@ $$
 
 The two components of this function are:
 
-2.1 **The Energetic Goldilocks Zone:** The Gaussian term, $\exp\left(-\frac{(E-E_c)^2}{2\sigma^2}\right)$ , ensures that stability is most probable for universes with an initial energy ` $E$`  close to a critical energy ` $E_c$ `. The stability width $\sigma$ controls how sensitive the system is to deviations from ` $E_c$ `. In the simulations analyzed, these were set to ` $E_c = 4.0$`  and ` $\sigma = 4.0$ `.
+2.1 **The Energetic Goldilocks Zone:** The Gaussian term, $\exp\left(-\frac{(E-E_c)^2}{2\sigma^2}\right)$ , ensures that stability is most probable for universes with an initial energy `$E$`  close to a critical energy `$E_c$`. The stability width $\sigma$ controls how sensitive the system is to deviations from `$E_c$`. In the simulations analyzed, these were set to `$E_c = 4.0$`  and `$\sigma = 4.0$`.
    
-2.2  **The Information Bias:** The linear term, ` $(1 + \alpha I)$ `, models the hypothesis that Information provides a direct bias towards ordered outcomes. The orientation bias strength ` $\alpha$ ` ` ( $\alpha = 0.8$ in this run) ` quantifies the strength of this effect. When ` $I > 0$ `, the probability of collapse into a complexity-permitting state is enhanced.
+2.2  **The Information Bias:** The linear term, `$(1 + \alpha I)$`, models the hypothesis that Information provides a direct bias towards ordered outcomes. The orientation bias strength `$\alpha$` `( $\alpha = 0.8$ in this run)` quantifies the strength of this effect. When `$I > 0$`, the probability of collapse into a complexity-permitting state is enhanced.
 
 #### 3. The Information Parameter (I)
 
-The Information parameter ` $I$ ` is defined information-theoretically as a normalized measure of asymmetry between the probability distributions of the system at two successive time steps, $P_t$ and $P_{t+1}$ . This is calculated using the Kullback-Leibler (KL) divergence, $D_{KL}$, which quantifies the information lost when one distribution is used to approximate the other. The formula is normalized to ensure $0 \le I \le 1$ :
+The Information parameter `$I$` is defined information-theoretically as a normalized measure of asymmetry between the probability distributions of the system at two successive time steps, $P_t$ and $P_{t+1}$ . This is calculated using the Kullback-Leibler (KL) divergence, $D_{KL}$, which quantifies the information lost when one distribution is used to approximate the other. The formula is normalized to ensure $0 \le I \le 1$ :
 
 $$
 I = \frac{D_{KL}(P_t \parallel P_{t+1})}{1 + D_{KL}(P_t \parallel P_{t+1})}
 $$
 
-In this context, a higher value of ` $I$ ` represents a stronger directional bias in the evolution of the quantum state. The simulation also explores a composite definition where the KL-derived value is combined with the Shannon Entropy (H) of the state, often via product fusion ` ( $I = I_{kl} \times I_{shannon}$ ) `, to create a parameter that captures both asymmetry and intrinsic complexity.
+In this context, a higher value of `$I$` represents a stronger directional bias in the evolution of the quantum state. The simulation also explores a composite definition where the KL-derived value is combined with the Shannon Entropy (H) of the state, often via product fusion `( $I = I_{kl} \times I_{shannon}$ )`, to create a parameter that captures both asymmetry and intrinsic complexity.
 
 #### 4. The Lock-in Criterion
 
