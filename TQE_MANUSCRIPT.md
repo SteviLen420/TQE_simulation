@@ -152,7 +152,6 @@ The simulation framework is built on a strong foundation of reproducibility. Whi
 **Author’s Note**|
 I am not a professional physicist, but an independent enthusiast. This work is intended as an exploratory contribution rather than a finished theory. I apologize for any possible inaccuracies or oversights, my goal is simply to share an idea that may inspire further exploration, refinement, and development by the broader research community.
 
-----------
 ### TQE E+I Universe Analysis (Run ID: 20250919_035838)
 **Global stability, entropy, and law lock-in metrics for Energy + Information universes**
 
