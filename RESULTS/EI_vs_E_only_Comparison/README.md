@@ -54,7 +54,7 @@ The data provides a multi-faceted answer:
 
 Based on these findings, this analysis concludes that while a universe can exist on the basis of energy alone, the introduction of **Information represents a critical phase transition**. This transition enables the development of emergent complexity, leading to a more structured, predictable, and dynamically evolving cosmos. The data validates the thesis that Information is a fundamental, not peripheral, driver of cosmic evolution.
 
-The results and conclusions were derived not only through manual evaluation, but also based on a detailed analysis conducted with the assistance of several artificial intelligence models (**OpenAI GPT-5**, **Google Gemini 2.5 Pro**, **DeepSeek-R1:14B**).
+The results and conclusions were derived not only through manual evaluation, but also based on a detailed analysis conducted with the assistance of several artificial intelligence models (**OpenAI GPT-5**, **Google Gemini 2.5 Pro**).
 
 ## License
 This project is licensed under the MIT License – see the [LICENSE](../../LICENSE) file for details.
