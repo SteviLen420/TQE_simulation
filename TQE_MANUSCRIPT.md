@@ -587,16 +587,16 @@ On the other hand, the quantitative discrepancy in the anomaly's magnitude is a 
 
 -------------
 
-### Overall Conclusion
+## Overall Conclusion
 
 The Theory of the Question of Existence (TQE) proposes that the emergence of stable physical laws is not a given, but the outcome of a dual fine-tuning mechanism involving both Energy (E) and Information (I). The large-scale simulations conducted in this study support this view, while also highlighting the specific roles of each parameter.
 
 
-**1. Energy Alone vs. Energy + Information**
+### 1. Energy Alone vs. Energy + Information
 
 Universes driven only by Energy can reach stability, but such stability tends to be rigid, premature, and lacking in genuine complexity. The introduction of Information enables complexity to emerge as an independent property, decoupled from pure energetic scale, and produces universes that are dynamically richer and structurally more realistic.
 
-**2. Dual Selection Mechanism**
+### 2. Dual Selection Mechanism
 
 The results reveal a two-step process of cosmic selection:
 
@@ -605,10 +605,10 @@ The results reveal a two-step process of cosmic selection:
 
 This resolves the apparent paradox that the “best” universes occur at sub-peak complexity values (X ≈ 12–15) rather than at the maximum stability region (X ≈ 25.6). The most successful outcomes are not those with the highest a priori stability probability, but those that are both stable enough to survive and asymmetric enough to lock in rapidly.
 
-**3. Empirical Predictions and Discrepancies**
+### 3. Empirical Predictions and Discrepancies
 The model successfully generates rare large-scale anomalies analogous to the Axis of Evil and the CMB Cold Spot, both emerging exclusively in the same small subset of early lock-in universes. Strikingly, one simulated alignment reproduces the observed ≈20° quadrupole–octupole correlation. However, the cold spot anomalies are consistently more extreme (z ≈ –78) than the Planck measurement (z ≈ –70). This quantitative mismatch provides a concrete direction for model refinement, rather than invalidation.
 
-**4. Interpretation and Limits**
+### 4. Interpretation and Limits
 The findings strongly support the view that Information is not a peripheral modifier but a fundamental driver of complexity and order. At the same time, these results are limited to a simulation-based framework. While the internal logic is consistent and the predictions falsifiable, empirical validation through cosmological data remains essential. AI-assisted reasoning checks provided useful consistency control, but cannot substitute for independent scientific verification.
 
 In summary, the TQE framework demonstrates that stable, law-governed universes emerge only through a dual selection involving both balance (`E·I`) and imbalance (`|E–I|`). Energy alone can sustain existence, but Information transforms existence into complexity. The model makes concrete, testable predictions, and while some require refinement, the framework opens a promising pathway toward an information-theoretic account of cosmogenesis.
