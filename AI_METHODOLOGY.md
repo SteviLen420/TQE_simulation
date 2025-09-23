@@ -3,7 +3,9 @@
 Over the course of this research, multiple large language models (LLMs) were systematically employed to ensure analytical rigor, minimize hallucinations, and maintain scientific consistency. Each model was used according to its relative strengths:
 
 •	**ChatGPT (GPT-4o / GPT-5 family)**: Used as the primary analysis engine. These models provided the most coherent and logically consistent interpretations of the raw simulation data. They excelled in producing structured, publication-ready narratives that connect results with theory. Their main limitation was occasional confusion when too much heterogeneous input was given in a single session, which was mitigated by isolating analyses into separate, clean chat sessions.
+
 •	**Gemini (Google)**: Used as a secondary validation model. Its strength lies in re-checking analyses produced by ChatGPT, especially for consistency across different data representations. Gemini was also effective at spotting alternative perspectives on the same dataset. However, its narrative clarity and coherence were typically weaker than ChatGPT’s.
+
 •	**DeepSeek (14B, offline version)**: Tested as an additional model for redundancy. In practice, it exhibited a high rate of hallucinations and insufficient robustness for scientific analysis. While unsuitable for primary interpretation, its role was limited to exploratory testing.
 
 ### Workflow and Control
