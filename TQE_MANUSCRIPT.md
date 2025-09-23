@@ -616,6 +616,61 @@ $$
 
 This criterion `(REL_EPS_LOCKIN = 0.005`, `CALM_STEPS_LOCKIN = 6)` provides an objective and reproducible method for distinguishing universes that successfully finalize their physical laws from those that remain stable but mutable, or those that descend into chaos.
 
+----------
+
+## Comparative Analysis: E+I vs. E-Only Universes
+
+**A dual-cohort evaluation of stability, complexity, entropy, and anomalies**
+
+**Author’s Note**|
+All raw data, simulation outputs, and extended figures from both the E+I and E-only universes are available on the project’s GitHub repository. This includes every simulated universe across all runs, ensuring full transparency and reproducibility.
+
+This document provides a scientific analysis of simulation results comparing two distinct types of universes:
+
+* **E+I Universes: Driven by both Energy (E) and Information (I).**
+
+* **E-Only Universes: Driven solely by Energy (E).**
+
+The primary objective is to evaluate the hypothesis that Information (I) is a fundamental component necessary for the emergence of a realistic, complex, and stable universe. The analysis focuses on stability dynamics, complexity, entropy, cosmological anomalies, and the overall predictability of the systems.
+
+### Methodological Note
+
+I computed the summarized analysis based on the **average results of 5 E+I simulations and 5 E-Only simulations, which I processed and compared using Wolfram Language.
+In these simulations**, I generated each individual universe through **10,000 Monte Carlo** iterations to ensure the statistical robustness of the observed metrics and differences.
+
+## Key Findings and Interpretation
+
+### 1. Stability and Lock-in Dynamics
+* Observation: E-Only universes demonstrate a higher propensity for stabilization (`stable_ratio`: 0.518 vs. 0.455) and "lock-in" (`lockin_ratio`: 0.230 vs. 0.186). This indicates a stronger tendency to converge into a static, final state. The time required to reach stabilization or lock-in is nearly identical in both models.
+
+* Interpretation: The presence of Information reduces the tendency for premature systemic convergence. While E-Only universes rapidly settle into equilibrium—potentially primitive—states, E+I universes persist in a dynamic and exploratory phase for a longer duration. Information thus functions as a mechanism to sustain dynamism, preventing the system from freezing into a simple, static configuration too early.
+
+### 2. Complexity and Entropy
+* Observation: The most critical finding lies in the relationship between Complexity (X) and Energy (E). In E-Only universes, complexity is a direct derivative of energy, as evidenced by the identical values for `logX` and `logE` (2.50). In stark contrast, in E+I universes, complexity decouples from energy (`logX`: 1.30 vs. `logE`: 2.50).
+
+* Interpretation: This evidence strongly suggests that Information enables complexity to arise as an independent, emergent property. In the E-Only paradigm, complexity is merely a byproduct of the system's energy. In the E+I paradigm, Information facilitates a qualitative leap, allowing a more sophisticated form of complexity to emerge from the system's internal structure and processing capabilities, not just its energy content.
+
+### 3. Cosmological Anomalies
+* Observation: E+I universes exhibit fewer (`cold_count`: 1.2 vs. 1.5) and less intense (`cold_min_z`: -78.8 vs. -83.9) "Cold Spot" anomalies. The effect on the "Axis of Evil" (AoE) is more nuanced, showing a lower alignment score (less anomalous) but an angle closer to the theoretical maximum.
+
+* Interpretation: Information appears to exert a regularizing effect on the large-scale cosmic structure, smoothing out extreme random fluctuations like Cold Spots. Rather than simply eliminating anomalies, it seems to alter their nature, potentially fostering more ordered, non-random structural patterns.
+
+### 4. Predictability and Explainable AI (XAI) Metrics
+* Observation: The systemic states of E+I universes are fundamentally more predictable than their E-Only counterparts (`acc`: 0.799 vs. 0.764). Crucially, metrics measuring the added value of advanced models (`acc_delta`, `auc_delta`, `r2_delta`) are positive for E+I universes but zero for E-Only universes.
+
+* Interpretation: The Information component is not random noise but a structured, causal layer. Its presence makes the system's evolution more intelligible and modelable. The fact that its inclusion significantly improves predictive accuracy demonstrates that E+I universes are governed by a higher degree of understandable order.
+
+## Overall Theoretical Conclusion
+**Is Information (I) necessary for a realistic, complex, and stable universe?**
+
+The data provides a multi-faceted answer:
+
+* For **stability**, Information is not strictly necessary. In fact, E-Only universes are more prone to a rigid, static form of stability. Information promotes a more dynamic and resilient meta-stability by preventing premature lock-in.
+
+* For **complexity**, the answer is a definitive **yes**. The evidence strongly supports the hypothesis that Information is indispensable for the emergence of true, decoupled complexity. Without it, complexity remains a mere shadow of energy.
+
+Based on these findings, this analysis concludes that while a universe can exist on the basis of energy alone, the introduction of **Information represents a critical phase transition**. This transition enables the development of emergent complexity, leading to a more structured, predictable, and dynamically evolving cosmos. The data validates the thesis that Information is a fundamental, not peripheral, driver of cosmic evolution.
+
 ---------
 
 ### Methodological Note on Analytical Rigor and Validation
@@ -627,3 +682,5 @@ To ensure the utmost rigor in the interpretation of these findings, the complete
 Crucially, the key findings, interpretations, and the logical narrative connecting them **remained consistent across all independent analytical rounds**. This process of repeated validation, where different systems converged on the same conclusions based on the verified, factual data, provides a high degree of confidence in the robustness of the results presented here.
 
 In addition to this validated direct analysis, an extensive suite of predictive machine learning models was developed (the XAI module). While functional, these models exhibited significant limitations, including overfitting and internally inconsistent explanations (as shown by conflicting SHAP and LIME results). For this reason, the conclusions from these predictive models are considered preliminary and have been excluded from the main findings of this initial publication, representing an area for future research.
+
+----------
