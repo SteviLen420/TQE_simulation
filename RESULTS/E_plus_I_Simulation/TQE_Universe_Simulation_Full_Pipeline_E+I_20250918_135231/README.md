@@ -15,8 +15,6 @@ This document summarizes the key findings from the TQE E+I simulation run `20250
 
 -----------
 
-# Comprehensive Analysis of the Theory of the Question of Existence (TQE)
-
 ### Abstract of Findings
 
 This analysis synthesizes the theoretical framework of the Theory of the Question of Existence (TQE) with its extensive numerical simulation results. The simulation of 10,000 universes robustly supports the theory's core tenet: the emergence of stable physical laws is a non-trivial outcome of an **Energy-Information (E-I) coupling mechanism**. Our findings demonstrate that stable universes emerge exclusively within a well-defined **"Goldilocks Zone"** of this coupled parameter. A two-level selection principle is identified, where the product **E·I** governs initial stability and the absolute difference **|E-I|** correlates with the robustness of law stabilization ("lock-in"). The archetypal successful universe exhibits a rapid, phase-transition-like evolution from regional chaos to global coherence, a process strongly linked to an early lock-in epoch. Crucially, the model generates rare, large-scale cosmological anomalies, such as the **Axis of Evil (AoE)** and **Cold Spot**, in a small subset of the most stable universes, providing a direct, falsifiable link to observational cosmology. These results collectively present a coherent, data-supported narrative for the TQE hypothesis as a dynamic mechanism for the selection of physical law.
