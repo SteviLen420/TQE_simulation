@@ -149,9 +149,9 @@ It extends these by offering a **quantitative, information-theoretic stabilizati
 
 The simulation framework is built on a strong foundation of reproducibility. While exploratory runs can be performed with SEED, all key experiments presented are governed by a SEED defined in the configuration. This ensures that the entire ensemble of universes can be reproduced exactly, which is critical for scientific validation, debugging, and peer review.
 
-**Author’s Note**
+**Author’s Note**|
 I am not a professional physicist, but an independent enthusiast. This work is intended as an exploratory contribution rather than a finished theory. I apologize for any possible inaccuracies or oversights, my goal is simply to share an idea that may inspire further exploration, refinement, and development by the broader research community.
-
+----------
 ### TQE E+I Universe Analysis (Run ID: 20250919_035838)
 **Global stability, entropy, and law lock-in metrics for Energy + Information universes**
 
