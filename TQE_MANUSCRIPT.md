@@ -159,7 +159,7 @@ This document summarizes the key findings from the TQE E+I simulation run `20250
 
 ----------
 
-## The Mathematics of the Simulation
+## Mathematical Framework of the Simulation
 
 The TQE framework is built upon a quantitative model designed to simulate the emergence of stable physical laws from a pre-law quantum state. The core of the simulation is described by a set of mathematical equations and operational definitions that govern how Energy (E) and Information (I) interact to determine a universe's fate.
 
