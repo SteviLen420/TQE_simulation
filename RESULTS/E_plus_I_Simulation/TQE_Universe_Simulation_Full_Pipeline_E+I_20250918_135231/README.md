@@ -82,25 +82,47 @@ For clarity, the core mathematical components of the TQE model underpinning thes
 
 * **Modulation of Quantum Probability:** The evolution of the universe's state P(ψ) is modulated by the fine-tuning function f(E,I):
   
-    $$
-    P'(\psi) = P(\psi) \cdot f(E,I)
-    $$
+$$
+P'(\psi) = P(\psi) \cdot f(E,I)
+$$
   
 * **The Fine-Tuning Function:** This function encodes the Goldilocks Zone and the Information bias:
   
-    $$
-    f(E,I) = \exp\left(-\frac{(E-E_c)^2}{2\sigma^2}\right) \cdot (1 + \alpha \cdot I)
-    $$
+$$
+f(E,I) = \exp\left(-\frac{(E-E_c)^2}{2\sigma^2}\right) \cdot (1 + \alpha \cdot I)
+$$
   
 * **Information Parameter (I):** Operationally defined using the Kullback-Leibler divergence between probability distributions at successive time steps, normalized to a [0, 1] range:
   
-    $$
-    I = \frac{D_{KL}(P_t || P_{t+1})}{1 + D_{KL}(P_t || P_{t+1})}
-    $$
+$$
+I = \frac{D_{KL}(P_t || P_{t+1})}{1 + D_{KL}(P_t || P_{t+1})}
+$$
   
 * **Lock-in Criterion:** A universe achieves final stabilization if the relative change in its probability state remains below a threshold for a sustained period:
   
-    $$
-    \frac{\Delta P}{P} < 0.005
-    $$
-    for ≥ 6 epochs.
+$$
+\frac{\Delta P}{P} < 0.005\ for\ ≥\ 6\ epochs\.
+$$
+ 
+---
+
+## Methodological Note on Analytical Rigor and Validation
+The primary conclusions presented in this document are derived from the direct statistical analysis of the simulation's output data. This includes the aggregate statistics from the summary_full.json, the per-file checks from the math_check.json, and the visual analysis of key plots.
+
+To ensure the utmost rigor in the interpretation of these findings, the complete dataset and all generated figures were subjected to multiple, independent rounds of control analysis. The same simulation data was submitted for a full, iterative, Socratic analysis to different advanced Large Language Models to act as scientific reasoning assistants.
+
+Crucially, the key findings, interpretations, and the logical narrative connecting them remained consistent across all independent analytical rounds. This process of repeated validation, where different systems converged on the same conclusions based on the verified, factual data, provides a high degree of confidence in the robustness of the results presented here.
+
+In addition to this validated direct analysis, an extensive suite of predictive machine learning models was developed (the XAI module). While functional, these models exhibited significant limitations, including overfitting and internally inconsistent explanations (as shown by conflicting SHAP and LIME results). For this reason, the conclusions from these predictive models are considered preliminary and have been excluded from the main findings of this initial publication, representing an area for future research.
+
+---
+
+## License
+This project is licensed under the MIT License – see the [LICENSE](./LICENSE) file for details.
+
+## Contact
+
+Got questions, ideas, or feedback?  
+Drop me an email at **tqe.simulation@gmail.com** 
+
+[E_plus_I_Simulation](../../E_plus_I_Simulation)
