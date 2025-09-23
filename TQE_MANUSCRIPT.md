@@ -152,11 +152,60 @@ The simulation framework is built on a strong foundation of reproducibility. Whi
 **Author’s Note**|
 I am not a professional physicist, but an independent enthusiast. This work is intended as an exploratory contribution rather than a finished theory. I apologize for any possible inaccuracies or oversights, my goal is simply to share an idea that may inspire further exploration, refinement, and development by the broader research community.
 
-----------
 ### TQE E+I Universe Analysis (Run ID: 20250919_035838)
 **Global stability, entropy, and law lock-in metrics for Energy + Information universes**
 
 This document summarizes the key findings from the TQE E+I simulation run `20250919_035838`. The analysis explores the conditions required for universe stability and the emergence of physical laws based on the interplay of Energy (E) and Information (I).
+
+----------
+
+## The Mathematics of the Simulation
+
+The TQE framework is built upon a quantitative model designed to simulate the emergence of stable physical laws from a pre-law quantum state. The core of the simulation is described by a set of mathematical equations and operational definitions that govern how Energy (E) and Information (I) interact to determine a universe's fate.
+
+### 1. The Core Modulation Equation
+
+At the heart of the model is the modulation of a baseline quantum probability distribution, $P(ψ)$ , which represents the superposition of all potential universal states. This distribution is biased by a fine-tuning function, $f(E,I)$ , which incorporates the influence of both vacuum energy fluctuations and informational orientation. The modulated, post-interaction probability distribution, $P′(ψ)$ , is given by:
+
+$$
+P′(ψ)=P(ψ)⋅f(E,I)
+$$
+
+This equation establishes that the final state of the universe is not a result of pure chance, but is actively selected based on the interplay between its energetic and informational content.
+
+### 2. The Fine-Tuning Function
+
+The fine-tuning function, $f(E,I)$ , combines two distinct physical hypotheses into a single mathematical form. It consists of an energetic "Goldilocks" filter and a linear Information bias term:
+
+$$
+f(E,I) = \exp\left(-\frac{(E-E_c)^2}{2\sigma^2}\right) \cdot (1+\alpha I)
+$$
+
+The two components of this function are:
+
+2.1 **The Energetic Goldilocks Zone:** The Gaussian term, $\exp\left(-\frac{(E-E_c)^2}{2\sigma^2}\right)$ , ensures that stability is most probable for universes with an initial energy $E$  close to a critical energy $E_c$. The stability width $\sigma$ controls how sensitive the system is to deviations from $E_c$. In the simulations analyzed, these were set to $E_c = 4.0$  and $\sigma = 4.0$ .
+   
+2.2  **The Information Bias:** The linear term, $(1 + \alpha I)$ , models the hypothesis that Information provides a direct bias towards ordered outcomes. The orientation bias strength $\alpha$ ( $\alpha = 0.8$ in this run) quantifies the strength of this effect. When $I > 0$ , the probability of collapse into a complexity-permitting state is enhanced.
+
+### 3. The Information Parameter (I)
+
+The Information parameter $I$ is defined information-theoretically as a normalized measure of asymmetry between the probability distributions of the system at two successive time steps, $P_t$ and $P_{t+1}$ . This is calculated using the Kullback-Leibler (KL) divergence, $D_{KL}$, which quantifies the information lost when one distribution is used to approximate the other. The formula is normalized to ensure $0 \le I \le 1$ :
+
+$$
+I = \frac{D_{KL}(P_t \parallel P_{t+1})}{1 + D_{KL}(P_t \parallel P_{t+1})}
+$$
+
+In this context, a higher value of $I$ represents a stronger directional bias in the evolution of the quantum state. The simulation also explores a composite definition where the KL-derived value is combined with the Shannon Entropy (H) of the state, often via product fusion ( $I = I_{kl} \times I_{shannon}$ ), to create a parameter that captures both asymmetry and intrinsic complexity.
+
+### 4. The Lock-in Criterion
+
+The final, immutable state of "Law Lock-in" is not an assumption but an emergent state identified by a precise operational criterion. A universe is considered to have achieved Law Lock-in when the relative variation of its key parameters ( $\Delta P/P$ ) falls below a specific threshold for a sustained number of epochs. Based on the simulation configuration, this is defined as:
+
+$$
+\frac{\Delta P}{P} < 0.005\  for\ at\ least\ 6\ consecutive\ epochs.
+$$
+
+This criterion `(REL_EPS_LOCKIN = 0.005`, `CALM_STEPS_LOCKIN = 6)` provides an objective and reproducible method for distinguishing universes that successfully finalize their physical laws from those that remain stable but mutable, or those that descend into chaos.
 
 ----------
 
@@ -568,56 +617,6 @@ In conclusion, the TQE simulation provides compelling evidence for a framework w
 
 ---------------
 
-## The Mathematics of the Simulation
-
-The TQE framework is built upon a quantitative model designed to simulate the emergence of stable physical laws from a pre-law quantum state. The core of the simulation is described by a set of mathematical equations and operational definitions that govern how Energy (E) and Information (I) interact to determine a universe's fate.
-
-### 1. The Core Modulation Equation
-
-At the heart of the model is the modulation of a baseline quantum probability distribution, $P(ψ)$ , which represents the superposition of all potential universal states. This distribution is biased by a fine-tuning function, $f(E,I)$ , which incorporates the influence of both vacuum energy fluctuations and informational orientation. The modulated, post-interaction probability distribution, $P′(ψ)$ , is given by:
-
-$$
-P′(ψ)=P(ψ)⋅f(E,I)
-$$
-
-This equation establishes that the final state of the universe is not a result of pure chance, but is actively selected based on the interplay between its energetic and informational content.
-
-### 2. The Fine-Tuning Function
-
-The fine-tuning function, $f(E,I)$ , combines two distinct physical hypotheses into a single mathematical form. It consists of an energetic "Goldilocks" filter and a linear Information bias term:
-
-$$
-f(E,I) = \exp\left(-\frac{(E-E_c)^2}{2\sigma^2}\right) \cdot (1+\alpha I)
-$$
-
-The two components of this function are:
-
-2.1 **The Energetic Goldilocks Zone:** The Gaussian term, $\exp\left(-\frac{(E-E_c)^2}{2\sigma^2}\right)$ , ensures that stability is most probable for universes with an initial energy $E$  close to a critical energy $E_c$. The stability width $\sigma$ controls how sensitive the system is to deviations from $E_c$. In the simulations analyzed, these were set to $E_c = 4.0$  and $\sigma = 4.0$ .
-   
-2.2  **The Information Bias:** The linear term, $(1 + \alpha I)$ , models the hypothesis that Information provides a direct bias towards ordered outcomes. The orientation bias strength $\alpha$ ( $\alpha = 0.8$ in this run) quantifies the strength of this effect. When $I > 0$ , the probability of collapse into a complexity-permitting state is enhanced.
-
-### 3. The Information Parameter (I)
-
-The Information parameter $I$ is defined information-theoretically as a normalized measure of asymmetry between the probability distributions of the system at two successive time steps, $P_t$ and $P_{t+1}$ . This is calculated using the Kullback-Leibler (KL) divergence, $D_{KL}$, which quantifies the information lost when one distribution is used to approximate the other. The formula is normalized to ensure $0 \le I \le 1$ :
-
-$$
-I = \frac{D_{KL}(P_t \parallel P_{t+1})}{1 + D_{KL}(P_t \parallel P_{t+1})}
-$$
-
-In this context, a higher value of $I$ represents a stronger directional bias in the evolution of the quantum state. The simulation also explores a composite definition where the KL-derived value is combined with the Shannon Entropy (H) of the state, often via product fusion ( $I = I_{kl} \times I_{shannon}$ ), to create a parameter that captures both asymmetry and intrinsic complexity.
-
-### 4. The Lock-in Criterion
-
-The final, immutable state of "Law Lock-in" is not an assumption but an emergent state identified by a precise operational criterion. A universe is considered to have achieved Law Lock-in when the relative variation of its key parameters ( $\Delta P/P$ ) falls below a specific threshold for a sustained number of epochs. Based on the simulation configuration, this is defined as:
-
-$$
-\frac{\Delta P}{P} < 0.005\  for\ at\ least\ 6\ consecutive\ epochs.
-$$
-
-This criterion `(REL_EPS_LOCKIN = 0.005`, `CALM_STEPS_LOCKIN = 6)` provides an objective and reproducible method for distinguishing universes that successfully finalize their physical laws from those that remain stable but mutable, or those that descend into chaos.
-
-----------
-
 ## Comparative Analysis: E+I vs. E-Only Universes
 
 **A dual-cohort evaluation of stability, complexity, entropy, and anomalies**
@@ -654,11 +653,6 @@ In these simulations**, I generated each individual universe through **10,000 Mo
 * Observation: E+I universes exhibit fewer (`cold_count`: 1.2 vs. 1.5) and less intense (`cold_min_z`: -78.8 vs. -83.9) "Cold Spot" anomalies. The effect on the "Axis of Evil" (AoE) is more nuanced, showing a lower alignment score (less anomalous) but an angle closer to the theoretical maximum.
 
 * Interpretation: Information appears to exert a regularizing effect on the large-scale cosmic structure, smoothing out extreme random fluctuations like Cold Spots. Rather than simply eliminating anomalies, it seems to alter their nature, potentially fostering more ordered, non-random structural patterns.
-
-### 4. Predictability and Explainable AI (XAI) Metrics
-* Observation: The systemic states of E+I universes are fundamentally more predictable than their E-Only counterparts (`acc`: 0.799 vs. 0.764). Crucially, metrics measuring the added value of advanced models (`acc_delta`, `auc_delta`, `r2_delta`) are positive for E+I universes but zero for E-Only universes.
-
-* Interpretation: The Information component is not random noise but a structured, causal layer. Its presence makes the system's evolution more intelligible and modelable. The fact that its inclusion significantly improves predictive accuracy demonstrates that E+I universes are governed by a higher degree of understandable order.
 
 ## Overall Theoretical Conclusion
 **Is Information (I) necessary for a realistic, complex, and stable universe?**

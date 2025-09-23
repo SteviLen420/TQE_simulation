@@ -38,11 +38,6 @@ In these simulations**, I generated each individual universe through **10,000 Mo
 
 * Interpretation: Information appears to exert a regularizing effect on the large-scale cosmic structure, smoothing out extreme random fluctuations like Cold Spots. Rather than simply eliminating anomalies, it seems to alter their nature, potentially fostering more ordered, non-random structural patterns.
 
-### 4. Predictability and Explainable AI (XAI) Metrics
-* Observation: The systemic states of E+I universes are fundamentally more predictable than their E-Only counterparts (`acc`: 0.799 vs. 0.764). Crucially, metrics measuring the added value of advanced models (`acc_delta`, `auc_delta`, `r2_delta`) are positive for E+I universes but zero for E-Only universes.
-
-* Interpretation: The Information component is not random noise but a structured, causal layer. Its presence makes the system's evolution more intelligible and modelable. The fact that its inclusion significantly improves predictive accuracy demonstrates that E+I universes are governed by a higher degree of understandable order.
-
 ## Overall Theoretical Conclusion
 **Is Information (I) necessary for a realistic, complex, and stable universe?**
 
@@ -54,7 +49,7 @@ The data provides a multi-faceted answer:
 
 Based on these findings, this analysis concludes that while a universe can exist on the basis of energy alone, the introduction of **Information represents a critical phase transition**. This transition enables the development of emergent complexity, leading to a more structured, predictable, and dynamically evolving cosmos. The data validates the thesis that Information is a fundamental, not peripheral, driver of cosmic evolution.
 
-The results and conclusions were derived not only through manual evaluation, but also based on a detailed analysis conducted with the assistance of several artificial intelligence models (**OpenAI GPT-5**, **Google Gemini 2.5 Pro**, **DeepSeek-R1:14B**).
+The results and conclusions were derived not only through manual evaluation, but also based on a detailed analysis conducted with the assistance of several artificial intelligence models (**OpenAI GPT-5**, **Google Gemini 2.5 Pro**).
 
 ## License
 This project is licensed under the MIT License – see the [LICENSE](../../LICENSE) file for details.
