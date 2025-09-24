@@ -682,3 +682,35 @@ Crucially, the key findings, interpretations, and the logical narrative connecti
 In addition to this validated direct analysis, an extensive suite of predictive machine learning models was developed (the XAI module). While functional, these models exhibited significant limitations, including overfitting and internally inconsistent explanations (as shown by conflicting SHAP and LIME results). For this reason, the conclusions from these predictive models are considered preliminary and have been excluded from the main findings of this initial publication, representing an area for future research. **However, the consistently positive signal in metrics such as the `r2_delta` suggests that quantifying the precise impact of Information on the system's overall predictability remains a promising avenue for future investigation once these methodological issues are resolved.**
 
 ----------
+
+## Discussion
+
+### The Main Finding: A Two-Factor Selection Mechanism
+The simulation results demonstrate that the formation of stable, ordered universes is governed not by a single determinant, but by a **two-factor selection mechanism**. This dual process resolves the apparent paradox of why the most successful universes do not arise from the parameter space with the highest a priori probability of stability.
+
+**Factor 1: The Stability Gate (E·I).**  
+The analysis confirms the existence of a "Goldilocks Zone" defined by the Complexity parameter $X = E \cdot I$. This zone functions as a stability gate: a universe must possess the correct range of complexity, determined jointly by Energy and Information, to avoid chaos and achieve stability. Universes with complexity values that are too low or too high fail to pass through this gate.
+
+**Factor 2: The Finality Trigger (|E−I|).**  
+Stability alone is not sufficient for the crystallization of immutable laws. The simulations show that "Law Lock-in" is driven by the Energy–Information asymmetry, quantified as $|E - I|$. The larger this asymmetry, the higher the probability that a universe’s laws will rapidly and irreversibly fix. This mechanism acts as a finality trigger, selecting the winners among already stable candidates.
+
+**Synthesis.**  
+The most successful universes therefore represent an optimal compromise: they are complex enough to pass the stability gate, yet asymmetric enough to activate the finality trigger quickly.
+
+---
+
+### Implications: The TQE Answer to "Why?"
+The central research question was: **Why do stable, complexity-permitting physical laws exist at all?**  
+The Theory of the Question of Existence (TQE) offers a mechanistic answer: stable laws are not preordained nor purely random, but the outcomes of a dynamic selection process during cosmogenesis. Laws of physics do not descend from a Platonic realm; they **crystallize from the fundamental interaction of Energy and Information**.
+
+This distinguishes TQE from prior explanatory frameworks:
+
+- **Anthropic Principle.** Offers a retrospective justification (laws are as they are because we exist to observe them). TQE instead provides a predictive, mechanistic account.
+- **Multiverse/String Landscape.** Rather than relying on a cosmic lottery across infinite universes, TQE proposes a dynamic evolutionary pathway where a single universe can self-organize into stability.
+- **Wheeler’s "It from Bit."** TQE grounds the conceptual idea of information as fundamental in a concrete mathematical and computational model, yielding falsifiable predictions (e.g., CMB anomalies).
+
+---
+
+### Conclusion
+The TQE framework reframes the existential question: not *“why something exists instead of nothing”* but rather *“how order emerges from chaos.”*  
+The results provide a quantifiable, information-theoretic mechanism showing that physical law emerges as the crystallized outcome of energy–information interplay, guided by a two-factor selection process of stability and asymmetry.
