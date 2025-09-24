@@ -253,16 +253,6 @@ Figure 2 identifies the peak **stability probability** near \(X \approx 25.6\). 
 
 The most successful outcomes are therefore **sub-peak, not super-peak**: they are *stable enough* to pass the gate, yet *asymmetric enough* to trigger early finality. This explains why the top universes concentrate just below the stability maximum while still outperforming in early lock-in and global coherence.
 
-### **Critical Analysis Note: The "Best Universe" Paradox**
-
-A significant logical inconsistency arises when comparing the conditions for general stability with the parameters of the "best" performing universes. This creates a narrative paradox that needs to be resolved.
-
-1.  **Peak Stability Condition:** Figure 2 clearly demonstrates that the maximum probability for a universe to achieve a stable state occurs at a Complexity value of **`X = E·I ≈ 25.6`**. This is defined as the optimal point within the "Goldilocks Zone."
-
-2.  **"Best Universe" Parameters:** In direct contradiction, the analysis of the top-three universes (Figures 13-15) reveals that their initial Complexity values are significantly lower, approximately **`X ≈ 12.0 - 15.0`**.
-
-3.  **Narrative Gap:** The manuscript currently fails to bridge this gap. It suggests that a large Energy-Information gap (`|E-I|`) is the decisive factor for achieving "Law Lock-in," but it does not adequately explain why this condition forces the most successful outcomes *away* from the peak of the stability curve. As it stands, the narrative implies that the most successful universes emerge from a sub-optimal region for stability, which appears paradoxical without a clear, unifying explanation of a two-factor selection mechanism.
-
 --------------
 
 ### Figure 3: Stability Outcomes in the Energy-Information Parameter Space
@@ -493,38 +483,20 @@ This figure presents the simulated Cosmic Microwave Background (CMB) temperature
 
 <img width="1672" height="1073" alt="best_cmb_rank03_uid03806_E+I" src="https://github.com/user-attachments/assets/b6467afc-5dca-47d7-abf6-a026c7a5b865" />
 
-**Analysis**:
+## Analysis: A Two-Factor Selection for Optimal Universes
 
-A comparative analysis of these three high-performing universes reveals consistent patterns and provides deeper insight into the criteria for a "successful" cosmogenesis in the TQE model.
+A comparative analysis of these three high-performing universes reveals consistent patterns and provides deeper insight into the criteria for a "successful" cosmogenesis in the TQE model. The key to understanding their origin lies not in a single parameter, but in a two-factor selection mechanism that governs both stability and finality.
 
-1. **Qualitative Cosmological Consistency**: At a visual level, all three maps display a statistically isotropic and Gaussian-like distribution of hot (red) and cold (blue) spots. This is qualitatively consistent with the observed CMB from our own universe, indicating that the model is capable of producing cosmologically plausible outputs. No overt, large-scale anomalous structures are immediately apparent from visual inspection alone.
+At a visual level, all three CMB maps display a statistically isotropic and Gaussian-like distribution of hot and cold spots, which is qualitatively consistent with the observed CMB from our own universe. This indicates that the model is capable of producing cosmologically plausible outputs.
 
-2. **Confirmation of Lock-in Timing as a Success Metric**: The annotations on each map confirm the trend suggested by the previous analysis of their entropy evolution. The rank of the universe correlates directly with the speed of its "Law Lock-in":
+The parameters of these top-ranked universes reveal the dual selection criteria at play. Their respective Complexity values (X = E·I) of approximately 12.0, 13.6, and 15.0 lie significantly lower than the peak probability region of the "Goldilocks Zone" for stability, which peaked at X ≈ 25.6. However, their Energy–Information gaps (|E − I|) are all large (>26). This is not a paradox, but a direct consequence of the model's dual selection pressures:
 
-Rank 1 (UID 7804): Lock-in ≈ 305 epochs
+- **The Stability Gate (E·I):** A universe must first possess a viable X value to pass through the "gate" and have a chance at stability.  
+- **The Lock-in Trigger (|E − I|):** From the pool of stable candidates, those with a significant Energy–Information asymmetry are preferentially selected to undergo a rapid and decisive "Law Lock-in".
 
-Rank 2 (UID 1421): Lock-in ≈ 306 epochs
+This mechanism is further supported by the lock-in timing, which acts as a primary success metric. The rank of the universe correlates directly with the speed of its law finalization: Rank 1 (≈305 epochs), Rank 2 (≈306 epochs), and Rank 3 (≈311 epochs). This strongly suggests that an early finalization of physical laws is a primary characteristic of the most "successful" universes in the simulation.
 
-Rank 3 (UID 3806): Lock-in ≈ 311 epochs
-This strongly suggests that an early finalization of physical laws is a primary characteristic of the most "successful" universes in the simulation.
-
-3. **Parameter Analysis of Optimal Outcomes**: An analysis of the initial (`E, I`) parameters for these universes reveals a crucial insight. Their respective Complexity values (`X = E·I`) are approximately **12.0**, **13.6**, and **15.0**. Intriguingly, these values all lie significantly lower than the peak probability region of the "Goldilocks Zone" for stability (which peaked at X ≈ 25.6). However, their Energy-Information gaps (`|E−I|`) are all large (>26), consistent with our finding that a significant parameter imbalance is a strong predictor of achieving Law Lock-in.
-
-**Key Insight**: This comparative analysis of the three "best" universes refines our understanding of what constitutes an optimal outcome in the TQE framework. It is not simply a matter of having an initial `X` value that corresponds to the highest a priori probability of stability. Instead, a successful universe appears to be one that leverages a **large Energy-Information imbalance** to trigger a **rapid and decisive "Law Lock-in" event**.
-
-This implies a two-factor selection process: a universe's parameters must first lie within a broader, viable zone for stability, but within that zone, those that lock-in the fastest are considered the "best" outcomes. These CMB maps represent the model's most direct point of contact with empirical science. While a simple visual check is inconclusive, a detailed statistical analysis of these maps' properties (e.g., their angular power spectrum) provides the ultimate testing ground for the TQE's falsifiable predictions regarding large-scale anomalies in our own cosmos.
-
-### **Analysis: A Two-Factor Selection for Optimal Universes**
-
-A comparative analysis of these three high-performing universes reveals consistent patterns and provides deeper insight into the criteria for a "successful" cosmogenesis in the TQE model. The key to understanding their origin lies not in a single parameter, but in a **two-factor selection mechanism** that governs both stability and finality.
-
-1.  **Qualitative Cosmological Consistency**: At a visual level, all three maps display a statistically isotropic and Gaussian-like distribution of hot (red) and cold (blue) spots. This is qualitatively consistent with the observed CMB from our own universe, indicating that the model is capable of producing cosmologically plausible outputs.
-
-2.  **The Dual Selection Criteria**: The parameters of these universes appear counter-intuitive at first glance. Their Complexity values (`X = E·I`) of approximately **12.0, 13.6, and 15.0** lie significantly lower than the peak probability region of the "Goldilocks Zone" for stability (which peaked at X ≈ 25.6). However, their Energy-Information gaps (`|E−I|`) are all large (>26). This is not a paradox, but a direct consequence of the model's dual selection pressures:
-    * **The Stability Gate (`E·I`):** A universe must first possess a viable `X` value to pass through the "gate" and have a chance at stability.
-    * **The Lock-in Trigger (`|E-I|`):** From the pool of stable candidates, those with a significant **Energy-Information asymmetry** are preferentially selected to undergo a rapid and decisive "Law Lock-in."
-
-**Key Insight**: This analysis refines our understanding of what constitutes an optimal outcome in the TQE framework. The "best" universes are not simply those with the highest *a priori* probability of stability. Instead, they represent an optimal **compromise**: their parameters are "stable enough" to survive the initial chaotic phase, yet "asymmetric enough" to trigger the rapid finalization of their physical laws. This two-factor process explains why the most successful outcomes are pushed into a specific, sub-peak region of the parameter space. These CMB maps represent the model's most direct point of contact with empirical science, and a detailed statistical analysis of their properties provides the ultimate testing ground for the TQE's falsifiable predictions.
+**Key Insight:** This analysis refines our understanding of what constitutes an optimal outcome in the TQE framework. The "best" universes are not simply those with the highest a priori probability of stability. Instead, they represent an optimal compromise: their parameters are "stable enough" to survive the initial chaotic phase, yet "asymmetric enough" to trigger the rapid finalization of their physical laws. This two-factor process explains why the most successful outcomes are pushed into a specific, sub-peak region of the parameter space. These CMB maps represent the model's most direct point of contact with empirical science, and a detailed statistical analysis of their properties provides the ultimate testing ground for the TQE's falsifiable predictions.
 
 --------------
 
