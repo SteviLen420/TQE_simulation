@@ -149,8 +149,7 @@ It extends these by offering a **quantitative, information-theoretic stabilizati
 
 The simulation framework is built on a strong foundation of reproducibility. While exploratory runs can be performed with SEED, all key experiments presented are governed by a SEED defined in the configuration. This ensures that the entire ensemble of universes can be reproduced exactly, which is critical for scientific validation, debugging, and peer review.
 
-**Author’s Note**|
-I am not a professional physicist, but an independent enthusiast. This work is intended as an exploratory contribution rather than a finished theory. I apologize for any possible inaccuracies or oversights, my goal is simply to share an idea that may inspire further exploration, refinement, and development by the broader research community.
+**Author’s Note.** I am an independent researcher. This manuscript is an exploratory, computational proposal rather than a final theory. Any inaccuracies are unintentional; the goal is to present a falsifiable mechanism that invites replication, critique, and refinement by the broader community.
 
 ### TQE E+I Universe Analysis (Run ID: 20250919_035838)
 **Global stability, entropy, and law lock-in metrics for Energy + Information universes**
@@ -244,6 +243,15 @@ The spline curve provides compelling quantitative evidence for a precisely defin
 3. **High Sensitivity**: The probability of stability drops sharply outside of the optimal zone. Universes with too little complexity (`X < 20`) or too much (`X > 30`) are significantly less likely to become stable. This highlights the fine-tuned nature of this parameter. A smaller, secondary peak is observed near `X ≈ 32`, but it represents a much lower probability of success.
 
 **Key Insight**: This figure powerfully demonstrates that a universe's fate is critically sensitive to the initial balance between its Energy and Information content, as quantified by the Complexity parameter `X`. The existence of a sharp, narrow peak underscores the core tenet of fine-tuning; it is not merely the presence of E and I, but their specific multiplicative relationship that is paramount. Both an excess and a deficit of this combined "complexity factor" are overwhelmingly detrimental to the formation of a stable cosmos within the TQE framework.
+
+### Synthesis: Why the “Best” Universes Sit Below the Stability Peak
+
+Figure 2 identifies the peak **stability probability** near \(X \approx 25.6\). However, the “best” universes (Figures 13–15) originate at lower \(X\) (≈12–15). This is not a contradiction but evidence of a **two-factor selection**:
+
+- **Gate (Stability):** \(E\cdot I\) must place a universe inside the Goldilocks window to avoid chaos.
+- **Trigger (Finality):** A sufficiently large asymmetry \(|E-I|\) sharply increases the chance of **rapid law lock-in**.
+
+The most successful outcomes are therefore **sub-peak, not super-peak**: they are *stable enough* to pass the gate, yet *asymmetric enough* to trigger early finality. This explains why the top universes concentrate just below the stability maximum while still outperforming in early lock-in and global coherence.
 
 ### **Critical Analysis Note: The "Best Universe" Paradox**
 
@@ -591,6 +599,7 @@ On the other hand, the quantitative discrepancy in the anomaly's magnitude is a 
 
 The Theory of the Question of Existence (TQE) proposes that the emergence of stable physical laws is not a given, but the outcome of a dual fine-tuning mechanism involving both Energy (E) and Information (I). The large-scale simulations conducted in this study support this view, while also highlighting the specific roles of each parameter.
 
+A complementary cohort study (see **Comparative Analysis: E+I vs. E-Only Universes**) further supports this mechanism: energy alone can attain stability, but adding information decouples complexity from sheer energetic scale and regularizes extreme anomalies, reinforcing the two-factor selection picture.
 
 ### 1. Energy Alone vs. Energy + Information
 
@@ -672,8 +681,7 @@ Based on these findings, this analysis concludes that while a universe can exist
 
 ### Methodological Note on Analytical Rigor and Validation
 
-The primary conclusions presented in this document are derived from the direct statistical analysis of the simulation's output data.  
-This includes the aggregate statistics from the `summary_full.json`, the per-file checks from the `math_check.json`, the raw data from `tqe_runs_E+I.csv`, and the visual analysis of key plots.
+The primary conclusions are derived from direct statistical analysis of the simulation outputs, including the aggregate statistics in `summary_full.json`, the consistency checks in `math_check.json`, the raw run table `tqe_runs_E+I.csv` (and, where applicable, `tqe_runs_E-Only.csv`), and the full set of generated figures.
 
 To ensure the utmost rigor in the interpretation of these findings, the complete dataset and all generated figures were subjected to **multiple, independent rounds of control analysis**. The same simulation data was submitted for a full, iterative, Socratic analysis to different advanced Large Language Models to act as scientific reasoning assistants.
 
