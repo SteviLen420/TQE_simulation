@@ -29,8 +29,9 @@ Each simulation folder contains the following file types, documenting different 
 * **`Images (.png)`**: Automatically generated visualizations, such as plots, distributions, and other diagrams, illustrating key findings and correlations.
 * **`CMB Maps (.fits)`**: Simulated Cosmic Microwave Background (CMB) maps. The `.fits` (Flexible Image Transport System) format is the standard in astronomy, allowing for detailed scientific analysis of the data. 
 * **`Wolfram Mathematica Notebooks (.nb)`**: The complete Wolfram Language analyses used to process, analyze, and visualize the data. These notebooks ensure the reproducibility of the evaluation.
+* **`XAI Results (.csv)`**: Machine learning and explainable AI outputs (metrics, delta values, feature importance), documenting the predictive analysis of stability and lock-in.
 
-The results and conclusions were derived not only through manual evaluation, but also based on a detailed analysis conducted with the assistance of several artificial intelligence models (**OpenAI GPT-5**, **Google Gemini 2.5 Pro**, **DeepSeek-R1:14B**).
+The results and conclusions were derived not only through manual evaluation, but also based on a detailed analysis conducted with the assistance of several artificial intelligence models (**OpenAI GPT-5**, **Google Gemini 2.5 Pro**).
 
 ## License
 This project is licensed under the MIT License – see the [LICENSE](../../LICENSE) file for details.
