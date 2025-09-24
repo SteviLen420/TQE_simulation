@@ -88,6 +88,7 @@ In addition to the direct analysis, an extensive suite of predictive machine lea
 
 The interpretation and articulation of the final analysis were performed in collaboration with several Large Language Models. An initial analysis attempt using a local DeepSeek model resulted in significant quantitative hallucinations. The final, validated analyses presented here were therefore developed and cross-checked through an iterative, Socratic dialogue with **Google's Gemini 2.5 Pro** and **OpenAI's GPT-5**, which acted as scientific reasoning and writing assistants based on the verified, factual data from the simulation.
 
+----
 
 ## License
 This project is licensed under the MIT License – see the [LICENSE](../../LICENSE) file for details.
