@@ -107,7 +107,7 @@ $$
 ---
 
 ## Methodological Note on Analytical Rigor and Validation
-The primary conclusions presented in this document are derived from the direct statistical analysis of the simulation's output data. This includes the aggregate statistics from the summary_full.json, the per-file checks from the math_check.json, and the visual analysis of key plots.
+The primary conclusions presented in this document are derived from the direct statistical analysis of the simulation’s output data. This includes the aggregate statistics from the `summary_full.json`, the per-file checks from the `Wolfram math_check.json`, as well as the detailed run-level data contained in `tqe_runs_E+I.csv`. This direct approach yielded robust and consistent findings.
 
 To ensure the utmost rigor in the interpretation of these findings, the complete dataset and all generated figures were subjected to multiple, independent rounds of control analysis. The same simulation data was submitted for a full, iterative, Socratic analysis to different advanced Large Language Models to act as scientific reasoning assistants.
 
