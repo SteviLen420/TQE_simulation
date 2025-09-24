@@ -82,7 +82,7 @@ Therefore, the scarcity of anomalies in this control run acts as a **null hypoth
 
 ### Methodological Note on the Analytical Workflow
 
-The primary conclusions presented in this document are derived from the direct statistical analysis of the simulation’s output data. This includes the aggregate statistics from the summary_full.json, the per-file checks from the Wolfram math_check.json, as well as the detailed run-level data contained in tqe_runs_E-Only.csv. This direct approach yielded robust and consistent findings.
+The primary conclusions presented in this document are derived from the direct statistical analysis of the simulation’s output data. This includes the aggregate statistics from the `summary_full.json`, the per-file checks from the `Wolfram math_check.json`, as well as the detailed run-level data contained in `tqe_runs_E-Only.csv`. This direct approach yielded robust and consistent findings.
 
 In addition to the direct analysis, an extensive suite of predictive machine learning models was developed to probe the system's dynamics (the XAI module). While this framework is functional, the models themselves exhibited significant limitations, including overfitting and internally inconsistent explanations (as shown by conflicting SHAP and LIME results). For this reason, the conclusions from these predictive models are considered preliminary and have been excluded from the main findings of this initial publication, representing an area for future research.
 
