@@ -714,3 +714,67 @@ This distinguishes TQE from prior explanatory frameworks:
 ### Conclusion
 The TQE framework reframes the existential question: not *“why something exists instead of nothing”* but rather *“how order emerges from chaos.”*  
 The results provide a quantifiable, information-theoretic mechanism showing that physical law emerges as the crystallized outcome of energy–information interplay, guided by a two-factor selection process of stability and asymmetry.
+
+---
+
+## Limitations of the Model
+
+The TQE Framework should be regarded as a stochastic research prototype rather than a fully developed cosmological simulator. While the simulation demonstrates the feasibility of modeling emergent laws of physics through energy–information dynamics, it also carries several limitations that define clear directions for future research.
+
+### Simulation Framework and Simplified Physics
+- **Abstract Physics**: The model does not simulate physics from first principles. Variables representing “physical laws” (e.g., A, ns, H) are abstract, time is discretized into epochs, and there is no explicit representation of space.  
+- **Heuristic Anomalies**: Implementations of anomalies (e.g., Cold Spot, multipole alignment) and fine-tuning diagnostics use simplified or heuristic metrics. For example, the CMB maps are synthetic, generated from a power-law spectrum (CMB_POWER_SLOPE), not from a physical plasma simulation of the early universe.
+
+### Limits of Predictive Power and Predictability
+The XAI analysis highlighted the complex, non-linear behavior of the system, revealing predictive limitations:
+- **Final State Classification**: Predicting stable vs. unstable universes achieves moderate success (AUC ≈ 0.65).  
+- **Timing of Lock-in**: Initial conditions (E, I, X) alone are insufficient to predict the exact timing of “Law Lock-in” (R² ≈ 0.05).  
+- **Second-Order Effects**: The model performs poorly in predicting second-order metrics, such as the delta gain from including the I parameter (R² < 0).  
+
+This indicates strong **path-dependence**: outcomes are shaped by the full stochastic evolution rather than initial parameters alone.
+
+### The "Cold Spot" Anomaly and Parameter Dependence
+The Cold Spot anomaly illustrates the model’s sensitivity to parameter choices:
+- The simulation can generate Cold Spots, but under current MASTER_CTRL settings, their magnitudes are “overshot,” producing anomalies stronger than observed.  
+- This highlights parameter dependence (E_c, σ, α, and other noise/dynamics constants).  
+- These parameters act as *dials* that can be tuned and calibrated against empirical data in future refinements.  
+
+---
+
+**Summary**: These limitations do not undermine the framework but define its current scope: a prototype for exploring emergent cosmic laws. They also highlight future research directions, particularly calibration against observational cosmology and refinement of predictive modules.
+
+---
+
+## Future Work
+
+The TQE Framework in its current form serves as a solid foundation for several promising avenues of future research. The most important of these are:
+
+### Model Calibration and Refinement
+The quantitative discrepancy observed in the "Cold Spot" analysis (the overshooting) does not signify a failure of the model but provides a clear path for refinement. The next step is a systematic calibration of the model’s parameters—such as the information-coupling strength (α), the noise models, or the functions governing quantum collapse—against observational data (e.g., from the Planck satellite).
+
+### Detailed Cosmological Analysis
+The present work was limited to a preliminary, heuristic analysis of the simulated CMB maps. A crucial next step is a full statistical analysis of the generated ensemble of universes, including the calculation of the angular power spectrum for each simulated CMB map. This would enable a rigorous, quantitative comparison of the model’s predictions with real cosmological data, providing a deeper test of the TQE theory’s plausibility.
+
+### Deepening the Theory of the Information Parameter
+In its current form, the model treats the Information (I) parameter as a phenomenological, information-theoretic quantity. Future research should investigate whether this parameter could be linked to quantum entanglement, the holographic principle, or other fundamental properties of a pre-physical state. Developing the theoretical foundation of I is essential for grounding the TQE framework in fundamental physics.
+
+---
+
+## Conclusion
+
+One of the most profound questions in modern cosmology is why stable physical laws that permit the emergence of complexity exist at all. The Theory of the Question of Existence (TQE) offers a novel, mechanism-based answer, centered on the hypothesis that stable laws emerge from the coupling of Energy (E) and a fundamental Information (I) parameter.
+
+The large-scale numerical simulations presented here validate the internal logic and key predictions of the theory. The main result is the identification of a **two-factor selection mechanism**: balance (E·I) is required for stability, while asymmetry (|E−I|) is necessary for the finalization of laws ("Lock-in"). This dual mechanism explains how "successful" universes can be dynamically selected from a chaotic initial state.
+
+The primary contribution of the TQE framework is to move the question of the origin of physical laws from the realm of philosophical speculation to that of **quantitative, falsifiable computational physics**. The model offers a testable mechanism whose predictions, such as the statistics of CMB anomalies, can be directly compared with observational cosmology in future research.
+
+---
+
+## License
+
+This project is licensed under the MIT License – see the [LICENSE](./LICENSE) file for details.
+
+## Contact
+
+Got questions, ideas, or feedback?  
+Drop me an email at **tqe.simulation@gmail.com** 
