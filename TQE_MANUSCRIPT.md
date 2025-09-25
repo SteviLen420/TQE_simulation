@@ -212,7 +212,7 @@ This criterion `(REL_EPS_LOCKIN = 0.005`, `CALM_STEPS_LOCKIN = 6)` provides an o
 
 This bar chart illustrates the final distribution of outcomes for the **10,000 simulated universes** in the E+I cohort, where both Energy (E) and Information (I) are active parameters. The universes are classified into three distinct categories based on their long-term behavior: achieving "Lock-in," achieving stability without lock-in, or remaining unstable.
 
-<img src="RESULTS/E_plus_I_Simulation/TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838/FIGS/stability_distribution_three_E+I.png" alt="Universe Fate Distribution" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/stability_distribution_three_E+I.png" alt="Distribution of Universe Fates" width="800" />
 
 **Analysis:**
 
@@ -230,7 +230,7 @@ The results provide a foundational overview of the ultimate fates of universes g
 
 This plot reveals the relationship between the initial Complexity parameter `(X = E·I)` of a simulated universe and its resulting probability of achieving a stable outcome. The analysis is based on the `10,000` universes from the E+I cohort. The blue points represent the mean stability rate for universes grouped into discrete bins by their X-value, while the red spline fit illustrates the overall trend.
 
-<img src="RESULTS/E_plus_I_Simulation/TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838/FIGS/stability_curve_E+I.png" alt="Goldilocks Zone Curve" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/stability_curve_E+I.png" alt="Goldilocks Zone Curve" width="800" />
 
 **Analysis:**
 
@@ -259,7 +259,7 @@ The most successful outcomes are therefore **sub-peak, not super-peak**: they ar
 
 This scatter plot visualizes the initial parameter space for all 10,000 universes simulated in the E+I cohort. Each point represents a single universe, positioned according to its initial **Energy (E)** on the x-axis and **Information (I)** on the y-axis. The color of each point indicates its final evolutionary outcome, as shown by the color bar: **red for stable universes (1) and blue for unstable universes (0)**.
 
-<img src="RESULTS/E_plus_I_Simulation/TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838/FIGS/scatter_EI_E+I.jpg" alt="E-I Parameter Space" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/scatter_EI_E+I.jpg" alt="E-I Parameter Space" width="800" />
 
 Analysis:
 
