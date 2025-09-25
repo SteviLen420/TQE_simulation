@@ -212,8 +212,7 @@ This criterion `(REL_EPS_LOCKIN = 0.005`, `CALM_STEPS_LOCKIN = 6)` provides an o
 
 This bar chart illustrates the final distribution of outcomes for the **10,000 simulated universes** in the E+I cohort, where both Energy (E) and Information (I) are active parameters. The universes are classified into three distinct categories based on their long-term behavior: achieving "Lock-in," achieving stability without lock-in, or remaining unstable.
 
-<img src="RESULTS/E_plus_I_Simulation/TQE_Universe_Simulation_Full_Pipeline_E+I_20250919_035838/FIGS/stability_distribution_three_E+I.png" alt="stability_distribution_three_E+I" width="1511" height="1232" />
-![stability_distribution_three_E+I](FIGS/stability_distribution_three_E+I.png)
+<img width="1511" height="1232" alt="stability_distribution_three_E+I" src="https://github.com/user-attachments/assets/6e5619ed-902a-496e-8f86-35ac042955cd" />
 
 **Analysis:**
 
