@@ -365,7 +365,7 @@ The chart showcases the primary long-term evolutionary behavior of the simulated
 
 This plot provides a microscopic view of the entropy dynamics within a single, top-ranked "best" universe (ID 7804) from the E+I cohort. It contrasts the evolution of the system's **Global Entropy** (thick black line) with the entropies of eight distinct sub-regions within it (thin colored lines). The vertical dashed line indicates the precise time step where this universe achieved "Law Lock-in."
 
-<img width="1781" height="1093" alt="best_uni_rank01_uid07804_E+I" src="https://github.com/user-attachments/assets/d38bad7b-7d64-4594-8f51-2d19dcbdf1c7" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_uni_rank01_uid07804_E+I.png" alt="Entropy Evolution of Best Universe (Rank 1)" width="800" />
 
 **Analysis**:
 
@@ -387,7 +387,7 @@ The graph reveals two distinct modes of entropy evolution—global and regional�
 
 This plot presents the entropy evolution for the second-ranked "best" universe (ID 1421), displaying the same metrics as the previous figure: the overall **Global Entropy** (black line) and the individual entropies of its eight constituent sub-regions (colored lines).
 
-<img width="1781" height="1093" alt="best_uni_rank02_uid01421_E+I" src="https://github.com/user-attachments/assets/c1d12eaf-a7a4-4563-aa0d-adad995df5d6" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_uni_rank02_uid01421_E+I.png" alt="Entropy Evolution of Best Universe (Rank 2)" width="800" />
 
 **Analysis**:
 
@@ -407,7 +407,7 @@ The evolutionary trajectory of this universe is remarkably similar to that of th
 
 This chart concludes the series of "best-universe" analyses by plotting the entropy evolution for the third-ranked successful universe (ID 3806). As with the previous examples, it contrasts the **Global Entropy** (black line) with the entropies of eight internal sub-regions (colored lines) and highlights the moment of "Law Lock-in."
 
-<img width="1781" height="1093" alt="best_uni_rank03_uid03806_E+I" src="https://github.com/user-attachments/assets/7f034514-1178-4c45-97aa-43d8e3a54407" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_uni_rank03_uid03806_E+I.png" alt="Entropy Evolution of Best Universe (Rank 3)" width="800" />
 
 **Analysis**:
 
@@ -429,7 +429,7 @@ The subtle trend in the lock-in times (rank 1 at 305, rank 2 at 306, rank 3 at 3
 
 This plot investigates a key fine-tuning relationship within the TQE model, showing the probability of a universe achieving "Law Lock-in" as a function of the initial **Energy-Information gap** (defined as `|E − I|`). The data points represent the lock-in probability calculated for discrete bins of `|E − I|` values across the E+I cohort, with error bars indicating the statistical uncertainty in each bin.
 
-<img width="1516" height="1073" alt="finetune_gap_curve_E+I" src="https://github.com/user-attachments/assets/f8f4f4bd-0883-4bf1-a7ab-5903cd89d624" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/finetune_gap_curve_E+I.png" alt="Lock-in Probability vs E-I Gap" width="800" />
 
 **Analysis**:
 
@@ -452,7 +452,7 @@ The model suggests that universes born "in balance" (`E ≈ I`) may successfully
 
 This bar chart provides a direct comparison of the "Law Lock-in" probability between two distinct populations of universes. The data is bifurcated based on an adaptively determined threshold for the Energy-Information gap (`|E − I|`). The left bar represents universes with a significant E-I imbalance (`|E−I| > 5.86`), while the right bar represents those where E and I are approximately balanced (`|E−I| ≤ 5.86`).
 
-<img width="1296" height="1074" alt="lockin_by_eqI_bar_E+I" src="https://github.com/user-attachments/assets/779bb512-3a8b-4bc0-b201-2a43f5451deb" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/lockin_by_eqI_bar_E+I.png" alt="Lock-in Probability Comparison Bar Chart" width="700" />
 
 **Analysis**:
 
@@ -473,15 +473,15 @@ The plot offers a clear, quantitative confirmation of the role of parameter asym
 This figure presents the simulated Cosmic Microwave Background (CMB) temperature anisotropy maps for the three top-ranked universes identified by the simulation: **UID 7804 (Rank 1), UID 1421 (Rank 2), and UID 3806 (Rank 3)**. These all-sky maps, presented in a Mollweide projection, serve as the model's most direct diagnostic output for comparison with observational cosmology. The temperature fluctuations (anisotropies) are shown in units of micro-Kelvin (µK).
 
 ### Figure 13: Best CMB, Rank 1 (UID 7804)
-<img width="1672" height="1073" alt="best_cmb_rank01_uid07804_E+I" src="https://github.com/user-attachments/assets/8d63e224-567a-4a4a-85c3-3166fb4b898e" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_cmb_rank01_uid07804_E+I.jpg" alt="CMB Map of Best Universe (Rank 1)" width="800" />
 
 ### Figure 14: Best CMB, Rank 2 (UID 1421)
 
-<img width="1672" height="1073" alt="best_cmb_rank02_uid01421_E+I" src="https://github.com/user-attachments/assets/ee71e830-f111-4033-a327-46e7152d6937" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_cmb_rank02_uid01421_E+I.jpg" alt="CMB Map of Best Universe (Rank 2)" width="800" />
 
 ### Figure 15: Best CMB, Rank 3 (UID 3806)
 
-<img width="1672" height="1073" alt="best_cmb_rank03_uid03806_E+I" src="https://github.com/user-attachments/assets/b6467afc-5dca-47d7-abf6-a026c7a5b865" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_cmb_rank03_uid03806_E+I.jpg" alt="CMB Map of Best Universe (Rank 3)" width="800" />
 
 ## Analysis: A Two-Factor Selection for Optimal Universes
 
@@ -507,13 +507,13 @@ This figure presents the results of the "Axis of Evil" (AoE) analysis, a key dia
 ### Figure 16, 17, 18: Examples of Simulated CMBs with Measured Alignments
 (These three images show universes selected for AoE analysis, with their calculated quadrupole-octupole alignment angles noted in their titles.)
 
-<img width="1714" height="1101" alt="aoe_overlay_uid07804_E+I" src="https://github.com/user-attachments/assets/f149fd61-dfee-40c1-9d48-3e50eecd53ba" />
-<img width="1714" height="1101" alt="aoe_overlay_uid01421_E+I" src="https://github.com/user-attachments/assets/aa4ee1f4-e8b8-45d5-bb7e-89cced44ff43" />
-<img width="1714" height="1101" alt="aoe_overlay_uid03806_E+I" src="https://github.com/user-attachments/assets/ca798a16-60dd-4e6a-9343-97003ef74abd" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/aoe_overlay_uid07804_E+I.jpg" alt="Axis of Evil Overlay (UID 7804)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/aoe_overlay_uid01421_E+I.jpg" alt="Axis of Evil Overlay (UID 1421)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/aoe_overlay_uid03806_E+I.jpg" alt="Axis of Evil Overlay (UID 3806)" width="800" />
 
 ### Figure 19, Distribution of the three detected AoE alignment angles from the E+I cohort.
 
-<img width="1227" height="816" alt="aoe_angle_hist_E+I" src="https://github.com/user-attachments/assets/39ec15e8-4a9c-4e67-9111-cd51aaf69824" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/aoe_angle_hist_E+I.png" alt="Axis of Evil Angle Distribution" width="700" />
 
 **Analysis**:
 
@@ -539,17 +539,17 @@ This figure presents a comprehensive analysis of the CMB Cold Spot anomaly as pr
 
 ### Figure 20, 21, 22: CMB maps for the three universes where a statistically significant cold spot was detected (UIDs 7804, 1421, 3806).
 
-<img width="1714" height="1101" alt="coldspots_overlay_uid07804_E+I" src="https://github.com/user-attachments/assets/bd731a69-b360-46ff-97b4-99fbc909657b" />
-<img width="1714" height="1101" alt="coldspots_overlay_uid01421_E+I" src="https://github.com/user-attachments/assets/22a12263-e9f3-4f96-810c-8d52934de1d3" />
-<img width="1714" height="1101" alt="coldspots_overlay_uid03806_E+I" src="https://github.com/user-attachments/assets/ca1bd836-aa31-42cd-8f7f-9794207c558a" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/coldspots_overlay_uid07804_E+I.jpg" alt="Cold Spot Overlay (UID 7804)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/coldspots_overlay_uid01421_E+I.jpg" alt="Cold Spot Overlay (UID 1421)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/coldspots_overlay_uid03806_E+I.jpg" alt="Cold Spot Overlay (UID 3806)" width="800" />
 
 ### Figure 23, A histogram comparing the depth (z-score) of these simulated spots to the observed value of the Planck Cold Spot.
 
-<img width="1321" height="816" alt="coldspots_z_hist_E+I" src="https://github.com/user-attachments/assets/26cd32f6-fdc3-4a17-af7b-4a0bcaa74c38" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/coldspots_z_hist_E+I.png" alt="Cold Spot Depth Distribution" width="700" />
 
 ### Figure 24, A heatmap showing the positional distribution of the detected cold spots on the celestial sphere.
 
-<img width="1335" height="1124" alt="coldspots_pos_heatmap_E+I" src="https://github.com/user-attachments/assets/c7ca88c9-d4cb-431c-a87a-4beef8d62835" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/coldspots_pos_heatmap_E+I.png" alt="Cold Spot Position Heatmap" width="700" />
 
 **Analysis**:
 
