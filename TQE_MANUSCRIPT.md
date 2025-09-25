@@ -539,9 +539,9 @@ This figure presents a comprehensive analysis of the CMB Cold Spot anomaly as pr
 
 ### Figure 20, 21, 22: CMB maps for the three universes where a statistically significant cold spot was detected (UIDs 7804, 1421, 3806).
 
-<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/coldspots_overlay_uid07804_E+I.jpg" alt="Cold Spot Overlay (UID 7804)" width="800" />
-<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/coldspots_overlay_uid01421_E+I.jpg" alt="Cold Spot Overlay (UID 1421)" width="800" />
-<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/coldspots_overlay_uid03806_E+I.jpg" alt="Cold Spot Overlay (UID 3806)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/coldspots_overlay_uid07804_E+I.png" alt="Cold Spot Overlay (UID 7804)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/coldspots_overlay_uid01421_E+I.png" alt="Cold Spot Overlay (UID 1421)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/coldspots_overlay_uid03806_E+I.png" alt="Cold Spot Overlay (UID 3806)" width="800" />
 
 ### Figure 23, A histogram comparing the depth (z-score) of these simulated spots to the observed value of the Planck Cold Spot.
 
