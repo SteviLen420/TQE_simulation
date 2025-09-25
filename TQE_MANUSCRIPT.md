@@ -259,7 +259,7 @@ The most successful outcomes are therefore **sub-peak, not super-peak**: they ar
 
 This scatter plot visualizes the initial parameter space for all 10,000 universes simulated in the E+I cohort. Each point represents a single universe, positioned according to its initial **Energy (E)** on the x-axis and **Information (I)** on the y-axis. The color of each point indicates its final evolutionary outcome, as shown by the color bar: **red for stable universes (1) and blue for unstable universes (0)**.
 
-<img src="RESULTS/E_plus_I_Simulation/TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838/FIGS/scatter_EI_E+I.jpg" alt="scatter_EI_E+I" width="1066" height="981" />
+<img src="RESULTS/E_plus_I_Simulation/TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838/FIGS/scatter_EI_E+I.jpg" alt="scatter_EI_E+I" width="800" />
 
 Analysis:
 
