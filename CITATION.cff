@@ -1,9 +1,0 @@
-cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
-authors:
-  - family-names: "Len"
-    given-names: "Stefan"
-title: "Theory of the Question of Existence (TQE): A Universe Simulation Pipeline"
-version: 1.0.0
-date-released: 2025-09-25
-repository-code: "https://github.com/SteviLen420/TQE_simulation"
