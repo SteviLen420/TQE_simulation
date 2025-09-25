@@ -259,7 +259,7 @@ The most successful outcomes are therefore **sub-peak, not super-peak**: they ar
 
 This scatter plot visualizes the initial parameter space for all 10,000 universes simulated in the E+I cohort. Each point represents a single universe, positioned according to its initial **Energy (E)** on the x-axis and **Information (I)** on the y-axis. The color of each point indicates its final evolutionary outcome, as shown by the color bar: **red for stable universes (1) and blue for unstable universes (0)**.
 
-<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/scatter_EI_E+I.jpg" alt="E-I Parameter Space" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/scatter_EI_E+I.png" alt="E-I Parameter Space" width="800" />
 
 Analysis:
 
@@ -281,7 +281,7 @@ The plot reveals the complex, non-linear relationship between the initial `E` an
 
 This plot displays the time evolution of the expectation value (`⟨A⟩`, mean) and variance (`Var(A)`) of a fundamental observable 'A' during the initial quantum fluctuation stage of the simulation. These curves represent the averaged behavior across the entire 10,000-universe E+I cohort, providing insight into the primordial state from which each universe emerges.
 
-<img width="1230" height="842" alt="fl_fluctuation_E+I" src="https://github.com/user-attachments/assets/e93edd4f-dd24-4831-905f-898afdb16658" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/fl_fluctuation_E+I.png" alt="Quantum Fluctuation Statistics" width="800" />
 
 **Analysis:**
 
@@ -301,7 +301,7 @@ The graph demonstrates a swift and decisive process of initial state-setting com
 
 This graph plots the average behavior of two fundamental quantum-informational metrics—**Entropy** (blue dashed line) and **Purity** (orange dashed line)—over time during the quantum superposition phase. This stage models the universe as a complex superposition of states, preceding the collapse into a single, classical reality.
 
-<img width="1209" height="842" alt="fl_superposition_E+I" src="https://github.com/user-attachments/assets/9a7fa42c-7570-49b2-9f08-924b9088614e" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/fl_superposition_E+I.png" alt="Entropy and Purity in Superposition" width="800" />
 
 **Analysis:**
 
@@ -321,7 +321,7 @@ The plot illustrates a rapid and dramatic transformation from a state of perfect
 
 This time-series plot illustrates the pivotal "collapse" event, centered at `t=0`. It shows the universe's fundamental Complexity parameter (`X = E·I`) transitioning from a volatile, indeterminate quantum phase to a stable, classical phase with a single, definite value. The gray line tracks the value of `X`, averaged for a cohort of universes undergoing this transition.
 
-<img width="1243" height="842" alt="fl_collapse_E+I" src="https://github.com/user-attachments/assets/0776c0ec-4ecd-4e3c-b8bf-6b3310442ece" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/fl_collapse_E+I.png" alt="Collapse of Complexity Parameter X" width="800" />
 
 **Analysis:**
 
@@ -343,7 +343,7 @@ The graph provides a clear depiction of the universe's transition from a multi-p
 
 This plot illustrates the post-collapse dynamics for the E+I universe cohort, focusing on the expansion phase from `epoch 0` to `800`. The graph tracks the evolution of the universe's expansion (`Amplitude A`) and a secondary `Orientation I` parameter. Crucially, it marks the average epoch at which a subset of these universes achieves the final "Law Lock-in" state.
 
-<img width="1390" height="842" alt="fl_expansion_E+I" src="https://github.com/user-attachments/assets/b1c463f2-56dc-42aa-84d1-1bc7b3b764dc" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/fl_expansion_E+I.png" alt="Expansion Dynamics and Law Lock-in" width="800" />
 
 **Analysis:**
 
