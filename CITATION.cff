@@ -1,18 +1,9 @@
-How to Cite
-
-If you use this software in your research, please cite it. This repository includes a CITATION.cff file that can be used by citation management tools.
-
-Plain Text Citation:
-
-Stefan Len. (2025). TQE Universe Simulation Pipeline (Version 1.0.0). GitHub. https://github.com/SteviLen420/TQE_simulation
-
-BibTeX Entry:
-
-@software{Len_2025_TQE,
-  author    = {Len, Stefan},
-  title     = {{TQE Universe Simulation Pipeline}},
-  version   = {1.0.0},
-  date      = {XXXX.XX.XX},
-  publisher = {GitHub},
-  url       = {https://github.com/SteviLen420/TQE_simulation}
-}
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Len"
+    given-names: "Stefan"
+title: "Theory of the Question of Existence (TQE): A Universe Simulation Pipeline"
+version: 1.0.0
+date-released: 2025-09-25
+repository-code: "https://github.com/SteviLen420/TQE_simulation"
