@@ -473,15 +473,15 @@ The plot offers a clear, quantitative confirmation of the role of parameter asym
 This figure presents the simulated Cosmic Microwave Background (CMB) temperature anisotropy maps for the three top-ranked universes identified by the simulation: **UID 7804 (Rank 1), UID 1421 (Rank 2), and UID 3806 (Rank 3)**. These all-sky maps, presented in a Mollweide projection, serve as the model's most direct diagnostic output for comparison with observational cosmology. The temperature fluctuations (anisotropies) are shown in units of micro-Kelvin (µK).
 
 ### Figure 13: Best CMB, Rank 1 (UID 7804)
-<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_cmb_rank01_uid07804_E+I.jpg" alt="CMB Map of Best Universe (Rank 1)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_cmb_rank01_uid07804_E+I.png" alt="CMB Map of Best Universe (Rank 1)" width="800" />
 
 ### Figure 14: Best CMB, Rank 2 (UID 1421)
 
-<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_cmb_rank02_uid01421_E+I.jpg" alt="CMB Map of Best Universe (Rank 2)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_cmb_rank02_uid01421_E+I.png" alt="CMB Map of Best Universe (Rank 2)" width="800" />
 
 ### Figure 15: Best CMB, Rank 3 (UID 3806)
 
-<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_cmb_rank03_uid03806_E+I.jpg" alt="CMB Map of Best Universe (Rank 3)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/best_cmb_rank03_uid03806_E+I.png" alt="CMB Map of Best Universe (Rank 3)" width="800" />
 
 ## Analysis: A Two-Factor Selection for Optimal Universes
 
@@ -507,9 +507,9 @@ This figure presents the results of the "Axis of Evil" (AoE) analysis, a key dia
 ### Figure 16, 17, 18: Examples of Simulated CMBs with Measured Alignments
 (These three images show universes selected for AoE analysis, with their calculated quadrupole-octupole alignment angles noted in their titles.)
 
-<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/aoe_overlay_uid07804_E+I.jpg" alt="Axis of Evil Overlay (UID 7804)" width="800" />
-<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/aoe_overlay_uid01421_E+I.jpg" alt="Axis of Evil Overlay (UID 1421)" width="800" />
-<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/aoe_overlay_uid03806_E+I.jpg" alt="Axis of Evil Overlay (UID 3806)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/aoe_overlay_uid07804_E+I.png" alt="Axis of Evil Overlay (UID 7804)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/aoe_overlay_uid01421_E+I.png" alt="Axis of Evil Overlay (UID 1421)" width="800" />
+<img src="TQE_Universe_Simulation_Full_Pipeline_E+l_20250919_035838_FIGS/aoe_overlay_uid03806_E+I.png" alt="Axis of Evil Overlay (UID 3806)" width="800" />
 
 ### Figure 19, Distribution of the three detected AoE alignment angles from the E+I cohort.
 
