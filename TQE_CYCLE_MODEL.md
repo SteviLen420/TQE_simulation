@@ -6,21 +6,46 @@ A complete specification of the Theory of the Question of Existence (TQE) dynami
 
 ## 1. Master Modulation Architecture
 
-The universe ensemble is described by a probability density $P(\psi)$ over candidate law-states $\psi$. Every phase of the cycle applies the same modulation law $P'(\psi) = \frac{P(\psi)\, f(E(\psi), I(\psi))}{\int_\Psi P(\phi)\, f(E(\phi), I(\phi))\, d\phi}$ with fine-tuning factor $f(E, I) = \exp[\beta(t) X(\psi) - \lambda_{\text{out}}(t)]$ restricted to $X(\psi) \in G_t / t$.
+The universe ensemble is described by a probability density $P(\psi)$ over candidate law-states $\psi$. Every phase of the cycle applies the same modulation law
+
+$$
+P'(\psi) = \frac{P(\psi)\, f\!\left(E(\psi), I(\psi)\right)}{\int_\Psi P(\phi)\, f\!\left(E(\phi), I(\phi)\right)\, d\phi}
+$$
+
+with fine-tuning factor
+
+$$
+f(E, I)=\exp\!\left[\beta(t)\, X(\psi) - \lambda_{\text{out}}(t)\right]
+$$
+
+restricted to $X(\psi) \in G_t/t$.
 
 - $\beta(t)$ — selection pressure (inverse temperature analog).  
 - $X(\psi)$ — fitness/complexity functional.  
 - $G_t$ — admissible gate in law-space (enforcing symmetries, integrability, etc.).  
-- $\lambda_{\text{out}}(t)$ — Lagrange multiplier adjusting for hard constraints.
+- $\lambda_{\text{out}}(t)$ — Lagrange multiplier for hard constraints.
 
 ### Discrete update vs. continuum limit
 
 For simulations:
 
-- **Update** — $P_{k+1}(\psi) = P_k(\psi)\, \exp[\beta_k X_k(\psi)]$.
-- **Renormalise** — $\tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}$.
+- **Update**  
+  $$
+  P_{k+1}(\psi) = P_k(\psi)\, \exp\!\left[\beta_k X_k(\psi)\right]
+  $$
 
-As $\Delta t \to 0$, the continuum limit obeys $\partial_t P_t(\psi) = P_t(\psi)\, [G_t(\psi) - \mathbb{E}_t(G_t)]$, the standard replicator equation with “game payoff” $G_t(\psi)$ set by the energy–information coupling.
+- **Renormalise**  
+  $$
+  \tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}
+  $$
+
+As $\Delta t \to 0$, the continuum limit obeys
+
+$$
+\partial_t P_t(\psi) = P_t(\psi)\,\Big[G_t(\psi) - \mathbb{E}_t\!\big(G_t\big)\Big],
+$$
+
+the standard replicator equation with “game payoff” $G_t(\psi)$ set by the energy–information coupling.
 
 ---
 
@@ -28,11 +53,22 @@ As $\Delta t \to 0$, the continuum limit obeys $\partial_t P_t(\psi) = P_t(\psi)
 
 The cycle is driven by how quickly selection pressure rises, saturates, and falls. Useful closed forms:
 
-1. **Logistic ramp** — $\beta(t) = \frac{\beta_{\max}}{1 + e^{-k (t - t_c)}}$ for smooth onset near $t_c$.
+1. **Logistic ramp**  
+   $$
+   \beta(t) = \frac{\beta_{\max}}{1 + e^{-k (t - t_c)}}
+   $$
 
-2. **Thermal inverse tied to expansion** — $\beta(t) = 1/[k_B T(t)]$ with $T(t) = T_0 [a(t)/a_0]^{-n}$ so cosmological cooling naturally increases selection.
+2. **Thermal inverse tied to expansion**  
+   $$
+   \beta(t) = \frac{1}{k_B T(t)}, \qquad
+   T(t) = T_0 \left[\frac{a(t)}{a_0}\right]^{-n}
+   $$
 
-3. **Relaxation with stochastic forcing** — $\dot{\beta}(t) = \kappa [\beta_{\text{eq}} - \beta(t)] + \xi(t)$, with relaxation constant $\kappa$ and mean-zero noise $\xi(t)$.
+3. **Relaxation with stochastic forcing**  
+   $$
+   \dot{\beta}(t) = \kappa\,\big[\beta_{\text{eq}} - \beta(t)\big] + \xi(t)
+   $$
+   with relaxation constant $\kappa$ and mean-zero noise $\xi(t)$.
 
 ---
 
@@ -54,9 +90,15 @@ The master coupling only acts inside $G_t$; violations are projected out by sett
 
 High-variance superposition with $\beta(t) \approx 0$. Two equivalent initialisations:
 
-- **Soft (Gibbs) collapse** — $P_0^+(\psi) = \frac{P_0^-(\psi)\, e^{-\beta_0 X(\psi)}}{\int P_0^-(\phi)\, e^{-\beta_0 X(\phi)}\, d\phi}$.
+- **Soft (Gibbs) collapse**  
+  $$
+  P_0^+(\psi) = \frac{P_0^-(\psi)\, e^{-\beta_0 X(\psi)}}{\int P_0^-(\phi)\, e^{-\beta_0 X(\phi)}\, d\phi}
+  $$
 
-- **Hard projection** — $P_0^+(\psi) = \frac{P_0^-(\psi)\, \mathbf{1}_{X(\psi)\in G}}{\int P_0^-(\phi)\, \mathbf{1}_{X(\phi)\in G}\, d\phi}$.
+- **Hard projection**  
+  $$
+  P_0^+(\psi) = \frac{P_0^-(\psi)\, \mathbf{1}_{X(\psi)\in G}}{\int P_0^-(\phi)\, \mathbf{1}_{X(\phi)\in G}\, d\phi}
+  $$
 
 These represent, respectively, probabilistic biasing and strict gate enforcement before a universe crystallises.
 
@@ -83,15 +125,32 @@ Once selection has effectively switched off, one of several triggers (CDL bubble
 
 ## 5. Π Operators – Formal Reset Mechanisms
 
-The reset map rewrites the terminal distribution into a fresh high-variance state via $P_{\text{new},0^-}(\psi) = \Pi[P_\infty(\psi)]$.
+The reset map rewrites the terminal distribution into a fresh high-variance state via
+
+$$
+P_{\text{new},0^-}(\psi) = \Pi\!\left[P_\infty(\psi)\right].
+$$
 
 Representative choices:
 
-1. **Entropic reweighting** — $\Pi[P] (\psi) = \frac{e^{-\gamma S[P]} P(\psi)}{\int e^{-\gamma S[P]} P(\phi)\, d\phi}$ with $S[P] = -\int P \ln P\, d\psi$.
+1. **Entropic reweighting**  
+   $$
+   \Pi[P](\psi) = \frac{e^{-\gamma S[P]} P(\psi)}{\int e^{-\gamma S[P]} P(\phi)\, d\phi},
+   \qquad
+   S[P] = -\int P \ln P\, d\psi
+   $$
 
-2. **Perturbative noise injection** — $\Pi[P] (\psi) = P(\psi) + \varepsilon\, \eta(\psi)$ where $\eta$ is a zero-mean random field.
+2. **Perturbative noise injection**  
+   $$
+   \Pi[P](\psi) = P(\psi) + \varepsilon\, \eta(\psi)
+   $$
+   where $\eta$ is a zero-mean random field.
 
-3. **Cyclic rescaling** — $\Pi[P] (\psi) = P(\psi/\alpha)/\alpha$ to capture geometric contraction/expansion at aeon boundaries.
+3. **Cyclic rescaling**  
+   $$
+   \Pi[P](\psi) = \frac{P(\psi/\alpha)}{\alpha}
+   $$
+   capturing geometric contraction/expansion at aeon boundaries.
 
 Each option preserves normalisation and reintroduces exploratory variance before the next $\beta$ ramp.
 
@@ -101,9 +160,11 @@ Each option preserves normalisation and reintroduces exploratory variance before
 
 Because $P_{k+1}(\psi) = P_k(\psi)\, e^{\beta_k X_k(\psi)}$ multiplies densities, stability conditions are essential:
 
-1. **Linearised perturbations**
-
-   $\delta P_{k+1}(\psi) \approx [1 + \beta_k X'_k(\psi)]\, \delta P_k(\psi)$, so $|1 + \beta_k X'_k| < 1$ ensures local convergence.
+1. **Linearised perturbations**  
+   $$
+   \delta P_{k+1}(\psi) \approx \left[1 + \beta_k X'_k(\psi)\right] \delta P_k(\psi),
+   $$
+   so $\big|1 + \beta_k X'_k(\psi)\big| < 1$ ensures local convergence.
 
 2. **Monte Carlo sweeps** over $\beta_k$ schedules and fitness landscapes map out convergence vs. oscillatory vs. chaotic regimes.
 
@@ -115,7 +176,7 @@ Because $P_{k+1}(\psi) = P_k(\psi)\, e^{\beta_k X_k(\psi)}$ multiplies densities
 
 1. **Exploration:** $\beta \approx 0$, high-variance $P$, broad gate.  
 2. **Collapse and lock-in:** $\beta(t)$ ramps via logistic/thermal law, enforcing $G_t$ and privileging symmetry-respecting states.  
-3. **Stabilisation:** The replicator fixed points manifest as conservation laws, quantum rules, gauge structures, and GR.  
+3. **Stabilisation:** Replicator fixed points manifest as conservation laws, quantum rules, gauge structures, and GR.  
 4. **Heat death:** Black-hole evaporation and $\Lambda$-domination drive $\beta \to 0$, storing residual information on horizons.  
 5. **Reset:** Π acts (possibly assisted by CDL/CCC/LQC mechanisms) to seed the next pre-selection phase.
 
