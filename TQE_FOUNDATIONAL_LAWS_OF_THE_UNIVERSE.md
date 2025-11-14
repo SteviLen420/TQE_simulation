@@ -33,10 +33,12 @@ The universal modulation rule is $P'(\psi) = \frac{P(\psi)\, f(E,I)}{Z(E,I)}$ wi
 To avoid notational clashes we distinguish
 
 - $f_{\text{micro}}(E(\psi), I(\psi))$ — the Tier 0 definition above,
+  
 - $f^{(k)}_{\text{eff}}$ — the tier-$k$ effective bias obtained by conditioning $f_{\text{micro}}$ on the macroscopic manifold of that tier:
-  $$
-  f^{(k)}_{\text{eff}}(\text{macro vars}) = \frac{\int_{\Psi_k} P(\psi|\text{macro}) f_{\text{micro}}(E(\psi), I(\psi))\, d\psi}{\int_{\Psi_k} P(\psi|\text{macro})\, d\psi}.
-  $$
+
+$$
+f^{(k)}_{\text{eff}}(\text{macro vars}) = \frac{\int_{\Psi_k} P(\psi|\text{macro}) f_{\text{micro}}(E(\psi), I(\psi))\, d\psi}{\int_{\Psi_k} P(\psi|\text{macro})\, d\psi}.
+$$
 
 Whenever the text below writes $f$ inside a tier, it abbreviates the relevant $f^{(k)}_{\text{eff}}$. Proportionality statements then mean “this effective bias inherits the same functional form as the quoted classical law”.
 
@@ -84,7 +86,11 @@ In Newtonian language, $f(E,I)$ tells us that thermal baths statistically prefer
 
 2. **Relativistic dispersion** — $E^2 = (pc)^2 + (mc^2)^2$ implies that departures from the rest-energy Goldilocks point induce $f^{(4)}_{\text{eff}}(p) \approx \exp\!\left[-\frac{(E(p) - mc^2)^2}{2\sigma^2}\right] (1 + \alpha I(p))$, which to leading order behaves like $f^{(4)}_{\text{eff}} \sim E(p)/(mc^2)$ for highly boosted particles.
 
-Here $f^{(4)}_{\text{eff}}$ tracks the information encoded in momentum relative to rest energy. In one limit the coupling stays neutral—boosting a perfectly isolated rest mass does not inject any new orientation data, so $f^{(4)}_{\text{eff}} = 1$. In the dispersive limit, however, the ratio $E/mc^2$ measures how much probability weight is sheared along the momentum axis, which is why highly relativistic particles probe different slices of the Goldilocks window. Special relativity thus acts as a hinge tier that translates microscopic orientation changes into macroscopic kinematics without rewriting the field equations.
+Here 
+
+$f^{(4)}_{\text{eff}}$ tracks the information encoded in momentum relative to rest energy. 
+
+In one limit the coupling stays neutral—boosting a perfectly isolated rest mass does not inject any new orientation data, so $f^{(4)}_{\text{eff}} = 1$. In the dispersive limit, however, the ratio $E/mc^2$ measures how much probability weight is sheared along the momentum axis, which is why highly relativistic particles probe different slices of the Goldilocks window. Special relativity thus acts as a hinge tier that translates microscopic orientation changes into macroscopic kinematics without rewriting the field equations.
 
 ---
 
