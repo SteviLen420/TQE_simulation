@@ -6,7 +6,7 @@ A complete specification of the Theory of the Question of Existence (TQE) dynami
 
 ## 1. Master Modulation Architecture
 
-The universe ensemble is described by a probability density $P(\psi)$ over candidate law-states $\psi$. Every phase of the cycle applies the same modulation law $P'(\psi) = \frac{P(\psi)\, f(E(\psi), I(\psi))}{\int_\Psi P(\phi)\, f(E(\phi), I(\phi))\, d\phi}$ with fine-tuning factor $f(E, I)=\exp[\beta(t) X(\psi)-\lambda_{\text{out}}(t)]$ restricted to $X(\psi) \in G_t / t$.
+The universe ensemble is described by a probability density $P(\psi)$ over candidate law-states $\psi$. Every phase of the cycle applies the same modulation law $P'(\psi) = \frac{P(\psi)\, f(E(\psi), I(\psi))}{\int_\Psi P(\phi)\, f(E(\phi), I(\phi))\, d\phi}$ with fine-tuning factor $f(E, I) = \exp[\beta(t) X(\psi) - \lambda_{\text{out}}(t)]$ restricted to $X(\psi) \in G_t / t$.
 
 - $\beta(t)$ — selection pressure (inverse temperature analog).  
 - $X(\psi)$ — fitness/complexity functional.  
@@ -19,7 +19,6 @@ For simulations:
 
 - **Update** — $P_{k+1}(\psi) = P_k(\psi)\, \exp[\beta_k X_k(\psi)]$.
 - **Renormalise** — $\tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}$.
-
 As $\Delta t \to 0$, the continuum limit obeys $\partial_t P_t(\psi) = P_t(\psi)\, [G_t(\psi) - \mathbb{E}_t(G_t)]$, the standard replicator equation with “game payoff” $G_t(\psi)$ set by the energy–information coupling.
 
 ---
@@ -116,8 +115,7 @@ Because $P_{k+1}(\psi) = P_k(\psi)\, e^{\beta_k X_k(\psi)}$ multiplies densities
 1. **Exploration:** $\beta \approx 0$, high-variance $P$, broad gate.  
 2. **Collapse and lock-in:** $\beta(t)$ ramps via logistic/thermal law, enforcing $G_t$ and privileging symmetry-respecting states.  
 3. **Stabilisation:** The replicator fixed points manifest as conservation laws, quantum rules, gauge structures, and GR.  
-4. **Heat death:** Black-hole evaporation and Λ-domination drive $\beta \to 0$, storing residual information on horizons.  
+4. **Heat death:** Black-hole evaporation and $\Lambda$-domination drive $\beta \to 0$, storing residual information on horizons.  
 5. **Reset:** Π acts (possibly assisted by CDL/CCC/LQC mechanisms) to seed the next pre-selection phase.
 
 This closed loop is the operational backbone of TQE: a single modulation rule, equipped with explicit $\beta$-schedules, gate logic, reset operators, and stability diagnostics, suffices to describe how physical law can repeatedly emerge, persist, and dissolve across successive cosmological epochs.
-
