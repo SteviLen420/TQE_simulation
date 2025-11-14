@@ -89,9 +89,9 @@ Representative choices:
 
 1. **Entropic reweighting** — $\Pi[P](\psi) = \frac{e^{-\gamma S[P]} P(\psi)}{\int e^{-\gamma S[P]} P(\phi)\, d\phi}$ with $S[P] = -\int P \ln P\, d\psi$.
 
-2. **Perturbative noise injection** — $\Pi[P](\psi) = P(\psi) + \varepsilon\, \eta(\psi)$ where $\eta$ is a zero-mean random field.
+2. **Perturbative noise injection** — $\Pi[P](\psi) = P(\psi) + \varepsilon\, \eta(\psi)$, where $\eta$ is a zero-mean random field.
 
-3. **Cyclic rescaling** — $\Pi[P](\psi) = P(\psi/\alpha)/\alpha$ to capture geometric contraction/expansion at aeon boundaries.
+3. **Cyclic rescaling** — $\Pi[P](\psi) = \frac{P(\psi/\alpha)}{\alpha}$ to capture geometric contraction/expansion at aeon boundaries.
 
 Each option preserves normalisation and reintroduces exploratory variance before the next $\beta$ ramp.
 
