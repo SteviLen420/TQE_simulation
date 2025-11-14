@@ -6,15 +6,15 @@ The cyclic evolution of the Theory of the Question of Existence (TQE) expressed 
 
 The core rule is a normalised weighting over the space of candidate law-states `ψ`:
 
-```
-P'(ψ) = P(ψ) f(E(ψ), I(ψ)) / ∫_Ψ P(ϕ) f(E(ϕ), I(ϕ)) dϕ,
-```
+$$
+P'(\psi) = \frac{P(\psi)\, f(E(\psi), I(\psi))}{\int_\Psi P(\phi) f(E(\phi), I(\phi))\, d\phi},
+$$
 
 with a typical parametric form
 
-```
-f(E, I) = exp[β(t) X(ψ) − λ_out(t)],  X(ψ) ∈ G_t / t.
-```
+$$
+f(E, I) = \exp[\beta(t) X(\psi) - \lambda_{\text{out}}(t)], \qquad X(\psi) \in G_t / t.
+$$
 
 - `β(t)` sets the selection pressure (analogous to inverse temperature).
 - `G_t` is the admissible “gate” region in law-space.
@@ -22,22 +22,21 @@ f(E, I) = exp[β(t) X(ψ) − λ_out(t)],  X(ψ) ∈ G_t / t.
 
 ### Iterative update
 
-```
-P_{k+1}(ψ) = P_k(ψ) f_k(E(ψ), I(ψ)),
-           = P_k(ψ) exp[β_k X_k(ψ)],
-```
+$$
+P_{k+1}(\psi) = P_k(\psi)\, f_k(E(\psi), I(\psi)) = P_k(\psi)\, \exp[\beta_k X_k(\psi)],
+$$
 
 renormalised via
 
-```
-P̃_{k+1}(ψ) = P_{k+1}(ψ) / ∫_Ψ P_{k+1}(ϕ) dϕ.
-```
+$$
+\tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}.
+$$
 
 In the continuum limit, this becomes a replicator equation
 
-```
-∂_t P_t(ψ) = P_t(ψ) [G_t(ψ) − 𝔼_t(G_t)],
-```
+$$
+\partial_t P_t(\psi) = P_t(\psi) \left[G_t(\psi) - \mathbb{E}_t(G_t)\right],
+$$
 
 where `G_t` encapsulates the instantaneous gain (or fitness) derived from the energy–information coupling.
 
@@ -47,25 +46,25 @@ To close the dynamics, β(t) can be supplied analytically:
 
 - **Logistic ramp** (slow turn-on around `t_c`):
 
-  ```
-  β(t) = β_max / (1 + e^{-k (t - t_c)}).
-  ```
+  $$
+  \beta(t) = \frac{\beta_{\max}}{1 + e^{-k (t - t_c)}}.
+  $$
 
   This captures the gradual strengthening of selection leading into the lock-in epoch.
 
 - **Thermal inverse** (coupled to cosmic expansion):
 
-  ```
-  β(t) = 1 / (k_B T(t)),    T(t) = T_0 [a(t)/a_0]^{-n},
-  ```
+  $$
+  \beta(t) = \frac{1}{k_B T(t)}, \qquad T(t) = T_0 \left[\frac{a(t)}{a_0}\right]^{-n},
+  $$
 
   so that larger scale factors dilute the effective temperature and raise β.
 
 - **Relaxation + noise**:
 
-  ```
-  \dot{β}(t) = κ [β_eq - β(t)] + ξ(t),
-  ```
+  $$
+  \dot{\beta}(t) = \kappa \left[\beta_{\text{eq}} - \beta(t)\right] + \xi(t),
+  $$
 
   with `κ` the relaxation constant and `ξ(t)` a stochastic fluctuation term.
 
@@ -75,15 +74,15 @@ The cosmic state is a high-variance superposition with weak selection (`β(t) �
 
 - **Soft collapse (large β, Gibbs weighting):**
 
-  ```
-  P₀⁺(ψ) = P₀⁻(ψ) e^{-β₀ X(ψ)} / ∫ P₀⁻(ϕ) e^{-β₀ X(ϕ)} dϕ.
-  ```
+  $$
+  P_0^+(\psi) = \frac{P_0^-(\psi)\, e^{-\beta_0 X(\psi)}}{\int P_0^-(\phi) e^{-\beta_0 X(\phi)} d\phi}.
+  $$
 
 - **Hard collapse (projector onto gate G):**
 
-  ```
-  P₀⁺(ψ) = P₀⁻(ψ) 1_{X(ψ) ∈ G} / ∫ P₀⁻(ϕ) 1_{X(ϕ) ∈ G} dϕ.
-  ```
+  $$
+  P_0^+(\psi) = \frac{P_0^-(\psi)\, \mathbf{1}_{X(\psi)\in G}}{\int P_0^-(\phi)\, \mathbf{1}_{X(\phi)\in G} \, d\phi}.
+  $$
 
 Here, `G` defines the nascent law-space (gauge class, Lorentz sector, GR-compatible states, etc.).
 
@@ -117,9 +116,9 @@ When `β(t) → 0` and the variance of the fitness landscape reaches its maximum
 
 A formal reset map `Π` reparametrises the distribution:
 
-```
-P_new,0⁻(ψ) := Π[lim_{t→∞} P_t(ψ)],
-```
+$$
+P_{\text{new},0^-}(\psi) := \Pi\!\left[\lim_{t \to \infty} P_t(\psi)\right],
+$$
 
 effectively dismantling the previous `G` and reopening the high-variance exploration regime with small β. The cycle restarts.
 
@@ -127,25 +126,25 @@ effectively dismantling the previous `G` and reopening the high-variance explora
 
 - **Entropic re-sampling**:
 
-  ```
-  Π[P](ψ) = e^{-γ S[P]} P(ψ) / ∫ e^{-γ S[P]} P(ϕ) dϕ,
-  ```
+  $$
+  \Pi[P](\psi) = \frac{e^{-\gamma S[P]} P(\psi)}{\int e^{-\gamma S[P]} P(\phi)\, d\phi},
+  $$
 
   with `S[P] = -∫ P log P dψ` and `γ` governing how much information is retained between cycles.
 
 - **Perturbative reset**:
 
-  ```
-  Π[P](ψ) = P(ψ) + ε η(ψ),
-  ```
+  $$
+  \Pi[P](\psi) = P(\psi) + \varepsilon\, \eta(\psi),
+  $$
 
   where `η(ψ)` is a zero-mean random field and `ε ≪ 1`, injecting fresh fluctuations.
 
 - **Cyclic rescaling**:
 
-  ```
-  Π[P](ψ) = P(ψ/α) / α,
-  ```
+  $$
+  \Pi[P](\psi) = \frac{P(\psi/\alpha)}{\alpha},
+  $$
 
   which rescales the state variable by `α` to represent geometric contraction/expansion at the start of a new aeon.
 
@@ -153,17 +152,18 @@ effectively dismantling the previous `G` and reopening the high-variance explora
 
 The discrete update
 
-```
-P_{k+1}(ψ) = P_k(ψ) exp[β_k X_k(ψ)],     P̃_{k+1}(ψ) = P_{k+1}(ψ) / ∫ P_{k+1}(ϕ) dϕ
-```
+$$
+P_{k+1}(\psi) = P_k(\psi) \exp[\beta_k X_k(\psi)], \qquad
+\tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int P_{k+1}(\phi) d\phi}
+$$
 
 admits several diagnostics:
 
 1. **Linear stability**: perturbations obey
 
-   ```
-   δP_{k+1}(ψ) ≈ (1 + β_k X'_k(ψ)) δP_k(ψ),
-   ```
+   $$
+   \delta P_{k+1}(\psi) \approx \left[1 + \beta_k X'_k(\psi)\right] \delta P_k(\psi),
+   $$
 
    so convergence requires `|1 + β_k X'_k| < 1` over the support of `P_k`.
 
@@ -171,9 +171,9 @@ admits several diagnostics:
 
 3. **Continuum-limit check**: numerically demonstrate that the discrete scheme approaches the replicator PDE
 
-   ```
-   ∂_t P_t(ψ) = P_t(ψ) [G_t(ψ) − 𝔼_t(G_t)]
-   ```
+   $$
+   \partial_t P_t(\psi) = P_t(\psi) \left[G_t(\psi) - \mathbb{E}_t(G_t)\right]
+   $$
 
    under appropriate scaling of `Δt`, `β_k`, and `X_k`.
 

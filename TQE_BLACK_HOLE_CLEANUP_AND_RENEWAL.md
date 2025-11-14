@@ -4,24 +4,26 @@
 
 When vacuum energy dominates, the Friedmann equation approaches a de Sitter solution:
 
-```
-H = (ȧ/a) = √(Λ c^2 / 3),                 a(t) ≈ a₀ e^{H_Λ t},    H_Λ = √(Λ c^2 / 3).
-```
+$$
+H = \frac{\dot{a}}{a} = \sqrt{\frac{\Lambda c^2}{3}}, \qquad
+a(t) \approx a_0 e^{H_\Lambda t}, \qquad
+H_\Lambda = \sqrt{\frac{\Lambda c^2}{3}}.
+$$
 
 The associated Gibbons–Hawking horizon temperature is
 
-```
-T_dS = ħ H_Λ / (2π k_B).
-```
+$$
+T_{\text{dS}} = \frac{\hbar H_\Lambda}{2\pi k_B}.
+$$
 
 ## 2. Black Hole Evaporation (“Cosmic Cleanup”)
 
 For a Schwarzschild black hole of mass `M`:
 
-- Hawking temperature: `T_H = ħ c^3 / (8π G M k_B)`.
-- Bekenstein–Hawking entropy: `S_BH = k_B A / (4 L_P^2) = 4π k_B G M^2 / (ħ c)`.
-- Mass-loss rate: `dM/dt = -α ħ c^4 / (G^2 M^2)` with `α ≈ 1/(15360π)`.
-- Evaporation timescale: `t_evap ≈ 5120π G^2 M^3 / (ħ c^4)`.
+- Hawking temperature: \( T_H = \frac{\hbar c^3}{8\pi G M k_B} \).
+- Bekenstein–Hawking entropy: \( S_{\text{BH}} = \frac{k_B A}{4 L_P^2} = \frac{4\pi k_B G M^2}{\hbar c} \).
+- Mass-loss rate: \( \frac{dM}{dt} = -\alpha \frac{\hbar c^4}{G^2 M^2} \) with \( \alpha \approx 1/(15360\pi) \).
+- Evaporation timescale: \( t_{\text{evap}} \approx \frac{5120\pi G^2 M^3}{\hbar c^4} \).
 
 As BHs evaporate, their entropy flows into the radiation bath, gradually cleaning the universe of compact objects.
 
@@ -29,9 +31,9 @@ As BHs evaporate, their entropy flows into the radiation bath, gradually cleanin
 
 The total entropy is schematically
 
-```
-S_tot(t) ≈ Σ_i S_BH,i(t) + S_rad(t) + S_dS,
-```
+$$
+S_{\text{tot}}(t) \approx \sum_i S_{\text{BH},i}(t) + S_{\text{rad}}(t) + S_{\text{dS}},
+$$
 
 with `dS_tot/dt ≥ 0`. Hawking evaporation decreases `S_BH` while increasing `S_rad`, preserving monotonic growth. Once only dilute radiation at temperature `T_dS` remains (chemical potentials μ → 0, free energy F → 0), the cosmos reaches the heat-death state.
 
@@ -39,19 +41,19 @@ with `dS_tot/dt ≥ 0`. Hawking evaporation decreases `S_BH` while increasing `S
 
 ### (a) False Vacuum Nucleation (Coleman–De Luccia)
 
-Vacuum decay bubbles nucleate at rate `Γ/V ~ A e^{-B/ħ}`, potentially seeding new inflationary domains.
+Vacuum decay bubbles nucleate at rate \( \Gamma/V \sim A e^{-B/\hbar} \), potentially seeding new inflationary domains.
 
 ### (b) Conformal Cyclic Cosmology (Penrose)
 
-The late-time de Sitter metric `g^{(late)}_{μν}` can be conformally rescaled `g^{(early)}_{μν} = Ω^2 g^{(late)}_{μν}` with `Ω → 0`, matching into a new aeon.
+The late-time de Sitter metric \( g^{(\text{late})}_{\mu\nu} \) can be conformally rescaled \( g^{(\text{early})}_{\mu\nu} = \Omega^2 g^{(\text{late})}_{\mu\nu} \) with \( \Omega \to 0 \), matching into a new aeon.
 
 ### (c) Loop Quantum Cosmology Bounce
 
-Modified Friedmann dynamics `H^2 = (8πG/3) ρ (1 - ρ/ρ_c)` produce a bounce when `ρ ≈ ρ_c`, allowing a re-expansion.
+Modified Friedmann dynamics \( H^2 = (8\pi G/3)\, \rho \left(1 - \rho/\rho_c\right) \) produce a bounce when \( \rho \approx \rho_c \), allowing a re-expansion.
 
 ## 5. Information Bounds
 
-The covariant entropy bound `S ≤ k_B A / (4 L_P^2)` implies that in the absence of BHs the available information resides on the de Sitter horizon (area `A = 4π (c/H_Λ)^2`).
+The covariant entropy bound \( S \le k_B A / (4 L_P^2) \) implies that in the absence of BHs the available information resides on the de Sitter horizon (area \( A = 4\pi (c/H_\Lambda)^2 \)).
 
 ## Overview
 

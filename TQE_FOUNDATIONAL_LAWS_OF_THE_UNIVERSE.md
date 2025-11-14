@@ -20,9 +20,10 @@ A structured hierarchy of canonical physical laws expressed through the energy�
 
 The TQE fundamental statement is
 
-```
-P'(\psi) = P(\psi) · f(E, I) / Z(E, I),     f(E, I) = exp(-(E - E_c)^2 / (2σ^2)) · (1 + α I),
-```
+$$
+P'(\psi) = \frac{P(\psi)\, f(E, I)}{Z(E, I)}, \qquad
+f(E, I) = \exp\!\left(-\frac{(E - E_c)^2}{2\sigma^2}\right) \left(1 + \alpha I \right),
+$$
 
 where `E` denotes vacuum-energy fluctuations, `I` is the information-orientation parameter (0–1), `E_c` the Goldilocks energy centre, `σ` the stability width, and `α` controls the informational influence. `Z(E, I) = ∫_Ψ P(ϕ) f(E(ϕ), I(ϕ)) dϕ` enforces probability conservation. When `f(E, I) = 1`, familiar conservation laws reappear; deviations encode statistical preference for law lock-in.
 
@@ -34,13 +35,13 @@ where `E` denotes vacuum-energy fluctuations, `I` is the information-orientation
 
 ## Level 2 – Thermodynamics
 
-- **First law**: `ΔU = Q - W`. To keep the weight positive even for large excursions, use `f(E, I) = exp[(Q - W)/⟨E⟩]`, which reduces to `1 + (Q - W)/⟨E⟩` for small perturbations.
-- **Second law**: `ΔS \ge 0`, with entropy `S = -k_B Σ P(ψ) log P(ψ)`. Here `f(E, I) = exp(ΔS / k_B)` spreads probability weight toward higher-entropy microstates.
+- **First law**: `ΔU = Q - W`. To keep the weight positive even for large excursions, use \( f(E, I) = \exp[(Q - W)/\langle E\rangle] \), which reduces to \( 1 + (Q - W)/\langle E\rangle \) for small perturbations.
+- **Second law**: `ΔS \ge 0`, with entropy \( S = -k_B \sum P(\psi) \log P(\psi) \). Here \( f(E, I) = \exp(\Delta S / k_B) \) spreads probability weight toward higher-entropy microstates.
 - **Third law**: `\lim_{T→0} S = const.` implying `f(E, I) → 1`, because fluctuations freeze out as temperature approaches absolute zero.
 
 ## Level 3 – Gravitation
 
-- **Newtonian limit**: `F = G m_1 m_2 / r^2`, potential `U(r) = -G m_1 m_2 / r`. Thermal weighting yields `f(E, I) = exp(-U(r) / k_B T)`, i.e., deeper potentials correspond to higher weighting when coupled to a heat bath.
+- **Newtonian limit**: \( F = G m_1 m_2 / r^2 \), potential \( U(r) = -G m_1 m_2 / r \). Thermal weighting yields \( f(E, I) = \exp(-U(r) / k_B T) \), i.e., deeper potentials correspond to higher weighting when coupled to a heat bath.
 - **General relativity**: `G_{\mu\nu} + Λ g_{\mu\nu} = (8πG/c^4) T_{\mu\nu}`. The coupling can be viewed as an effective rescaling `T_{\mu\nu} → f(E, I) T_{\mu\nu}`, which then feeds back into the curvature through Einstein’s equations.
 
 ## Level 4 – Relativity
@@ -52,9 +53,9 @@ where `E` denotes vacuum-energy fluctuations, `I` is the information-orientation
 
 The Maxwell equations (`∇·E = ρ/ε₀`, `∇·B = 0`, `∇×E = -∂B/∂t`, `∇×B = μ₀J + μ₀ε₀ ∂E/∂t`) follow once the coupling favours field configurations consistent with charge and current distributions. For static fields one can express the bias via the electrostatic potential `φ(r)`:
 
-```
-f(E, I) = exp(-q φ(r) / k_B T),
-```
+$$
+f(E, I) = \exp\!\left(-\frac{q\,\phi(r)}{k_B T}\right),
+$$
 
 indicating that higher potential energy states receive exponentially suppressed probability weight in thermal ensembles. Here `E` refers to the vacuum-energy background entering the master coupling, while `φ(r)` is the local potential energy density that biases charge configurations.
 
@@ -74,9 +75,9 @@ indicating that higher potential energy states receive exponentially suppressed 
 - **Hubble law**: `v = H_0 d`. A dimensionless, positive weighting uses `f(E, I) = exp(β H_0 d)`, capturing how large-scale separations inherit the cosmic expansion bias.
 - **Friedmann dynamics**:
 
-```
-(ȧ/a)^2 = (8πG/3) ρ - k/a^2 + Λ/3,
-```
+$$
+\left(\frac{\dot{a}}{a}\right)^2 = \frac{8\pi G}{3} \rho - \frac{k}{a^2} + \frac{\Lambda}{3},
+$$
 
 where `f(E, I)` modifies the effective sources through `ρ_eff = f ρ` or `Λ_eff = f Λ`, linking microscopic coupling to macroscopic expansion history.
 
