@@ -58,7 +58,21 @@ Whenever I write $f$ inside a tier, I really mean the corresponding $f^{(k)}_{\t
 
 ## 3. Tier 1 – Conservation Laws
 
-At the first tier I deliberately declare the neutral setting. Energy conservation, $\Delta E=0$, is my definition of $f^{(1)}_{\text{eff}}=1$: when the average energy before and after a step matches, the kernel has nothing interesting to say. The same goes for linear and angular momentum; $\vec{p}_{\text{tot}}$ and $\vec{L}_{\text{tot}}$ remain constant precisely when no new information enters the system.
+At the first tier I deliberately declare the neutral setting. Energy conservation,
+
+$$
+\Delta E = 0,
+$$
+
+is my definition of $f^{(1)}_{\text{eff}}=1$: when the average energy before and after a step matches, the kernel has nothing interesting to say. The same goes for linear and angular momentum,
+
+$$
+\vec{p}_{\text{tot}} = \text{const.},
+\qquad
+\vec{L}_{\text{tot}} = \text{const.},
+$$
+
+which remain steady precisely when no new information enters the system.
 
 Seen through the TQE lens, these textbook symmetries are simply the situations where the KL divergence between successive shells vanishes. The system can translate or rotate freely, but unless an external torque or time-dependent potential injects orientation data, the bias stays asleep. What we usually call a “conservation violation” is, in this language, just the moment when $I$ lights up and the coupling reweights the available histories.
 
