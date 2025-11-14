@@ -27,7 +27,7 @@ Think of this table as the legend to a map I keep referring back to. Each row re
 Everything starts with a single update rule that I treat as the operating kernel of the universe:
 
 $$
-P'(\psi) = \frac{P(\psi)\, f(E,I)}{Z(E,I)},
+P'(\psi) = \frac{P(\psi)\, f(E,I)}{Z[P]},
 $$
 
 with
@@ -35,12 +35,12 @@ with
 $$
 f(E,I) = \exp\!\left[-\frac{(E - E_c)^2}{2\sigma^2}\right] (1 + \alpha I),
 \qquad
-Z(E,I) = \int_\Psi P(\phi)\, f(E(\phi), I(\phi))\, d\phi.
+Z[P] = \int_\Psi P(\phi)\, f(E(\phi), I(\phi))\, d\phi.
 $$
 
-Here $E$ is the sampled vacuum energy, $I\in[0,1]$ measures how aligned the microstate is with an information-bearing direction, $E_c$ is the Goldilocks energy, $\sigma$ the tolerance width, and $\alpha$ the strength of the informational tilt. Setting $f=1$ recovers ordinary conservation; letting $f\neq 1$ nudges probabilities toward states that support richer structure.
+Here $E$ is the sampled vacuum energy, $I\in[0,1]$ measures how aligned the microstate is with an information-bearing direction, $E_c$ is the Goldilocks energy, $\sigma$ the tolerance width, and $\alpha$ the strength of the informational tilt. Formally $Z$ is a functional of $P$ (and of the fixed parameters), so the update is a nonlinear, mean-field-style map on probability measures. Setting $f=1$ recovers ordinary conservation; letting $f\neq 1$ nudges probabilities toward states that support richer structure.
 
-I model the configuration space $\Psi$ as the set of all admissible microstates, with energy and orientation functionals $E:\Psi\to\mathbb{R}$ and $I:\Psi\to[0,1]$. Because $I$ itself can depend on the evolving distribution (for example through a KL divergence between consecutive shells or any of the other orientation metrics I track, none of which I have identified as definitively superior yet), the map $P\mapsto P'$ behaves like a nonlinear operator on probability measures. These choices are the axioms of the TQE view: every higher tier is just this kernel averaged over the macro-manifold that defines the experiment.
+I model the configuration space $\Psi$ as the set of all admissible microstates, with energy and orientation functionals $E:\Psi\to\mathbb{R}$ and $I:\Psi\to[0,1]$. Because $I$ itself can depend on the evolving distribution (for example through a KL divergence between consecutive shells or any of the other orientation metrics I track, none of which I have identified as definitively superior yet), the map $P\mapsto P'$ behaves like a nonlinear operator on probability measures. To keep $P'$ everywhere non-negative I either restrict $1+\alpha I(\psi)\ge 0$ for all $\psi$ or, when I want to allow stronger tilts, exponentiate the informational channel as $\exp[\beta I(\psi)]$ so that the kernel remains positive definite. These choices are the axioms of the TQE view: every higher tier is just this kernel averaged over the macro-manifold that defines the experiment.
 
 Tier 0 is therefore the only rung where genuinely new mathematics enters. The Gaussian piece tells me how far the microstate sits from the preferred energy, while the linear factor $(1+\alpha I)$ records whether the state carries information in the “forward” direction of complexity. The partition-like factor $Z$ enforces normalization so that biasing never cheats probability. Everything else in this document is a coarse-grained retelling of the same sentence.
 
@@ -53,6 +53,8 @@ f^{(k)}_{\text{eff}}(\text{macro vars}) = \frac{\int_{\Psi_k} P(\psi|\text{macro
 $$
 
 Whenever I write $f$ inside a tier, I really mean the corresponding $f^{(k)}_{\text{eff}}$. Saying that it is “proportional to” some classical expression is shorthand for “the same bias survives coarse-graining and now masquerades as that law.”
+
+With these definitions in hand I treat the remainder of the hierarchy as interpretive mappings: Tier 0 supplies the axioms, while Tiers 1–8 report how the same kernel looks after coarse-graining onto familiar physical manifolds. Whenever a formula reads “$\propto$” you should read it as a heuristic bias or Boltzmann analogue rather than a strict derivation; I flag the most technical tiers when stronger assumptions are needed.
 
 ---
 
@@ -88,7 +90,7 @@ $$
 f^{(2)}_{\text{eff}}(\psi) \propto \exp\!\left[\frac{\delta q(\psi) - \delta w(\psi)}{\langle E \rangle}\right],
 $$
 
-just says that whatever heat fails to become work ends up guiding the weighting. Each micro-fluctuation $\delta q$ or $\delta w$ is the microscopic bookkeeping entry feeding the bias.
+just says that whatever heat fails to become work ends up guiding the weighting. Each micro-fluctuation $\delta q$ or $\delta w$ is the microscopic bookkeeping entry feeding the bias, and in practice I set $\langle E\rangle$ equal to the relevant thermal scale (e.g. $k_B T_{\text{eff}}$ for the ensemble under study) so the exponent lines up with the canonical Boltzmann weight.
 
 The second law,
 
@@ -144,7 +146,7 @@ T_{\mu\nu} \longrightarrow f^{(3)}_{\text{eff}}\, T_{\mu\nu},
 f^{(3)}_{\text{eff}} = \frac{\int_{\Psi_{\text{loc}}} P(\psi|\text{matter})\, f_{\text{micro}}(E(\psi), I(\psi))\, d\psi}{\int_{\Psi_{\text{loc}}} P(\psi|\text{matter})\, d\psi}.
 $$
 
-Nothing happens to the geometry itself; instead I reinterpret fluctuations in energy–information orientation as local boosts or dips in effective stress–energy. Regions that stay aligned with the preferred informational direction behave as if their density were amplified, which provides a TQE reading of phenomena usually ascribed to exotic matter, dark energy, or early-time seeding.
+Nothing happens to the geometry itself; instead I reinterpret fluctuations in energy–information orientation as local boosts or dips in effective stress–energy. Regions that stay aligned with the preferred informational direction behave as if their density were amplified, which provides a TQE reading of phenomena usually ascribed to exotic matter, dark energy, or early-time seeding. In general $f^{(3)}_{\text{eff}}=f^{(3)}_{\text{eff}}(x)$ inherits the spacetime dependence of the matter patch being coarse-grained, so it should be treated as a backreaction-style source renormalization rather than a single global constant.
 
 ---
 
@@ -167,10 +169,10 @@ $$
 reveals what happens when I leave that Goldilocks point:
 
 $$
-f^{(4)}_{\text{eff}}(p) \approx \exp\!\left[-\frac{(E(p) - mc^2)^2}{2\sigma^2}\right] \big(1 + \alpha I(p)\big) \sim \frac{E(p)}{mc^2}
+f^{(4)}_{\text{eff}}(p) \approx \exp\!\left[-\frac{(E(p) - mc^2)^2}{2\sigma^2}\right] \big(1 + \alpha I(p)\big),
 $$
 
-for highly boosted particles. In other words, the more kinetic energy stored in momentum, the more the kernel reweights along that axis. A perfectly isolated boost stays neutral because no new information is exchanged, but once the motion couples to an environment, $I(p)$ tracks how momentum carries orientation. Special relativity therefore becomes the translator that turns microscopic orientation changes into macroscopic kinematics without ever tampering with the field equations.
+so states near the rest-energy window dominate while highly boosted ones are exponentially suppressed unless the $I(p)$ channel injects additional weight. When I need a tail that grows with energy—for instance in baths where higher momentum modes carry the informational orientation—I swap the Gaussian for a monotone tilt such as $\exp[\beta (E-mc^2)/mc^2]$ or a polynomial prefactor. A perfectly isolated boost stays neutral because no new information is exchanged, but once the motion couples to an environment, $I(p)$ tracks how momentum carries orientation. Special relativity therefore becomes the translator that turns microscopic orientation changes into macroscopic kinematics without ever tampering with the field equations.
 
 ---
 
@@ -198,7 +200,7 @@ i\hbar \frac{\partial \Psi}{\partial t} = \hat{H} \Psi,
 \hat{H} = \hat{H}_0 + \hat{H}_{\text{TQE}},
 $$
 
-where $\hat{H}_{\text{TQE}}$ packages the $f(E,I)$-dependent pieces. Normalization $\langle\Psi|\Psi\rangle=1$ still holds because the $Z$ factor enforces unitarity.
+where $\hat{H}_{\text{TQE}}$ packages the $f(E,I)$-dependent pieces. I insist that $\hat{H}_{\text{TQE}}$ be Hermitian so the total Hamiltonian remains self-adjoint and the Schrödinger evolution preserves $\langle\Psi|\Psi\rangle=1$; the Tier 0 partition factor $Z$ only normalizes the emergent classical probability update.
 
 Measurements continue to follow the Born rule,
 
