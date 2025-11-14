@@ -144,13 +144,13 @@ $$
 T_{\mu\nu} \longrightarrow f^{(3)}_{\text{eff}}\, T_{\mu\nu}.
 $$
 
-The coupling acts as an effective source modulation, allowing energy–information fluctuations to alter curvature without changing the field equations themselves. Here
+  The coupling acts as an effective source modulation, allowing energy–information fluctuations to alter curvature without changing the field equations themselves. Here
 
 $$
 f^{(3)}_{\text{eff}} = \frac{\int_{\Psi_{\text{loc}}} P(\psi|\text{matter})\, f_{\text{micro}}(E(\psi), I(\psi))\, d\psi}{\int_{\Psi_{\text{loc}}} P(\psi|\text{matter})\, d\psi}
 $$
 
-should be read as the stress–energy renormalization obtained by integrating $f_{\text{micro}}$ over local matter distributions.
+  should be read as the stress–energy renormalization obtained by integrating $f_{\text{micro}}$ over local matter distributions.
 
 In Newtonian language, $f(E,I)$ tells us that thermal baths statistically prefer deeper wells because those configurations correspond to higher informational throughput. In relativistic language, the same statement becomes a local rescaling of stress–energy. The underlying geometry is untouched; what changes is which stress–energy histories survive the lock-in process. Regions with stronger information orientation behave as if their energy density were amplified, providing a TQE route to phenomena often attributed to exotic matter or early-time fluctuations.
 
@@ -164,7 +164,7 @@ $$
 E = mc^2,
 $$
 
-which defines the neutral bias $f^{(4)}_{\text{eff}} = 1$ when $E$ matches the rest-energy target $E_c = mc^2$ set in Tier 0.
+  which defines the neutral bias $f^{(4)}_{\text{eff}} = 1$ when $E$ matches the rest-energy target $E_c = mc^2$ set in Tier 0.
 
 2. **Relativistic dispersion** —
 
@@ -172,13 +172,13 @@ $$
 E^2 = (pc)^2 + (mc^2)^2,
 $$
 
-implies that departures from the rest-energy Goldilocks point induce
+  implies that departures from the rest-energy Goldilocks point induce
 
 $$
 f^{(4)}_{\text{eff}}(p) \approx \exp\!\left[-\frac{(E(p) - mc^2)^2}{2\sigma^2}\right] \big(1 + \alpha I(p)\big),
 $$
 
-which to leading order behaves like $f^{(4)}_{\text{eff}} \sim E(p)/(mc^2)$ for highly boosted particles.
+  which to leading order behaves like $f^{(4)}_{\text{eff}} \sim E(p)/(mc^2)$ for highly boosted particles.
 
 Here 
 
@@ -190,13 +190,13 @@ In one limit the coupling stays neutral—boosting a perfectly isolated rest mas
 
 ## 7. Tier 5 – Electromagnetism
 
-The Maxwell equations enforce $U(1)$ gauge symmetry. The coupling assigns weights to static configurations via
+  The Maxwell equations enforce $U(1)$ gauge symmetry. The coupling assigns weights to static configurations via
 
 $$
 f^{(5)}_{\text{eff}}(r) \propto \exp\!\left[-\frac{q\, \phi(r)}{k_B T}\right],
 $$
 
-with $\phi(r)$ the electrostatic potential. High-energy field configurations are exponentially suppressed, while the vacuum energy $E$ still sets the background through the master coupling.
+  with $\phi(r)$ the electrostatic potential. High-energy field configurations are exponentially suppressed, while the vacuum energy $E$ still sets the background through the master coupling.
 
 From the TQE standpoint, electrostatics is the archetype of “information relaxation.” Charges rearrange until the KL divergence between successive field configurations is minimized; the resulting configuration is exactly what Gauss’s law prescribes. Non-equilibrium plasmas or radiation fields instead see $f(E,I)$ biasing which modes grow or die out. Laboratory coherence phenomena—waveguides, resonant cavities, even laser gain media—can be rephrased as local experiments where the information orientation pushes the system toward stable field configurations while suppressing noisy competitors.
 
@@ -212,7 +212,7 @@ i\hbar \frac{\partial \Psi}{\partial t} = \hat{H} \Psi,
 \hat{H} = \hat{H}_0 + \hat{H}_{\text{TQE}},
 $$
 
-where $\hat{H}_{\text{TQE}}$ contains $f(E,I)$-dependent terms. Wavefunctions must still satisfy $\langle \Psi | \Psi \rangle = 1$.
+  where $\hat{H}_{\text{TQE}}$ contains $f(E,I)$-dependent terms. Wavefunctions must still satisfy $\langle \Psi | \Psi \rangle = 1$.
 
 - **Measurement (Born rule)** —
 
@@ -220,7 +220,7 @@ $$
 P(\psi) = |\Psi(\psi)|^2,
 $$
 
-so deviations only appear through the dynamics, not by altering the probability rule directly.
+  so deviations only appear through the dynamics, not by altering the probability rule directly.
 
 - **Uncertainty principle** —
 
@@ -228,7 +228,7 @@ $$
 \Delta x\, \Delta p \ge \frac{\hbar}{2},
 $$
 
-preserved because $f$ does not modify commutation relations.
+  preserved because $f$ does not modify commutation relations.
 
 The quantum tier is where the TQE orientation parameter is calculated explicitly via KL divergence or Shannon entropy. $\hat{H}_{\text{TQE}}$ represents the coarse-grained effect of repeatedly multiplying branch probabilities by $f(E,I)$ until lock-in criteria are met. Importantly, no postulates of quantum theory are broken: unitarity is preserved by $Z$, the Born rule remains intact, and canonical commutators stay untouched. What changes is the *relative longevity* of different histories. Paths that align with informational orientation retain amplitude longer, giving them more opportunity to decohere into the classical records we observe.
 
@@ -242,13 +242,13 @@ $$
 V(r) \approx -\frac{4}{3}\, \frac{\alpha_s \hbar c}{r} + k r,
 $$
 
-the weighting
+  the weighting
 
 $$
 f^{(7)}_{\text{eff}}(r) \propto \exp\!\left[-\frac{V(r)}{k_B T}\right]
 $$
 
-captures confinement by penalising long flux tubes.
+  captures confinement by penalising long flux tubes.
 
 2. **Electroweak**: The Fermi four-fermion term
 
@@ -279,7 +279,7 @@ v = H_0 d
 f^{(8)}_{\text{eff}}(d) \propto \exp\!\left(\beta \frac{H_0 d}{c}\right),
 $$
 
-where $\beta$ is dimensionless and the $c$ in the denominator keeps the exponent unitless.
+  where $\beta$ is dimensionless and the $c$ in the denominator keeps the exponent unitless.
 
 2. **Friedmann equation** —
 
