@@ -21,7 +21,9 @@ $$
 \beta(t) = \beta_0 \frac{T_*}{T_{\text{dS}}(t)},
 $$
 
-with $T_*$ a fixed reference temperature (Goldilocks baseline or Planck scale). As $T_{\text{dS}}$ approaches $T_*$ from above, $\beta(t)$ collapses and the coupling $f(E,I)$ relaxes toward unity, preparing the system for the reset phase.
+with $T_*$ a fixed reference temperature (Goldilocks baseline or Planck scale). 
+
+As $T_{\text{dS}}$ approaches $T_*$ from above, $\beta(t)$ collapses and the coupling $f(E,I)$ relaxes toward unity, preparing the system for the reset phase.
 
 **Interpretation.** Λ-domination is the point where cosmology enforces neutrality. Once $a(t)$ becomes strictly exponential, every observer inherits the same Gibbons–Hawking bath, so no region can retain a privileged informational orientation. The proportionality $\beta(t) \sim T_* / T_{\text{dS}}$ makes this explicit: the colder the de Sitter horizon, the smaller the selection pressure, the closer $f(E,I)$ sits to one. This section therefore sets the thermodynamic stage for why a reset is unavoidable—the universe has no statistical leverage left to prefer complexity.
 
