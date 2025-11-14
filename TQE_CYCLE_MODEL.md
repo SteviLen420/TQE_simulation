@@ -6,7 +6,7 @@ A complete specification of the Theory of the Question of Existence (TQE) dynami
 
 ## 1. Master Modulation Architecture
 
-The universe ensemble is described by a probability density $P(\psi)$ over candidate law-states $\psi$. Every phase of the cycle applies the same modulation law $P'(\psi) = \frac{P(\psi)\, f(E(\psi), I(\psi))}{\int_\Psi P(\phi)$ , $f(E(\phi), I(\phi))\, d\phi}$ with fine-tuning factor $f(E, I) = \exp[\beta(t) X(\psi) - \lambda_{\text{out}}(t)]$ restricted to $X(\psi) \in G_t / t$.
+The universe ensemble is described by a probability density $P(\psi)$ over candidate law-states $\psi$. Every phase of the cycle applies the same modulation law $P'(\psi) = \frac{P(\psi)\, f(E(\psi), I(\psi))}{\int_\Psi P(\phi)\, f(E(\phi), I(\phi))\, d\phi}$ with fine-tuning factor $f(E, I)=\exp[\beta(t) X(\psi)-\lambda_{\text{out}}(t)]$ restricted to $X(\psi) \in G_t / t$.
 
 - $\beta(t)$ — selection pressure (inverse temperature analog).  
 - $X(\psi)$ — fitness/complexity functional.  
