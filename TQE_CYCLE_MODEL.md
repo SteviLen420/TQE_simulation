@@ -105,7 +105,7 @@ $$
 
 These represent, respectively, probabilistic biasing and strict gate enforcement before a universe crystallises.
 
-**Interpretation.** Pre-selection is pure exploration. The ensemble has almost no orientation; the KL divergence between updates is tiny, so $f(E,I) \approx 1$ everywhere. The “soft” variant is the statistical mechanic’s approach—nudge probabilities gently according to small biases—while the “hard” projection models theories where only symmetry-respecting states survive the first cut. In either case, the system remains lawless but poised for collapse.
+**Interpretation.** Pre-selection is pure exploration. The ensemble has almost no orientation; whichever $I$-metric I track at this stage—KL divergence, Fisher distance, or another candidate still under evaluation—stays tiny between updates, so $f(E,I) \approx 1$ everywhere. The “soft” variant is the statistical mechanic’s approach—nudge probabilities gently according to small biases—while the “hard” projection models theories where only symmetry-respecting states survive the first cut. In either case, the system remains lawless but poised for collapse.
 
 ### 4.2 Collapse point ($t = 0$)
 
@@ -142,7 +142,7 @@ The reset map rewrites the terminal distribution into a fresh high-variance stat
 
 Representative choices:
 
-1. **Entropic reweighting** — $\Pi[P] (\psi) = \frac{e^{-\gamma s(\psi)} P(\psi)}{\int e^{-\gamma s(\phi)} P(\phi)\, d\phi}$ with $s(\psi)$ a local entropy-density estimator (e.g., neighbourhood entropy or KL score) so the reweighting truly reshapes the distribution.
+1. **Entropic reweighting** — $\Pi[P] (\psi) = \frac{e^{-\gamma s(\psi)} P(\psi)}{\int e^{-\gamma s(\phi)} P(\phi)\, d\phi}$ with $s(\psi)$ a local entropy-density estimator (e.g., neighbourhood entropy, KL score, or any rival I’m still benchmarking) so the reweighting truly reshapes the distribution.
 
 2. **Perturbative noise injection** — $\Pi[P] (\psi) = P(\psi) + \varepsilon\, \eta(\psi)$ where $\eta$ is a zero-mean random field.
 

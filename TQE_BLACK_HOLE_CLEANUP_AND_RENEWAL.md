@@ -25,7 +25,7 @@ with $T_*$ a fixed reference temperature (Goldilocks baseline or Planck scale).
 
 As $T_{\text{dS}}$ approaches $T_*$ from above, $\beta(t)$ collapses and the coupling $f(E,I)$ relaxes toward unity, preparing the system for the reset phase.
 
-**Interpretation.** Λ-domination is the point where cosmology enforces neutrality. Once $a(t)$ becomes strictly exponential, every observer inherits the same Gibbons–Hawking bath, so no region can retain a privileged informational orientation. The proportionality $\beta(t) \sim T_* / T_{\text{dS}}$ makes this explicit: the colder the de Sitter horizon, the smaller the selection pressure, the closer $f(E,I)$ sits to one. This section therefore sets the thermodynamic stage for why a reset is unavoidable—the universe has no statistical leverage left to prefer complexity.
+**Interpretation.** Λ-domination is the point where cosmology enforces neutrality. Once $a(t)$ becomes strictly exponential, every observer inherits the same Gibbons–Hawking bath, so no region can retain a privileged informational orientation—no matter which $I$-metric I monitor (KL scores, Fisher distances, or other candidates I still benchmark), they all collapse toward zero. The proportionality $\beta(t) \sim T_* / T_{\text{dS}}$ makes this explicit: the colder the de Sitter horizon, the smaller the selection pressure, the closer $f(E,I)$ sits to one. This section therefore sets the thermodynamic stage for why a reset is unavoidable—the universe has no statistical leverage left to prefer complexity.
 
 ## 2. Black Hole Thermodynamics as a Cleanup Mechanism
 
@@ -43,7 +43,7 @@ For an isolated Schwarzschild black hole of mass $M$:
 
 Large black holes evaporate on timescales vastly exceeding stellar ages, but inevitably their entropy is exported to Hawking quanta, cleansing the universe of compact remnants.
 
-**Interpretation.** In TQE language, black holes are extremal configurations whose microstates saturate the orientation functional: $I(\psi)$ is locally maximised on horizon degrees of freedom, so the master coupling remains highly biased there. Hawking radiation is the slow bleed that redistributes that bias into the ambient de Sitter bath. No matter how massive the hole, evaporation guarantees that its local “preference” cannot persist forever. The cleanup is therefore statistical as well as physical: it removes outliers so that the ensemble can return to the unbiased regime needed for Π to act cleanly.
+**Interpretation.** In TQE language, black holes are extremal configurations whose microstates saturate the orientation functional: $I(\psi)$ is locally maximised on horizon degrees of freedom regardless of which orientation metric currently feels most faithful (I haven’t crowned a single champion yet). Hawking radiation is the slow bleed that redistributes that bias into the ambient de Sitter bath. No matter how massive the hole, evaporation guarantees that its local “preference” cannot persist forever. The cleanup is therefore statistical as well as physical: it removes outliers so that the ensemble can return to the unbiased regime needed for Π to act cleanly.
 
 ## 3. Entropy Accounting and the March to Heat Death
 
@@ -51,7 +51,7 @@ The generalized second law keeps the total entropy budget monotonic: $S_{\text{t
 
 During evaporation $S_{\text{BH}}$ decreases while $S_{\text{rad}}$ rises by an even larger amount, leaving $S_{\text{tot}}$ non-decreasing. Once all black holes have vanished, only a thin bath of radiation with temperature $T_{\text{dS}}$ remains, chemical potentials approach zero, and free energy $F \to 0$. This is the classic heat-death configuration in which $\beta(t) \to 0$ in the TQE cycle.
 
-**Interpretation.** The generalized second law is the macroscopic codification of $f(E,I)$’s drift toward unity. As long as $S_{\text{tot}}$ keeps climbing, any residual orientation dissipates. When $F \to 0$, no amount of microscopic juggling can restore the bias; there is simply no free energy to power new complexity. Thus entropy accounting is the audit trail that proves the universe has genuinely entered the neutral phase required for a future reset.
+**Interpretation.** The generalized second law is the macroscopic codification of $f(E,I)$’s drift toward unity. As long as $S_{\text{tot}}$ keeps climbing, any residual orientation dissipates—each $I$-channel I keep tabs on flattens, even though I still treat their relative utility as an open question. When $F \to 0$, no amount of microscopic juggling can restore the bias; there is simply no free energy to power new complexity. Thus entropy accounting is the audit trail that proves the universe has genuinely entered the neutral phase required for a future reset.
 
 ## 4. Renewal Channels Beyond Heat Death
 
