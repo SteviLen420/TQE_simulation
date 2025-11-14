@@ -2,17 +2,17 @@
 
 ## 1. Λ-Dominated Expansion and Horizon Thermodynamics
 
-Once matter and radiation dilute, the Friedmann equation asymptotes to a pure de Sitter solution driven by the cosmological constant \( \Lambda \):  
+Once matter and radiation dilute, the Friedmann equation asymptotes to a pure de Sitter solution driven by the cosmological constant $\Lambda$:  
 $(H_\Lambda = \sqrt{\Lambda c^2 / 3},\ a(t) = a_0 e^{H_\Lambda t},\ R_\Lambda = c / H_\Lambda)$.
 
-Every comoving observer is surrounded by a cosmological event horizon at radius \( R_\Lambda \) with Gibbons–Hawking temperature  
+Every comoving observer is surrounded by a cosmological event horizon at radius $R_\Lambda$ with Gibbons–Hawking temperature  
 $(T_{\text{dS}} = \hbar H_\Lambda / 2\pi k_B,\ S_{\text{dS}} = k_B A_\Lambda / 4 L_P^2 = \pi k_B c^2 / L_P^2 H_\Lambda^2)$
 
-which sets the ultimate thermal bath for all late-time processes. In the TQE frame, the vanishing of the selection pressure \( \beta(t) \propto 1/T_{\text{dS}} \) signals that the coupling \( f(E,I) \) relaxes toward unity, preparing the system for the reset phase.
+which sets the ultimate thermal bath for all late-time processes. In the TQE frame, the vanishing of the selection pressure $\beta(t) \propto 1/T_{\text{dS}}$ signals that the coupling $f(E,I)$ relaxes toward unity, preparing the system for the reset phase.
 
 ## 2. Black Hole Thermodynamics as a Cleanup Mechanism
 
-For an isolated Schwarzschild black hole of mass \( M \):
+For an isolated Schwarzschild black hole of mass $M$:
 
 - Hawking temperature: $T_H(M) = \hbar c^3 / (8\pi G M k_B)$.
 
@@ -20,7 +20,7 @@ For an isolated Schwarzschild black hole of mass \( M \):
 
 - Luminosity and mass-loss rate: $\frac{dM}{dt} = -\alpha\, \hbar c^4 / (G^2 M^2)$ and $L_H = -c^2\, dM/dt$.
 
-  with \( \alpha \approx (15360\pi)^{-1} \) for Standard-Model degrees of freedom.
+  with $\alpha \approx (15360\pi)^{-1}$ for Standard-Model degrees of freedom.
 
 - Evaporation time: $t_{\text{evap}}(M) \approx 5120\pi G^2 M^3 / (\hbar c^4)$.
 
@@ -31,7 +31,7 @@ Large black holes evaporate on timescales vastly exceeding stellar ages, but ine
 The generalized second law keeps the total entropy budget monotonic:  
 $S_{\text{tot}}(t) = \sum_i S_{\text{BH},i}(t) + S_{\text{rad}}(t) + S_{\text{dS}}, \quad dS_{\text{tot}}/dt \ge 0.$
 
-During evaporation \( S_{\text{BH}} \) decreases while \( S_{\text{rad}} \) rises by an even larger amount, leaving \( S_{\text{tot}} \) non-decreasing. Once all black holes have vanished, only a thin bath of radiation with temperature \( T_{\text{dS}} \) remains, chemical potentials approach zero, and free energy \( F \to 0 \). This is the classic heat-death configuration in which \( \beta(t) \to 0 \) in the TQE cycle.
+During evaporation $S_{\text{BH}}$ decreases while $S_{\text{rad}}$ rises by an even larger amount, leaving $S_{\text{tot}}$ non-decreasing. Once all black holes have vanished, only a thin bath of radiation with temperature $T_{\text{dS}}$ remains, chemical potentials approach zero, and free energy $F \to 0$. This is the classic heat-death configuration in which $\beta(t) \to 0$ in the TQE cycle.
 
 ## 4. Renewal Channels Beyond Heat Death
 
@@ -40,14 +40,14 @@ Even after the thermodynamic finale, several speculative mechanisms could reinit
 1. **Coleman–De Luccia (CDL) vacuum decay.** Vacuum bubbles nucleate with rate  
    $\Gamma/V \sim A\, e^{-B/\hbar}$,
 
-   where \( B \) is the difference between the instanton action and the false-vacuum action. A successful bubble reheats its interior, providing fresh initial conditions for another inflationary-like epoch.
+   where $B$ is the difference between the instanton action and the false-vacuum action. A successful bubble reheats its interior, providing fresh initial conditions for another inflationary-like epoch.
 
-2. **Conformal Cyclic Cosmology (CCC).** The late-time metric \( g^{(\text{late})}_{\mu\nu} \) is rescaled by a conformal factor \( \Omega^2 \) such that \( \Omega \to 0 \), yielding a new metric \( g^{(\text{early})}_{\mu\nu} = \Omega^2 g^{(\text{late})}_{\mu\nu} \) that serves as the next aeon’s beginning. All dimensionful quantities redshift away, leaving only angular information imprinted on the future cosmic microwave background.
+2. **Conformal Cyclic Cosmology (CCC).** The late-time metric $g^{(\text{late})}_{\mu\nu}$ is rescaled by a conformal factor $\Omega^2$ such that $\Omega \to 0$, yielding a new metric $g^{(\text{early})}_{\mu\nu} = \Omega^2 g^{(\text{late})}_{\mu\nu}$ that serves as the next aeon’s beginning. All dimensionful quantities redshift away, leaving only angular information imprinted on the future cosmic microwave background.
 
 3. **Loop Quantum Cosmology (LQC) bounce.** Modifying the Friedmann equation to  
    $H^2 = \frac{8\pi G}{3}\, \rho \left(1 - \frac{\rho}{\rho_c}\right)$
 
-   enforces a bounce when \( \rho \to \rho_c \sim \rho_{\text{Planck}} \), preventing a strict heat death and launching a fresh expanding branch.
+   enforces a bounce when $\rho \to \rho_c \sim \rho_{\text{Planck}}$, preventing a strict heat death and launching a fresh expanding branch.
 
 4. **Information-theoretic reset (TQE Π-operator).** In TQE language, the Π-map can resample the final state,  
   $P_{\text{new},0^-}(\psi) = \Pi\!\left[P_{\infty}(\psi)\right],$
@@ -63,11 +63,11 @@ ensuring that any data surviving the cleanup resides on the horizon degrees of f
 
 ## 6. Integrated View within the TQE Cycle
 
-1. **Λ-domination** drives \( \beta(t) \) toward zero, freezing the selection dynamics.  
+1. **Λ-domination** drives $\beta(t)$ toward zero, freezing the selection dynamics.  
 2. **Black hole evaporation** eliminates localized entropy reservoirs, funneling information to the horizon.  
 3. **Heat death** leaves the system in a maximally mixed, horizon-coded state.  
 4. **Renewal channels** (CDL, CCC, LQC, Π) provide mechanisms for reintroducing fluctuation-rich initial data.  
-5. **Pre-fluctuation phase** restarts with \( P_{\text{new},0^-} \), reactivating \( f(E,I) \) and rebuilding the hierarchy of laws.
+5. **Pre-fluctuation phase** restarts with $P_{\text{new},0^-}$, reactivating $f(E,I)$ and rebuilding the hierarchy of laws.
 
 Thus the black-hole cleanup era is not merely an epilogue but the bridge between successive TQE cycles, converting the relic information of one universe into the seed data of the next.
 
