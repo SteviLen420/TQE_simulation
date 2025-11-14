@@ -40,7 +40,7 @@ $$
 
 Here $E$ is the sampled vacuum energy, $I\in[0,1]$ measures how aligned the microstate is with an information-bearing direction, $E_c$ is the Goldilocks energy, $\sigma$ the tolerance width, and $\alpha$ the strength of the informational tilt. Setting $f=1$ recovers ordinary conservation; letting $f\neq 1$ nudges probabilities toward states that support richer structure.
 
-I model the configuration space $\Psi$ as the set of all admissible microstates, with energy and orientation functionals $E:\Psi\to\mathbb{R}$ and $I:\Psi\to[0,1]$. Because $I$ itself can depend on the evolving distribution (for example through a KL divergence between consecutive shells), the map $P\mapsto P'$ behaves like a nonlinear operator on probability measures. These choices are the axioms of the TQE view: every higher tier is just this kernel averaged over the macro-manifold that defines the experiment.
+I model the configuration space $\Psi$ as the set of all admissible microstates, with energy and orientation functionals $E:\Psi\to\mathbb{R}$ and $I:\Psi\to[0,1]$. Because $I$ itself can depend on the evolving distribution (for example through a KL divergence between consecutive shells or any of the other orientation metrics I track, none of which I have identified as definitively superior yet), the map $P\mapsto P'$ behaves like a nonlinear operator on probability measures. These choices are the axioms of the TQE view: every higher tier is just this kernel averaged over the macro-manifold that defines the experiment.
 
 Tier 0 is therefore the only rung where genuinely new mathematics enters. The Gaussian piece tells me how far the microstate sits from the preferred energy, while the linear factor $(1+\alpha I)$ records whether the state carries information in the “forward” direction of complexity. The partition-like factor $Z$ enforces normalization so that biasing never cheats probability. Everything else in this document is a coarse-grained retelling of the same sentence.
 
@@ -74,7 +74,7 @@ $$
 
 which remain steady precisely when no new information enters the system.
 
-Seen through the TQE lens, these textbook symmetries are simply the situations where the KL divergence between successive shells vanishes. The system can translate or rotate freely, but unless an external torque or time-dependent potential injects orientation data, the bias stays asleep. What we usually call a “conservation violation” is, in this language, just the moment when $I$ lights up and the coupling reweights the available histories.
+Seen through the TQE lens, these textbook symmetries are simply the situations where the orientation metric I’m monitoring—whether a KL divergence or some other $I$-channel whose optimal form remains to be determined—vanishes between successive shells. The system can translate or rotate freely, but unless an external torque or time-dependent potential injects orientation data, the bias stays asleep. What we usually call a “conservation violation” is, in this language, just the moment when $I$ lights up and the coupling reweights the available histories.
 
 ---
 
@@ -184,7 +184,7 @@ $$
 
 with $\phi(r)$ the electrostatic potential. High-energy arrangements get exponentially suppressed, while the vacuum energy backdrop remains fixed by Tier 0.
 
-To me, electrostatics is the archetype of information relaxation. Charges shuffle until the KL divergence between successive field snapshots is minimized, and the field that survives is precisely the one Gauss’s law predicts. Drive the system out of equilibrium—say in a plasma or cavity—and the same bias chooses which modes amplify and which die. Waveguides, resonators, and laser gain media are therefore just laboratory-sized stories about $f(E,I)$ nudging EM fields toward coherent, information-aligned configurations.
+To me, electrostatics is the archetype of information relaxation. Charges shuffle until the relevant $I$-metric between successive field snapshots—KL divergence in the simplest monitoring scheme, though I still test alternatives—is minimized, and the field that survives is precisely the one Gauss’s law predicts. Drive the system out of equilibrium—say in a plasma or cavity—and the same bias chooses which modes amplify and which die. Waveguides, resonators, and laser gain media are therefore just laboratory-sized stories about $f(E,I)$ nudging EM fields toward coherent, information-aligned configurations.
 
 ---
 
@@ -212,7 +212,7 @@ $$
 \Delta x\, \Delta p \ge \frac{\hbar}{2}.
 $$
 
-All of the novelty sits in the dynamics: I calculate the orientation parameter directly via KL divergences or entropic functionals, let those values inform $\hat{H}_{\text{TQE}}$, and then watch how certain histories keep their amplitude longer. Paths aligned with the informational direction resist decoherence; misaligned ones fade faster. Quantum mechanics therefore becomes the stage where I can see the bias in slow motion before it decoheres into classical records.
+All of the novelty sits in the dynamics: I calculate the orientation parameter directly via whichever information metric suits the experiment—KL divergences, Fisher distances, or other entropic functionals, recognizing that the “best” choice is still unsettled—let those values inform $\hat{H}_{\text{TQE}}$, and then watch how certain histories keep their amplitude longer. Paths aligned with the informational direction resist decoherence; misaligned ones fade faster. Quantum mechanics therefore becomes the stage where I can see the bias in slow motion before it decoheres into classical records.
 
 ---
 
@@ -288,4 +288,4 @@ Stepping back, I see the same three-beat rhythm everywhere:
 
 So TQE is not an extra layer pasted onto physics; it is the bookkeeping that tracks how energy–information preferences decide when each law switches on, how strong it runs, and when it relaxes. Every canonical equation in the hierarchy is just $f(E,I)$ glimpsed through a different coarse graining.
 
-Telling the story in this tone makes the continuity clearer to me: the same KL-driven bias that once decided whether a universe survives later appears as a chemical potential, an effective mass, a gauge weighting, or a dark-energy proxy. Each tier is therefore another observational window into the lone function $f(E,I)$.
+Telling the story in this tone makes the continuity clearer to me: the same information-driven bias—be it read off a KL divergence or any other $I$-channel, none yet crowned as the definitive probe—that once decided whether a universe survives later appears as a chemical potential, an effective mass, a gauge weighting, or a dark-energy proxy. Each tier is therefore another observational window into the lone function $f(E,I)$.
