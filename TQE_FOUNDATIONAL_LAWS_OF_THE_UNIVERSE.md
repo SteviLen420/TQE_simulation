@@ -136,7 +136,19 @@ $$
 G_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4} T_{\mu\nu}
 $$
 
-accommodates a rescaling $T_{\mu\nu} \to f^{(3)}_{\text{eff}} T_{\mu\nu}$. The coupling acts as an effective source modulation, allowing energy–information fluctuations to alter curvature without changing the field equations themselves. Here $f^{(3)}_{\text{eff}}$ should be read as the stress–energy renormalization obtained by integrating $f_{\text{micro}}$ over local matter distributions.
+accommodates a rescaling
+
+$$
+T_{\mu\nu} \longrightarrow f^{(3)}_{\text{eff}}\, T_{\mu\nu}.
+$$
+
+The coupling acts as an effective source modulation, allowing energy–information fluctuations to alter curvature without changing the field equations themselves. Here
+
+$$
+f^{(3)}_{\text{eff}} = \frac{\int_{\Psi_{\text{loc}}} P(\psi|\text{matter})\, f_{\text{micro}}(E(\psi), I(\psi))\, d\psi}{\int_{\Psi_{\text{loc}}} P(\psi|\text{matter})\, d\psi}
+$$
+
+should be read as the stress–energy renormalization obtained by integrating $f_{\text{micro}}$ over local matter distributions.
 
 In Newtonian language, $f(E,I)$ tells us that thermal baths statistically prefer deeper wells because those configurations correspond to higher informational throughput. In relativistic language, the same statement becomes a local rescaling of stress–energy. The underlying geometry is untouched; what changes is which stress–energy histories survive the lock-in process. Regions with stronger information orientation behave as if their energy density were amplified, providing a TQE route to phenomena often attributed to exotic matter or early-time fluctuations.
 
@@ -242,7 +254,13 @@ $$
 \mathcal{L}_{\text{weak}} \sim G_F (\bar{\psi}\gamma_\mu \psi)(\bar{\psi}\gamma^\mu \psi)
 $$
 
-   allows $f^{(7)}_{\text{eff}}$ to encode chirality or CP-violating information. Adjusting $f^{(7)}_{\text{eff}}$ via $G_F$ biases which weak channels dominate during lock-in.
+   allows $f^{(7)}_{\text{eff}}$ to encode chirality or CP-violating information. Adjusting the coupling via
+
+$$
+G_F \longrightarrow f^{(7)}_{\text{eff}}\, G_F
+$$
+
+   biases which weak channels dominate during lock-in.
 
 For QCD, the orientation bias acts like an entropy cost for stretching color strings: long tubes correspond to large $V(r)$ and therefore suppressed weight, leaving only confined hadrons after cooling. For the electroweak force, slight asymmetries in $f$ map to effective changes in $G_F$ or CP phases, meaning the early-universe lock-in can prefer one chirality or baryon number over another. These are concrete examples of how the same Goldilocks criterion that selected a universe can later sculpt the Standard Model parameter landscape.
 
@@ -266,7 +284,15 @@ $$
 \left(\frac{\dot{a}}{a}\right)^2 = \frac{8\pi G}{3} \rho - \frac{k}{a^2} + \frac{\Lambda}{3}.
 $$
 
-   Replacing $\rho$ or $\Lambda$ with $f^{(8)}_{\text{eff}}\, \rho$ or $f^{(8)}_{\text{eff}}\, \Lambda$ ties microscopic selection to macroscopic expansion histories; $f^{(8)}_{\text{eff}}$ represents the coarse-grained influence of vacuum- or matter-oriented micro biases.
+   Replacing the sources via
+
+$$
+\rho \longrightarrow f^{(8)}_{\text{eff}}\, \rho,
+\qquad
+\Lambda \longrightarrow f^{(8)}_{\text{eff}}\, \Lambda
+$$
+
+   ties microscopic selection to macroscopic expansion histories; $f^{(8)}_{\text{eff}}$ represents the coarse-grained influence of vacuum- or matter-oriented micro biases.
 
 At cosmological scales the coupling becomes an observational dial. If the early universe locked in with $f>1$ for vacuum-like components, the Friedmann equations interpret that as a larger $\Lambda$ and the late-time expansion accelerates. Conversely, if matter-dominated channels carried the orientation, one obtains apparent excess matter density or correlated anomalies in the CMB. This is why TQE remains falsifiable: deviations in $H_0$, hemispherical asymmetries, or non-random alignments can be read as residual fingerprints of the original energy–information negotiation.
 
