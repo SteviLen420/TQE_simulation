@@ -2,9 +2,16 @@
 
 ## 1. Λ-Dominated Expansion and Horizon Thermodynamics
 
-Once matter and radiation dilute, the Friedmann equation asymptotes to a pure de Sitter solution driven by the cosmological constant $\Lambda$: $(H_\Lambda = \sqrt{\Lambda c^2 / 3},\ a(t) = a_0 e^{H_\Lambda t},\ R_\Lambda = c / H_\Lambda)$.
+Once matter and radiation dilute, the Friedmann equation asymptotes to a pure de Sitter solution driven by the cosmological constant $\Lambda$, characterised by:
 
-Every comoving observer is surrounded by a cosmological event horizon at radius $R_\Lambda$ with Gibbons–Hawking temperature $(T_{\text{dS}} = \hbar H_\Lambda / 2\pi k_B,\ S_{\text{dS}} = k_B A_\Lambda / 4 L_P^2 = \pi k_B c^2 / L_P^2 H_\Lambda^2)$.
+- $H_\Lambda = \sqrt{\Lambda c^2 / 3}$,  
+- $a(t) = a_0 e^{H_\Lambda t}$,  
+- $R_\Lambda = c / H_\Lambda$.
+
+Every comoving observer is surrounded by a cosmological event horizon at radius $R_\Lambda$ with Gibbons–Hawking thermodynamic data:
+
+- $T_{\text{dS}} = \hbar H_\Lambda / 2\pi k_B$,  
+- $S_{\text{dS}} = k_B A_\Lambda / 4 L_P^2 = \pi k_B c^2 / L_P^2 H_\Lambda^2$.
 
 which sets the ultimate thermal bath for all late-time processes. In the TQE frame, the vanishing of the selection pressure $\beta(t) \propto 1/T_{\text{dS}}$ signals that the coupling $f(E,I)$ relaxes toward unity, preparing the system for the reset phase.
 
