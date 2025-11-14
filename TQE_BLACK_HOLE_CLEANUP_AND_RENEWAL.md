@@ -47,9 +47,11 @@ Even after the thermodynamic finale, several speculative mechanisms could reinit
 
 2. **Conformal Cyclic Cosmology (CCC).** The late-time metric $g^{(\text{late})}_{\mu\nu}$ is rescaled by a conformal factor $\Omega^2$ with $\Omega \to 0$, producing
 
+
    $$
    g^{(\text{early})}_{\mu\nu} = \Omega^2\, g^{(\text{late})}_{\mu\nu},
    $$
+
 
    which serves as the next aeon’s starting metric. All dimensionful quantities redshift away, leaving only angular information imprinted on the future cosmic microwave background.
 
