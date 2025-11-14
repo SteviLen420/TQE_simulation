@@ -84,7 +84,7 @@ $$
 f^{(2)}_{\text{eff}}(\psi) \propto \exp\!\left[\frac{\delta q(\psi) - \delta w(\psi)}{\langle E \rangle}\right],
 $$
 
-where $\delta q$ and $\delta w$ are the microscopic contributions consistent with the macroscopic $Q$ and $W$.
+  where $\delta q$ and $\delta w$ are the microscopic contributions consistent with the macroscopic $Q$ and $W$.
 
 2. **Second law** —
 
@@ -96,7 +96,7 @@ S = -k_B \sum_\psi P(\psi) \ln P(\psi),
 f^{(2)}_{\text{eff}}(\psi) \propto \exp\!\left[\frac{\delta s(\psi)}{k_B}\right],
 $$
 
-where $\delta s(\psi)$ is the local entropy production associated with the microstate $\psi$.
+  where $\delta s(\psi)$ is the local entropy production associated with the microstate $\psi$.
 
 3. **Third law** —
 
