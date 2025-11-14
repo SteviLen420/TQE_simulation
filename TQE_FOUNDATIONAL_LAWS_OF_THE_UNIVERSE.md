@@ -84,7 +84,7 @@ $$
 f^{(2)}_{\text{eff}}(\psi) \propto \exp\!\left[\frac{\delta q(\psi) - \delta w(\psi)}{\langle E \rangle}\right],
 $$
 
-   where $\delta q$ and $\delta w$ are the microscopic contributions consistent with the macroscopic $Q$ and $W$.
+where $\delta q$ and $\delta w$ are the microscopic contributions consistent with the macroscopic $Q$ and $W$.
 
 2. **Second law** —
 
@@ -96,7 +96,7 @@ S = -k_B \sum_\psi P(\psi) \ln P(\psi),
 f^{(2)}_{\text{eff}}(\psi) \propto \exp\!\left[\frac{\delta s(\psi)}{k_B}\right],
 $$
 
-   where $\delta s(\psi)$ is the local entropy production associated with the microstate $\psi$.
+where $\delta s(\psi)$ is the local entropy production associated with the microstate $\psi$.
 
 3. **Third law** —
 
@@ -106,7 +106,7 @@ $$
 f^{(2)}_{\text{eff}} \to 1,
 $$
 
-   because fluctuations vanish near absolute zero, forcing $\delta s(\psi)\to 0$.
+because fluctuations vanish near absolute zero, forcing $\delta s(\psi)\to 0$.
 
 Thermal physics is therefore the statistical face of the same coupling that drives cosmic-scale selection. The first law reads as an energy-oriented constraint: whatever heat fails to turn into work must dissipate, and the exponential factor is the macroscopic echo of $f(E,I)$. The second law is almost literal—entropy production is the logarithm of the reweighting. The third law announces that as the microstate count collapses to one, orientation vanishes and the bias returns to neutrality. Thermodynamics is simply TQE viewed through the lens of large ensembles.
 
@@ -152,7 +152,7 @@ $$
 E = mc^2,
 $$
 
-   which defines the neutral bias $f^{(4)}_{\text{eff}} = 1$ when $E$ matches the rest-energy target $E_c = mc^2$ set in Tier 0.
+which defines the neutral bias $f^{(4)}_{\text{eff}} = 1$ when $E$ matches the rest-energy target $E_c = mc^2$ set in Tier 0.
 
 2. **Relativistic dispersion** —
 
@@ -160,13 +160,13 @@ $$
 E^2 = (pc)^2 + (mc^2)^2,
 $$
 
-   implies that departures from the rest-energy Goldilocks point induce
+implies that departures from the rest-energy Goldilocks point induce
 
 $$
 f^{(4)}_{\text{eff}}(p) \approx \exp\!\left[-\frac{(E(p) - mc^2)^2}{2\sigma^2}\right] \big(1 + \alpha I(p)\big),
 $$
 
-   which to leading order behaves like $f^{(4)}_{\text{eff}} \sim E(p)/(mc^2)$ for highly boosted particles.
+which to leading order behaves like $f^{(4)}_{\text{eff}} \sim E(p)/(mc^2)$ for highly boosted particles.
 
 Here 
 
@@ -200,7 +200,7 @@ i\hbar \frac{\partial \Psi}{\partial t} = \hat{H} \Psi,
 \hat{H} = \hat{H}_0 + \hat{H}_{\text{TQE}},
 $$
 
-  where $\hat{H}_{\text{TQE}}$ contains $f(E,I)$-dependent terms. Wavefunctions must still satisfy $\langle \Psi | \Psi \rangle = 1$.
+where $\hat{H}_{\text{TQE}}$ contains $f(E,I)$-dependent terms. Wavefunctions must still satisfy $\langle \Psi | \Psi \rangle = 1$.
 
 - **Measurement (Born rule)** —
 
@@ -208,7 +208,7 @@ $$
 P(\psi) = |\Psi(\psi)|^2,
 $$
 
-  so deviations only appear through the dynamics, not by altering the probability rule directly.
+so deviations only appear through the dynamics, not by altering the probability rule directly.
 
 - **Uncertainty principle** —
 
@@ -216,7 +216,7 @@ $$
 \Delta x\, \Delta p \ge \frac{\hbar}{2},
 $$
 
-  preserved because $f$ does not modify commutation relations.
+preserved because $f$ does not modify commutation relations.
 
 The quantum tier is where the TQE orientation parameter is calculated explicitly via KL divergence or Shannon entropy. $\hat{H}_{\text{TQE}}$ represents the coarse-grained effect of repeatedly multiplying branch probabilities by $f(E,I)$ until lock-in criteria are met. Importantly, no postulates of quantum theory are broken: unitarity is preserved by $Z$, the Born rule remains intact, and canonical commutators stay untouched. What changes is the *relative longevity* of different histories. Paths that align with informational orientation retain amplitude longer, giving them more opportunity to decohere into the classical records we observe.
 
@@ -230,13 +230,13 @@ $$
 V(r) \approx -\frac{4}{3}\, \frac{\alpha_s \hbar c}{r} + k r,
 $$
 
-   the weighting
+the weighting
 
 $$
 f^{(7)}_{\text{eff}}(r) \propto \exp\!\left[-\frac{V(r)}{k_B T}\right]
 $$
 
-   captures confinement by penalising long flux tubes.
+captures confinement by penalising long flux tubes.
 
 2. **Electroweak**: The Fermi four-fermion term
 
@@ -244,7 +244,7 @@ $$
 \mathcal{L}_{\text{weak}} \sim G_F (\bar{\psi}\gamma_\mu \psi)(\bar{\psi}\gamma^\mu \psi)
 $$
 
-   allows $f^{(7)}_{\text{eff}}$ to encode chirality or CP-violating information. Adjusting $f^{(7)}_{\text{eff}}$ via $G_F$ biases which weak channels dominate during lock-in.
+allows $f^{(7)}_{\text{eff}}$ to encode chirality or CP-violating information. Adjusting $f^{(7)}_{\text{eff}}$ via $G_F$ biases which weak channels dominate during lock-in.
 
 For QCD, the orientation bias acts like an entropy cost for stretching color strings: long tubes correspond to large $V(r)$ and therefore suppressed weight, leaving only confined hadrons after cooling. For the electroweak force, slight asymmetries in $f$ map to effective changes in $G_F$ or CP phases, meaning the early-universe lock-in can prefer one chirality or baryon number over another. These are concrete examples of how the same Goldilocks criterion that selected a universe can later sculpt the Standard Model parameter landscape.
 
@@ -260,7 +260,7 @@ v = H_0 d
 f^{(8)}_{\text{eff}}(d) \propto \exp\!\left(\beta \frac{H_0 d}{c}\right),
 $$
 
-   where $\beta$ is dimensionless and the $c$ in the denominator keeps the exponent unitless.
+where $\beta$ is dimensionless and the $c$ in the denominator keeps the exponent unitless.
 
 2. **Friedmann equation** —
 
@@ -268,7 +268,7 @@ $$
 \left(\frac{\dot{a}}{a}\right)^2 = \frac{8\pi G}{3} \rho - \frac{k}{a^2} + \frac{\Lambda}{3}.
 $$
 
-   Replacing $\rho$ or $\Lambda$ with $f^{(8)}_{\text{eff}}\, \rho$ or $f^{(8)}_{\text{eff}}\, \Lambda$ ties microscopic selection to macroscopic expansion histories; $f^{(8)}_{\text{eff}}$ represents the coarse-grained influence of vacuum- or matter-oriented micro biases.
+Replacing $\rho$ or $\Lambda$ with $f^{(8)}_{\text{eff}}\, \rho$ or $f^{(8)}_{\text{eff}}\, \Lambda$ ties microscopic selection to macroscopic expansion histories; $f^{(8)}_{\text{eff}}$ represents the coarse-grained influence of vacuum- or matter-oriented micro biases.
 
 At cosmological scales the coupling becomes an observational dial. If the early universe locked in with $f>1$ for vacuum-like components, the Friedmann equations interpret that as a larger $\Lambda$ and the late-time expansion accelerates. Conversely, if matter-dominated channels carried the orientation, one obtains apparent excess matter density or correlated anomalies in the CMB. This is why TQE remains falsifiable: deviations in $H_0$, hemispherical asymmetries, or non-random alignments can be read as residual fingerprints of the original energy–information negotiation.
 
