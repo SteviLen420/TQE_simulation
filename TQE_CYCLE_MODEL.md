@@ -7,14 +7,20 @@ A complete specification of the Theory of the Question of Existence (TQE) dynami
 ## 1. Master Modulation Architecture
 
 The universe ensemble is described by a probability density $P(\psi)$ over candidate law-states $\psi$. Every phase of the cycle applies the same modulation law
+
 $$
 P'(\psi) = \frac{P(\psi)\, f_{\text{gate}}(\psi, t)}{\int_\Psi P(\phi)\, f_{\text{gate}}(\phi, t)\, d\phi},
 $$
+
 with
+
 $$
 f_{\text{gate}}(\psi, t) = \exp\!\big[\beta(t) X(\psi)\big]\, \mathbf{1}_{\psi \in G_t} \, e^{-\lambda_{\text{out}}(t)}.
 $$
-Here the indicator projects out configurations that violate the gate, leaving a closed, positive operator on the admissible subspace. The Lagrange multiplier is tied to explicit constraints $\mathcal{C}_j[P]=0$ (normalisation, symmetry closure, total energy bounds, etc.) via $\lambda_{\text{out}}(t) = \sum_j \Lambda_j(t)\, \mathcal{C}_j'[P_t]$ so that the same functional form encodes both probability conservation and hard structural rules.
+
+Here the indicator projects out configurations that violate the gate, leaving a closed, positive operator on the admissible subspace. 
+
+The Lagrange multiplier is tied to explicit constraints $\mathcal{C}_j[P]=0$ (normalisation, symmetry closure, total energy bounds, etc.) via $\lambda_{\text{out}}(t) = \sum_j \Lambda_j(t)\, \mathcal{C}_j'[P_t]$ so that the same functional form encodes both probability conservation and hard structural rules.
 
 - $\beta(t)$ — selection pressure (inverse temperature analog).  
 - $X(\psi)$ — fitness/complexity functional.  
@@ -38,9 +44,11 @@ $$
 $$
 
 As $\Delta t \to 0$, the continuum limit obeys
+
 $$
 \partial_t P_t(\psi) = P_t(\psi)\, [G_t(\psi) - \mathbb{E}_t(G_t)] - \kappa_t(\psi),
 $$
+
 where $G_t(\psi) \equiv \beta(t) X(\psi)$ and $\kappa_t(\psi)$ enforces the gate projection (either as an absorbing boundary term or as a constraint ensuring $P_t(\psi)=0$ outside $G_t$). This is the standard replicator equation with payoff given directly by the energy–information coupling.
 
 **Interpretation.** This is the backbone of TQE: no matter which era we examine, reality updates its law-distribution by multiplying with the same exponential bias and renormalising. The selection pressure $\beta(t)$ acts like an inverse temperature dial, the gate $G_t$ is a moving boundary that decides which candidate laws are even admissible, and the Lagrange multiplier enforces hard constraints (normalisation, gauge closure, etc.). In practice, each cosmological phase simply corresponds to a different choice of these schedules. The replicator equation makes the statistical analogy explicit: physical law behaves like a population whose “fitness” is short-term stability plus long-term complexity support.
@@ -64,9 +72,11 @@ The cycle is driven by how quickly selection pressure rises, saturates, and fall
 ## 3. Gate Structure and Fitness Functionals
 
 The gate $G_t$ partitions law-space into allowed and forbidden regions, e.g., enforcing Lorentz invariance, gauge algebra closure, or diffeomorphism symmetry. Fitness functionals are taken as explicit composites
+
 $$
 X(\psi) = \alpha_1 C_{\text{sym}}(\psi) + \alpha_2 C_{\text{stab}}(\psi) + \alpha_3 C_{\text{complex}}(\psi),
 $$
+
 where each $C_i : \Psi \to \mathbb{R}$ is a measurable score (symmetry residual norm, linear-stability margin, information-throughput metric, etc.) and $\alpha_i$ fix the trade-offs. Energy–information composites, conservation compliance, and anomaly penalties are special cases of this decomposition.
 
 The master coupling only acts inside $G_t$; violations are projected out by setting $f = 0$ there.
