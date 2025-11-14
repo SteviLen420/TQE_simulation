@@ -8,6 +8,7 @@ repository-code: "https://github.com/SteviLen420/TQE_simulation"
 authors:
   - family-names: "Len"
     given-names: "Stefan"
+    orcid: "https://orcid.org/0009-0007-0383-7315"
 abstract: >
   Unified repository containing the TQE foundational laws, cycle model,
   black-hole cleanup analysis, and multiple simulation pipelines (v1.0.0 and
