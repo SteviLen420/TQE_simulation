@@ -45,7 +45,13 @@ Even after the thermodynamic finale, several speculative mechanisms could reinit
 
    where $B$ is the difference between the instanton action and the false-vacuum action. A successful bubble reheats its interior, providing fresh initial conditions for another inflationary-like epoch.
 
-2. **Conformal Cyclic Cosmology (CCC).** The late-time metric $g^{(\text{late})}_{\mu\nu}$ is rescaled by a conformal factor $\Omega^2$ such that $\Omega \to 0$, yielding a new metric $g^{(\text{early})}_{\mu\nu} = \Omega^2 g^{(\text{late})}_{\mu\nu}$ that serves as the next aeon’s beginning. All dimensionful quantities redshift away, leaving only angular information imprinted on the future cosmic microwave background.
+2. **Conformal Cyclic Cosmology (CCC).** The late-time metric $g^{(\text{late})}_{\mu\nu}$ is rescaled by a conformal factor $\Omega^2$ with $\Omega \to 0$, producing
+
+   $$
+   g^{(\text{early})}_{\mu\nu} = \Omega^2\, g^{(\text{late})}_{\mu\nu},
+   $$
+
+   which serves as the next aeon’s starting metric. All dimensionful quantities redshift away, leaving only angular information imprinted on the future cosmic microwave background.
 
 3. **Loop Quantum Cosmology (LQC) bounce.** Modifying the Friedmann equation to $H^2 = \frac{8\pi G}{3}\, \rho \left(1 - \frac{\rho}{\rho_c}\right)$
 
