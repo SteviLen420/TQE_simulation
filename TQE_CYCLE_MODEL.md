@@ -18,14 +18,14 @@ The universe ensemble is described by a probability density $P(\psi)$ over candi
 For simulations:
 
 - **Update** —
-  $$
-  P_{k+1}(\psi) = P_k(\psi)\, \exp\big[\beta_k X_k(\psi)\big].
-  $$
+$$
+P_{k+1}(\psi) = P_k(\psi)\, \exp\big[\beta_k X_k(\psi)\big].
+$$
 
 - **Renormalise** —
-  $$
-  \tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}.
-  $$
+$$
+\tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}.
+$$
 
 As $\Delta t \to 0$, the continuum limit obeys $\partial_t P_t(\psi) = P_t(\psi)\, [G_t(\psi) - \mathbb{E}_t(G_t)]$, the standard replicator equation with “game payoff” $G_t(\psi)$ set by the energy–information coupling.
 
@@ -62,14 +62,14 @@ The master coupling only acts inside $G_t$; violations are projected out by sett
 High-variance superposition with $\beta(t) \approx 0$. Two equivalent initialisations:
 
 - **Soft (Gibbs) collapse** —
-  $$
-  P_0^+(\psi) = \frac{P_0^-(\psi)\, e^{-\beta_0 X(\psi)}}{\int P_0^-(\phi)\, e^{-\beta_0 X(\phi)}\, d\phi}.
-  $$
+$$
+P_0^+(\psi) = \frac{P_0^-(\psi)\, e^{-\beta_0 X(\psi)}}{\int P_0^-(\phi)\, e^{-\beta_0 X(\phi)}\, d\phi}.
+$$
 
 - **Hard projection** —
-  $$
-  P_0^+(\psi) = \frac{P_0^-(\psi)\, \mathbf{1}_{X(\psi)\in G}}{\int P_0^-(\phi)\, \mathbf{1}_{X(\phi)\in G}\, d\phi}.
-  $$
+$$
+P_0^+(\psi) = \frac{P_0^-(\psi)\, \mathbf{1}_{X(\psi)\in G}}{\int P_0^-(\phi)\, \mathbf{1}_{X(\phi)\in G}\, d\phi}.
+$$
 
 These represent, respectively, probabilistic biasing and strict gate enforcement before a universe crystallises.
 
