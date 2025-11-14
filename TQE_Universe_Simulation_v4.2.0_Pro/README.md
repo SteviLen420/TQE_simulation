@@ -35,9 +35,9 @@ Every submodule carries its own README and script, but this document provides a 
 
 ## Theory Snapshot
 
-The TQE hypothesis asserts that energy and information co-determine the stability of physical laws. The progression of equations—first published with the original v1.0.0 project—shows how the idea evolved:
+The TQE hypothesis asserts that energy and information co-determine the stability of physical laws. The reasoning evolved through three conceptual steps:
 
-1. **Consciousness-field Ansatz (v1.0.0 Story.md)**  
+1. **Consciousness-field Ansatz**  
    `P′(ψ) = P(ψ) · f(Φ)` – the Born rule augmented with a consciousness field Φ that biases collapse toward coherent, low-entropy states.
 2. **Energy-Consciousness Coupling**  
    `P′(ψ) = P(ψ) · f(E, Φ)` – stability emerges when Φ is not an external dimension but an intrinsic property of energy.
