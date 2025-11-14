@@ -15,7 +15,7 @@ The universe ensemble is described by a probability density $P(\psi)$ over candi
 
 ### Discrete update vs. continuum limit
 
-For simulations, use $P_{k+1}(\psi) = P_k(\psi)\, \exp[\beta_k X_k(\psi)]$ with renormalised $\tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}$ . As $\Delta t \to 0$, the continuum limit obeys $\partial_t P_t(\psi) = P_t(\psi)\, [G_t(\psi) - \mathbb{E}_t(G_t)]$, the standard replicator equation with “game payoff” $G_t(\psi)$ set by the energy–information coupling.
+For simulations, use $P_{k+1}(\psi) = P_k(\psi)\, \exp[\beta_k X_k(\psi)]$ with renormalised $\tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}$. As $\Delta t \to 0$, the continuum limit obeys $\partial_t P_t(\psi) = P_t(\psi)\, [G_t(\psi) - \mathbb{E}_t(G_t)]$, the standard replicator equation with “game payoff” $G_t(\psi)$ set by the energy–information coupling.
 
 ---
 
@@ -94,7 +94,7 @@ Representative choices:
 
    $\Pi[P](\psi) = P(\psi/\alpha)/\alpha$ to capture geometric contraction/expansion at aeon boundaries.
 
-Each option preserves normalisation and reintroduces exploratory variance before the next β ramp.
+Each option preserves normalisation and reintroduces exploratory variance before the next $\beta$ ramp.
 
 ---
 
@@ -120,5 +120,5 @@ Because $P_{k+1}(\psi) = P_k(\psi)\, e^{\beta_k X_k(\psi)}$ multiplies densities
 4. **Heat death:** Black-hole evaporation and Λ-domination drive $\beta \to 0$, storing residual information on horizons.  
 5. **Reset:** Π acts (possibly assisted by CDL/CCC/LQC mechanisms) to seed the next pre-selection phase.
 
-This closed loop is the operational backbone of TQE: a single modulation rule, equipped with explicit β-schedules, gate logic, reset operators, and stability diagnostics, suffices to describe how physical law can repeatedly emerge, persist, and dissolve across successive cosmological epochs.
+This closed loop is the operational backbone of TQE: a single modulation rule, equipped with explicit $\beta$-schedules, gate logic, reset operators, and stability diagnostics, suffices to describe how physical law can repeatedly emerge, persist, and dissolve across successive cosmological epochs.
 
