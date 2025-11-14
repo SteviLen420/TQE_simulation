@@ -54,7 +54,7 @@ To avoid notational clashes we distinguish
   
 - $f^{(k)}_{\text{eff}}$
 
-- the tier-$k$ effective bias obtained by conditioning $f_{\text{micro}}$ on the macroscopic manifold of that tier:
+- the tier- $k$ effective bias obtained by conditioning $f_{\text{micro}}$ on the macroscopic manifold of that tier:
 
 $$
 f^{(k)}_{\text{eff}}(\text{macro vars}) = \frac{\int_{\Psi_k} P(\psi|\text{macro}) f_{\text{micro}}(E(\psi), I(\psi))\, d\psi}{\int_{\Psi_k} P(\psi|\text{macro})\, d\psi}.
