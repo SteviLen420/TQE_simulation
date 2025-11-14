@@ -24,10 +24,10 @@ A comprehensive map linking each classical law to the TQE master coupling \( f(E
 
 The universal modulation rule is
 
-$$
+```math
 P'(\psi) = \frac{P(\psi)\, f(E,I)}{Z(E,I)}, \qquad
-f(E,I) = \exp\!\left[-\frac{(E - E_c)^2}{2\sigma^2}\right] \left(1 + \alpha I\right),
-$$
+f(E,I) = \exp\!\left[-\frac{(E - E_c)^2}{2\sigma^2}\right] \left(1 + \alpha I\right)
+```
 
 with \( Z(E,I) = \int_\Psi P(\phi) f(E(\phi), I(\phi))\, d\phi \). Here \( E \) is the sampled vacuum energy, \( I \in [0,1] \) is the information orientation, \( E_c \) is the Goldilocks centre, \( \sigma \) the stability width, and \( \alpha \) the information-bias strength. When \( f = 1 \), the evolution reproduces standard conservation; when \( f \neq 1 \), probability weight is shifted toward law-consistent states.
 
@@ -47,28 +47,28 @@ Conservation laws therefore mark the neutral regime of the coupling—no energy�
 
 1. **First law**  
 
-   $$
+   ```math
    \Delta U = Q - W, \qquad
-   f(E,I) = \exp\!\left(\frac{Q - W}{\langle E \rangle}\right),
-   $$
+   f(E,I) = \exp\!\left(\frac{Q - W}{\langle E \rangle}\right)
+   ```
 
    ensuring positivity for any magnitude of \( Q - W \).
 
 2. **Second law**  
 
-   $$
+   ```math
    \Delta S \ge 0, \qquad
    S = -k_B \sum_\psi P(\psi) \ln P(\psi), \qquad
-   f(E,I) = \exp\!\left(\frac{\Delta S}{k_B}\right),
-   $$
+   f(E,I) = \exp\!\left(\frac{\Delta S}{k_B}\right)
+   ```
 
    i.e., entropy growth translates directly into exponential weighting.
 
 3. **Third law**  
 
-   $$
-   \lim_{T \to 0} S = \text{const.} \quad \Rightarrow \quad f(E,I) \to 1,
-   $$
+   ```math
+   \lim_{T \to 0} S = \text{const.} \quad \Rightarrow \quad f(E,I) \to 1
+   ```
 
    because fluctuations vanish near absolute zero.
 
@@ -82,9 +82,9 @@ Thermal physics is therefore the statistical face of the same coupling that driv
 
 Potential \( U(r) = -G m_1 m_2 / r \) yields
 
-$$
-f(E,I) = \exp\!\left(-\frac{U(r)}{k_B T}\right),
-$$
+```math
+f(E,I) = \exp\!\left(-\frac{U(r)}{k_B T}\right)
+```
 
 highlighting that deeper gravitational wells receive higher probability weight at finite temperature.
 
@@ -92,9 +92,9 @@ highlighting that deeper gravitational wells receive higher probability weight a
 
 Einstein’s equation,
 
-$$
-G_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4} T_{\mu\nu},
-$$
+```math
+G_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4} T_{\mu\nu}
+```
 
 accommodates a rescaling \( T_{\mu\nu} \to f(E,I)\, T_{\mu\nu} \). The coupling acts as an effective source modulation, allowing energy–information fluctuations to alter curvature without changing the field equations themselves.
 
@@ -104,16 +104,16 @@ accommodates a rescaling \( T_{\mu\nu} \to f(E,I)\, T_{\mu\nu} \). The coupling 
 
 1. **Mass–energy equivalence**  
 
-   $$
-   E = mc^2 \quad \Rightarrow \quad f(E,I) = \frac{E}{mc^2} = 1.
-   $$
+   ```math
+   E = mc^2 \quad \Rightarrow \quad f(E,I) = \frac{E}{mc^2} = 1
+   ```
 
 2. **Relativistic dispersion**  
 
-   $$
+   ```math
    E^2 = (pc)^2 + (mc^2)^2 \quad \Rightarrow \quad
-   f(E,I) = \frac{E}{mc^2} = \sqrt{1 + \left(\frac{p}{mc}\right)^2}.
-   $$
+   f(E,I) = \frac{E}{mc^2} = \sqrt{1 + \left(\frac{p}{mc}\right)^2}
+   ```
 
 Here \( f \) tracks the information encoded in momentum relative to rest energy.
 
@@ -123,9 +123,9 @@ Here \( f \) tracks the information encoded in momentum relative to rest energy.
 
 The Maxwell equations enforce \( U(1) \) gauge symmetry. The coupling assigns weights to static configurations via
 
-$$
-f(E,I) = \exp\!\left(-\frac{q\, \phi(r)}{k_B T}\right),
-$$
+```math
+f(E,I) = \exp\!\left(-\frac{q\, \phi(r)}{k_B T}\right)
+```
 
 with \( \phi(r) \) the electrostatic potential. High-energy field configurations are exponentially suppressed, while the vacuum energy \( E \) still sets the background through the master coupling.
 
@@ -135,25 +135,25 @@ with \( \phi(r) \) the electrostatic potential. High-energy field configurations
 
 - **Schrödinger dynamics**  
 
-  $$
-  i\hbar \frac{\partial \Psi}{\partial t} = \hat{H} \Psi,
-  $$
+  ```math
+  i\hbar \frac{\partial \Psi}{\partial t} = \hat{H} \Psi
+  ```
 
   where \( \hat{H} = \hat{H}_0 + \hat{H}_{\text{TQE}} \) and \( \hat{H}_{\text{TQE}} \) contains \( f(E,I) \)-dependent terms. Wavefunctions must still satisfy \( \langle \Psi | \Psi \rangle = 1 \).
 
 - **Measurement (Born rule)**  
 
-  $$
-  P(\psi) = |\Psi(\psi)|^2.
-  $$
+  ```math
+  P(\psi) = |\Psi(\psi)|^2
+  ```
 
   Deviations only appear through the dynamics, not by altering the probability rule directly.
 
 - **Uncertainty principle**  
 
-  $$
-  \Delta x\, \Delta p \ge \frac{\hbar}{2},
-  $$
+  ```math
+  \Delta x\, \Delta p \ge \frac{\hbar}{2}
+  ```
 
   preserved because \( f \) does not modify commutation relations.
 
@@ -163,9 +163,9 @@ with \( \phi(r) \) the electrostatic potential. High-energy field configurations
 
 1. **QCD**: With Cornell potential \( V(r) \approx -(4/3)\, \alpha_s \hbar c / r + k r \),
 
-   $$
+   ```math
    f(E,I) = \exp\!\left(-\frac{V(r)}{k_B T}\right)
-   $$
+   ```
 
    captures confinement by penalising long flux tubes.
 
@@ -177,17 +177,17 @@ with \( \phi(r) \) the electrostatic potential. High-energy field configurations
 
 1. **Hubble law**
 
-   $$
-   v = H_0 d \quad \Rightarrow \quad f(E,I) = \exp(\beta H_0 d),
-   $$
+   ```math
+   v = H_0 d \quad \Rightarrow \quad f(E,I) = \exp(\beta H_0 d)
+   ```
 
    a positive, scale-dependent weighting.
 
 2. **Friedmann equation**
 
-   $$
-   \left(\frac{\dot{a}}{a}\right)^2 = \frac{8\pi G}{3} \rho - \frac{k}{a^2} + \frac{\Lambda}{3}.
-   $$
+   ```math
+   \left(\frac{\dot{a}}{a}\right)^2 = \frac{8\pi G}{3} \rho - \frac{k}{a^2} + \frac{\Lambda}{3}
+   ```
 
    Replacing \( \rho \) or \( \Lambda \) with \( f \rho \) or \( f \Lambda \) ties microscopic selection to macroscopic expansion histories.
 

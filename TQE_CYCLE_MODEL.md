@@ -8,15 +8,15 @@ A complete specification of the Theory of the Question of Existence (TQE) dynami
 
 The universe ensemble is described by a probability density \( P(\psi) \) over candidate law-states \( \psi \). Every phase of the cycle applies the same modulation law:
 
-$$
-P'(\psi) = \frac{P(\psi)\, f(E(\psi), I(\psi))}{\int_\Psi P(\phi)\, f(E(\phi), I(\phi))\, d\phi},
-$$
+```math
+P'(\psi) = \frac{P(\psi)\, f(E(\psi), I(\psi))}{\int_\Psi P(\phi)\, f(E(\phi), I(\phi))\, d\phi}
+```
 
 with the fine-tuning factor
 
-$$
-f(E, I) = \exp\!\big[\beta(t)\, X(\psi) - \lambda_{\text{out}}(t)\big], \qquad X(\psi) \in G_t / t.
-$$
+```math
+f(E, I) = \exp\!\big[\beta(t)\, X(\psi) - \lambda_{\text{out}}(t)\big], \qquad X(\psi) \in G_t / t
+```
 
 - \( \beta(t) \) — selection pressure (inverse temperature analog).  
 - \( X(\psi) \) — fitness/complexity functional.  
@@ -27,16 +27,16 @@ $$
 
 For simulations,
 
-$$
+```math
 P_{k+1}(\psi) = P_k(\psi)\, \exp[\beta_k X_k(\psi)], \qquad
-\tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}.
-$$
+\tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}
+```
 
 As \( \Delta t \to 0 \),
 
-$$
-\partial_t P_t(\psi) = P_t(\psi)\, \big[G_t(\psi) - \mathbb{E}_t(G_t)\big],
-$$
+```math
+\partial_t P_t(\psi) = P_t(\psi)\, \big[G_t(\psi) - \mathbb{E}_t(G_t)\big]
+```
 
 which is the standard replicator equation with “game payoff” \( G_t(\psi) \) supplied by the energy–information coupling.
 
@@ -48,26 +48,26 @@ The cycle is driven by how quickly selection pressure rises, saturates, and fall
 
 1. **Logistic ramp**
 
-   $$
-   \beta(t) = \frac{\beta_{\max}}{1 + e^{-k (t - t_c)}},
-   $$
+   ```math
+   \beta(t) = \frac{\beta_{\max}}{1 + e^{-k (t - t_c)}}
+   ```
 
    mimics smooth onset of law lock-in near \( t_c \).
 
 2. **Thermal inverse tied to expansion**
 
-   $$
+   ```math
    \beta(t) = \frac{1}{k_B T(t)}, \qquad
-   T(t) = T_0 \left[\frac{a(t)}{a_0}\right]^{-n},
-   $$
+   T(t) = T_0 \left[\frac{a(t)}{a_0}\right]^{-n}
+   ```
 
    so cosmological cooling naturally increases selection.
 
 3. **Relaxation with stochastic forcing**
 
-   $$
-   \dot{\beta}(t) = \kappa \big[\beta_{\text{eq}} - \beta(t)\big] + \xi(t),
-   $$
+   ```math
+   \dot{\beta}(t) = \kappa \big[\beta_{\text{eq}} - \beta(t)\big] + \xi(t)
+   ```
 
    where \( \kappa \) is a relaxation constant and \( \xi(t) \) is mean-zero noise capturing residual fluctuations.
 
@@ -93,15 +93,15 @@ High-variance superposition with \( \beta(t) \approx 0 \). Two equivalent initia
 
 - **Soft (Gibbs) collapse**
 
-  $$
-  P_0^+(\psi) = \frac{P_0^-(\psi)\, e^{-\beta_0 X(\psi)}}{\int P_0^-(\phi)\, e^{-\beta_0 X(\phi)}\, d\phi}.
-  $$
+  ```math
+  P_0^+(\psi) = \frac{P_0^-(\psi)\, e^{-\beta_0 X(\psi)}}{\int P_0^-(\phi)\, e^{-\beta_0 X(\phi)}\, d\phi}
+  ```
 
 - **Hard projection**
 
-  $$
-  P_0^+(\psi) = \frac{P_0^-(\psi)\, \mathbf{1}_{X(\psi)\in G}}{\int P_0^-(\phi)\, \mathbf{1}_{X(\phi)\in G}\, d\phi}.
-  $$
+  ```math
+  P_0^+(\psi) = \frac{P_0^-(\psi)\, \mathbf{1}_{X(\psi)\in G}}{\int P_0^-(\phi)\, \mathbf{1}_{X(\phi)\in G}\, d\phi}
+  ```
 
 These represent, respectively, probabilistic biasing and strict gate enforcement before a universe crystallises.
 
@@ -130,32 +130,32 @@ Once selection has effectively switched off, one of several triggers (CDL bubble
 
 The reset map rewrites the terminal distribution into a fresh high-variance state:
 
-$$
-P_{\text{new},0^-}(\psi) = \Pi\!\big[P_\infty(\psi)\big].
-$$
+```math
+P_{\text{new},0^-}(\psi) = \Pi\!\big[P_\infty(\psi)\big]
+```
 
 Representative choices:
 
 1. **Entropic reweighting**
 
-   $$
+   ```math
    \Pi[P](\psi) = \frac{e^{-\gamma S[P]} P(\psi)}{\int e^{-\gamma S[P]} P(\phi)\, d\phi}, \qquad
-   S[P] = -\int P \ln P\, d\psi.
-   $$
+   S[P] = -\int P \ln P\, d\psi
+   ```
 
 2. **Perturbative noise injection**
 
-   $$
-   \Pi[P](\psi) = P(\psi) + \varepsilon\, \eta(\psi),
-   $$
+   ```math
+   \Pi[P](\psi) = P(\psi) + \varepsilon\, \eta(\psi)
+   ```
 
    where \( \eta \) is a zero-mean random field.
 
 3. **Cyclic rescaling**
 
-   $$
-   \Pi[P](\psi) = \frac{P(\psi/\alpha)}{\alpha},
-   $$
+   ```math
+   \Pi[P](\psi) = \frac{P(\psi/\alpha)}{\alpha}
+   ```
 
    capturing geometric contraction/expansion at aeon boundaries.
 
@@ -169,9 +169,9 @@ Because \( P_{k+1}(\psi) = P_k(\psi)\, e^{\beta_k X_k(\psi)} \) multiplies densi
 
 1. **Linearised perturbations**
 
-   $$
-   \delta P_{k+1}(\psi) \approx \big[1 + \beta_k X'_k(\psi)\big]\, \delta P_k(\psi),
-   $$
+   ```math
+   \delta P_{k+1}(\psi) \approx \big[1 + \beta_k X'_k(\psi)\big]\, \delta P_k(\psi)
+   ```
 
    so \( |1 + \beta_k X'_k| < 1 \) is a sufficient local convergence test.
 
