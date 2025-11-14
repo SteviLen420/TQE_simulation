@@ -142,10 +142,11 @@ The simulation pipeline is launched by running the main script directly. Its beh
 The simplest way to run the pipeline is with default settings:
 
 ```bash
-python TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO.py
+cd TQE_Universe_Simulation_v4.2.0_Pro
+python -m TQE_Pipeline_Modular.main
 ```
 
-This will execute a single E+I simulation run with the default I-definition (`jensen_shannon`) and generate all 28 phases of analysis.
+This launches the modular orchestrator (`TQE_Pipeline_Modular/main.py`), executing a single E+I run with the default I-definition (`jensen_shannon`) and producing all 28 phases of analysis.
 
 ### 2. Execution Modes
 
@@ -198,7 +199,7 @@ MASTER_CTRL = {
 
 ### 3. Modify Settings
 
-Open `TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO.py` in a text editor and modify the `MASTER_CTRL` dictionary:
+Open `TQE_Pipeline_Modular/config/master_ctrl.py` and edit the `MASTER_CTRL` dictionary:
 
 ```python
 MASTER_CTRL = {
@@ -2657,6 +2658,8 @@ The modular version provides the same functionality as the original pipeline, or
 - **Phases**: All 28 pipeline phases organized into logical groups
 - **Analysis**: Bayesian analysis, anomaly detection, and law detection
 - **Main**: Pipeline orchestrator and execution
+
+➡️ **To run the modular pipeline directly** (recommended): `cd TQE_Universe_Simulation_v4.2.0_Pro && python -m TQE_Pipeline_Modular.main`
 
 The original monolithic pipeline file remains unchanged at:
 `TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO.py`

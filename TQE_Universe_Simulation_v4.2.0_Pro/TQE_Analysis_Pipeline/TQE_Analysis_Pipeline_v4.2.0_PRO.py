@@ -156,6 +156,10 @@ MASTER_CTRL = {
     "CONFIDENCE_LEVEL": 0.95,             # Confidence level for uncertainty bands
     "OUTLIER_THRESHOLD": 3.0,             # Z-score threshold for outlier detection
     "MIN_RUNS_FOR_CORRELATION": 3,        # Minimum runs required for correlation matrix
+    
+    # === PLANCK TARGET REFERENCES ===
+    "PLANCK_TARGET_E": float(os.environ.get("PLANCK_TARGET_E", 0.7619)),
+    "PLANCK_TARGET_I": float(os.environ.get("PLANCK_TARGET_I", 0.1309)),
 }
 
 # ==========================================================================================
@@ -185,15 +189,15 @@ def setup_paths():
         if os.path.exists("/content/drive/MyDrive"):
             # Colab with mounted Drive
             SIMULATION_ROOT = "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO"
-            ANALYSIS_OUTPUT_ROOT = "/content/drive/MyDrive/TQE_Analysis_Pipeline_v4.2.0_PRO/Analysis_Results"
+            ANALYSIS_OUTPUT_ROOT = "/content/drive/MyDrive/TQE_Analysis_Pipeline_v4.2.0_PRO/analysis_results"
         else:
             # Colab without mounted drive or local Jupyter - use current directory
             SIMULATION_ROOT = os.path.abspath(os.path.join(os.getcwd(), "..", "TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO"))
-            ANALYSIS_OUTPUT_ROOT = os.path.abspath(os.path.join(os.getcwd(), "Analysis_Results"))
+            ANALYSIS_OUTPUT_ROOT = os.path.abspath(os.path.join(os.getcwd(), "analysis_results"))
     else:
         # Running as script (not in IPython/Jupyter)
         SIMULATION_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO"))
-        ANALYSIS_OUTPUT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "Analysis_Results"))
+        ANALYSIS_OUTPUT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "analysis_results"))
     
     # Override with MASTER_CTRL if specified
     if MASTER_CTRL.get("SIMULATION_ROOT") is not None:
@@ -216,6 +220,8 @@ RANKING_WEIGHTS_COMPLEXITY = MASTER_CTRL["RANKING_WEIGHTS_COMPLEXITY"]
 RANKING_WEIGHTS_PHYSICAL_LAWS = MASTER_CTRL["RANKING_WEIGHTS_PHYSICAL_LAWS"]
 FIGURE_DPI = MASTER_CTRL["FIGURE_DPI"]
 FIGURE_FORMAT = MASTER_CTRL["FIGURE_FORMAT"]
+PLANCK_TARGET_E = MASTER_CTRL["PLANCK_TARGET_E"]
+PLANCK_TARGET_I = MASTER_CTRL["PLANCK_TARGET_I"]
 
 # Visualization settings
 try:
@@ -2457,13 +2463,10 @@ def analyze_planck_fit(df_metrics: pd.DataFrame, output_dir: str):
         print("⚠️  No Planck validation data available")
         return
     
-    target_E = 0.7619
-    target_I = 0.1309
-    
     # Scatter plot: Planck E vs I proximity
     fig, ax = plt.subplots(figsize=(10, 8))
     scatter = ax.scatter(df_planck["planck_E"], df_planck["planck_I"], c=df_planck["planck_chi2_reduced"], cmap="viridis", s=120)
-    ax.scatter([target_E], [target_I], color="red", marker="*", s=250, label="Planck Target")
+    ax.scatter([PLANCK_TARGET_E], [PLANCK_TARGET_I], color="red", marker="*", s=250, label="Planck Target")
     for _, row in df_planck.iterrows():
         ax.annotate(row["i_definition"], (row["planck_E"], row["planck_I"]), textcoords="offset points", xytext=(5,5), fontsize=8)
     ax.set_xlabel("Planck Best-fit E", fontweight="bold")
@@ -3423,6 +3426,164 @@ def select_best_model(df_metrics: pd.DataFrame, output_dir: str):
 
 
 # ==========================================================================================
+# PHASE 6-8 HELPERS: EXTENDED REPORTS, SUMMARY EXPORT, VALIDATION
+# ==========================================================================================
+
+def generate_extended_reports(df_metrics: pd.DataFrame, collected_data: Dict, output_dir: str):
+    """
+    PHASE 6: Produce extended markdown report summarizing key findings.
+    """
+    print("\n" + "="*70)
+    print("PHASE 6: EXTENDED ANALYSIS REPORTS")
+    print("="*70)
+    
+    os.makedirs(output_dir, exist_ok=True)
+    lines = []
+    lines.append("# TQE Analysis Pipeline v4.2.0 PRO — Extended Report")
+    lines.append("")
+    lines.append(f"- Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    lines.append(f"- Target mode: {collected_data['metadata']['target_mode']}")
+    lines.append(f"- Source directory: `{collected_data['metadata']['target_path']}`")
+    lines.append("")
+    lines.append("## Run Inventory")
+    lines.append(f"- Total runs analyzed: **{len(df_metrics)}**")
+    lines.append(f"- E-only runs: **{collected_data['metadata']['n_eonly_runs']}**")
+    lines.append(f"- E+I runs: **{collected_data['metadata']['n_ei_runs']}**")
+    lines.append("")
+    
+    df_ei = df_metrics[df_metrics["run_type"] == "E+I"]
+    if len(df_ei) > 0:
+        best_stability = df_ei.sort_values("stable_percent", ascending=False).iloc[0]
+        best_complexity = df_ei.sort_values("complexity_score", ascending=False).iloc[0]
+        best_physical = df_ei.sort_values("planck_chi2_reduced", ascending=True).iloc[0]
+        
+        lines.append("## Highlighted I-Definitions")
+        lines.append(f"- **Stability leader**: `{best_stability['i_definition']}` ({best_stability['stable_percent']:.2f}% stable)")
+        lines.append(f"- **Complexity leader**: `{best_complexity['i_definition']}` (score {best_complexity['complexity_score']:.2f})")
+        lines.append(f"- **Planck proximity leader**: `{best_physical['i_definition']}` (χ²={best_physical['planck_chi2_reduced']:.2f})")
+        lines.append("")
+    
+    lines.append("## Artifact Coverage")
+    lines.append("- summary_full.json, tqe_runs.csv, Bayesian calibration")
+    lines.append("- Planck validation (scatter + χ² bar + CSV export)")
+    lines.append("- Life compatibility, entropy volatility, anomaly diagnostics")
+    lines.append("- Nested sampling traces, stability sweeps, seed registries")
+    lines.append("")
+    
+    lines.append("## Suggested Follow-ups")
+    lines.append("1. Inspect `04_best_model_selection/recommendation_report.md` for model choices.")
+    lines.append("2. Review `02_detailed_metrics/all_runs_metrics.csv` for downstream ML.")
+    lines.append("3. Compare E-only vs E+I in `01_comparative_analysis/eonly_vs_ei/` if available.")
+    lines.append("")
+    
+    report_path = os.path.join(output_dir, "extended_report.md")
+    with open(report_path, 'w') as f:
+        f.write("\n".join(lines))
+    print(f"   ✅ Extended report written to {report_path}")
+
+
+def export_summary_and_metadata(df_metrics: pd.DataFrame, collected_data: Dict, dirs: Dict[str, str], output_root: str) -> str:
+    """
+    PHASE 7: Generate execution summary and metadata artifacts.
+    """
+    print("\n" + "="*70)
+    print("PHASE 7: SUMMARY EXPORT")
+    print("="*70)
+    
+    summary_text = []
+    summary_text.append("╔" + "═"*68 + "╗")
+    summary_text.append("║  TQE ANALYSIS PIPELINE v4.2.0 PRO - EXECUTION SUMMARY".ljust(69) + "║")
+    summary_text.append("╚" + "═"*68 + "╝")
+    summary_text.append("")
+    summary_text.append(f"Analysis completed: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    summary_text.append(f"Target mode: {collected_data['metadata']['target_mode']}")
+    summary_text.append(f"Simulation root: {SIMULATION_ROOT}")
+    summary_text.append("")
+    summary_text.append("=" * 70)
+    summary_text.append("RUNS ANALYZED")
+    summary_text.append("=" * 70)
+    summary_text.append(f"Total runs: {len(df_metrics)}")
+    summary_text.append(f"  • E-only: {collected_data['metadata']['n_eonly_runs']}")
+    summary_text.append(f"  • E+I: {collected_data['metadata']['n_ei_runs']}")
+    summary_text.append("")
+    summary_text.append("=" * 70)
+    summary_text.append("OUTPUT STRUCTURE")
+    summary_text.append("=" * 70)
+    summary_text.append(f"{output_root}/")
+    summary_text.append("├── 00_summary/ (overview + metadata + validation)")
+    summary_text.append("├── 01_comparative_analysis/ (12+ categories)")
+    summary_text.append("├── 02_detailed_metrics/ (extended CSV + plots)")
+    summary_text.append("├── 03_visualizations/ (radar + heatmap + complexity)")
+    summary_text.append("├── 04_best_model_selection/ (triple rankings + report)")
+    summary_text.append("└── 05_raw_data/ (collected_data.pkl + extended_metrics.pkl)")
+    summary_text.append("")
+    summary_text.append("=" * 70)
+    summary_text.append("TRIPLE RANKING SNAPSHOT")
+    summary_text.append("=" * 70)
+    
+    df_ei = df_metrics[df_metrics["run_type"] == "E+I"]
+    if len(df_ei) > 0:
+        best_stable = df_ei.nlargest(1, "stable_percent").iloc[0]
+        best_complex = df_ei.nlargest(1, "complexity_score").iloc[0]
+        if "physical_laws_total_score" in df_ei.columns:
+            best_physical = df_ei.nlargest(1, "physical_laws_total_score").iloc[0]
+            summary_text.append(f"  • Physical-Laws Winner: {best_physical['i_definition']}")
+        summary_text.append(f"  • Stability Winner: {best_stable['i_definition']} ({best_stable['stable_percent']:.2f}%)")
+        summary_text.append(f"  • Complexity Winner: {best_complex['i_definition']} ({best_complex['complexity_score']:.2f})")
+    summary_text.append("")
+    summary_text.append("=" * 70)
+    summary_text.append("NEXT ACTIONS")
+    summary_text.append("=" * 70)
+    summary_text.append(f"1. Review recommendation: {os.path.join(dirs['best_model'], 'recommendation_report.md')}")
+    summary_text.append(f"2. Inspect detailed metrics: {os.path.join(dirs['detailed_metrics'], 'all_runs_metrics.csv')}")
+    summary_text.append(f"3. Validate Planck fit module: {os.path.join(dirs['planck_fit'], 'planck_fit_metrics.csv')}")
+    summary_text.append("")
+    
+    summary_str = "\n".join(summary_text)
+    with open(os.path.join(dirs["summary"], "analysis_summary.txt"), 'w') as f:
+        f.write(summary_str)
+    with open(os.path.join(dirs["summary"], "run_info.json"), 'w') as f:
+        json.dump(collected_data["metadata"], f, indent=2)
+    
+    print("   ✅ analysis_summary.txt and run_info.json written")
+    return summary_str
+
+
+def run_validation_checks(dirs: Dict[str, str]):
+    """
+    PHASE 8: Lightweight validation to ensure critical artifacts exist.
+    """
+    print("\n" + "="*70)
+    print("PHASE 8: VALIDATION & QC")
+    print("="*70)
+    
+    checks = [
+        ("All Runs Metrics CSV", os.path.join(dirs["detailed_metrics"], "all_runs_metrics.csv")),
+        ("Weighted Ranking CSV", os.path.join(dirs["best_model"], "weighted_ranking.csv")),
+        ("Recommendation Report", os.path.join(dirs["best_model"], "recommendation_report.md")),
+        ("Extended Report", os.path.join(dirs["summary"], "extended_report.md")),
+    ]
+    
+    lines = []
+    overall_pass = True
+    for label, path in checks:
+        exists = os.path.exists(path)
+        overall_pass = overall_pass and exists
+        status = "PASS" if exists else "MISSING"
+        lines.append(f"{status:7} - {label} ({path})")
+        print(f"   {status:7} {label}")
+    
+    lines.append("")
+    lines.append(f"Overall status: {'PASS' if overall_pass else 'CHECK LOGS'}")
+    
+    report_path = os.path.join(dirs["summary"], "validation_report.txt")
+    with open(report_path, 'w') as f:
+        f.write("\n".join(lines))
+    print(f"   ✅ Validation report written to {report_path}")
+    return overall_pass
+
+
+# ==========================================================================================
 # MAIN ANALYSIS PIPELINE ORCHESTRATOR
 # ==========================================================================================
 # Executes all 5 analysis phases sequentially:
@@ -3562,136 +3723,39 @@ def run_analysis_pipeline():
     
     # PHASE 6: Extended Analysis Reports
     progress.set_description("Phase 6/8: Extended Reports")
+    generate_extended_reports(df_metrics, collected_data, dirs["summary"])
     progress.update(1)
     
     # PHASE 7: Comprehensive Summary Export
     progress.set_description("Phase 7/8: Summary Export")
+    summary_text = export_summary_and_metadata(df_metrics, collected_data, dirs, output_root)
     progress.update(1)
     
     # PHASE 8: Validation & QC
     progress.set_description("Phase 8/8: Validation")
+    validation_passed = run_validation_checks(dirs)
     progress.update(1)
     
     progress.close()
     
     # Final Summary
     print("\n" + "="*70)
-    print("FINAL SUMMARY GENERATION")
+    print("FINAL SUMMARY")
     print("="*70)
-    
-    summary_text = []
-    summary_text.append("╔" + "═"*68 + "╗")
-    summary_text.append("║  TQE ANALYSIS PIPELINE v4.2.0 PRO - EXECUTION SUMMARY" + " "*14 + "║")
-    summary_text.append("╚" + "═"*68 + "╝")
-    summary_text.append("")
-    summary_text.append(f"Analysis completed: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    summary_text.append(f"Target mode: {TARGET_MODE}")
-    summary_text.append(f"Simulation root: {SIMULATION_ROOT}")
-    summary_text.append("")
-    summary_text.append("=" * 70)
-    summary_text.append("RUNS ANALYZED")
-    summary_text.append("=" * 70)
-    summary_text.append(f"Total runs: {len(df_metrics)}")
-    summary_text.append(f"  • E-only: {collected_data['metadata']['n_eonly_runs']}")
-    summary_text.append(f"  • E+I: {collected_data['metadata']['n_ei_runs']}")
-    summary_text.append("")
-    summary_text.append("=" * 70)
-    summary_text.append("EXTENDED OUTPUT STRUCTURE")
-    summary_text.append("=" * 70)
-    summary_text.append(f"{output_root}/")
-    summary_text.append("├── 00_summary/ (overview + metadata + validation)")
-    summary_text.append("├── 01_comparative_analysis/ (12 categories)")
-    summary_text.append(f"│   ├── basic_metrics/ ({collected_data['metadata']['n_ei_runs']} I-defs, 3 PNG + CSV)")
-    summary_text.append("│   ├── emergent_laws/ (power-law, transitions, 3 PNG + CSV)")
-    summary_text.append("│   ├── friedmann_cosmology/ (age, H0, Omegas vs Planck, 4 PNG + CSV)")
-    summary_text.append("│   ├── planck_fit/ (target proximity & χ² trends, 2 PNG + CSV)")
-    summary_text.append("│   ├── life_top_universes/ (life compatibility, top seeds)")
-    summary_text.append("│   ├── entropy_volatility/ (entropy vs life, stability sweeps)")
-    summary_text.append("│   ├── cmb_anomalies/ (cold spots, Axis of Evil, 2 PNG + CSV)")
-    summary_text.append("│   ├── lockin_dynamics/ (timing, efficiency, 3 PNG + CSV)")
-    summary_text.append("│   ├── quantum_fields/ (vacuum energy, fluctuations, 1 PNG + CSV)")
-    summary_text.append("│   ├── entanglement/ (quantum info, 1 PNG + CSV)")
-    summary_text.append("│   ├── parameter_sensitivity/ (E/I/X heatmap, 1 PNG + CSV)")
-    summary_text.append("│   ├── physical_anomalies/ (advanced anomaly metrics)")
-    summary_text.append("│   ├── topology/ (curvature, defects, 1 PNG + CSV)")
-    summary_text.append("│   └── eonly_vs_ei/ (baseline, 2 PNG + JSON)")
-    summary_text.append("├── 02_detailed_metrics/ (extended: 50-80 cols, CSV + 2 PNG)")
-    summary_text.append("├── 03_visualizations/ (standard + complexity, 7 PNG)")
-    summary_text.append("├── 04_best_model_selection/ (triple ranking, 4 CSV + JSON + MD)")
-    summary_text.append("└── 05_raw_data/ (pickles)")
-    summary_text.append("")
-    summary_text.append("TOTAL OUTPUT: ~37-40 PNG + 17-20 CSV + 3-4 JSON + 1 Markdown + 2 Pickle")
-    summary_text.append("")
-    summary_text.append("=" * 70)
-    summary_text.append("KEY RESULTS")
-    summary_text.append("=" * 70)
-    
-    # Add best model info from TRIPLE RANKINGS (EXTENDED)
-    df_ei = df_metrics[df_metrics["run_type"] == "E+I"]
-    if len(df_ei) > 0:
-        best_stable = df_ei.nlargest(1, "stable_percent").iloc[0]
-        best_complex = df_ei.nlargest(1, "complexity_score").iloc[0]
-        best_life = df_ei.nlargest(1, "life_compatibility_score").iloc[0]
-        
-        summary_text.append("TRIPLE RANKING RESULTS:")
-        summary_text.append(f"  • RANKING 1 - Stability-Focused: {best_stable['i_definition']} ({best_stable['stable_percent']:.2f}%)")
-        summary_text.append(f"  • RANKING 2 - Complexity-Focused: {best_complex['i_definition']} (Score: {best_complex['complexity_score']:.2f})")
-        summary_text.append(f"  • RANKING 3 - Physical-Laws: See recommendation_report_triple.md")
-        summary_text.append(f"  • Best Life-Compatible: {best_life['i_definition']} (Score: {best_life['life_compatibility_score']:.2f})")
-        
-        #  Physical laws winner (if data available)
-        if "age_deviation_from_planck" in df_ei.columns:
-            df_friedmann = df_ei.dropna(subset=["age_deviation_from_planck"])
-            if len(df_friedmann) > 0:
-                best_friedmann = df_friedmann.nsmallest(1, "age_deviation_from_planck").iloc[0]
-                summary_text.append(f"  • Best Friedmann Match: {best_friedmann['i_definition']} (Age dev: {best_friedmann['age_deviation_from_planck']:.2f} Gyr)")
-    
-    summary_text.append("")
-    summary_text.append("=" * 70)
-    summary_text.append("NEXT STEPS - FULL IMPLEMENTATION (12 CATEGORIES)")
-    summary_text.append("=" * 70)
-    summary_text.append("1. 📄 View TRIPLE RANKING recommendation:")
-    summary_text.append(f"   {os.path.join(dirs['best_model'], 'recommendation_report_triple.md')}")
-    summary_text.append("")
-    summary_text.append("2. 🌌 Review FRIEDMANN COSMOLOGY (age, H0, Omegas vs Planck 2018):")
-    summary_text.append(f"   {os.path.join(dirs['friedmann'], 'friedmann_consistency_score.png')}")
-    summary_text.append("")
-    summary_text.append("3. ⚡ Review EMERGENT LAWS (power-law, phase transitions):")
-    summary_text.append(f"   {os.path.join(dirs['emergent_laws'], 'emergent_law_heatmap.png')}")
-    summary_text.append("")
-    summary_text.append("4. 🌀 Review CMB ANOMALIES (cold spots, Axis of Evil):")
-    summary_text.append(f"   {os.path.join(dirs['cmb_anomalies'], 'cmb_coldspot_detection_rate.png')}")
-    summary_text.append("")
-    summary_text.append("5. ⏱️  Review LOCK-IN DYNAMICS (timing, efficiency):")
-    summary_text.append(f"   {os.path.join(dirs['lockin_dynamics'], 'lockin_efficiency_boxplot.png')}")
-    summary_text.append("")
-    summary_text.append("6. 📊 Examine EXTENDED METRICS (50-80 columns):")
-    summary_text.append(f"   {os.path.join(dirs['detailed_metrics'], 'all_runs_metrics.csv')}")
-    summary_text.append("")
-    summary_text.append("7. 📋 Compare TRIPLE rankings:")
-    summary_text.append(f"   {os.path.join(dirs['best_model'], 'ranking_stability_focused.csv')}")
-    summary_text.append(f"   {os.path.join(dirs['best_model'], 'ranking_complexity_focused.csv')}")
-    summary_text.append(f"   {os.path.join(dirs['best_model'], 'ranking_physical_laws_focused.csv')}")
-    summary_text.append("")
-    summary_text.append("=" * 70)
-    
-    summary = "\n".join(summary_text)
-    print("\n" + summary)
-    
-    with open(os.path.join(dirs["summary"], "analysis_summary.txt"), 'w') as f:
-        f.write(summary)
-    
-    # Save metadata
-    with open(os.path.join(dirs["summary"], "run_info.json"), 'w') as f:
-        json.dump(collected_data["metadata"], f, indent=2)
+    print("\n" + summary_text)
     
     print("\n" + "╔" + "═"*68 + "╗")
     print("║" + " "*68 + "║")
-    print("║" + "  ✅ ANALYSIS PIPELINE COMPLETE!".center(68) + "║")
+    if validation_passed:
+        print("║" + "  ✅ ANALYSIS PIPELINE COMPLETE!".center(68) + "║")
+    else:
+        print("║" + "  ⚠️ ANALYSIS COMPLETE WITH WARNINGS".center(68) + "║")
     print("║" + " "*68 + "║")
     print("╚" + "═"*68 + "╝")
     print(f"\n📁 Results directory: {output_root}")
     print(f"📊 Recommendation: {os.path.join(dirs['best_model'], 'recommendation_report.md')}")
+    if not validation_passed:
+        print("⚠️  See validation_report.txt for missing artifacts.")
     print("")
 
 

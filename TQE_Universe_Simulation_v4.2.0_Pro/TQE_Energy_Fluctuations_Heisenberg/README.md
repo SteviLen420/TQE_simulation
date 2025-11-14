@@ -1,5 +1,5 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
 [![arXiv](https://img.shields.io/badge/arXiv-coming%20soon-b31b1b.svg)](https://arxiv.org/)
 [![Research Status](https://img.shields.io/badge/status-active%20research-green)](https://github.com/SteviLen420/TQE_simulation)
@@ -25,114 +25,123 @@ By comparing the energy variance, entropy growth, coherence decay and Δx·Δp e
 
 ## Key Capabilities
 
-- **Scenario Pairing:** Automatically runs NO-LAW vs WITH-LAW using the same Hamiltonian, drives, and bath parameters for apples-to-apples suppression ratios.  
-- **Open-Quantum Dynamics:** QuTiP Lindblad integration with amplitude damping, dephasing, and thermal baths; optional quantum trajectory unraveling for Monte Carlo ensembles.  
-- **TQE Lock-In Coupling:** f(E,I)=exp(-(E-Ec)²/(2σ²))(1+αI) applied online to dissipation rates, potential landscape, and drives. Energy expectation ⟨n⟩ serves as the live E proxy.  
-- **Information-Origin Modes:** Emergent (I driven by |ΔE| and correlations), inherent (I=f(E)), and threshold (I activates above Ec); all three tracked and plotted per run.  
-- **Heisenberg Compliance:** Continuous monitoring of Δx, Δp, Δx·Δp vs ℏ/2 with red-line alerts if uncertainty bounds are violated.  
-- **Multi-Metric Analysis:** Energy mean/variance/max, von Neumann entropy, coherence, Jensen–Shannon drift, suppression ratios, and phase-space trajectories.  
-- **Parameter Sweeps:** Optional sweeps over Ec, σ, α, bath temperatures, or drive strengths with aggregated CSV + PNG exports.  
-- **Publication-Ready Outputs:** Standardised folder structure with summary JSON, comparative tables, per-scenario CSVs, and 10–14 plots reusable for manuscripts.  
-- **Reproducible Seeding:** Deterministic master seed and per-trajectory seeds ensure bit-for-bit reruns.  
-- **Planck-Aware Context:** Designed to complement the main TQE Universe pipeline—summary JSON includes compatibility hooks consumed later by the analysis pipeline.
+- **Scenario pairing, shared dynamics:** NO-LAW and WITH-LAW trajectories share the exact Hamiltonian, drives, bath, and seeding so suppression ratios are meaningful.
+- **Open-quantum evolution:** QuTiP Lindblad solvers with amplitude damping, dephasing, thermal baths, optional two-mode coupling, anharmonic x⁴/double-well potentials, and driven oscillators.
+- **Dynamic TQE lock-in:** The f(E,I)=exp(-(E-Ec)²/(2σ²))(1+αI) coupling rescale dissipation and potentials segment-by-segment so suppression is enacted online.
+- **Automatic I-origin sweep:** Emergent, inherent, and threshold information models are all simulated every run; dedicated plots show their behaviour plus a comparison overlay.
+- **Heisenberg compliance checks:** Δx, Δp, Δx·Δp are tracked for every trajectory and benchmarked against ℏ/2, with compliance stored in the JSON outputs.
+- **Multi-metric statistics:** Energy variance/entropy/coherence/uncertainty ratios, phase-space trajectories, Jensen–Shannon drift, and suppression dashboards are produced out of the box.
+- **Optional parameter sweep engine:** Toggle `ENABLE_PARAMETER_SWEEP` to scan EC/SIGMA/ALPHA (or any MASTER_CTRL scalar) with CSV + dual-panel PNG summaries.
+- **Reproducible by design:** A single `MASTER_CTRL['SEED']` drives master RNG state, per-trajectory seeds, and metadata recorded in `summary.json`.
+- **Analysis-ready outputs:** Timestamped run folders include `summary.json`, `comparative_analysis.json`, three CSVs, and ≥13 PNGs accepted directly by the TQE analysis pipeline.
 
 ---
 
-## Installation
+## Requirements & Environment
 
-Recommended Python **3.10+** (any 3.8+ works). Create a virtualenv or conda env and install requirements:
+- Python **3.9+** (tested on CPython 3.9–3.11).  
+- `numpy`, `scipy`, `matplotlib`, `tqdm`, `qutip`. The script self-checks these modules at startup and will `pip install` them if missing.  
+- Optional (`ENABLE_PARAMETER_SWEEP=True`): `pandas` for CSV aggregation.  
+- Local or Google Colab execution—Colab runs auto-mount Drive and write under `/content/drive/MyDrive/TQE_Heisenberg_Fluctuation/`.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -U pip wheel setuptools
-pip install numpy matplotlib scipy tqdm qutip
-```
-
-Optional packages for extended diagnostics:
-
-- `pandas` – CSV aggregation / sweeps  
-- `seaborn` – nicer plotting styles  
-- `numba` – experimental acceleration of custom propagators
-
-> **QuTiP note:** first install may take ~1 min; ensure build tools (gcc/clang) are available on your platform.
+> QuTiP compilation needs standard build tools (Xcode CLI tools on macOS, build-essential on Linux, MSVC Build Tools on Windows).
 
 ---
 
 ## Configuration Overview
 
-All controls reside at the top of `TQE_Energy_Fluctuations_Heisenberg.py` inside the `MASTER_CTRL` dictionary. Key blocks:
+All controls live in the `MASTER_CTRL` dictionary near the top of `TQE_Energy_Fluctuations_Heisenberg_v4.2.0_Pro.py`. The most used blocks are:
 
-- `SCENARIOS`: enable/disable NO-LAW, WITH-LAW, or mixed runs.  
-- `QUANTUM_SYSTEM`: oscillator frequencies, anharmonic strength λ, coupling g, drive amplitude/frequency.  
-- `OPEN_SYSTEM`: damping rates κ, dephasing γ, bath temperature (nth), unraveling toggles.  
-- `LOCKIN`: Ec, σ, α, and information-origin mode weights.  
-- `SIMULATION`: number of time steps, dt, ensemble size, checkpoint frequency.  
-- `OUTPUT`: run ID prefix, figure DPI, CSV/JSON toggles.
+| Block | Representative keys | Purpose |
+| --- | --- | --- |
+| Reproducibility & Ensemble | `SEED`, `N_ENSEMBLE`, `N_HILB`, `T_FINAL`, `N_T` | Master RNG seed, ensemble size, Hilbert truncation, runtime grid |
+| Quantum features | `ANHARMONIC_X4`, `DOUBLE_WELL`, `TWO_MODE_COUPLING`, `TIME_DEP_DRIVE`, `THERMAL_BATH`, `TRAJECTORIES` | Toggle anharmonic/double-well potentials, two-mode coupling, time-dependent drives, MC trajectories |
+| Open-system rates | `GAMMA_PHI_1/2`, `KAPPA_1/2`, `NTH_1/2` | Baseline Lindblad rates for the pre-law scenario |
+| Lock-in parameters | `BETA_A/B`, `EC`, `SIGMA`, `ALPHA`, `N_SEGMENTS` | Information prior and Goldilocks window used when TQE lock-in is active |
+| I-origin tuning | `I_EMERGENT_*`, `I_INHERENT_*`, `I_THRESHOLD_*` | Shape each information model (all three run every execution) |
+| Heisenberg guard | `HEISENBERG_LIMIT_ACTIVE`, `DELTA_X_MIN`, `DELTA_P_MIN`, `UNCERTAINTY_PRODUCT_MIN` | Explicit uncertainty cutoffs for compliance logging |
+| Parameter sweep | `ENABLE_PARAMETER_SWEEP`, `SWEEP_VARIABLE`, `SWEEP_VALUES`, `SWEEP_N_ENSEMBLE` | Optional scan over EC / SIGMA / ALPHA (or any scalar key) |
+| Output & plotting | `BASE_FOLDER_NAME`, `PLOT_DPI`, `PLOT_FONTSIZE_*` | Directory naming and publication-grade figure styling |
 
-Set the environment variable `TQE_HEISENBERG_PROFILE` to switch between predefined profiles (e.g., `demo`, `paper`).
+No CLI flags are parsed—edit `MASTER_CTRL` (or import the module and mutate the dict) to change settings.
 
 ---
 
 ## Running the Simulation
 
-Default single-run:
-
 ```bash
-cd TQE_Energy_Fluctuations_Heisenberg
-python TQE_Energy_Fluctuations_Heisenberg.py
+cd TQE_Universe_Simulation_v4.2.0_Pro/TQE_Energy_Fluctuations_Heisenberg
+python TQE_Energy_Fluctuations_Heisenberg_v4.2.0_Pro.py
 ```
 
-Typical CLI options (via env vars):
+Typical workflow:
+1. Edit `MASTER_CTRL` to set the ensemble size, lock-in window, plotting DPI, etc.
+2. (Optional) Enable the sweep block to scan `EC`, `SIGMA`, or `ALPHA`.
+3. Run the script; a 7-phase progress bar will appear (NO-LAW → WITH-LAW → aggregation → stats → data export → visualisations → optional sweep).
+4. Inspect the timestamped folder under `./TQE_Heisenberg_Fluctuation/`.
 
-```bash
-export TQE_HEISENBERG_PROFILE=paper
-export TQE_HEISENBERG_NUM_TRAJ=256
-python TQE_Energy_Fluctuations_Heisenberg.py --sweep alpha --values 0.4 0.8 1.2
-```
-
-When sweeps are requested, each parameter value produces its own subfolder under the timestamped run directory.
+Runtime on a modern laptop is ~3–6 minutes for `N_ENSEMBLE=100`, scaling roughly linearly with ensemble size and sweep points.
 
 ---
+
+## Pipeline Phases
+
+1. **Phase 1 – NO-LAW ensemble:** Monte Carlo Lindblad evolution without f(E,I).  
+2. **Phase 2 – WITH-LAW (3× I-origin):** Repeats the same ensemble with emergent, inherent, and threshold information models.  
+3. **Phase 3 – Data aggregation:** Aligns time-series arrays, builds mean/variance tensors, and extracts final energy sets.  
+4. **Phase 4 – Statistical comparison:** Computes suppression ratios, Heisenberg compliance, and summary tables saved to JSON.  
+5. **Phase 5 – Data export & visualization:** Writes CSVs plus 13 PNGs (energy/variance/entropy/coherence, phase space, Δx·Δp, multi-panel, I-mode plots).  
+6. **Phase 6 – Reporting:** Console summary plus `summary.json` that includes the full `MASTER_CTRL`.  
+7. **Phase 7 – Parameter sweep (optional):** If `ENABLE_PARAMETER_SWEEP=True`, an extra CSV + dual-panel PNG are produced.
 
 ## Output Structure
 
 ```
 TQE_Heisenberg_Fluctuation_<timestamp>/
-├── summary.json
-├── comparative_analysis.json
-├── config_snapshot.json
+├── summary.json                 # run info + MASTER_CTRL + stats (ingested downstream)
+├── comparative_analysis.json    # NO-LAW vs WITH-LAW tables + suppression ratios
 ├── data/
 │   ├── no_law_timeseries.csv
 │   ├── with_law_timeseries.csv
 │   ├── ensemble_final_energies.csv
-│   └── sweep_<param>.csv
+│   └── parameter_sweep_<var>.csv        # only when sweeps are enabled
 └── figs/
     ├── 01_energy_comparison.png
-    ├── ...
+    ├── 02_variance_comparison.png
+    ├── 03_entropy_comparison.png
+    ├── 04_coherence_comparison.png
+    ├── 05_final_energy_dist.png
+    ├── 06_suppression_summary.png
+    ├── 07_heisenberg_uncertainty.png
+    ├── 08_phase_space_E_vs_S.png
+    ├── 09_multidimensional_tracking.png
+    ├── 10_parameter_sweep_<var>.png     # only if sweep enabled
+    ├── 11_I_evolution_emergent.png
+    ├── 12_I_evolution_inherent.png
+    ├── 13_I_evolution_threshold.png
     └── 14_I_mode_comparison.png
 ```
 
-Each JSON file includes metadata (commit hash, master seed, scenario settings) so the analysis pipeline can chain results downstream.
+Every CSV contains a metadata header (run name, timestamp, seed) so the analysis pipeline can link these runs to universe-scale experiments.
 
 ---
 
 ## Interpretation Checklist
 
-1. **Variance Suppression:** `variance_ratio < 1` indicates laws suppress large fluctuations.  
-2. **Entropy Growth:** Compare slopes; WITH-LAW should plateau earlier.  
-3. **Heisenberg Compliance:** Δx·Δp stays ≥ ℏ/2; WITH-LAW should hug the limit more tightly.  
-4. **Coherence:** Decay slowed in presence of lock-in → indicates stabilised quantum phase.  
-5. **Information Origin:** Emergent vs inherent vs threshold plots reveal how I behaves relative to E.  
-6. **Parameter Sweeps:** Look for critical Ec/σ where suppression sharply increases.
+1. **Suppression ratios:** In `comparative_analysis.json`, ratios < 1 for variance / uncertainty / coherence indicate successful lock-in.  
+2. **Entropy & coherence plots (Fig. 3–4):** WITH-LAW traces should flatten earlier than NO-LAW.  
+3. **Heisenberg compliance (Fig. 7 + JSON block):** Verify both scenarios respect ℏ/2; WITH-LAW typically approaches but does not cross the bound.  
+4. **Phase space (Fig. 8):** Energy–entropy trajectories reveal whether laws corral the system into a bounded attractor.  
+5. **I-origin panels (Fig. 11–14):** Inspect whether emergent/inherent/threshold models converge or diverge; this feeds into later Goldilocks diagnostics.  
+6. **Parameter sweep outputs:** Identify the EC/SIGMA/ALPHA ranges where suppression ratios undergo sharp transitions.
 
 ---
 
 ## Relationship to Main TQE Pipeline
 
-- Serves as a pre-law microphysical testbed; suppression ratios feed into the universe-scale `TQE_Universe_Simulation_Full_Pipeline`.  
-- Output JSON/CSV files are compatible with the master analysis pipeline (Phase 11–20) for comparative visualisations.  
-- Fine-tuning metadata (Ec, σ, α, information mode) is logged to `summary.json` for reproducibility and traceability.
+- `summary.json` includes the exact `MASTER_CTRL` dict, timestamp, and seed so the Monte Carlo universe pipeline can ingest these settings.
+- `comparative_analysis.json` matches the schema expected by the v4.2.0 analysis pipeline (Phases 11–20) for downstream visualisation.
+- Parameter sweep CSVs can be cross-referenced when calibrating the Bayesian Goldilocks search inside `TQE_Pipeline_Modular`.
 
 ---
 

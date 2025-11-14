@@ -1,5 +1,5 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) <!-- TODO: replace with real DOI when minted -->
 [![arXiv](https://img.shields.io/badge/arXiv-coming%20soon-b31b1b.svg)](https://arxiv.org/) <!-- TODO: update with actual arXiv entry when available -->
 [![GitHub stars](https://img.shields.io/github/stars/SteviLen420/TQE_simulation?style=social)](https://github.com/SteviLen420/TQE_simulation)
@@ -20,13 +20,13 @@ The analysis pipeline ingests the full output of a `batch_all` or `batch_ei` uni
 - An extended metrics table (≈80 columns) covering stability, Friedmann cosmology, Planck proximity, life compatibility, entropy volatility, sweeps, anomalies, nested sampling, and top-universe metadata.
 - 12+ comparative analysis categories with PNG visualizations + CSV exports.
 - Triple model rankings (stability, complexity, physical-laws realism) with a recommendation report.
-- A clean summary + metadata package ready for publication or further machine learning exploration.
+- A clean summary + extended/validation bundle ready for publication or further machine learning exploration.
 
 ---
 
 ## 1. Requirements & Environment
 
-- Python **3.10+** (same interpreter as the main simulation)
+- Python **3.9+** (same interpreter as the main simulation)
 - Core libraries already required by the simulation: `numpy`, `pandas`, `matplotlib`, `seaborn`, `scipy`, `tqdm`
 - Optional (enables extra diagnostics): `healpy`, `shap`, `lime`
 - Access to the simulation output root (`TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO`)
@@ -38,11 +38,11 @@ The analysis pipeline ingests the full output of a `batch_all` or `batch_ei` uni
 
 | Setting / Env Var | Default | Purpose |
 | --- | --- | --- |
-| `SIMULATION_ROOT` | `TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO` | Where timestamped `TQE_Universe_Simulation_single_ei_*` folders live |
+| `SIMULATION_ROOT` | `../TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO` | Where timestamped `TQE_Universe_Simulation_*` folders live |
 | `ANALYSIS_OUTPUT_ROOT` | `analysis_results` | Parent directory for all generated reports |
 | `TARGET_MODE` | `"batch_all"` | `batch_all` (E-only + E+I mix) or `batch_ei` (E+I only) |
 | `TARGET_TIMESTAMP` | `None` | If set (`YYYYMMDD_HHMMSS`), force that batch, otherwise latest |
-| `PLANCK_TARGET_E` / `PLANCK_TARGET_I` | 0.7619 / 0.1309 | Reference displayed in Planck-fit plots |
+| `PLANCK_TARGET_E` / `PLANCK_TARGET_I` | 0.7619 / 0.1309 | Reference marker in Planck-fit plots |
 | `FIGURE_DPI` | 200 | Global resolution for generated figures |
 
 Override via environment:
@@ -80,6 +80,8 @@ Execution steps:
 3. Load all artifacts (summary, tqe_runs, Planck, life, entropy, anomalies, etc.).
 4. Build the extended metrics DataFrame; cache raw data as pickles.
 5. Generate comparative modules, visualizations, rankings, and final reports.
+6. Produce extended markdown + metadata exports.
+7. Validate that critical artifacts exist and log the status.
 
 Runtime: ~1–3 minutes per batch on a modern laptop, dominated by plotting.
 
@@ -127,8 +129,9 @@ Runtime: ~1–3 minutes per batch on a modern laptop, dominated by plotting.
    - Advanced physical anomalies
 4. **Advanced Visualizations** – Radar charts, complexity panels, heatmaps.
 5. **Triple Ranking System** – Stability-, complexity-, and physical-laws-focused CSVs + Markdown recommendation.
-6. **Detailed Metrics & Raw Data** – Extended CSV plus correlation/distribution plots, `collected_data.pkl`, `extended_metrics.pkl`.
-7. **Summary & QC** – Execution summary text + metadata JSON.
+6. **Extended Reports** – `extended_report.md` with highlights + follow-up checklist.
+7. **Summary Export** – `analysis_summary.txt` + `run_info.json` metadata bundle.
+8. **Validation & QC** – `validation_report.txt` enumerates required artifacts.
 
 ---
 
@@ -138,6 +141,8 @@ Runtime: ~1–3 minutes per batch on a modern laptop, dominated by plotting.
 analysis_results/<mode>_<timestamp>_analysis/
 ├── 00_summary/
 │   ├── analysis_summary.txt
+│   ├── extended_report.md
+│   ├── validation_report.txt
 │   └── run_info.json
 ├── 01_comparative_analysis/
 │   ├── basic_metrics/
@@ -204,6 +209,7 @@ Full list → `02_detailed_metrics/all_runs_metrics.csv`.
 - **Empty plot or NaN column** → indicates the artifact for that module was missing; check loader warnings in the console.
 - **Custom timestamp analysis** → set `TARGET_TIMESTAMP` to re-run an older batch without touching others.
 - **Speed tweak** → lower `FIGURE_DPI` or temporarily disable heavy modules if you only need CSVs.
+- **Planck marker tweak** → export different fiducials by overriding `PLANCK_TARGET_E` / `PLANCK_TARGET_I`.
 
 ---
 
