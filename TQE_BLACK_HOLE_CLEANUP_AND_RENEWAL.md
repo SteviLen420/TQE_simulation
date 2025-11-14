@@ -49,7 +49,7 @@ Even after the thermodynamic finale, several speculative mechanisms could reinit
 
 
    $$
-   g^{(\text{early})}_{\mu\nu} = \Omega^2\, g^{(\text{late})}_{\mu\nu},
+   g^{(\text{early})}_{\mu\nu} = \Omega^2\, g^{(\text{late})}_{\mu\nu}
    $$
 
 
