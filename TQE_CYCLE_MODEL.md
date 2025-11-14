@@ -1,6 +1,6 @@
 # TQE Cycle Model
 
-A complete specification of the Theory of the Question of Existence (TQE) dynamics, showing how the master coupling, time-dependent selection strength, gate structure, and reset operator orchestrate the progression from pre-law superposition to law lock-in, heat death, and rebirth. This revision emphasises the *story* told by the equations: how a single bias function $f(E,I)$ repeatedly sculpts a universe from vacuum noise, freezes its laws, lets it drift toward heat death, and finally resets the stage. Think of each section below as a lab notebook entry from a PhD investigator tracking which part of the cycle is currently active and what physical intuition accompanies the formalism.
+A complete specification of the Theory of the Question of Existence (TQE) dynamics, showing how the master coupling, time-dependent selection strength, gate structure, and reset operator orchestrate the progression from pre-law superposition to law lock-in, heat death, and rebirth. This revision emphasises the *story* told by the equations: how a single bias function $f(E,I)$ repeatedly sculpts a universe from vacuum noise, freezes its laws, lets it drift toward heat death, and finally resets the stage. Think of each section below as a lab notebook entry from a technical investigator tracking which part of the cycle is currently active and what physical intuition accompanies the formalism.
 
 ---
 

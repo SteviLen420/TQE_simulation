@@ -1,6 +1,6 @@
 # TQE_Foundational Laws of the Universe
 
-A comprehensive map linking each classical law to the TQE master coupling $f(E, I)$. Every tier is interpreted as either the dormant state $f = 1$ (pure conservation) or a biased state $f \neq 1$ where the coupling selects complexity-permitting outcomes. The goal of this note is no longer merely to tabulate correspondences but to **explain** how the same bias migrates from cosmogenesis down to laboratory-scale phenomena. Each section therefore includes short interpretive paragraphs that act as “field notes” for PhD-level readers who want to see the mechanism, not only the formulas.
+A comprehensive map linking each classical law to the TQE master coupling $f(E, I)$. Every tier is interpreted as either the dormant state $f = 1$ (pure conservation) or a biased state $f \neq 1$ where the coupling selects complexity-permitting outcomes. The goal of this note is no longer merely to tabulate correspondences but to **explain** how the same bias migrates from cosmogenesis down to laboratory-scale phenomena. Each section therefore includes short interpretive paragraphs that act as “field notes” for technically trained readers who want to see the mechanism, not only the formulas.
 
 ---
 
