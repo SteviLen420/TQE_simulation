@@ -257,7 +257,6 @@ $$
 $$
 
    allows $f^{(7)}_{\text{eff}}$ to encode chirality or CP-violating information. Adjusting the coupling via
-   allows $f^{(7)}_{\text{eff}}$ to encode chirality or CP-violating information. Adjusting the coupling via
 
 $$
 G_F \longrightarrow f^{(7)}_{\text{eff}}\, G_F
