@@ -51,13 +51,11 @@ Here $E$ is the sampled vacuum energy, $I \in [0,1]$ is the information orientat
 To avoid notational clashes we distinguish
 
 - $f_{\text{micro}}(E(\psi), I(\psi))$ — the Tier 0 definition above,
+  
 - $f^{(k)}_{\text{eff}}$ — the tier-$k$ effective bias obtained by conditioning $f_{\text{micro}}$ on the macroscopic manifold of that tier:
 
 $$
-\begin{aligned}
-f^{(k)}_{\text{eff}}(\text{macro vars}) &= \frac{\int_{\Psi_k} P(\psi|\text{macro})\, f_{\text{micro}}(E(\psi), I(\psi))\, d\psi}{\int_{\Psi_k} P(\psi|\text{macro})\, d\psi} \\
-&= \frac{\text{weighted micro average}}{\text{macro-state normalization}}.
-\end{aligned}
+f^{(k)}_{\text{eff}}(\text{macro vars}) = \frac{\int_{\Psi_k} P(\psi|\text{macro}) f_{\text{micro}}(E(\psi), I(\psi))\, d\psi}{\int_{\Psi_k} P(\psi|\text{macro})\, d\psi}.
 $$
 
 Whenever the text below writes $f$ inside a tier, it abbreviates the relevant $f^{(k)}_{\text{eff}}$. Proportionality statements then mean “this effective bias inherits the same functional form as the quoted classical law”.
@@ -168,7 +166,11 @@ $$
 
    which to leading order behaves like $f^{(4)}_{\text{eff}} \sim E(p)/(mc^2)$ for highly boosted particles.
 
-Here $f^{(4)}_{\text{eff}}$ tracks the information encoded in momentum relative to rest energy. In one limit the coupling stays neutral—boosting a perfectly isolated rest mass does not inject any new orientation data, so $f^{(4)}_{\text{eff}} = 1$. In the dispersive limit, however, the ratio $E/mc^2$ measures how much probability weight is sheared along the momentum axis, which is why highly relativistic particles probe different slices of the Goldilocks window. Special relativity thus acts as a hinge tier that translates microscopic orientation changes into macroscopic kinematics without rewriting the field equations.
+Here 
+
+$f^{(4)}_{\text{eff}}$ tracks the information encoded in momentum relative to rest energy. 
+
+In one limit the coupling stays neutral—boosting a perfectly isolated rest mass does not inject any new orientation data, so $f^{(4)}_{\text{eff}} = 1$. In the dispersive limit, however, the ratio $E/mc^2$ measures how much probability weight is sheared along the momentum axis, which is why highly relativistic particles probe different slices of the Goldilocks window. Special relativity thus acts as a hinge tier that translates microscopic orientation changes into macroscopic kinematics without rewriting the field equations.
 
 ---
 
