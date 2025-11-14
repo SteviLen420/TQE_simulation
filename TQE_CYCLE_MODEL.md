@@ -20,9 +20,9 @@ For simulations:
 - **Update** — $P_{k+1}(\psi) = P_k(\psi)\, \exp[\beta_k X_k(\psi)]$.
 - **Renormalise** —
 
-  $$
-  \tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}.
-  $$
+    $$
+    \tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}.
+    $$
 As $\Delta t \to 0$, the continuum limit obeys $\partial_t P_t(\psi) = P_t(\psi)\, [G_t(\psi) - \mathbb{E}_t(G_t)]$, the standard replicator equation with “game payoff” $G_t(\psi)$ set by the energy–information coupling.
 
 ---
@@ -61,9 +61,9 @@ High-variance superposition with $\beta(t) \approx 0$. Two equivalent initialisa
 
 - **Hard projection** —
 
-  $$
-  P_0^+(\psi) = \frac{P_0^-(\psi)\, \mathbf{1}_{X(\psi)\in G}}{\int P_0^-(\phi)\, \mathbf{1}_{X(\phi)\in G}\, d\phi}.
-  $$
+    $$
+    P_0^+(\psi) = \frac{P_0^-(\psi)\, \mathbf{1}_{X(\psi)\in G}}{\int P_0^-(\phi)\, \mathbf{1}_{X(\phi)\in G}\, d\phi}.
+    $$
 
 These represent, respectively, probabilistic biasing and strict gate enforcement before a universe crystallises.
 
@@ -96,31 +96,31 @@ Representative choices:
 
 1. **Entropic reweighting** —
 
-   $$
-   \Pi[P](\psi) = \frac{e^{-\gamma S[P]} P(\psi)}{\int e^{-\gamma S[P]} P(\phi)\, d\phi},
-   $$
+    $$
+    \Pi[P](\psi) = \frac{e^{-\gamma S[P]} P(\psi)}{\int e^{-\gamma S[P]} P(\phi)\, d\phi},
+    $$
 
-   with
+    with
 
-   $$
-   S[P] = -\int P \ln P\, d\psi.
-   $$
+    $$
+    S[P] = -\int P \ln P\, d\psi.
+    $$
 
 2. **Perturbative noise injection** —
 
-   $$
-   \Pi[P](\psi) = P(\psi) + \varepsilon\, \eta(\psi),
-   $$
+    $$
+    \Pi[P](\psi) = P(\psi) + \varepsilon\, \eta(\psi),
+    $$
 
-   where $\eta$ is a zero-mean random field.
+    where $\eta$ is a zero-mean random field.
 
 3. **Cyclic rescaling** —
 
-   $$
-   \Pi[P](\psi) = \frac{P(\psi/\alpha)}{\alpha},
-   $$
+    $$
+    \Pi[P](\psi) = \frac{P(\psi/\alpha)}{\alpha},
+    $$
 
-   to capture geometric contraction/expansion at aeon boundaries.
+    to capture geometric contraction/expansion at aeon boundaries.
 
 Each option preserves normalisation and reintroduces exploratory variance before the next $\beta$ ramp.
 
