@@ -14,7 +14,7 @@ with
 $$
 f_{\text{gate}}(\psi, t) = \exp\!\big[\beta(t) X(\psi)\big]\, \mathbf{1}_{\psi \in G_t} \, e^{-\lambda_{\text{out}}(t)}.
 $$
-Here the indicator projects out configurations that violate the gate, leaving a closed, positive operator on the admissible subspace. The Lagrange multiplier is tied to explicit constraints $\mathcal{C}_j[P]=0$ (normalisation, symmetry closure, total energy bounds, etc.) via $\lambda_{\text{out}}(t) = \sum_j \Lambda_j(t)\, \mathcal{C}_j'[P_t]$ so that the same functional form encodes both probability conservation and hard structural rules.
+Here the indicator projects out configurations that violate the gate, leaving a closed, positive operator on the admissible subspace. The Lagrange multiplier couples to explicit constraints $\mathcal{C}_j[P]=0$ (normalisation, symmetry closure, total energy bounds, etc.) through a set of coefficients $\Lambda_j(t)$ determined by solving $\mathcal{C}_j[P_t]=0$ at each step; effectively $\lambda_{\text{out}}(t)$ is the scalar that enforces the aggregate constraint $\sum_j \Lambda_j(t)\,\mathcal{C}_j[P_t]=0$, so the same functional form encodes both probability conservation and hard structural rules.
 
 - $\beta(t)$ — selection pressure (inverse temperature analog).  
 - $X(\psi)$ — fitness/complexity functional.  
