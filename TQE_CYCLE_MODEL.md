@@ -18,11 +18,7 @@ The universe ensemble is described by a probability density $P(\psi)$ over candi
 For simulations:
 
 - **Update** — $P_{k+1}(\psi) = P_k(\psi)\, \exp[\beta_k X_k(\psi)]$.
-- **Renormalise** —
-
-  $$
-  \tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}
-  $$
+- **Renormalise** — $\tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_{\Psi} P_{k+1}(\phi)\, d\phi}$
 
 As $\Delta t \to 0$, the continuum limit obeys $\partial_t P_t(\psi) = P_t(\psi)\, [G_t(\psi) - \mathbb{E}_t(G_t)]$, the standard replicator equation with “game payoff” $G_t(\psi)$ set by the energy–information coupling.
 
