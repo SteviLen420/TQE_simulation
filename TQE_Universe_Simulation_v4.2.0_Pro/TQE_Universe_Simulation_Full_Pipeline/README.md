@@ -3,9 +3,8 @@ SPDX-License-Identifier: MIT
 Copyright (c) 2025 Stefan Len
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) <!-- TODO: replace with real DOI when minted -->
-[![arXiv](https://img.shields.io/badge/arXiv-coming%20soon-b31b1b.svg)](https://arxiv.org/) <!-- TODO: update with actual arXiv entry when available -->
 [![GitHub stars](https://img.shields.io/github/stars/SteviLen420/TQE_simulation?style=social)](https://github.com/SteviLen420/TQE_simulation)
 [![GitHub forks](https://img.shields.io/github/forks/SteviLen420/TQE_simulation?style=social)](https://github.com/SteviLen420/TQE_simulation)
 [![Research Status](https://img.shields.io/badge/status-active%20research-green)](https://github.com/SteviLen420/TQE_simulation)
@@ -89,7 +88,7 @@ The TQE Framework v4.2.0 PRO requires **Python 3.9+** and several scientific lib
 ```bash
 # 1. Clone the repository
 git clone <!-- TODO: Add actual GitHub repository URL when available -->
-cd TQE_simulation_Prototype/TQE_Universe_Simulation_Full_Pipeline
+cd TQE_simulation/TQE_Universe_Simulation_v4.2.0_Pro/TQE_Universe_Simulation_Full_Pipeline
 
 # 2. Create and activate a virtual environment
 python -m venv venv
@@ -110,7 +109,7 @@ pip install healpy camb qutip shap lime dynesty corner
 ```bash
 # 1. Clone the repository
 git clone <!-- TODO: Add actual GitHub repository URL when available -->
-cd TQE_simulation_Prototype/TQE_Universe_Simulation_Full_Pipeline
+cd TQE_simulation/TQE_Universe_Simulation_v4.2.0_Pro/TQE_Universe_Simulation_Full_Pipeline
 
 # 2. Create conda environment
 conda env create -f environment.yml  # TODO: Create environment.yml if needed
@@ -146,7 +145,8 @@ The simulation pipeline is launched by running the main script directly. Its beh
 The simplest way to run the pipeline is with default settings:
 
 ```bash
-python TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO.py
+cd TQE_Universe_Simulation_v4.2.0_Pro/TQE_Universe_Simulation_Full_Pipeline
+python TQE_Universe_Simulation_Full_Pipeline_v4.2.0_Pro.py
 ```
 
 This will execute a single E+I simulation run with the default I-definition (`jensen_shannon`) and generate all 28 phases of analysis.
@@ -202,7 +202,7 @@ MASTER_CTRL = {
 
 ### 3. Modify Settings
 
-Open `TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO.py` in a text editor and modify the `MASTER_CTRL` dictionary:
+Open `TQE_Universe_Simulation_Full_Pipeline_v4.2.0_Pro.py` in a text editor and modify the `MASTER_CTRL` dictionary:
 
 ```python
 MASTER_CTRL = {
