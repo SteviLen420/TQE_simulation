@@ -15,35 +15,21 @@ $$
 with
 
 $$
-f_{\text{gate}}(\psi, t) = \exp\!\big[\beta(t) X(\psi)\big]\, \mathbf{1}_{\{\psi \in G_t\}}\, e^{-\lambda_{\text{out}}(t)}.
+f_{\text{gate}}(\psi, t) = \exp\!\Big[\beta(t) X(\psi) - \sum_j \Lambda_j(t)\, c_j(\psi)\Big]\, \mathbf{1}_{\{\psi \in G_t\}}.
 $$
 
-Here the indicator projects out configurations that violate the gate, leaving a closed, positive operator on the admissible subspace. 
-
-The Lagrange multiplier couples to explicit constraints
+Here the indicator projects out configurations that violate the gate, leaving a closed, positive operator on the admissible subspace, while the exponential carries the *local* Lagrange multipliers. The functions $c_j(\psi)$ are constraint densities (energy, anomaly residuals, curvature bounds, etc.) whose expectation values reproduce the global constraints
 
 $$
-\mathcal{C}_j[P] = 0
+\mathcal{C}_j[P_t] \equiv \int_\Psi P_t(\psi)\, c_j(\psi)\, d\psi = 0.
 $$
 
-(normalisation, symmetry closure, total energy bounds, etc.) through coefficients $\Lambda_j(t)$ determined by enforcing
-
-$$
-\mathcal{C}_j[P_t] = 0
-$$
-
-at each step; effectively
-
-$$
-\lambda_{\text{out}}(t) = \sum_j \Lambda_j(t)\, \mathcal{C}_j'[P_t],
-$$
-
-so the same functional form encodes both probability conservation and hard structural rules.
+Choosing $\Lambda_j(t)$ enforces $\mathcal{C}_j[P_t]=0$ at each step in the usual exponential-family manner; there is no redundant global prefactor because every constraint imprints a $\psi$-dependent weight. If a constraint is intrinsically hard (e.g., exact symmetry closure), it is more natural to absorb it directly into the gate $\mathbf{1}_{\{\psi \in G_t\}}$ and drop the corresponding multiplier.
 
 - $\beta(t)$ — selection pressure (inverse temperature analog).  
 - $X(\psi)$ — fitness/complexity functional.  
 - $G_t$ — admissible gate in law-space (enforcing symmetries, integrability, etc.).  
-- $\lambda_{\text{out}}(t)$ — Lagrange multiplier adjusting for hard constraints.
+- $\Lambda_j(t)$ — Lagrange multipliers that weigh constraint densities $c_j(\psi)$.
 
 ### Discrete update vs. continuum limit
 
@@ -52,7 +38,7 @@ For simulations:
 - **Update** 
 
 $$
-P_{k+1}(\psi) = P_k(\psi)\, \exp\big[\beta_k X_k(\psi)\big]\, \mathbf{1}_{\psi \in G_{t_k}}\, e^{-\lambda_{\text{out},k}}.
+P_{k+1}(\psi) = P_k(\psi)\, \exp\Big[\beta_k X_k(\psi) - \sum_j \Lambda_{j,k}\, c_j(\psi)\Big]\, \mathbf{1}_{\psi \in G_{t_k}}.
 $$
 
 - **Renormalise** 
@@ -61,13 +47,19 @@ $$
 \tilde{P}_{k+1}(\psi) = \frac{P_{k+1}(\psi)}{\int_\Psi P_{k+1}(\phi)\, d\phi}.
 $$
 
+To obtain a continuum limit, scale the exponent as $\beta_k X_k(\psi) = \Delta t\, r_t(\psi) + \mathcal{O}(\Delta t^2)$ with $r_t(\psi)$ finite. Expanding $\exp[\beta_k X_k(\psi)] \approx 1 + \Delta t\, r_t(\psi)$ and renormalising gives
+
+$$
+P_{k+1}(\psi) - P_k(\psi) \approx \Delta t\, P_k(\psi)\,[r_t(\psi) - \mathbb{E}_t(r_t)].
+$$
+
 As $\Delta t \to 0$, the continuum limit obeys
 
 $$
-\partial_t P_t(\psi) = P_t(\psi)\, [G_t(\psi) - \mathbb{E}_t(G_t)] - \kappa_t(\psi),
+\partial_t P_t(\psi) = P_t(\psi)\, [r_t(\psi) - \mathbb{E}_t(r_t)] - \kappa_t(\psi),
 $$
 
-where $G_t(\psi) \equiv \beta(t) X(\psi)$ and $\kappa_t(\psi)$ enforces the gate projection (either as an absorbing boundary term or as a constraint ensuring $P_t(\psi)=0$ outside $G_t$). This is the standard replicator equation with payoff given directly by the energy–information coupling.
+where $r_t(\psi) \equiv \beta(t) X(\psi) - \sum_j \Lambda_j(t)\, c_j(\psi)$ and $\kappa_t(\psi)$ enforces the gate projection. In practice one may choose a Dirichlet boundary condition $P_t(\psi)=0$ for $\psi\notin G_t$ (so $\kappa_t=0$ inside the domain) or add an explicit absorption term $\kappa_t(\psi)=\chi_{\{\psi\notin G_t\}} P_t(\psi)/\tau_{\text{gate}}$ with a relaxation time $\tau_{\text{gate}}$ followed by renormalisation. This is the standard replicator equation with payoff given directly by the energy–information–constraint coupling.
 
 **Interpretation.** This is the backbone of TQE: no matter which era we examine, reality updates its law-distribution by multiplying with the same exponential bias and renormalising. The selection pressure $\beta(t)$ acts like an inverse temperature dial, the gate $G_t$ is a moving boundary that decides which candidate laws are even admissible, and the Lagrange multiplier enforces hard constraints (normalisation, gauge closure, etc.). In practice, each cosmological phase simply corresponds to a different choice of these schedules. The replicator equation makes the statistical analogy explicit: physical law behaves like a population whose “fitness” is short-term stability plus long-term complexity support.
 
@@ -83,7 +75,7 @@ The cycle is driven by how quickly selection pressure rises, saturates, and fall
 
 3. **Relaxation with stochastic forcing** — $\dot{\beta}(t) = \kappa [\beta_{\text{eq}} - \beta(t)] + \xi(t)$, with relaxation constant $\kappa$ and mean-zero noise $\xi(t)$ interpreted in the Itô sense (so $\mathrm{d}\beta = \kappa [\beta_{\text{eq}} - \beta]\, \mathrm{d}t + \sigma_\beta\, \mathrm{d}W_t$ and any noise-induced drift is explicit). Stratonovich variants can be adopted but must then include the appropriate correction term.
 
-**Interpretation.** $\beta(t)$ is the “metronome” of the entire model. When it is near zero, the universe behaves like a hot, information-neutral plasma in law-space—everything is allowed, nothing is preferred. As $\beta$ ramps up, the Goldilocks window narrows and only configurations with the right energy–information balance remain statistically relevant. The specific functional form matters physically: a logistic ramp corresponds to a smooth reheating or symmetry-breaking event; the inverse-temperature law ties selection directly to cosmological cooling; the stochastic relaxation captures messy epochs where structure-formation or black-hole evaporation inject noise. Keeping $\beta(t)$ explicit is what gives TQE predictive leverage over when lock-in occurs.
+**Interpretation.** $\beta(t)$ is the “metronome” of the entire model. When it is near zero, the universe behaves like a hot, information-neutral plasma in law-space—everything is allowed, nothing is preferred. As $\beta$ ramps up, the Goldilocks window narrows and only configurations with the right energy–information balance remain statistically relevant. The specific functional form matters physically: a logistic ramp corresponds to a smooth reheating or symmetry-breaking event; the inverse-temperature law ties selection directly to cosmological cooling; the stochastic relaxation captures messy epochs where structure-formation or black-hole evaporation inject noise. Mathematically, $\beta(t)$ is an external control parameter, so the full law-space process is an explicitly time-inhomogeneous Markov chain/diffusion whose bias schedule can be engineered. Keeping $\beta(t)$ explicit is what gives TQE predictive leverage over when lock-in occurs.
 
 ---
 
@@ -135,8 +127,8 @@ Vacuum fluctuations spontaneously localise $P(\psi)$ but do not yet select a uni
 
 ### 4.3 Growth, stabilisation, complexity ($t > 0$)
 
-- Conservation laws emerge when the replicator fixed points $P^\star(\psi)$ satisfy $P^\star(\psi)=0$ unless $\psi \in \arg\max_{\phi \in G_t} X(\phi)$, i.e., only the top-scoring gate-compliant laws retain weight.  
-- Quantum behaviour requires extending the bias into a two-channel evolution: $f_{\text{amp}} = \exp[\beta X]$ for amplitudes and a separate phase channel $\exp[i S(\psi)/\hbar]$ so that the effective dynamics remain unitary while the selection bias acts on moduli.  
+- Conservation laws emerge when the replicator fixed points $P^\star(\psi)$ concentrate their support on $\arg\max_{\phi \in G_t} X(\phi)$, up to degeneracies or mixed supports that share the same payoff.  
+- Quantum behaviour can be mimicked by extending the bias into a two-channel evolution: $f_{\text{amp}} = \exp[\beta X]$ for amplitudes and a separate phase channel $\exp[i S(\psi)/\hbar]$, which effectively describes an open-system / decohering dynamics rather than a strictly unitary Schrödinger flow.  
 - Gauge groups $U(1)$, $SU(2)\times U(1)$, $SU(3)$ dominate where $G_t$ admits them, leading to electromagnetic, weak, and strong sectors.  
 - GR + cosmology follow once diffeomorphism invariance becomes energetically favoured, producing Einstein and Friedmann dynamics.
 
@@ -164,9 +156,17 @@ Representative choices:
 
 1. **Entropic reweighting** — $\Pi[P] (\psi) = \frac{e^{-\gamma s(\psi)} P(\psi)}{\int e^{-\gamma s(\phi)} P(\phi)\, d\phi}$ with $s(\psi)$ a local entropy-density estimator (e.g., neighbourhood entropy, KL score, or any rival I’m still benchmarking) so the reweighting truly reshapes the distribution.
 
-2. **Perturbative noise injection** — $\Pi[P] (\psi) = P(\psi) + \varepsilon\, \eta(\psi)$ where $\eta$ is a zero-mean random field.
+2. **Perturbative noise injection** — 
+$$
+\Pi[P] (\psi) = \frac{\max\{P(\psi) + \varepsilon\, \eta(\psi),\, 0\}}{\int_\Psi \max\{P(\phi) + \varepsilon\, \eta(\phi), 0\}\, d\phi},
+$$
+where $\eta$ is a zero-mean random field and $\varepsilon$ controls the injected variance.
 
-3. **Cyclic rescaling** — $\Pi[P] (\psi) = P(\psi/\alpha)/\alpha$ to capture geometric contraction/expansion at aeon boundaries.
+3. **Cyclic rescaling** — for a linear rescaling $\psi \mapsto A\psi$,
+$$
+\Pi[P](\psi) = P(A^{-1}\psi)\, |\det A^{-1}|,
+$$
+which reduces to $P(\psi/\alpha)/\alpha$ when $A=\alpha$ is a scalar dilation. This captures geometric contraction/expansion at aeon boundaries.
 
 Each option preserves normalisation and reintroduces exploratory variance before the next $\beta$ ramp.
 
@@ -178,13 +178,17 @@ Each option preserves normalisation and reintroduces exploratory variance before
 
 Because $P_{k+1}(\psi) = P_k(\psi)\, e^{\beta_k X_k(\psi)}$ multiplies densities, stability conditions are essential:
 
-1. **Linearised perturbations**
+1. **Spectral linearisation (continuum view).** Around a fixed point $P^\star$ that satisfies $r_t(\psi)=\mathbb{E}_t(r_t)$ on its support, write $P = P^\star + \delta P$ with $\int \delta P = 0$. The replicator PDE yields
+   $$
+   \partial_t \delta P(\psi) \approx \delta P(\psi)\,[r_t(\psi) - \bar{r}^\star] - P^\star(\psi)\, \delta \bar{r},
+   $$
+   where $\delta \bar{r} = \int \delta P(\phi)\, r_t(\phi)\, d\phi$. Diagonalising this integral operator gives the true stability spectrum; all eigenvalues must have negative real part for local convergence. This replaces the spurious $|1+\beta_k X_k'|<1$ condition, which does not apply because $X$ does not depend explicitly on $P$ in this model.
 
-   $\delta P_{k+1}(\psi) \approx [1 + \beta_k X'_k(\psi)]\, \delta P_k(\psi)$ under an explicit-Euler interpretation of the discrete map, so $|1 + \beta_k X'_k| < 1$ ensures local convergence.
+2. **Discrete step-size control.** The multiplicative update $P_{k+1} \propto P_k \exp[\beta_k X_k]$ becomes numerically stiff if $|\beta_k X_k| \gg 1$. Enforcing $|\beta_k X_k(\psi)| \lesssim \mathcal{O}(1)$ for all sampled $\psi$ avoids overflow/underflow and keeps the discrete Jacobian close to its continuum counterpart.
 
-2. **Monte Carlo sweeps** over $\beta_k$ schedules and fitness landscapes map out convergence vs. oscillatory vs. chaotic regimes; chaos is diagnosed by a positive Lyapunov exponent $\lambda = \lim_{n\to\infty} \frac{1}{n} \ln \frac{\|\delta P_n\|}{\|\delta P_0\|}$.
+3. **Monte Carlo sweeps** over $\beta_k$ schedules and fitness landscapes map out convergence vs. oscillatory vs. chaotic regimes; chaos is diagnosed by a positive Lyapunov exponent $\lambda = \lim_{n\to\infty} \frac{1}{n} \ln \frac{\|\delta P_n\|}{\|\delta P_0\|}$.
 
-3. **Continuum limit**: verify numerically that the discrete map converges to the replicator PDE when $\beta_k \propto \Delta t$ and $X_k$ varies smoothly.
+4. **Continuum limit**: verify numerically that the discrete map converges to the replicator PDE when $\beta_k \propto \Delta t$ and $X_k$ varies smoothly.
 
 **Interpretation.** These diagnostics translate the cycle from philosophy to code. Linearised perturbations warn us when selection pressure is too aggressive and would cause oscillations instead of convergence. Monte Carlo sweeps reveal whether a planned $\beta$ schedule pushes the system into chaotic regimes (useful for reset studies) or stable ones (useful for lock-in). The continuum check ensures that the discrete simulations we run are faithful representations of the analytic replicator dynamics. Together they supply the “engineering tolerances” of the theory.
 

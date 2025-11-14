@@ -30,12 +30,12 @@ $$
 P'(\psi) = \frac{P(\psi)\, f(E,I)}{Z[P]},
 $$
 
-with
-
 $$
 f(E,I) = \exp\!\left[-\frac{(E - E_c)^2}{2\sigma^2}\right] (1 + \alpha I),
-\qquad
-Z[P] = \int_\Psi P(\phi)\, f(E(\phi), I(\phi))\, d\phi.
+$$
+
+$$
+Z[P] = \int_\Psi P(\phi)\, f\big(E(\phi), I(\phi)\big)\, d\phi.
 $$
 
 Here $E$ is the sampled vacuum energy, $I\in[0,1]$ measures how aligned the microstate is with an information-bearing direction, $E_c$ is the Goldilocks energy, $\sigma$ the tolerance width, and $\alpha$ the strength of the informational tilt. Formally $Z$ is a functional of $P$ (and of the fixed parameters), so the update is a nonlinear, mean-field-style map on probability measures. Setting $f=1$ recovers ordinary conservation; letting $f\neq 1$ nudges probabilities toward states that support richer structure.
@@ -146,7 +146,7 @@ T_{\mu\nu} \longrightarrow f^{(3)}_{\text{eff}}\, T_{\mu\nu},
 f^{(3)}_{\text{eff}} = \frac{\int_{\Psi_{\text{loc}}} P(\psi|\text{matter})\, f_{\text{micro}}(E(\psi), I(\psi))\, d\psi}{\int_{\Psi_{\text{loc}}} P(\psi|\text{matter})\, d\psi}.
 $$
 
-Nothing happens to the geometry itself; instead I reinterpret fluctuations in energy–information orientation as local boosts or dips in effective stress–energy. Regions that stay aligned with the preferred informational direction behave as if their density were amplified, which provides a TQE reading of phenomena usually ascribed to exotic matter, dark energy, or early-time seeding. In general $f^{(3)}_{\text{eff}}=f^{(3)}_{\text{eff}}(x)$ inherits the spacetime dependence of the matter patch being coarse-grained, so it should be treated as a backreaction-style source renormalization rather than a single global constant.
+Nothing happens to the geometry itself; instead I reinterpret fluctuations in energy–information orientation as local boosts or dips in effective stress–energy. Regions that stay aligned with the preferred informational direction behave as if their density were amplified, which provides a TQE reading of phenomena usually ascribed to exotic matter, dark energy, or early-time seeding. In general $f^{(3)}_{\text{eff}} = f^{(3)}_{\text{eff}}(x)$ inherits the spacetime dependence of the matter patch being coarse-grained, so it should be treated as a backreaction-style source renormalization rather than a single global constant.
 
 ---
 
@@ -200,7 +200,7 @@ i\hbar \frac{\partial \Psi}{\partial t} = \hat{H} \Psi,
 \hat{H} = \hat{H}_0 + \hat{H}_{\text{TQE}},
 $$
 
-where $\hat{H}_{\text{TQE}}$ packages the $f(E,I)$-dependent pieces. I insist that $\hat{H}_{\text{TQE}}$ be Hermitian so the total Hamiltonian remains self-adjoint and the Schrödinger evolution preserves $\langle\Psi|\Psi\rangle=1$; the Tier 0 partition factor $Z$ only normalizes the emergent classical probability update.
+where $\hat{H}_{\text{TQE}}$ packages the $f(E,I)$-dependent pieces. I insist that $\hat{H}_{\text{TQE}}$ be Hermitian so the total Hamiltonian remains self-adjoint and the Schrödinger evolution preserves $\langle\Psi|\Psi\rangle = 1$; the Tier 0 partition factor $Z$ only normalizes the emergent classical probability update.
 
 Measurements continue to follow the Born rule,
 
