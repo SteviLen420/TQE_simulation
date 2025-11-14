@@ -138,7 +138,9 @@ $$
 G_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4} T_{\mu\nu}
 $$
 
-accommodates a rescaling $T_{\mu\nu} \to f^{(3)}_{\text{eff}} T_{\mu\nu}$. The coupling acts as an effective source modulation, allowing energy–information fluctuations to alter curvature without changing the field equations themselves. Here $f^{(3)}_{\text{eff}}$ should be read as the stress–energy renormalization obtained by integrating $f_{\text{micro}}$ over local matter distributions.
+accommodates a rescaling $T_{\mu\nu} \to f^{(3)}_{\text{eff}} T_{\mu\nu}$. The coupling acts as an effective source modulation, allowing energy–information fluctuations to alter curvature without changing the field equations themselves. 
+
+Here $f^{(3)}_{\text{eff}}$ should be read as the stress–energy renormalization obtained by integrating $f_{\text{micro}}$ over local matter distributions.
 
 In Newtonian language, $f(E,I)$ tells us that thermal baths statistically prefer deeper wells because those configurations correspond to higher informational throughput. In relativistic language, the same statement becomes a local rescaling of stress–energy. The underlying geometry is untouched; what changes is which stress–energy histories survive the lock-in process. Regions with stronger information orientation behave as if their energy density were amplified, providing a TQE route to phenomena often attributed to exotic matter or early-time fluctuations.
 
