@@ -16,10 +16,14 @@ Every comoving observer is surrounded by a cosmological event horizon at radius 
 - $S_{\text{dS}} = k_B A_\Lambda / 4 L_P^2 = \pi k_B c^2 / L_P^2 H_\Lambda^2$.
 
 which sets the ultimate thermal bath for all late-time processes. In the TQE frame, the vanishing of the selection pressure is captured by a dimensionless scaling
+
 $$
 \beta(t) = \beta_0 \frac{T_*}{T_{\text{dS}}(t)},
 $$
-with $T_*$ a fixed reference temperature (Goldilocks baseline or Planck scale). As $T_{\text{dS}}$ approaches $T_*$ from above, $\beta(t)$ collapses and the coupling $f(E,I)$ relaxes toward unity, preparing the system for the reset phase.
+
+with $T_*$ a fixed reference temperature (Goldilocks baseline or Planck scale). 
+
+As $T_{\text{dS}}$ approaches $T_*$ from above, $\beta(t)$ collapses and the coupling $f(E,I)$ relaxes toward unity, preparing the system for the reset phase.
 
 **Interpretation.** Λ-domination is the point where cosmology enforces neutrality. Once $a(t)$ becomes strictly exponential, every observer inherits the same Gibbons–Hawking bath, so no region can retain a privileged informational orientation. The proportionality $\beta(t) \sim T_* / T_{\text{dS}}$ makes this explicit: the colder the de Sitter horizon, the smaller the selection pressure, the closer $f(E,I)$ sits to one. This section therefore sets the thermodynamic stage for why a reset is unavoidable—the universe has no statistical leverage left to prefer complexity.
 
@@ -78,9 +82,11 @@ $$
 ## 5. Holographic Information Bounds
 
 With black holes gone, the strongest information store is the cosmological horizon. The Bousso/’t Hooft bound constrains
+
 $$
 S \le \frac{k_B A_\Lambda}{4 L_P^2} = \frac{k_B A_\Lambda c^3}{4 G \hbar}, \qquad A_\Lambda = 4\pi (c / H_\Lambda)^2,
 $$
+
 ensuring that any data surviving the cleanup resides on the horizon degrees of freedom. This dovetails with the TQE requirement that only a finite slice of the law-space landscape is available for the subsequent cycle.
 
 **Interpretation.** Holography means the reset cannot summon infinite novelty—the next cycle inherits at most $A_\Lambda / 4L_P^2$ bits (equivalently $A_\Lambda c^3 / 4G\hbar$). In practical terms, the gate $G_t$ for the forthcoming pre-selection phase is bounded by the horizon area of the prior de Sitter epoch. This keeps the theory predictive: given a measured $\Lambda$, we know exactly how much information can feed forward, constraining the distribution $P_{\text{new},0^-}$ and any anisotropies it might imprint.
