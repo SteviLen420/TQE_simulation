@@ -608,7 +608,7 @@ MASTER_CTRL = {
                                                    # Recommended: 0.005 (low noise), 0.01 (balanced), 0.05 (high noise)
 
     # === UNIVERSE SAMPLING ===
-    "NUM_UNIVERSES":         500,       # PHASE 1-28 universes (main simulation) - OPTIMALIZÁLT TESZTELÉSHEZ
+    "NUM_UNIVERSES":         250,       # PHASE 1-28 universes (main simulation) - OPTIMALIZÁLT TESZTELÉSHEZ
                                         # 30% Bayesian (60) + 70% full sim (140) - elég statisztika + viszonylag gyors
     "SEED":                  None,     # Master seed (None = auto)
 
