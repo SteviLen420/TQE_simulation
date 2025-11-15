@@ -555,7 +555,21 @@ def load_planck_validation(run_dir: str) -> Optional[Dict[str, Optional[object]]
             result["validation"] = pd.read_csv(csv_file)
         except Exception as e:
             print(f"⚠️  WARNING: Could not parse {csv_file}: {e}")
-    return result if any(result.values()) else None
+    
+    # Check if any value is not None (handle DataFrame objects properly)
+    has_data = False
+    for value in result.values():
+        if value is not None:
+            # For DataFrame, check if it's not empty
+            if isinstance(value, pd.DataFrame):
+                if not value.empty:
+                    has_data = True
+                    break
+            else:
+                has_data = True
+                break
+    
+    return result if has_data else None
 
 
 def load_entropy_volatility_summary(run_dir: str) -> Optional[pd.DataFrame]:
