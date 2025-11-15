@@ -1,5 +1,7 @@
 # TQE_Black Hole Cleanup, Heat Death, and Speculative Renewal
 
+**Author**: Stefan Len
+
 This note explains how the late-time universe behaves inside the TQE cycle: Λ takes over, black holes evaporate, entropy saturates, and several renewal channels can inject fresh variance. The math already lived here; what follows is a richer narrative that ties those expressions back to the $f(E,I)$ modulation rule and to the broader cycle model.
 
 ## 1. Λ-Dominated Expansion and Horizon Thermodynamics

@@ -1,5 +1,7 @@
 # TQE_Foundational Laws of the Universe
 
+**Author**: Stefan Len
+
 This document argues that every familiar law of physics is a manifestation of a single, deeper “meta-law” — the TQE master coupling $f(E, I)$. I picture nature as running on one central “operating system,” with gravity, thermodynamics, and all other phenomena appearing as neutral or biased states of that same system. The goal is no longer just to list correspondences but to explain how the same bias migrates from cosmogenesis down to laboratory-scale phenomena. Each section therefore includes short interpretive paragraphs, acting as field notes for technically trained readers who want to see the mechanism as well as the formulas.
 
 ---
