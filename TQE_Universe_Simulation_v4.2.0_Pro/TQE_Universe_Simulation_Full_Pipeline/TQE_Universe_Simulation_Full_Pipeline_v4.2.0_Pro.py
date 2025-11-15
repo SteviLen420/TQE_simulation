@@ -1150,7 +1150,13 @@ class PipelineContext:
         # --- Reproducibility: Seed management ---
         self.master_seed = self.config.get("SEED")
         if self.master_seed is None:
-            self.master_seed = int(np.random.randint(1, 2**32))
+            # FIX: Generate truly unique seed using timestamp + process ID + random
+            # This ensures each run in batch_all mode gets a different seed
+            timestamp_part = int(time.time() * 1000000) % (2**31)  # Microsecond precision
+            process_part = os.getpid() % (2**15)  # Process ID component
+            random_part = int(np.random.randint(1, 2**16))  # Additional randomness
+            self.master_seed = int((timestamp_part << 16) | (process_part << 8) | (random_part % 256))
+            self.master_seed = max(1, self.master_seed % (2**31))  # Ensure valid range
         self.config["SEED"] = self.master_seed
 
         self._pending_planck_source = None
@@ -12395,6 +12401,8 @@ if __name__ == "__main__":
         config_eonly["MULTI_I_ANALYSIS_MODE"] = True
         config_eonly["MULTI_I_SAVE_DIR"] = batch_dir
         config_eonly.pop("DRIVE_BASE_DIR", None)  # Remove to use MULTI_I path
+        # FIX: Ensure unique seed for each run in batch_all to avoid deterministic Planck results
+        config_eonly["SEED"] = None  # Let it auto-generate unique seed for each run
         
         eonly_timestamp = time.strftime("%Y%m%d_%H%M%S")
         run_id_eonly = f"Eonly_{eonly_timestamp}"
@@ -12423,6 +12431,8 @@ if __name__ == "__main__":
             config_ei["MULTI_I_ANALYSIS_MODE"] = True
             config_ei["MULTI_I_SAVE_DIR"] = batch_dir
             config_ei.pop("DRIVE_BASE_DIR", None)  # Remove to use MULTI_I path
+            # FIX: Ensure unique seed for each run in batch_all to avoid deterministic Planck results
+            config_ei["SEED"] = None  # Let it auto-generate unique seed for each run
             
             ei_timestamp = time.strftime("%Y%m%d_%H%M%S")
             run_id_ei = f"EplusI_{i_def}_{ei_timestamp}"
