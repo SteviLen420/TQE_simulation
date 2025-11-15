@@ -31,6 +31,28 @@ TQE posits that:
 - This coupling creates a "Goldilocks window" where law-governed universes can stabilize
 - The framework yields falsifiable predictions about statistical anomalies in cosmological observations
 
+At the mathematical level the hypothesis is encoded in a modulation rule for the primordial probability distribution $P(\psi)$ of universal states:
+
+$$
+P'(\psi)=P(\psi)\cdot f(E,I),
+$$
+
+where $E$ denotes a vacuum fluctuation energy sample (drawn from a heavy-tailed distribution), $I$ is an information-oriented asymmetry measure, and $f(E,I)$ biases collapse toward law-consistent outcomes. The baseline implementation uses
+
+$$
+f(E,I)=\exp\!\left(-\frac{(E-E_c)^2}{2\sigma^2}\right)\left(1+\alpha I\right),
+$$
+
+with $E_c$ the Goldilocks center, $\sigma$ the stability width, and $\alpha$ the strength of the informational bias. The model tracks a composite complexity parameter $X=E\cdot I$ (stability gate) together with the asymmetry $|E-I|$ (lock-in trigger) to decide whether a universe reaches the late-time law-lock-in state.
+
+The information parameter itself is defined operationally. In simulations it is computed from consecutive probability distributions $P_t$ and $P_{t+1}$ via a normalized Kullback–Leibler divergence (optionally fused with Shannon entropy):
+
+$$
+I = \frac{D_{\mathrm{KL}}(P_t \parallel P_{t+1})}{1 + D_{\mathrm{KL}}(P_t \parallel P_{t+1})},
+$$
+
+ensuring $0 \le I \le 1$. A universe is deemed to have stabilized its laws when the relative change in key observables satisfies $\Delta P/P < 5\times 10^{-3}$ over at least six consecutive epochs. Together these prescriptions make the TQE hypothesis quantitative, reproducible, and falsifiable within Monte Carlo ensembles.
+
 ## Scientific Context
 
 TQE addresses fundamental questions in cosmology:
