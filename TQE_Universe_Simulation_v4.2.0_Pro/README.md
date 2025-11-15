@@ -4,7 +4,7 @@ Copyright (c) 2025 Stefan Len
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17614948.svg)](https://doi.org/10.5281/zenodo.17614948)
 [![arXiv](https://img.shields.io/badge/arXiv-coming%20soon-b31b1b.svg)](#)
 [![GitHub stars](https://img.shields.io/github/stars/SteviLen420/TQE_simulation?style=social)](https://github.com/SteviLen420/TQE_simulation)
 [![GitHub forks](https://img.shields.io/github/forks/SteviLen420/TQE_simulation?style=social)](https://github.com/SteviLen420/TQE_simulation)
@@ -134,9 +134,9 @@ Detailed command snippets live inside each submodule’s README.
   title     = {{TQE Universe Simulation Suite v4.2.0 PRO}},
   year      = {2025},
   version   = {4.2.0},
-  publisher = {GitHub},
-  url       = {https://github.com/<repo>/TQE_simulation},
-  doi       = {10.5281/zenodo.XXXXXXX}
+  publisher = {Zenodo},
+  url       = {https://github.com/SteviLen420/TQE_simulation},
+  doi       = {10.5281/zenodo.17614948}
 }
 ```
 
