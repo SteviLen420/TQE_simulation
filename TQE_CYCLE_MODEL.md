@@ -213,10 +213,18 @@ Each option preserves normalisation and reintroduces exploratory variance before
 Because $P_{k+1}(\psi) = P_k(\psi)\, e^{\beta_k X_k(\psi)}$ multiplies densities, stability conditions are essential:
 
 1. **Spectral linearisation (continuum view).** Around a fixed point $P^\star$ that satisfies $r_t(\psi)=\mathbb{E}_t(r_t)$ on its support, write $P = P^\star + \delta P$ with $\int \delta P = 0$. The replicator PDE yields
+
    $$
    \partial_t \delta P(\psi) \approx \delta P(\psi)\,[r_t(\psi) - \bar{r}^\star] - P^\star(\psi)\, \delta \bar{r},
    $$
-   where $\delta \bar{r} = \int \delta P(\phi)\, r_t(\phi)\, d\phi$. Diagonalising this integral operator gives the true stability spectrum; all eigenvalues must have negative real part for local convergence. This replaces the spurious $|1+\beta_k X_k'|<1$ condition, which does not apply because $X$ does not depend explicitly on $P$ in this model.
+
+   with
+
+   $$
+   \delta \bar{r} = \int \delta P(\phi)\, r_t(\phi)\, d\phi.
+   $$
+
+   Diagonalising this integral operator gives the true stability spectrum; all eigenvalues must have negative real part for local convergence. This replaces the spurious $|1+\beta_k X_k'|<1$ condition, which does not apply because $X$ does not depend explicitly on $P$ in this model.
 
 2. **Discrete step-size control.** The multiplicative update $P_{k+1} \propto P_k \exp[\beta_k X_k]$ becomes numerically stiff if $|\beta_k X_k| \gg 1$. Enforcing $|\beta_k X_k(\psi)| \lesssim \mathcal{O}(1)$ for all sampled $\psi$ avoids overflow/underflow and keeps the discrete Jacobian close to its continuum counterpart.
 
