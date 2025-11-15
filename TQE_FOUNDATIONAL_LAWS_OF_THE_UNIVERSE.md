@@ -206,7 +206,19 @@ i\hbar \frac{\partial \Psi}{\partial t} = \hat{H} \Psi,
 \hat{H} = \hat{H}_0 + \hat{H}_{\text{TQE}},
 $$
 
-where $\hat{H}_{\text{TQE}}$ packages the $f(E,I)$-dependent pieces. I insist that $\hat{H}_{\text{TQE}}$ be Hermitian,
+where
+
+$$
+\hat{H}_{\text{TQE}}
+$$
+
+packages the $f(E,I)$-dependent pieces. I insist that
+
+$$
+\hat{H}_{\text{TQE}}
+$$
+
+be Hermitian,
 
 $$
 \hat{H}_{\text{TQE}} = \hat{H}_{\text{TQE}}^\dagger,
