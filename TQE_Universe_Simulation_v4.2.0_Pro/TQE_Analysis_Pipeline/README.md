@@ -239,4 +239,4 @@ Author ORCID (as listed there): https://orcid.org/0009-0007-0383-7315
 
 ---
 
-The analysis pipeline mirrors the structure and rigor of the main TQE README, giving you a reproducible, well-documented post-processing and validation workflow. With the full documentation centralized here, you can keep the Python script lean while still having every detail at your fingertips. Happy analyzing! 👩‍🚀🌀
+The analysis pipeline mirrors the structure and rigor of the main TQE README, providing a reproducible, well-documented post-processing and validation workflow. With the full documentation centralized here, the Python script remains lean while every operational detail stays readily accessible.

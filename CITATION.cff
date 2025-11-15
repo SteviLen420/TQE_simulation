@@ -1,17 +1,16 @@
 cff-version: 1.2.0
 message: "If you use this project, please cite it as below."
-title: "Theory of the Question of Existence (TQE) – Simulation & Cycle Framework"
+title: "Theory of the Question of Existence (TQE) – Simulation Suite"
 version: 4.2.0
 date-released: 2025-11-14
 url: "https://github.com/SteviLen420/TQE_simulation"
-repository-code: "https://github.com/SteviLen420/TQE_simulation"
+repository-code: "https://github.com/SteviLen420/TQE_simulation/TQE_Universe_Simulation_v4.2.0_Pro/TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline_v4.2.0_Pro.py"
 authors:
   - family-names: "Len"
     given-names: "Stefan"
     orcid: "https://orcid.org/0009-0007-0383-7315"
 abstract: >
-  Unified repository containing the TQE foundational laws, cycle model,
-  black-hole cleanup analysis, and multiple simulation pipelines (v1.0.0 and
+  Unified repository containing the TQE simulation pipelines (v1.0.0 and
   v4.2.0 Pro) that implement the energy–information coupling across cosmological
   phases. Cite this work when reusing any manuscripts, methodological notes, or
   code from the TQE_simulation project root.
