@@ -24,7 +24,25 @@ $$
 \mathcal{C}_j[P_t] \equiv \int_\Psi P_t(\psi)\, c_j(\psi)\, d\psi = 0.
 $$
 
-Choosing $\Lambda_j(t)$ enforces $\mathcal{C}_j[P_t]=0$ at each step in the usual exponential-family manner; there is no redundant global prefactor because every constraint imprints a $\psi$-dependent weight. If a constraint is intrinsically hard (e.g., exact symmetry closure), it is more natural to absorb it directly into the gate $\mathbf{1}_{\{\psi \in G_t\}}$ and drop the corresponding multiplier.
+Choosing
+
+$$
+\Lambda_j(t)
+$$
+
+enforces
+
+$$
+\mathcal{C}_j[P_t] = 0
+$$
+
+at each step in the usual exponential-family manner; there is no redundant global prefactor because every constraint imprints a $\psi$-dependent weight. If a constraint is intrinsically hard (e.g., exact symmetry closure), it is more natural to absorb it directly into the gate
+
+$$
+\mathbf{1}_{\{\psi \in G_t\}}
+$$
+
+and drop the corresponding multiplier.
 
 - $\beta(t)$ — selection pressure (inverse temperature analog).  
 - $X(\psi)$ — fitness/complexity functional.  
@@ -154,7 +172,13 @@ The reset map rewrites the terminal distribution into a fresh high-variance stat
 
 Representative choices:
 
-1. **Entropic reweighting** — $\Pi[P] (\psi) = \frac{e^{-\gamma s(\psi)} P(\psi)}{\int e^{-\gamma s(\phi)} P(\phi)\, d\phi}$ with $s(\psi)$ a local entropy-density estimator (e.g., neighbourhood entropy, KL score, or any rival I’m still benchmarking) so the reweighting truly reshapes the distribution.
+1. **Entropic reweighting** —
+
+$$
+\Pi[P] (\psi) = \frac{e^{-\gamma s(\psi)} P(\psi)}{\int e^{-\gamma s(\phi)} P(\phi)\, d\phi},
+$$
+
+with $s(\psi)$ a local entropy-density estimator (e.g., neighbourhood entropy, KL score, or any rival I’m still benchmarking) so the reweighting truly reshapes the distribution.
 
 2. **Perturbative noise injection** — 
 $$
@@ -163,10 +187,18 @@ $$
 where $\eta$ is a zero-mean random field and $\varepsilon$ controls the injected variance.
 
 3. **Cyclic rescaling** — for a linear rescaling $\psi \mapsto A\psi$,
+
 $$
 \Pi[P](\psi) = P(A^{-1}\psi)\, |\det A^{-1}|,
 $$
-which reduces to $P(\psi/\alpha)/\alpha$ when $A=\alpha$ is a scalar dilation. This captures geometric contraction/expansion at aeon boundaries.
+
+which reduces to
+
+$$
+P(\psi/\alpha)/\alpha
+$$
+
+when $A=\alpha$ is a scalar dilation. This captures geometric contraction/expansion at aeon boundaries.
 
 Each option preserves normalisation and reintroduces exploratory variance before the next $\beta$ ramp.
 
