@@ -59,15 +59,12 @@ import json
 import glob
 import pickle
 import warnings
-from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy import stats
-from scipy.interpolate import interp1d
 from tqdm import tqdm
 
 # Configure matplotlib for proper figure generation
@@ -1358,7 +1355,7 @@ def extract_metrics_from_summary(summary: Dict, i_def: str) -> Dict:
     # 3. Information richness (E+I specific) - Is I-coupling effective?
     if i_def != "energy_only":
         # E+I: Effectiveness = stable % relative to E-only (will be computed in comparison)
-        # Placeholder: Use lock-in as proxy
+        # Use lock-in rate as proxy for I-parameter effectiveness
         info_richness = min(stab_sum.get("lockin_percent", 0) * 5, 100)  # 20% lock-in = 100 score
         complexity_components.append(info_richness)
     else:
@@ -2201,9 +2198,9 @@ def analyze_quantum_fields(df_metrics: pd.DataFrame, output_dir: str):
     
     # 1. Vacuum energy comparison
     print("\n5.1 Vacuum Energy Density Comparison")
-    fig, ax = plt.subplots(figsize=(14, 8))
     df_plot = df_ei.dropna(subset=["vacuum_energy_mean"])
     if len(df_plot) > 0:
+        fig, ax = plt.subplots(figsize=(14, 8))
         positions = range(len(df_plot))
         ax.barh(positions, df_plot["vacuum_energy_mean"],
                xerr=df_plot["vacuum_energy_std"] if "vacuum_energy_std" in df_plot.columns else None,
@@ -2217,6 +2214,8 @@ def analyze_quantum_fields(df_metrics: pd.DataFrame, output_dir: str):
         plt.savefig(os.path.join(output_dir, "vacuum_energy_comparison.png"), dpi=FIGURE_DPI, bbox_inches='tight')
         plt.close()
         print("   ✅ vacuum_energy_comparison.png")
+    else:
+        print("   ⚠️  No vacuum energy data available for plotting")
     
     # 2. Export CSV
     print("\n5.2 Quantum Fields Metrics Export")
@@ -2244,9 +2243,9 @@ def analyze_entanglement(df_metrics: pd.DataFrame, output_dir: str):
     
     # 1. Entanglement entropy
     print("\n6.1 Entanglement Entropy Comparison")
-    fig, ax = plt.subplots(figsize=(14, 8))
     df_plot = df_ei.dropna(subset=["entanglement_entropy_mean"])
     if len(df_plot) > 0:
+        fig, ax = plt.subplots(figsize=(14, 8))
         positions = range(len(df_plot))
         ax.barh(positions, df_plot["entanglement_entropy_mean"],
                xerr=df_plot["entanglement_entropy_std"] if "entanglement_entropy_std" in df_plot.columns else None,
@@ -2260,6 +2259,8 @@ def analyze_entanglement(df_metrics: pd.DataFrame, output_dir: str):
         plt.savefig(os.path.join(output_dir, "entanglement_entropy_comparison.png"), dpi=FIGURE_DPI, bbox_inches='tight')
         plt.close()
         print("   ✅ entanglement_entropy_comparison.png")
+    else:
+        print("   ⚠️  No entanglement entropy data available for plotting")
     
     # 2. Export CSV
     print("\n6.2 Entanglement Metrics Export")
@@ -3034,10 +3035,18 @@ def generate_complexity_analysis(df_metrics: pd.DataFrame, output_dir: str):
     # Calculate individual components for each run
     complexity_breakdown = []
     for idx, row in df_metrics.iterrows():
+        # Calculate Goldilocks Precision from uncertainty
+        if row.get('X_peak', 0) > 0 and not pd.isna(row.get('X_peak_uncertainty')):
+            rel_uncertainty = row['X_peak_uncertainty'] / row['X_peak']
+            goldilocks_precision = max(0, 100 - rel_uncertainty * 1000)  # Lower uncertainty = higher precision
+            goldilocks_precision = min(goldilocks_precision, 100)
+        else:
+            goldilocks_precision = 50.0  # Default if no data
+        
         complexity_breakdown.append({
             'I-Definition': row['i_definition'],
             'Lock-in Rate': min(row['lockin_percent'] * 2, 100),  # Normalized
-            'Goldilocks Precision': 50,  # Placeholder (would need detailed calc)
+            'Goldilocks Precision': goldilocks_precision,
             'Info Richness': row['information_richness'],
         })
     
@@ -3144,8 +3153,25 @@ def select_best_model(df_metrics: pd.DataFrame, output_dir: str):
     else:
         df_stability_rank['planck_score'] = 50.0
     
-    df_stability_rank['anomaly_score'] = 50.0  # Placeholder
-    df_stability_rank['bayesian_score'] = 50.0  # Placeholder
+    # CMB anomaly score (from cold spots and alignment)
+    if "n_coldspots_mean" in df_ei.columns and "alignment_angle_mean" in df_ei.columns:
+        # Normalize cold spots (Planck ~1-2 major cold spots)
+        coldspot_match = 100 / (1 + abs(df_ei["n_coldspots_mean"].fillna(0) - 1.5))
+        # Normalize alignment (lower angle = better alignment)
+        alignment_match = 100 / (1 + df_ei["alignment_angle_mean"].fillna(90))
+        df_stability_rank['anomaly_score'] = (coldspot_match + alignment_match) / 2
+    else:
+        df_stability_rank['anomaly_score'] = 50.0  # Default if no data
+    
+    # Bayesian efficiency score (from Goldilocks precision and Bayesian samples)
+    if "X_peak_uncertainty" in df_ei.columns and "bayesian_samples" in df_ei.columns:
+        # Lower uncertainty and more samples = better efficiency
+        rel_unc = df_ei["X_peak_uncertainty"] / df_ei["X_peak"].replace(0, 1)
+        precision_score = (1 - rel_unc.clip(0, 1)) * 100
+        sample_score = min(df_ei["bayesian_samples"].fillna(0) / 100 * 100, 100)  # Normalize to 100
+        df_stability_rank['bayesian_score'] = (precision_score + sample_score) / 2
+    else:
+        df_stability_rank['bayesian_score'] = 50.0  # Default if no data
     
     # Calculate stability-weighted score
     df_stability_rank['stability_total_score'] = (
@@ -3227,12 +3253,19 @@ def select_best_model(df_metrics: pd.DataFrame, output_dir: str):
     else:
         df_physical_rank['lockin_efficiency'] = df_ei["lockin_percent"]  # Fallback to lock-in rate
     
-    # 5. Quantum field realism
-    if "vacuum_energy_mean" in df_ei.columns:
-        # Normalize vacuum energy (expect ~E value)
-        df_physical_rank['quantum_field_realism'] = 50.0  # Placeholder (complex calculation)
+    # 5. Quantum field realism (vacuum energy consistency + fluctuation amplitude)
+    if "vacuum_energy_mean" in df_ei.columns and "quantum_fluctuation_mean" in df_ei.columns:
+        # Check if vacuum energy is in reasonable range (0.1-1.0)
+        vacuum_consistency = 100 / (1 + abs(df_ei["vacuum_energy_mean"].fillna(0.5) - 0.5) * 2)
+        # Check if fluctuations are non-zero (indicates quantum activity)
+        fluctuation_activity = (df_ei["quantum_fluctuation_mean"].fillna(0) > 0).astype(float) * 100
+        df_physical_rank['quantum_field_realism'] = (vacuum_consistency + fluctuation_activity) / 2
+    elif "vacuum_energy_mean" in df_ei.columns:
+        # Fallback: only vacuum energy
+        vacuum_consistency = 100 / (1 + abs(df_ei["vacuum_energy_mean"].fillna(0.5) - 0.5) * 2)
+        df_physical_rank['quantum_field_realism'] = vacuum_consistency
     else:
-        df_physical_rank['quantum_field_realism'] = 50.0
+        df_physical_rank['quantum_field_realism'] = 50.0  # Default if no data
     
     # Calculate physical-laws-weighted score
     df_physical_rank['physical_laws_total_score'] = (
