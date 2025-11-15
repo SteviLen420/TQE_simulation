@@ -3168,7 +3168,7 @@ def select_best_model(df_metrics: pd.DataFrame, output_dir: str):
         # Lower uncertainty and more samples = better efficiency
         rel_unc = df_ei["X_peak_uncertainty"] / df_ei["X_peak"].replace(0, 1)
         precision_score = (1 - rel_unc.clip(0, 1)) * 100
-        sample_score = min(df_ei["bayesian_samples"].fillna(0) / 100 * 100, 100)  # Normalize to 100
+        sample_score = (df_ei["bayesian_samples"].fillna(0) / 100 * 100).clip(upper=100)  # Normalize to 100
         df_stability_rank['bayesian_score'] = (precision_score + sample_score) / 2
     else:
         df_stability_rank['bayesian_score'] = 50.0  # Default if no data
