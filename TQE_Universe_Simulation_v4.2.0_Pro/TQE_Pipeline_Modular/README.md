@@ -8,7 +8,9 @@ Copyright (c) 2025 Stefan Len
 
 # TQE UNIVERSE SIMULATION PIPELINE v4.2.0 PRO
 
-**Title: The TQE Framework: A Modular, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy-Information Principles**
+**Title: The TQE Framework: A Modular-Orchestrated, Reproducible Pipeline for Monte Carlo Simulation of Universe Evolution from Energy-Information Principles**
+
+> **Modular focus.** This README covers the refactored, package-style implementation (`TQE_Pipeline_Modular/`). Each of the 28 phases lives in its own module (config, phases, analysis, etc.), enabling selective execution, faster iteration, and collaborative extension. If you need the legacy single-script pipeline, refer to `TQE_Universe_Simulation_Full_Pipeline/README.md`.
 
 **Author**: Stefan Len
 
@@ -50,11 +52,14 @@ If you use this software in your research, please consider citing it. This helps
 **Plain Text Citation:**
 > Stefan Len. (2025). *TQE Universe Simulation Pipeline v4.2.0 PRO* (Version 4.2.0) [Software]. GitHub. <!-- TODO: Add actual GitHub URL when available -->
 
+Author ORCID: https://orcid.org/0009-0007-0383-7315
+
 **BibTeX Entry:**
 
 ```bibtex
 @software{Len_2025_TQE_v4.2.0_PRO,
   author    = {Len, Stefan},
+  orcid     = {https://orcid.org/0009-0007-0383-7315},
   title     = {{TQE Universe Simulation Pipeline v4.2.0 PRO}},
   version   = {4.2.0},
   date      = {2025},

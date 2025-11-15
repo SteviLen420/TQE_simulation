@@ -55,9 +55,12 @@ The work explores the TQE hypothesis through:
 
 If you use this work in your research, please cite:
 
+Author ORCID (per `CITATION.cff`): https://orcid.org/0009-0007-0383-7315
+
 ```bibtex
 @software{Len_2025_TQE,
   author    = {Len, Stefan},
+  orcid     = {https://orcid.org/0009-0007-0383-7315},
   title     = {{Theory of The Question of Existence (TQE)}},
   year      = {2025},
   publisher = {GitHub},

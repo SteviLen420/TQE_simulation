@@ -148,11 +148,14 @@ Every CSV contains a metadata header (run name, timestamp, seed) so the analysis
 
 > Stefan Len. (2025). *TQE Energy Fluctuations Heisenberg v4.2.0 PRO* [Software]. GitHub. https://github.com/SteviLen420/TQE_simulation
 
+Author ORCID: https://orcid.org/0009-0007-0383-7315
+
 BibTeX:
 
 ```bibtex
 @software{Len_2025_TQE_Heisenberg_v4_2,
   author    = {Len, Stefan},
+  orcid     = {https://orcid.org/0009-0007-0383-7315},
   title     = {{TQE Energy Fluctuations Heisenberg v4.2.0 PRO}},
   year      = {2025},
   publisher = {GitHub},

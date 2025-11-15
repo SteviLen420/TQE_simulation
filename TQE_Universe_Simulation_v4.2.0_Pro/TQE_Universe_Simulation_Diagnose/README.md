@@ -179,6 +179,7 @@ For bug reports, include the generated diagnostic folder (JSON/CSV files) so iss
 ```bibtex
 @software{Len_2025_TQE_Diagnose_v4_2,
   author    = {Len, Stefan},
+  orcid     = {https://orcid.org/0009-0007-0383-7315},
   title     = {{TQE Universe Simulation Diagnose v4.2.0 PRO}},
   version   = {4.2.0},
   year      = {2025},
@@ -186,6 +187,8 @@ For bug reports, include the generated diagnostic folder (JSON/CSV files) so iss
   url       = {https://github.com/<TQE_repo>},
 }
 ```
+
+Author ORCID: https://orcid.org/0009-0007-0383-7315
 
 ---
 

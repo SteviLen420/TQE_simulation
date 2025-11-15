@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: MIT
+#
+# Copyright (c) 2025 Stefan Len
+
 # TQE Pipeline Modular - Modularized Pipeline Structure
 
 This directory contains the modularized version of the TQE Universe Simulation Pipeline. The original monolithic pipeline file (`TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO.py`) has been split into a modular structure for better maintainability, reusability, and easier development.
