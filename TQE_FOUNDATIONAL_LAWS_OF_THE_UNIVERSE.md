@@ -206,7 +206,13 @@ i\hbar \frac{\partial \Psi}{\partial t} = \hat{H} \Psi,
 \hat{H} = \hat{H}_0 + \hat{H}_{\text{TQE}},
 $$
 
-where $\hat{H}_{\text{TQE}}$ packages the $f(E,I)$-dependent pieces. I insist that $\hat{H}_{\text{TQE}}$ be Hermitian so the total Hamiltonian remains self-adjoint and the Schrödinger evolution preserves
+where $\hat{H}_{\text{TQE}}$ packages the $f(E,I)$-dependent pieces. I insist that $\hat{H}_{\text{TQE}}$ be Hermitian,
+
+$$
+\hat{H}_{\text{TQE}} = \hat{H}_{\text{TQE}}^\dagger,
+$$
+
+so the total Hamiltonian remains self-adjoint and the Schrödinger evolution preserves
 
 $$
 \langle\Psi|\Psi\rangle = 1,
