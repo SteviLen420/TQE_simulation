@@ -180,16 +180,18 @@ $$
 
 with $s(\psi)$ a local entropy-density estimator (e.g., neighbourhood entropy, KL score, or any rival I’m still benchmarking) so the reweighting truly reshapes the distribution.
 
-2. **Perturbative noise injection** — 
+2. **Perturbative noise injection** —
+   
 $$
 \Pi[P] (\psi) = \frac{\max\{P(\psi) + \varepsilon\, \eta(\psi),\, 0\}}{\int_\Psi \max\{P(\phi) + \varepsilon\, \eta(\phi), 0\}\, d\phi},
 $$
+
 where $\eta$ is a zero-mean random field and $\varepsilon$ controls the injected variance.
 
 3. **Cyclic rescaling** — for a linear rescaling $\psi \mapsto A\psi$,
 
 $$
-\Pi[P](\psi) = P(A^{-1}\psi)\, |\det A^{-1}|,
+\Pi[P] (\psi) = P(A^{-1}\psi)\, |\det A^{-1}|,
 $$
 
 which reduces to
