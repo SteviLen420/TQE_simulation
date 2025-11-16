@@ -1,0 +1,22 @@
+{
+  "cosmic_web_fractions": {
+    "void_fraction": 0.21953805536031723,
+    "filament_fraction": 0.5923574715852737,
+    "sheet_fraction": 0.17237723618745804,
+    "knot_fraction": 0.09119542688131332
+  },
+  "structure_counts": {
+    "n_voids": 3,
+    "n_clusters": 0,
+    "n_filaments": 0,
+    "n_walls": 1
+  },
+  "n_voids": 3,
+  "n_clusters": 0,
+  "n_filaments": 0,
+  "n_walls": 1,
+  "mean_void_radius_mpc": 120.74855815967133,
+  "mean_cluster_radius_mpc": 0.0,
+  "total_filament_length_mpc": 0.0,
+  "total_wall_area_mpc2": 73041.91589355469
+}

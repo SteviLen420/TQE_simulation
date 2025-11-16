@@ -1,0 +1,6 @@
+TQE Dark Energy Coupling - Reproducibility Information
+================================================================================
+
+Coupling Mode: EplusI
+Seed String: 'TQE_DarkEnergy_Model_3_Geometric_beta0_0.2000_EplusI_20251030_132700'
+Seed Hash: 2095346373

@@ -1,0 +1,71 @@
+{
+    "run_metadata": {
+        "run_name": "TQE_Heisenberg_Fluctuation_20251101_054309",
+        "timestamp_utc": "20251101_054309",
+        "master_seed": 1964260773,
+        "reproducibility_note": "Use 'master_seed' value in MASTER_CTRL['SEED'] to reproduce this exact run"
+    },
+    "NO_LAW": {
+        "scenario_description": "Pre-law state (pure quantum fluctuations, no lock-in)",
+        "n_valid_trajectories": 100,
+        "final_energy_mean": 5.368368311026108,
+        "final_energy_std": 2.0209022671105705,
+        "final_energy_max": 12.150763569058952,
+        "final_energy_min": 1.9348711979849016,
+        "variance_mean": 7.413635135467941,
+        "variance_max": 12.450025854409992,
+        "entropy_final_mean": 3.199627422869319,
+        "coherence_final_mean": 0.003138917867113555,
+        "heisenberg_uncertainty_final_mean": 2.8757564877948414,
+        "heisenberg_uncertainty_final_std": 1.4247982867890163,
+        "delta_x_final_mean": 1.5235821597671504
+    },
+    "WITH_LAW": {
+        "scenario_description": "Stable laws active (TQE lock-in mechanism enabled)",
+        "n_valid_trajectories": 100,
+        "final_energy_mean": 7.258606064574938,
+        "final_energy_std": 2.286194639377658,
+        "final_energy_max": 12.825307279296215,
+        "final_energy_min": 2.52109890114831,
+        "variance_mean": 7.761406300174603,
+        "variance_max": 12.450025854409992,
+        "entropy_final_mean": 2.454940634284691,
+        "coherence_final_mean": 0.006593803006898368,
+        "heisenberg_uncertainty_final_mean": 2.674909059517505,
+        "heisenberg_uncertainty_final_std": 1.6506397083069613,
+        "delta_x_final_mean": 1.4954462479743083
+    },
+    "SUPPRESSION_RATIOS": {
+        "description": "Ratios < 1.0 indicate suppression by stable laws",
+        "variance_ratio": 1.0469096682466705,
+        "std_ratio": 1.131274221710085,
+        "max_energy_ratio": 1.0555145120225151,
+        "uncertainty_ratio": 0.9301584021005378,
+        "coherence_ratio": 2.10066121066102
+    },
+    "HEISENBERG_COMPLIANCE": {
+        "description": "Check if Heisenberg uncertainty principle is satisfied",
+        "min_uncertainty_no_law": 0.6136298833574915,
+        "min_uncertainty_with_law": 0.6136298833574915,
+        "theoretical_minimum": 0.5,
+        "no_law_compliant": true,
+        "with_law_compliant": true
+    },
+    "INFORMATION_ORIGIN": {
+        "description": "All 3 I-origin models tested: emergent, inherent, threshold",
+        "I_initial_mean": 0.5072420308436704,
+        "I_initial_std": 0.22954295364702088,
+        "emergent": {
+            "n_trajectories": 100,
+            "model": "I_{t+1} = \u03b3\u00b7I_t + \u03b1\u00b7|\u0394E_t| + \u03b2\u00b7corr(\u0394E_t, \u0394E_{t-1})"
+        },
+        "inherent": {
+            "n_trajectories": 100,
+            "model": "I = scale \u00b7 log(E/E0) or (E/E0)^\u03b3"
+        },
+        "threshold": {
+            "n_trajectories": 100,
+            "model": "I = 0 if E < E_c, else I += slope\u00b7(E-E_c)"
+        }
+    }
+}

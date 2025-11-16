@@ -1,0 +1,10 @@
+{
+  "coupling_mode": "EplusI",
+  "model_name": "Model_3_Geometric_beta0_0.2000",
+  "coupling_type": "geometric",
+  "i_field_type": "energy_based",
+  "timestamp": "2025-10-30T13:32:01.516571",
+  "status": "completed",
+  "model_directory": "/content/drive/MyDrive/TQE_DarkEnergy_Coupling_Simulation/TQE_DarkEnergy_Coupling_Simulation_v4.2.0PRO_20251030_061048/Model_3_Geometric_beta0_0.2000_EplusI_20251030_132700",
+  "google_drive_path": "/content/drive/MyDrive/TQE_DarkEnergy_Coupling_Simulation/TQE_DarkEnergy_Coupling_Simulation_v4.2.0PRO_20251030_061048/Model_3_Geometric_beta0_0.2000_EplusI_20251030_132700"
+}
