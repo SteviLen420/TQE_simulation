@@ -1719,80 +1719,90 @@ def analyze_emergent_laws(df_metrics: pd.DataFrame, output_dir: str):
         print("⚠️  No E+I data, skipping emergent laws analysis")
         return
     
-    # Check if emergent laws data exists
-    if "power_law_exponent" not in df_ei.columns:
-        print("⚠️  No emergent laws data available, skipping analysis")
-        return
-    
+    # Try to analyze whatever data is available - don't exit early
     # 1. Power-law exponent comparison
     print("\n1.1 Power-Law Exponent Distribution")
-    fig, ax = plt.subplots(figsize=(14, 8))
-    
-    df_plot = df_ei.dropna(subset=["power_law_exponent"])
-    if len(df_plot) > 0:
-        df_sorted = df_plot.sort_values("power_law_exponent", ascending=False)
-        bars = ax.barh(df_sorted["i_definition"], df_sorted["power_law_exponent"], 
-                      color='purple', alpha=0.7)
-        ax.set_xlabel("Power-Law Exponent α", fontsize=12, fontweight='bold')
-        ax.set_title("Power-Law Exponent Comparison (X ∝ E^α)", fontsize=14, fontweight='bold')
-        ax.grid(axis='x', alpha=0.3)
-        ax.axvline(x=1.0, color='red', linestyle='--', linewidth=2, label='Linear (α=1.0)')
-        ax.legend()
+    if "power_law_exponent" in df_ei.columns:
+        fig, ax = plt.subplots(figsize=(14, 8))
         
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, "power_law_exponent_comparison.png"), 
-                   dpi=FIGURE_DPI, bbox_inches='tight')
-        plt.close()
-        print("   ✅ power_law_exponent_comparison.png")
+        df_plot = df_ei.dropna(subset=["power_law_exponent"])
+        if len(df_plot) > 0:
+            df_sorted = df_plot.sort_values("power_law_exponent", ascending=False)
+            bars = ax.barh(df_sorted["i_definition"], df_sorted["power_law_exponent"], 
+                          color='purple', alpha=0.7)
+            ax.set_xlabel("Power-Law Exponent α", fontsize=12, fontweight='bold')
+            ax.set_title("Power-Law Exponent Comparison (X ∝ E^α)", fontsize=14, fontweight='bold')
+            ax.grid(axis='x', alpha=0.3)
+            ax.axvline(x=1.0, color='red', linestyle='--', linewidth=2, label='Linear (α=1.0)')
+            ax.legend()
+            
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "power_law_exponent_comparison.png"), 
+                       dpi=FIGURE_DPI, bbox_inches='tight')
+            plt.close()
+            print("   ✅ power_law_exponent_comparison.png")
+        else:
+            print("   ⚠️  No valid power-law data")
     else:
-        print("   ⚠️  No valid power-law data")
+        print("   ⚠️  No power_law_exponent column")
     
     # 2. Phase transition detection rate
     print("\n1.2 Phase Transition Detection Rate")
-    fig, ax = plt.subplots(figsize=(14, 8))
-    
-    df_plot = df_ei.dropna(subset=["n_phase_transitions"])
-    if len(df_plot) > 0:
-        df_sorted = df_plot.sort_values("n_phase_transitions", ascending=False)
-        bars = ax.barh(df_sorted["i_definition"], df_sorted["n_phase_transitions"], 
-                      color='orange', alpha=0.7)
-        ax.set_xlabel("Number of Phase Transitions Detected", fontsize=12, fontweight='bold')
-        ax.set_title("Phase Transition Detection Rate", fontsize=14, fontweight='bold')
-        ax.grid(axis='x', alpha=0.3)
+    if "n_phase_transitions" in df_ei.columns:
+        fig, ax = plt.subplots(figsize=(14, 8))
         
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, "phase_transition_detection_rate.png"), 
-                   dpi=FIGURE_DPI, bbox_inches='tight')
-        plt.close()
-        print("   ✅ phase_transition_detection_rate.png")
+        df_plot = df_ei.dropna(subset=["n_phase_transitions"])
+        if len(df_plot) > 0:
+            df_sorted = df_plot.sort_values("n_phase_transitions", ascending=False)
+            bars = ax.barh(df_sorted["i_definition"], df_sorted["n_phase_transitions"], 
+                          color='orange', alpha=0.7)
+            ax.set_xlabel("Number of Phase Transitions Detected", fontsize=12, fontweight='bold')
+            ax.set_title("Phase Transition Detection Rate", fontsize=14, fontweight='bold')
+            ax.grid(axis='x', alpha=0.3)
+            
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "phase_transition_detection_rate.png"), 
+                       dpi=FIGURE_DPI, bbox_inches='tight')
+            plt.close()
+            print("   ✅ phase_transition_detection_rate.png")
+        else:
+            print("   ⚠️  No phase transition data")
     else:
-        print("   ⚠️  No phase transition data")
+        print("   ⚠️  No n_phase_transitions column")
     
     # 3. Emergent law quality heatmap
     print("\n1.3 Emergent Law Quality Heatmap")
-    fig, ax = plt.subplots(figsize=(12, 8))
+    # Check if we have at least one column for the heatmap
+    heatmap_cols = ["power_law_exponent", "correlation_strength", "n_phase_transitions"]
+    available_heatmap_cols = [col for col in heatmap_cols if col in df_ei.columns]
     
-    # Create heatmap data
-    heatmap_data = df_ei[["i_definition", "power_law_exponent", "correlation_strength", "n_phase_transitions"]].copy()
-    heatmap_data = heatmap_data.dropna(subset=["power_law_exponent"])
-    
-    if len(heatmap_data) > 0:
-        heatmap_data = heatmap_data.set_index("i_definition")
-        heatmap_data = heatmap_data.apply(lambda x: (x - x.min()) / (x.max() - x.min()) * 100 if x.max() > x.min() else x, axis=0)
+    if len(available_heatmap_cols) > 0:
+        fig, ax = plt.subplots(figsize=(12, 8))
         
-        sns.heatmap(heatmap_data, annot=True, fmt='.1f', cmap='YlOrRd', 
-                   cbar_kws={'label': 'Score (0-100)'}, ax=ax)
-        ax.set_title("Emergent Laws Quality Heatmap (Normalized 0-100)", 
-                    fontsize=14, fontweight='bold')
-        ax.set_ylabel("")
+        # Create heatmap data with available columns
+        heatmap_data = df_ei[["i_definition"] + available_heatmap_cols].copy()
+        # Drop rows where all metric columns are NaN
+        heatmap_data = heatmap_data.dropna(subset=available_heatmap_cols, how='all')
         
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, "emergent_law_heatmap.png"), 
-                   dpi=FIGURE_DPI, bbox_inches='tight')
-        plt.close()
-        print("   ✅ emergent_law_heatmap.png")
+        if len(heatmap_data) > 0:
+            heatmap_data = heatmap_data.set_index("i_definition")
+            heatmap_data = heatmap_data.apply(lambda x: (x - x.min()) / (x.max() - x.min()) * 100 if x.max() > x.min() else x, axis=0)
+            
+            sns.heatmap(heatmap_data, annot=True, fmt='.1f', cmap='YlOrRd', 
+                       cbar_kws={'label': 'Score (0-100)'}, ax=ax)
+            ax.set_title("Emergent Laws Quality Heatmap (Normalized 0-100)", 
+                        fontsize=14, fontweight='bold')
+            ax.set_ylabel("")
+            
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "emergent_law_heatmap.png"), 
+                       dpi=FIGURE_DPI, bbox_inches='tight')
+            plt.close()
+            print("   ✅ emergent_law_heatmap.png")
+        else:
+            print("   ⚠️  Insufficient data for heatmap")
     else:
-        print("   ⚠️  Insufficient data for heatmap")
+        print("   ⚠️  No emergent law metrics available for heatmap")
     
     # 4. Export CSV
     print("\n1.4 Emergent Laws Metrics Export")
@@ -2030,10 +2040,9 @@ def analyze_cmb_anomalies(df_metrics: pd.DataFrame, output_dir: str):
     # 2. Axis of Evil alignment
     print("\n3.2 Axis of Evil Alignment Distribution")
     if "alignment_angle_mean" in df_ei.columns:
-        fig, ax = plt.subplots(figsize=(14, 8))
-        
         df_plot = df_ei.dropna(subset=["alignment_angle_mean"])
         if len(df_plot) > 0:
+            fig, ax = plt.subplots(figsize=(14, 8))
             positions = range(len(df_plot))
             ax.barh(positions, df_plot["alignment_angle_mean"],
                    xerr=df_plot["alignment_angle_std"] if "alignment_angle_std" in df_plot.columns else None,
@@ -2192,30 +2201,32 @@ def analyze_quantum_fields(df_metrics: pd.DataFrame, output_dir: str):
     os.makedirs(output_dir, exist_ok=True)
     df_ei = df_metrics[df_metrics["run_type"] == "E+I"].copy()
     
-    if len(df_ei) == 0 or "vacuum_energy_mean" not in df_ei.columns:
-        print("⚠️  No quantum fields data available")
+    if len(df_ei) == 0:
         return
     
     # 1. Vacuum energy comparison
     print("\n5.1 Vacuum Energy Density Comparison")
-    df_plot = df_ei.dropna(subset=["vacuum_energy_mean"])
-    if len(df_plot) > 0:
-        fig, ax = plt.subplots(figsize=(14, 8))
-        positions = range(len(df_plot))
-        ax.barh(positions, df_plot["vacuum_energy_mean"],
-               xerr=df_plot["vacuum_energy_std"] if "vacuum_energy_std" in df_plot.columns else None,
-               color='violet', alpha=0.7, capsize=5)
-        ax.set_yticks(positions)
-        ax.set_yticklabels(df_plot["i_definition"])
-        ax.set_xlabel("Vacuum Energy Density", fontsize=12, fontweight='bold')
-        ax.set_title("Vacuum Energy Comparison", fontsize=14, fontweight='bold')
-        ax.grid(axis='x', alpha=0.3)
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, "vacuum_energy_comparison.png"), dpi=FIGURE_DPI, bbox_inches='tight')
-        plt.close()
-        print("   ✅ vacuum_energy_comparison.png")
+    if "vacuum_energy_mean" in df_ei.columns:
+        df_plot = df_ei.dropna(subset=["vacuum_energy_mean"])
+        if len(df_plot) > 0:
+            fig, ax = plt.subplots(figsize=(14, 8))
+            positions = range(len(df_plot))
+            ax.barh(positions, df_plot["vacuum_energy_mean"],
+                   xerr=df_plot["vacuum_energy_std"] if "vacuum_energy_std" in df_plot.columns else None,
+                   color='violet', alpha=0.7, capsize=5)
+            ax.set_yticks(positions)
+            ax.set_yticklabels(df_plot["i_definition"])
+            ax.set_xlabel("Vacuum Energy Density", fontsize=12, fontweight='bold')
+            ax.set_title("Vacuum Energy Comparison", fontsize=14, fontweight='bold')
+            ax.grid(axis='x', alpha=0.3)
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "vacuum_energy_comparison.png"), dpi=FIGURE_DPI, bbox_inches='tight')
+            plt.close()
+            print("   ✅ vacuum_energy_comparison.png")
+        else:
+            print("   ⚠️  No vacuum energy data available for plotting")
     else:
-        print("   ⚠️  No vacuum energy data available for plotting")
+        print("   ⚠️  No vacuum_energy_mean column")
     
     # 2. Export CSV
     print("\n5.2 Quantum Fields Metrics Export")
@@ -2237,30 +2248,32 @@ def analyze_entanglement(df_metrics: pd.DataFrame, output_dir: str):
     os.makedirs(output_dir, exist_ok=True)
     df_ei = df_metrics[df_metrics["run_type"] == "E+I"].copy()
     
-    if len(df_ei) == 0 or "entanglement_entropy_mean" not in df_ei.columns:
-        print("⚠️  No entanglement data available")
+    if len(df_ei) == 0:
         return
     
     # 1. Entanglement entropy
     print("\n6.1 Entanglement Entropy Comparison")
-    df_plot = df_ei.dropna(subset=["entanglement_entropy_mean"])
-    if len(df_plot) > 0:
-        fig, ax = plt.subplots(figsize=(14, 8))
-        positions = range(len(df_plot))
-        ax.barh(positions, df_plot["entanglement_entropy_mean"],
-               xerr=df_plot["entanglement_entropy_std"] if "entanglement_entropy_std" in df_plot.columns else None,
-               color='orchid', alpha=0.7, capsize=5)
-        ax.set_yticks(positions)
-        ax.set_yticklabels(df_plot["i_definition"])
-        ax.set_xlabel("Entanglement Entropy", fontsize=12, fontweight='bold')
-        ax.set_title("Entanglement Entropy Comparison", fontsize=14, fontweight='bold')
-        ax.grid(axis='x', alpha=0.3)
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, "entanglement_entropy_comparison.png"), dpi=FIGURE_DPI, bbox_inches='tight')
-        plt.close()
-        print("   ✅ entanglement_entropy_comparison.png")
+    if "entanglement_entropy_mean" in df_ei.columns:
+        df_plot = df_ei.dropna(subset=["entanglement_entropy_mean"])
+        if len(df_plot) > 0:
+            fig, ax = plt.subplots(figsize=(14, 8))
+            positions = range(len(df_plot))
+            ax.barh(positions, df_plot["entanglement_entropy_mean"],
+                   xerr=df_plot["entanglement_entropy_std"] if "entanglement_entropy_std" in df_plot.columns else None,
+                   color='orchid', alpha=0.7, capsize=5)
+            ax.set_yticks(positions)
+            ax.set_yticklabels(df_plot["i_definition"])
+            ax.set_xlabel("Entanglement Entropy", fontsize=12, fontweight='bold')
+            ax.set_title("Entanglement Entropy Comparison", fontsize=14, fontweight='bold')
+            ax.grid(axis='x', alpha=0.3)
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "entanglement_entropy_comparison.png"), dpi=FIGURE_DPI, bbox_inches='tight')
+            plt.close()
+            print("   ✅ entanglement_entropy_comparison.png")
+        else:
+            print("   ⚠️  No entanglement entropy data available for plotting")
     else:
-        print("   ⚠️  No entanglement entropy data available for plotting")
+        print("   ⚠️  No entanglement_entropy_mean column")
     
     # 2. Export CSV
     print("\n6.2 Entanglement Metrics Export")
