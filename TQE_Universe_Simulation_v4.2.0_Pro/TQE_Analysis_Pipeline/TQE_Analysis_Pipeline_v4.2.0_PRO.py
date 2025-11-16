@@ -1533,12 +1533,22 @@ def compare_ei_definitions(df_metrics: pd.DataFrame, output_dir: str):
     
     # 3. Chi-squared comparison
     print("\n1.3 Planck χ² Fit Comparison")
-    df_ei_chi = df_ei.dropna(subset=["chi_squared_reduced"])
+    # Resolve chi2 column name: prefer 'chi_squared_reduced', fallback to 'planck_chi2_reduced'
+    chi2_col_primary = "chi_squared_reduced"
+    chi2_col_fallback = "planck_chi2_reduced"
+    chi2_col_resolved = None
+    if chi2_col_primary in df_ei.columns and df_ei[chi2_col_primary].notna().any():
+        chi2_col_resolved = chi2_col_primary
+    elif chi2_col_fallback in df_ei.columns and df_ei[chi2_col_fallback].notna().any():
+        chi2_col_resolved = chi2_col_fallback
+    else:
+        chi2_col_resolved = None
+    df_ei_chi = df_ei.dropna(subset=[chi2_col_resolved]) if chi2_col_resolved else pd.DataFrame(columns=df_ei.columns)
     
     if len(df_ei_chi) > 0:
         fig, ax = plt.subplots(figsize=(12, 6))
-        df_ei_chi_sorted = df_ei_chi.sort_values("chi_squared_reduced")
-        ax.barh(df_ei_chi_sorted["i_definition"], df_ei_chi_sorted["chi_squared_reduced"], 
+        df_ei_chi_sorted = df_ei_chi.sort_values(chi2_col_resolved)
+        ax.barh(df_ei_chi_sorted["i_definition"], df_ei_chi_sorted[chi2_col_resolved], 
                 color='purple', alpha=0.7)
         ax.axvline(1.0, color='green', linestyle='--', linewidth=2, label='Perfect fit (χ²/dof=1)')
         ax.set_xlabel("χ²/dof", fontsize=12, fontweight='bold')
@@ -1555,8 +1565,15 @@ def compare_ei_definitions(df_metrics: pd.DataFrame, output_dir: str):
     
     # 4. Ranking table
     print("\n1.4 Ranking Table")
-    ranking_df = df_ei[["i_definition", "stable_percent", "lockin_percent", 
-                        "X_peak_uncertainty", "chi_squared_reduced"]].copy()
+    # Build ranking with resolved chi2 column
+    if chi2_col_resolved is None:
+        ranking_df = df_ei[["i_definition", "stable_percent", "lockin_percent", "X_peak_uncertainty"]].copy()
+    else:
+        ranking_df = df_ei[["i_definition", "stable_percent", "lockin_percent", 
+                            "X_peak_uncertainty", chi2_col_resolved]].copy()
+        # Normalize column name to 'chi_squared_reduced' in output if fallback was used
+        if chi2_col_resolved != "chi_squared_reduced":
+            ranking_df = ranking_df.rename(columns={chi2_col_resolved: "chi_squared_reduced"})
     ranking_df = ranking_df.sort_values("stable_percent", ascending=False)
     ranking_df.to_csv(os.path.join(output_dir, "ei_ranking_table.csv"), index=False)
     print("   ✅ ei_ranking_table.csv")

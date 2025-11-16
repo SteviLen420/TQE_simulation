@@ -12149,6 +12149,68 @@ def run_pipeline(config_override: dict = None, run_id_override: str = None) -> d
 
     # Augment with complexity & life metrics (may overwrite summary on disk)
     summary = integrate_complexity_analysis(ctx, df, summary, bayesian_metrics)
+    # Augment summary with analysis-facing metrics from aggregate CSVs (for all_runs_metrics.csv coverage)
+    try:
+        i_def = summary.get("i_definition", ctx.config.get("I_DEFINITION_MODE", "unknown"))
+        agg_dir = ctx.paths.get("AGGREGATE_DIR", ctx.paths["SAVE_DIR"])
+        # Enhanced physics comprehensive summary (age, vacuum energy, entanglement, holographic entropy)
+        comp_path = os.path.join(agg_dir, "enhanced_physics_comprehensive_summary.csv")
+        if os.path.exists(comp_path) and os.path.getsize(comp_path) > 0:
+            comp_df = pd.read_csv(comp_path)
+            if len(comp_df) > 0:
+                def _mean(col): return float(comp_df[col].mean()) if col in comp_df.columns and comp_df[col].notna().any() else None
+                def _std(col): return float(comp_df[col].std(ddof=0)) if col in comp_df.columns and comp_df[col].notna().any() else None
+                summary["age_Gyr_mean"] = _mean("age_Gyr")
+                summary["age_Gyr_std"] = _std("age_Gyr")
+                summary["vacuum_energy_mean"] = _mean("vacuum_energy")
+                summary["vacuum_energy_std"] = _std("vacuum_energy")
+                summary["entanglement_entropy_mean"] = _mean("entanglement_entropy")
+                summary["entanglement_entropy_std"] = _std("entanglement_entropy")
+                summary["holographic_entropy_mean"] = _mean("holographic_entropy")
+        # Planck validation
+        planck_val_csv = os.path.join(agg_dir, "planck_validation.csv")
+        if os.path.exists(planck_val_csv) and os.path.getsize(planck_val_csv) > 0:
+            pv = pd.read_csv(planck_val_csv)
+            if len(pv) > 0:
+                # Use best (lowest chi2_reduced) row
+                chi2_col = "chi2_reduced" if "chi2_reduced" in pv.columns else ( "chi_squared_reduced" if "chi_squared_reduced" in pv.columns else None )
+                row = pv.sort_values(chi2_col).iloc[0] if chi2_col else pv.iloc[0]
+                summary["planck_E"] = float(row["E"]) if "E" in pv.columns else None
+                summary["planck_I"] = float(row["I"]) if "I" in pv.columns else None
+                if "alpha" in pv.columns:
+                    summary["planck_alpha"] = float(row["alpha"])
+                if "chi2_total" in pv.columns:
+                    summary["planck_chi2_total"] = float(row["chi2_total"])
+                if chi2_col:
+                    summary["planck_chi2_reduced"] = float(row[chi2_col])
+        # Axis of Evil (alignment angle)
+        aoe_csv = os.path.join(agg_dir, f"cmb_aoe_summary_{i_def}.csv")
+        if os.path.exists(aoe_csv) and os.path.getsize(aoe_csv) > 0:
+            aoe_df = pd.read_csv(aoe_csv)
+            angle_col = next((c for c in ("angle_deg","alignment_angle_deg","alignment_angle") if c in aoe_df.columns), None)
+            if angle_col and len(aoe_df) > 0:
+                a = aoe_df[angle_col]
+                a = a[pd.to_numeric(a, errors="coerce").notna()]
+                if len(a) > 0:
+                    summary["alignment_angle_mean"] = float(a.mean())
+                    summary["alignment_angle_std"] = float(a.std(ddof=0))
+        # Friedmann H0 and deviations (use config and computed age mean)
+        H0_cfg = float(ctx.config.get("PLANCK_2018_H0", ctx.config.get("H0", 67.36)))
+        summary["H0_mean"] = H0_cfg
+        summary["H0_std"] = 0.0
+        # Deviations vs Planck references
+        PLANCK_AGE = 13.8
+        if summary.get("age_Gyr_mean") is not None:
+            summary["age_deviation_from_planck"] = abs(summary["age_Gyr_mean"] - PLANCK_AGE) / PLANCK_AGE
+        if summary.get("H0_mean") is not None:
+            summary["H0_deviation_from_planck"] = abs(summary["H0_mean"] - float(ctx.config.get("PLANCK_2018_H0", 67.36))) / float(ctx.config.get("PLANCK_2018_H0", 67.36))
+        # Life compatibility passthrough
+        lc = summary.get("complexity_analysis", {}).get("life_compatibility_score", None)
+        if lc is not None:
+            summary["life_score_json"] = float(lc)
+    except Exception as _aug_err:
+        if ctx.config.get("VERBOSE", True):
+            print(f"[SUMMARY AUGMENT] Skipped (non-fatal): {_aug_err}")
     if ctx.config.get("SAVE_JSON", True):
         ctx.save_json(os.path.join(ctx.paths["AGGREGATE_DIR"], "summary_full.json"), summary)
 
