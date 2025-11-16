@@ -30,7 +30,7 @@ Modulation and selection in superposition
 - The probability over states ($\psi$) is modulated jointly by energy ($E$) and informational directionality ($I$):
 
 $$
-P'(\psi) = P(\psi) \cdot f(E, I) \quad \text{(normalized by } Z\text{)}
+P'(\psi) = P(\psi) \cdot f(E, I) \quad \text}
 $$
   
 - This modulation implements selection in the space of superpositions: states whose $(E, I)$ combination supports complexity gain weight, steering the system toward law-compatible subsets.
