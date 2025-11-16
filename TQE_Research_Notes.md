@@ -135,6 +135,7 @@ I = \begin{cases}
 I + \text{slope} \cdot (E - E_c) & \text{else}
 \end{cases}
 $$
+
   — rapid, irreversible orientation growth above threshold.
 
 ### Heisenberg run (2025-11-01_054309) — observations
