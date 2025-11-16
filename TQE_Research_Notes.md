@@ -19,7 +19,7 @@ Initiation — large fluctuations enabled by uncertainty
 
 Emergence and "learning" of I
 - $I$ is not an external control signal; it emerges from fluctuations as an internal orientation. Operationally $I$ can be modeled by a state-dependent update rule that is self-referential (remembers its own past) and signal-sensitive (responds to fluctuations and their correlations):
-- 
+  
 $$
 I_{t+1} = \gamma \cdot I_t + \alpha \cdot |\Delta E_t| + \beta \cdot \text{corr}(\Delta E_t, \Delta E_{t-1})
 $$
