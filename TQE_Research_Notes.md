@@ -19,16 +19,20 @@ Initiation — large fluctuations enabled by uncertainty
 
 Emergence and "learning" of I
 - $I$ is not an external control signal; it emerges from fluctuations as an internal orientation. Operationally $I$ can be modeled by a state-dependent update rule that is self-referential (remembers its own past) and signal-sensitive (responds to fluctuations and their correlations):
-  $$
-  I_{t+1} = \gamma \cdot I_t + \alpha \cdot |\Delta E_t| + \beta \cdot \text{corr}(\Delta E_t, \Delta E_{t-1})
-  $$
+  
+$$
+I_{t+1} = \gamma \cdot I_t + \alpha \cdot |\Delta E_t| + \beta \cdot \text{corr}(\Delta E_t, \Delta E_{t-1})
+$$
+  
 - Intuitively, larger, pattern-bearing excursions "teach" directionality; $I$ increases when the system shifts toward states that better sustain order and complex structures.
 
 Modulation and selection in superposition
 - The probability over states ($\psi$) is modulated jointly by energy ($E$) and informational directionality ($I$):
-  $$
-  P'(\psi) = P(\psi) \cdot f(E, I) \quad \text{(normalized by } Z\text{)}
-  $$
+
+$$
+P'(\psi) = P(\psi) \cdot f(E, I)
+$$
+  
 - This modulation implements selection in the space of superpositions: states whose $(E, I)$ combination supports complexity gain weight, steering the system toward law-compatible subsets.
 
 Threshold and law lock-in
@@ -52,6 +56,7 @@ Key claims
 - The framework yields falsifiable predictions (e.g., statistical patterns in CMB anomalies).
 
 ### Core equation
+
 $$
 P'(\psi) = P(\psi) \cdot f(E, I)
 $$
@@ -109,22 +114,28 @@ Open questions
 I emergence and self-referential dynamics (from runs)
 - Initial $I$ distribution: $I_{\text{initial,mean}} \approx 0.507$, $I_{\text{initial,std}} \approx 0.230$ — nonzero and broad: orientation is present already during the fluctuation phase.
 - Emergent-mode (summary model):
-  $$
-  I_{t+1} = \gamma \cdot I_t + \alpha \cdot |\Delta E_t| + \beta \cdot \text{corr}(\Delta E_t, \Delta E_{t-1})
-  $$
+  
+$$
+I_{t+1} = \gamma \cdot I_t + \alpha \cdot |\Delta E_t| + \beta \cdot \text{corr}(\Delta E_t, \Delta E_{t-1})
+$$
+  
   Interpretation: $\gamma \cdot I_t$ — self-reflective memory/reinforcement; $\alpha \cdot |\Delta E_t|$ — immediate teaching signal; $\beta \cdot \text{corr}$ term — short-horizon pattern detection.  
 - Inherent-mode:
-  $$
-  I = \text{scale} \cdot \log(E/E_0) \quad \text{or} \quad (E/E_0)^\gamma
-  $$
+
+$$
+I = \text{scale} \cdot \log(E/E_0) \quad \text{or} \quad (E/E_0)^\gamma
+$$
+
   — orientation grows internally with energy scale; $I$ is an intrinsic property of energy.
-- Threshold-mode:
-  $$
-  I = \begin{cases}
-  0 & \text{if } E < E_c \\
-  I + \text{slope} \cdot (E - E_c) & \text{else}
-  \end{cases}
-  $$
+  - Threshold-mode:
+  
+$$
+I = \begin{cases}
+0 & \text{if } E < E_c \\
+I + \text{slope} \cdot (E - E_c) & \text{else}
+\end{cases}
+$$
+
   — rapid, irreversible orientation growth above threshold.
 
 ### Heisenberg run (2025-11-01_054309) — observations
