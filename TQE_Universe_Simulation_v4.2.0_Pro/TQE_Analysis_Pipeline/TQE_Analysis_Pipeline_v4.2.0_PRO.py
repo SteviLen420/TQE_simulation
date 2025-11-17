@@ -2219,6 +2219,12 @@ def analyze_quantum_fields(df_metrics: pd.DataFrame, output_dir: str):
     df_ei = df_metrics[df_metrics["run_type"] == "E+I"].copy()
     
     if len(df_ei) == 0:
+        print("⚠️  No E+I data, skipping quantum fields analysis")
+        # FIX: Still save empty CSV for consistency
+        empty_df = pd.DataFrame(columns=["i_definition", "vacuum_energy_mean", "vacuum_energy_std",
+                                        "zero_point_energy_mean", "quantum_fluctuation_mean"])
+        empty_df.to_csv(os.path.join(output_dir, "quantum_fields_metrics.csv"), index=False)
+        print("   ✅ quantum_fields_metrics.csv (empty)")
         return
     
     # 1. Vacuum energy comparison
@@ -2266,6 +2272,12 @@ def analyze_entanglement(df_metrics: pd.DataFrame, output_dir: str):
     df_ei = df_metrics[df_metrics["run_type"] == "E+I"].copy()
     
     if len(df_ei) == 0:
+        print("⚠️  No E+I data, skipping entanglement analysis")
+        # FIX: Still save empty CSV for consistency
+        empty_df = pd.DataFrame(columns=["i_definition", "entanglement_entropy_mean", 
+                                        "entanglement_entropy_std", "holographic_entropy_mean"])
+        empty_df.to_csv(os.path.join(output_dir, "entanglement_metrics.csv"), index=False)
+        print("   ✅ entanglement_metrics.csv (empty)")
         return
     
     # 1. Entanglement entropy
@@ -2313,16 +2325,20 @@ def analyze_parameter_sensitivity(df_metrics: pd.DataFrame, output_dir: str):
     
     if len(df_ei) == 0 or "E_sensitivity" not in df_ei.columns:
         print("⚠️  No parameter sensitivity data available")
+        # FIX: Still save empty CSV for consistency
+        empty_df = pd.DataFrame(columns=["i_definition", "E_sensitivity", "I_sensitivity", "X_sensitivity"])
+        empty_df.to_csv(os.path.join(output_dir, "sensitivity_metrics.csv"), index=False)
+        print("   ✅ sensitivity_metrics.csv (empty)")
         return
     
     # 1. Sensitivity heatmap
     print("\n7.1 Parameter Sensitivity Heatmap")
-    fig, ax = plt.subplots(figsize=(12, 8))
     sens_cols = ["E_sensitivity", "I_sensitivity", "X_sensitivity"]
     available_sens = [c for c in sens_cols if c in df_ei.columns]
     if len(available_sens) > 0:
         df_plot = df_ei[["i_definition"] + available_sens].dropna()
         if len(df_plot) > 0:
+            fig, ax = plt.subplots(figsize=(12, 8))
             heatmap_data = df_plot.set_index("i_definition")
             sns.heatmap(heatmap_data, annot=True, fmt='.3f', cmap='viridis', ax=ax)
             ax.set_title("Parameter Sensitivity Heatmap", fontsize=14, fontweight='bold')
@@ -2330,6 +2346,10 @@ def analyze_parameter_sensitivity(df_metrics: pd.DataFrame, output_dir: str):
             plt.savefig(os.path.join(output_dir, "parameter_sensitivity_heatmap.png"), dpi=FIGURE_DPI, bbox_inches='tight')
             plt.close()
             print("   ✅ parameter_sensitivity_heatmap.png")
+        else:
+            print("   ⚠️  No valid sensitivity data for heatmap")
+    else:
+        print("   ⚠️  No sensitivity columns available")
     
     # 2. Export CSV
     print("\n7.2 Sensitivity Metrics Export")
@@ -2406,6 +2426,11 @@ def analyze_i_definitions_direct(df_metrics: pd.DataFrame, collected_data: Dict,
     
     if i_comp_df is None or len(i_comp_df) == 0:
         print("⚠️  No I_Definitions_Comparison.csv data available")
+        # FIX: Still save empty CSV for consistency
+        df_ei = df_metrics[df_metrics["run_type"] == "E+I"].copy()
+        empty_df = pd.DataFrame(columns=["i_definition", "I_value_mean", "I_value_std", "I_value_range"])
+        empty_df.to_csv(os.path.join(output_dir, "i_definitions_metrics.csv"), index=False)
+        print("   ✅ i_definitions_metrics.csv (empty)")
         return
     
     # 1. I(E) curves comparison
@@ -2506,6 +2531,14 @@ def analyze_planck_fit(df_metrics: pd.DataFrame, output_dir: str):
     
     if len(df_planck) == 0:
         print("⚠️  No Planck validation data available")
+        # FIX: Still save empty CSV for consistency
+        empty_df = pd.DataFrame(columns=[
+            "i_definition", "planck_E", "planck_I", "planck_alpha",
+            "planck_chi2_total", "planck_chi2_reduced", "planck_score",
+            "planck_validation_chi2_mean", "planck_validation_ell_span"
+        ])
+        empty_df.to_csv(os.path.join(output_dir, "planck_fit_metrics.csv"), index=False)
+        print("   ✅ planck_fit_metrics.csv (empty)")
         return
     
     # Scatter plot: Planck E vs I proximity
@@ -2561,6 +2594,15 @@ def analyze_life_top_universes(df_metrics: pd.DataFrame, output_dir: str):
     
     if len(df_life) == 0:
         print("⚠️  No life compatibility summaries available")
+        # FIX: Still save empty CSV for consistency
+        empty_df = pd.DataFrame(columns=[
+            "i_definition", "life_score_json", "complexity_score_json",
+            "information_richness_json", "life_planck_component",
+            "life_stability_component", "life_goldilocks_component",
+            "top_universe_seed", "top_universe_lock_epoch", "top_universe_I"
+        ])
+        empty_df.to_csv(os.path.join(output_dir, "life_top_universes_metrics.csv"), index=False)
+        print("   ✅ life_top_universes_metrics.csv (empty)")
         return
     
     df_life = df_life.sort_values("life_score_json", ascending=False)
@@ -2613,6 +2655,13 @@ def analyze_entropy_volatility(df_metrics: pd.DataFrame, output_dir: str):
     
     if len(df_entropy) == 0:
         print("⚠️  No entropy volatility data available")
+        # FIX: Still save empty CSV for consistency
+        empty_df = pd.DataFrame(columns=[
+            "i_definition", "entropy_volatility_global_mean", "entropy_volatility_global_std",
+            "entropy_volatility_max", "stability_eps_slope", "stability_zero_baseline"
+        ])
+        empty_df.to_csv(os.path.join(output_dir, "entropy_volatility_metrics.csv"), index=False)
+        print("   ✅ entropy_volatility_metrics.csv (empty)")
         return
     
     # Scatter: entropy volatility vs life score
@@ -2661,6 +2710,13 @@ def analyze_physical_anomalies(df_metrics: pd.DataFrame, output_dir: str):
     
     if len(df_anom) == 0:
         print("⚠️  No advanced anomaly data available")
+        # FIX: Still save empty CSV for consistency
+        empty_df = pd.DataFrame(columns=[
+            "i_definition", "advanced_anomaly_sigma_mean", "advanced_anomaly_sigma_max",
+            "physical_anomaly_count", "cmb_gaussianity_p_mean", "cmb_anisotropy_index_mean"
+        ])
+        empty_df.to_csv(os.path.join(output_dir, "advanced_anomaly_metrics.csv"), index=False)
+        print("   ✅ advanced_anomaly_metrics.csv (empty)")
         return
     
     df_anom = df_anom.sort_values("advanced_anomaly_sigma_mean", ascending=False)
@@ -2727,6 +2783,11 @@ def analyze_statistical_finetuning(df_metrics: pd.DataFrame, collected_data: Dic
     
     if len(finetuning_components) == 0:
         print("⚠️  No finetuning data available")
+        # FIX: Still save empty CSV for consistency
+        empty_df = pd.DataFrame(columns=["i_definition", "finetuning_score", "age_deviation_from_planck", 
+                                        "H0_deviation_from_planck", "X_peak_uncertainty"])
+        empty_df.to_csv(os.path.join(output_dir, "finetuning_metrics.csv"), index=False)
+        print("   ✅ finetuning_metrics.csv (empty)")
         return
     
     # Average finetuning score
@@ -3730,6 +3791,12 @@ def run_analysis_pipeline():
     df_metrics = build_metrics_dataframe(collected_data)
     print(f"✅ Comprehensive metrics: complexity, life-compatibility, information richness")
     print(f"✅ Extended metrics: emergent laws, Friedmann, CMB, lock-in, quantum, entanglement, etc.")
+    
+    # FIX: Save extended_metrics.pkl (mentioned in summary but was missing)
+    with open(os.path.join(output_root, "05_raw_data", "extended_metrics.pkl"), 'wb') as f:
+        pickle.dump(df_metrics, f)
+    print(f"✅ Saved extended_metrics.pkl to 05_raw_data/")
+    
     progress.update(1)
     
     # Create output subdirectories
