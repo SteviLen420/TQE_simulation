@@ -1,6 +1,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17614948.svg)](https://doi.org/10.5281/zenodo.17614948)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17627756.svg)](https://doi.org/10.5281/zenodo.17627756)
 [![Research Status](https://img.shields.io/badge/status-active%20research-green)](https://github.com/SteviLen420/TQE_simulation)
 
 # TQE Dark Energy Modular Pipeline
@@ -209,7 +209,7 @@ All CSV/JSON files include metadata (timestamp, seed hash, coupling mode) so dow
 
 Please cite the repository when reusing the modular pipeline:
 
-> Stefan Len. (2025). *TQE Dark Energy Coupling Simulation v4.2.0 PRO* (Version v4.2.0\_Pro) [Software]. Zenodo. https://doi.org/10.5281/zenodo.17614948
+> Stefan Len. (2025). *TQE Dark Energy Coupling Simulation v4.2.0 PRO* (Version v4.2.0\_Pro) [Software]. Zenodo. https://doi.org/10.5281/zenodo.17627756
 
 **BibTeX**
 ```bibtex
@@ -220,7 +220,7 @@ Please cite the repository when reusing the modular pipeline:
   year      = {2025},
   publisher = {Zenodo},
   url       = {https://github.com/SteviLen420/TQE_simulation},
-  doi       = {10.5281/zenodo.17614948},
+  doi       = {10.5281/zenodo.17627756},
   version   = {4.2.0}
 }
 ```

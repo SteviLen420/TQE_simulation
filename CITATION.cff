@@ -3,7 +3,7 @@ message: "If you use this project, please cite it as below."
 title: "Theory of the Question of Existence (TQE) – Simulation Suite"
 version: 4.2.0
 date-released: 2025-11-15
-doi: 10.5281/zenodo.17614948
+doi: 10.5281/zenodo.17627756
 url: "https://github.com/SteviLen420/TQE_simulation"
 repository-code: "https://github.com/SteviLen420/TQE_simulation/TQE_Universe_Simulation_v4.2.0_Pro/TQE_Universe_Simulation_Full_Pipeline/TQE_Universe_Simulation_Full_Pipeline_v4.2.0_Pro.py"
 authors:
@@ -14,5 +14,5 @@ abstract: >
   Unified repository containing the TQE simulation pipelines (v1.0.0 and
   v4.2.0 Pro) that implement the energy–information coupling across cosmological
   phases. Cite this work when reusing any manuscripts, methodological notes, or
-  code from the TQE_simulation project root. DOI: 10.5281/zenodo.17614948
+  code from the TQE_simulation project root. DOI: 10.5281/zenodo.17627756
 
