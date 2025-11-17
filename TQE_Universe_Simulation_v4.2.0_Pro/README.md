@@ -25,9 +25,11 @@ The TQE (Theory of the Question of Existence) Universe Simulation Suite v4.2.0 P
 
 1. **Full Pipeline:** `TQE_Universe_Simulation_Full_Pipeline/` – legacy monolithic script implementing all 28 phases end-to-end.
 2. **Modular Pipeline:** `TQE_Pipeline_Modular/` – functionally identical to the monolith, reorganized into modules (config, core, phases, simulation, analysis).
-3. **Analysis Suite:** `TQE_Analysis_Pipeline/` – post-simulation comparative analysis, ranking, and visualization.
-4. **Heisenberg Microphysics:** `TQE_Energy_Fluctuations_Heisenberg/` – open-quantum-system experiment probing law lock-in vs. the Heisenberg bound.
-5. **Diagnostic Harness:** `TQE_Universe_Simulation_Diagnose/` – integrity checks, dependency validation, smoke tests, and structured reporting.
+3. **Dark Energy Coupling:** `TQE_DarkEnergy_Coupling_Simulation/` – monolithic pipeline testing TQE hypothesis in dark energy context with 4 cosmological models (Covariant Pressure, Uniform w, Geometric, ΛCDM).
+4. **Dark Energy Modular:** `TQE_DarkEnergy_Modular/` – modularized version of dark energy coupling pipeline with structured modules (config, cosmology, simulation, observables, inference, structure).
+5. **Analysis Suite:** `TQE_Analysis_Pipeline/` – post-simulation comparative analysis, ranking, and visualization.
+6. **Heisenberg Microphysics:** `TQE_Energy_Fluctuations_Heisenberg/` – open-quantum-system experiment probing law lock-in vs. the Heisenberg bound.
+7. **Diagnostic Harness:** `TQE_Universe_Simulation_Diagnose/` – integrity checks, dependency validation, smoke tests, and structured reporting.
 
 Every submodule carries its own README and script, but this document provides a unifying view, the core theory summary, and cross-cutting usage notes.
 
@@ -86,6 +88,16 @@ TQE_Universe_Simulation_v4.2.0_Pro/
 │   ├── config/master_ctrl.py
 │   ├── core/, phases/, simulation/, analysis/, utils/
 │   └── main.py
+├── TQE_DarkEnergy_Coupling_Simulation/
+│   ├── README.md                     # Dark Energy coupling docs
+│   └── TQE_DarkEnergy_Coupling_Simulation.py
+├── TQE_DarkEnergy_Modular/
+│   ├── README.md                     # Dark Energy modular docs
+│   ├── config.py, cosmology.py, simulation.py
+│   ├── observables.py, inference.py, structure.py
+│   ├── tqe_core.py, data_loader.py, visualization.py
+│   ├── utils.py, pipeline.py
+│   └── main.py
 ├── TQE_Analysis_Pipeline/
 │   ├── README.md
 │   └── TQE_Analysis_Pipeline_v4.2.0_PRO.py
@@ -105,6 +117,8 @@ TQE_Universe_Simulation_v4.2.0_Pro/
 | --- | --- | --- |
 | Full Pipeline | Legacy monolithic script | 4 run modes, 28 phases, deterministic seeding, CAMB/healpy integration |
 | Modular Pipeline | Same functionality, structured modules | Maintains identical outputs, friendlier for collaboration and testing |
+| Dark Energy Coupling | TQE dark energy testing (monolithic) | 4 cosmological models, dual E-only/E+I modes, Pantheon+/BOSS/Planck validation, Bayesian inference |
+| Dark Energy Modular | TQE dark energy testing (modular) | Structured modules, same functionality as monolithic, easier to extend and test |
 | Analysis Pipeline | Post-run comparative suite | 80+ metrics, triple rankings (stability / complexity / physical laws), 12+ visualization categories |
 | Heisenberg Module | Microphysical experiment | Two-scenario Lindblad evolution, tri-mode I sweep, Δx·Δp monitoring |
 | Diagnose Script | Integrity checks & smoke tests | Dependency validation, phase signature auditing, JSON/CSV reports |
@@ -117,9 +131,10 @@ Each README contains specific installation, configuration, and usage instruction
 
 1. **Install requirements** (Python 3.9+, core scientific stack, optional CAMB/healpy/qutip/dynesty/corner).
 2. **Run a pipeline** (monolithic or modular) via `python TQE_Universe_Simulation_Full_Pipeline_v4.2.0_Pro.py` or `python -m TQE_Pipeline_Modular.main`.
-3. **Post-process** a `batch_all` run using `python TQE_Analysis_Pipeline_v4.2.0_PRO.py`.
-4. **Run microphysics** experiments via `python TQE_Energy_Fluctuations_Heisenberg_v4.2.0_Pro.py`.
-5. **Validate the codebase** after refactors via `python TQE_Universe_Simulation_Diagnose_v4.2.0_Pro.py --deep --smoke`.
+3. **Test dark energy coupling** via `python TQE_DarkEnergy_Coupling_Simulation.py` (monolithic) or `python -m TQE_DarkEnergy_Modular.main` (modular).
+4. **Post-process** a `batch_all` run using `python TQE_Analysis_Pipeline_v4.2.0_PRO.py`.
+5. **Run microphysics** experiments via `python TQE_Energy_Fluctuations_Heisenberg_v4.2.0_Pro.py`.
+6. **Validate the codebase** after refactors via `python TQE_Universe_Simulation_Diagnose_v4.2.0_Pro.py --deep --smoke`.
 
 Detailed command snippets live inside each submodule’s README.
 
