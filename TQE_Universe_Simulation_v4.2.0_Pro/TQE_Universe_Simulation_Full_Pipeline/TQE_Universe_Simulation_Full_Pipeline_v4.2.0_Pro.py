@@ -3894,6 +3894,31 @@ def bayesian_adaptive_goldilocks(ctx: PipelineContext, total_budget: int = 1000)
     _plot_bayesian_goldilocks(df_cal, X_grid_fine.flatten(), mu_final, sigma_final, 
                               X_low, X_high, X_peak, X_peak_std, i_def, png_path, ctx.config)
 
+    # 3. Save Goldilocks optimization results as JSON (for Phase 28 summary)
+    goldilocks_json_data = {
+        "i_definition": i_def,
+        "variant": ctx.variant,
+        "X_low": float(X_low),
+        "X_high": float(X_high),
+        "X_peak": float(X_peak),
+        "X_peak_std": float(X_peak_std),
+        "stability_peak": float(peak_stability),
+        "total_sampled": int(total_budget),
+        "calibration_budget": int(total_budget),
+        "method": "bayesian_adaptive_gp",
+        "acquisition_function": "UCB",
+        "n_iterations": len(df_cal),
+        "exploration_samples": len(df_cal[df_cal["iteration"] == 1]) if "iteration" in df_cal.columns else 0,
+        "exploitation_samples": len(df_cal[df_cal["iteration"] == 2]) if "iteration" in df_cal.columns else 0,
+        "refinement_samples": len(df_cal[df_cal["iteration"] >= 3]) if "iteration" in df_cal.columns else 0
+    }
+    json_path = os.path.join(gold_dir, f"goldilocks_optimization_{i_def}.json")
+    try:
+        json_path = ctx.with_variant(json_path)
+    except Exception:
+        pass
+    ctx.save_json(json_path, goldilocks_json_data)
+
     print(f"[BAYESIAN GOLDILOCKS] Final result: X_peak = {X_peak:.2f} ± {X_peak_std:.2f}")
     print(f"[BAYESIAN GOLDILOCKS] Goldilocks window: [{X_low:.2f}, {X_high:.2f}]")
     print(f"[BAYESIAN GOLDILOCKS] Peak stability rate: {peak_stability:.2%}")
@@ -6320,16 +6345,19 @@ def phase_18_multi_mode_goldilocks_comparison(ctx: PipelineContext, df: pd.DataF
             
             # Tight layout
             plt.tight_layout()
-        
-        # Save the figure with mode-specific name
-        safe_mode_name = mode.replace("_", "_").lower()
-        filename = f"goldilocks_zone_{safe_mode_name}.png"
-        ctx.save_fig(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], filename))
-        
-        if ctx.config.get("VERBOSE", True):
-            print(f"[MULTI-MODE] Generated {mode_name} Goldilocks diagram")
-            print(f"[MULTI-MODE] Peak at X = {peak_x_location:.2f}" if peak_x_location else "[MULTI-MODE] No peak found")
-            print(f"[MULTI-MODE] Saved: {filename}")
+            
+            # FIX: Save the figure INSIDE the loop for each mode
+            safe_mode_name = mode.replace("_", "_").lower()
+            filename = f"goldilocks_zone_{safe_mode_name}.png"
+            ctx.save_fig(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], filename))
+            
+            if ctx.config.get("VERBOSE", True):
+                print(f"[MULTI-MODE] Generated {mode_name} Goldilocks diagram")
+                print(f"[MULTI-MODE] Peak at X = {peak_x_location:.2f}" if peak_x_location else "[MULTI-MODE] No peak found")
+                print(f"[MULTI-MODE] Saved: {filename}")
+            
+            # Close figure to free memory
+            plt.close(fig)
         
         if ctx.config.get("VERBOSE", True):
             print(f"[MULTI-MODE] Generated Goldilocks diagrams for {len(mode_results)} I parameter modes")
@@ -6342,11 +6370,7 @@ def phase_18_multi_mode_goldilocks_comparison(ctx: PipelineContext, df: pd.DataF
 
 def phase_19_cmb_analysis_plots(ctx: PipelineContext, df: pd.DataFrame):
     """Phase 19: Generate CMB analysis plots like the reference images."""
-    if ctx.variant == "energy_only":
-        if ctx.config.get("VERBOSE", True):
-            print("\n[CMB ANALYSIS] Skipping in 'energy_only' mode.")
-        return
-
+    # FIX: Run in E-only mode too (I=0 for E-only)
     try:
         # 1. Gaussianity Check
         _create_gaussianity_check(ctx, df)
@@ -7005,8 +7029,54 @@ def _create_ei_distribution_analysis(ctx: PipelineContext, df: pd.DataFrame):
         ctx.save_fig(plot_path)
         plt.close()
         
+        # FIX: Create comprehensive E+I distribution analysis summary plot (all 4 plots in one figure)
+        fig, axes = plt.subplots(2, 2, figsize=(20, 16), constrained_layout=True)
+        fig.suptitle('E+I Distribution Analysis Summary', fontsize=20, fontweight='bold')
+        
+        # 1. E distribution by stability
+        stable_e = df[df['stable'] == 1]['E']
+        unstable_e = df[df['stable'] == 0]['E']
+        axes[0,0].hist(stable_e, bins=30, alpha=0.7, label='Stable', color='green', density=True)
+        axes[0,0].hist(unstable_e, bins=30, alpha=0.7, label='Unstable', color='red', density=True)
+        axes[0,0].set_title('E Parameter Distribution by Stability', fontsize=14)
+        axes[0,0].set_xlabel('E Value', fontsize=12)
+        axes[0,0].set_ylabel('Density', fontsize=12)
+        axes[0,0].legend()
+        axes[0,0].grid(True, alpha=0.3)
+        
+        # 2. I distribution by stability
+        stable_i = df[df['stable'] == 1]['I']
+        unstable_i = df[df['stable'] == 0]['I']
+        axes[0,1].hist(stable_i, bins=30, alpha=0.7, label='Stable', color='green', density=True)
+        axes[0,1].hist(unstable_i, bins=30, alpha=0.7, label='Unstable', color='red', density=True)
+        axes[0,1].set_title('I Parameter Distribution by Stability', fontsize=14)
+        axes[0,1].set_xlabel('I Value', fontsize=12)
+        axes[0,1].set_ylabel('Density', fontsize=12)
+        axes[0,1].legend()
+        axes[0,1].grid(True, alpha=0.3)
+        
+        # 3. E vs I scatter with stability coloring
+        scatter = axes[1,0].scatter(df['E'], df['I'], c=df['stable'], cmap='RdYlGn', s=20, alpha=0.6)
+        axes[1,0].set_title('E vs I Parameter Space', fontsize=14)
+        axes[1,0].set_xlabel('E Parameter', fontsize=12)
+        axes[1,0].set_ylabel('I Parameter', fontsize=12)
+        plt.colorbar(scatter, ax=axes[1,0], label='Stability')
+        axes[1,0].grid(True, alpha=0.3)
+        
+        # 4. X (E×I) distribution
+        axes[1,1].hist(df['X'], bins=50, alpha=0.7, color='blue', edgecolor='black')
+        axes[1,1].set_title('X (E×I) Distribution', fontsize=14)
+        axes[1,1].set_xlabel('X Value', fontsize=12)
+        axes[1,1].set_ylabel('Frequency', fontsize=12)
+        axes[1,1].grid(True, alpha=0.3)
+        
+        # Save comprehensive summary plot
+        summary_path = os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "ei_distribution_analysis.png")
+        ctx.save_fig(summary_path)
+        plt.close(fig)
+        
         if ctx.config.get("VERBOSE", True):
-            print(f"[EI DISTRIBUTION] 4 individual analysis plots saved to {png_dir}")
+            print(f"[EI DISTRIBUTION] 4 individual analysis plots + 1 comprehensive summary saved to {png_dir}")
         
     except Exception as e:
         if ctx.config.get("VERBOSE", True):
@@ -7140,11 +7210,7 @@ def _create_parameter_space_analysis(ctx: PipelineContext, df: pd.DataFrame):
 
 def phase_21_advanced_statistical_analysis(ctx: PipelineContext, df: pd.DataFrame):
     """Phase 21: Advanced statistical analysis and additional metrics."""
-    if ctx.variant == "energy_only":
-        if ctx.config.get("VERBOSE", True):
-            print("\n[ADVANCED STATISTICS] Skipping in 'energy_only' mode.")
-        return
-
+    # FIX: Run in E-only mode too (I=0 for E-only)
     try:
         # 1. Statistical summary analysis
         _create_statistical_summary_analysis(ctx, df)
@@ -7492,11 +7558,7 @@ def _create_performance_metrics_analysis(ctx: PipelineContext, df: pd.DataFrame)
 
 def phase_22_cmb_anomaly_analysis_plots(ctx: PipelineContext, df: pd.DataFrame):
     """Phase 22: Generate CMB anomaly analysis plots (aggregate overlays of detected anomalies). Uses simulated maps; Planck data is used only in Phase 15 for comparison."""
-    if ctx.variant == "energy_only":
-        if ctx.config.get("VERBOSE", True):
-            print("\n[CMB ANOMALY ANALYSIS] Skipping in 'energy_only' mode.")
-        return
-
+    # FIX: Run in E-only mode too (I=0 for E-only, but still generate anomaly plots)
     try:
         # Generate ALL aggregate anomaly visualizations
         _create_coldspot_position_heatmap(ctx, df)         # Heatmap: Cold Spot positions
@@ -7504,6 +7566,9 @@ def phase_22_cmb_anomaly_analysis_plots(ctx: PipelineContext, df: pd.DataFrame):
         _create_aggregate_coldspot_density_map(ctx, df)    # Mollweide: Cold Spots ONLY (blue dots)
         _create_aoe_alignment_histogram(ctx, df)           # Histogram: AOE alignment angles
         _create_aggregate_aoe_density_map(ctx, df)         # Mollweide: AOE ONLY (yellow dots)
+        
+        # FIX: Generate combined CMB anomaly overlay (cold spots + AOE together)
+        _create_aggregate_cmb_anomaly_overlay(ctx, df)
         
         if ctx.config.get("VERBOSE", True):
             print(f"[CMB ANOMALY ANALYSIS] Generated all CMB anomaly visualizations")
@@ -7521,7 +7586,11 @@ def _create_coldspot_position_heatmap(ctx: PipelineContext, df: pd.DataFrame):
         if df is not None and {'lon', 'lat'}.issubset(df.columns):
             coldspot_df = df[['lon', 'lat']].copy()
         else:
-            i_def = ctx.config.get("I_DEFINITION_MODE", "default")
+            # FIX: Handle E-only mode correctly
+            if ctx.variant == "energy_only":
+                i_def = "eonly"
+            else:
+                i_def = ctx.config.get("I_DEFINITION_MODE", "default")
             coldspot_base = os.path.join(ctx.paths["AGGREGATE_DIR"], f"cmb_coldspots_summary_{i_def}.csv")
             coldspot_file = ctx.resolve_variant_path(coldspot_base)
             if coldspot_file and os.path.getsize(coldspot_file) > 100:
@@ -7531,7 +7600,7 @@ def _create_coldspot_position_heatmap(ctx: PipelineContext, df: pd.DataFrame):
             lon = coldspot_df['lon'].values
             lat = coldspot_df['lat'].values
             if ctx.config.get("VERBOSE", True):
-                i_def = ctx.config.get("I_DEFINITION_MODE", "unknown")
+                # FIX: Use correct i_def value
                 print(f"[COLDSPOT HEATMAP] Using REAL data: {len(lon)} cold spots from {i_def} run")
         else:
             # Fallback: generate data based on current run parameters (NO FIXED SEED!)
@@ -7605,7 +7674,11 @@ def _create_coldspot_depth_histogram(ctx: PipelineContext, df: pd.DataFrame):
         if df is not None and 'temp_uK' in df.columns:
             coldspot_df = df[['temp_uK']].copy()
         else:
-            i_def = ctx.config.get("I_DEFINITION_MODE", "default")
+            # FIX: Handle E-only mode correctly
+            if ctx.variant == "energy_only":
+                i_def = "eonly"
+            else:
+                i_def = ctx.config.get("I_DEFINITION_MODE", "default")
             coldspot_base = os.path.join(ctx.paths["AGGREGATE_DIR"], f"cmb_coldspots_summary_{i_def}.csv")
             coldspot_file = ctx.resolve_variant_path(coldspot_base)
             if coldspot_file and os.path.getsize(coldspot_file) > 100:
@@ -8644,11 +8717,287 @@ def _create_aggregate_aoe_density_map(ctx: PipelineContext, df: pd.DataFrame):
         import traceback
         traceback.print_exc()
 
+def _create_aggregate_cmb_anomaly_overlay(ctx: PipelineContext, df: pd.DataFrame):
+    """Create combined CMB anomaly overlay (cold spots + AOE together)."""
+    
+    def _normalize_healpy_density_local(density: np.ndarray) -> tuple[np.ndarray, float, float]:
+        """Helper function to normalize density for visualization."""
+        dense = np.asarray(density, dtype=float)
+        mean = float(np.mean(dense))
+        std = float(np.std(dense))
+        if std < 1e-10:
+            std = 1.0
+        norm = (dense - mean) / std
+        vmax = float(np.percentile(np.abs(norm), 99.0))
+        vmax = max(vmax, 1.0)
+        vmax = float(np.ceil(vmax * 100.0) / 100.0)
+        return np.clip(norm, -vmax, vmax), -vmax, vmax
+    
+    def _style_healpy_colorbar_local(label: str = "µK", fontsize: int = 12) -> None:
+        """Helper function to style healpy colorbar."""
+        fig = plt.gcf()
+        if not fig.axes:
+            return
+        cb_ax = fig.axes[-1]
+        cb_ax.tick_params(labelsize=fontsize, width=1.0, length=6)
+        cb_ax.set_xlabel(label, fontsize=fontsize, labelpad=6)
+    
+    def _plot_combined_planar_local(coldspot_df: pd.DataFrame, aoe_df: pd.DataFrame, variant_name: str, filename: str) -> Optional[str]:
+        """Fallback planar plot for combined anomalies."""
+        if (coldspot_df is None or coldspot_df.empty) and (aoe_df is None or aoe_df.empty):
+            return None
+        
+        lon_bins = np.linspace(0.0, 360.0, 181)
+        lat_bins = np.linspace(-90.0, 90.0, 91)
+        cold_density = np.zeros((len(lon_bins) - 1, len(lat_bins) - 1))
+        aoe_density = np.zeros_like(cold_density)
+        
+        if coldspot_df is not None and not coldspot_df.empty:
+            cold_density, _, _ = np.histogram2d(
+                coldspot_df["lon"].to_numpy(),
+                coldspot_df["lat"].to_numpy(),
+                bins=[lon_bins, lat_bins]
+            )
+        
+        if aoe_df is not None and not aoe_df.empty:
+            aoe_density, _, _ = np.histogram2d(
+                aoe_df["axis_lon"].to_numpy(),
+                aoe_df["axis_lat"].to_numpy(),
+                bins=[lon_bins, lat_bins]
+            )
+        
+        combined_density = cold_density + 0.6 * aoe_density
+        density_norm, vmin, vmax = _normalize_healpy_density_local(combined_density if np.any(combined_density) else combined_density + 1e-6)
+        extent = [lon_bins[0], lon_bins[-1], lat_bins[0], lat_bins[-1]]
+        
+        fig, ax = plt.subplots(figsize=(16, 9))
+        im = ax.imshow(
+            density_norm.T,
+            origin="lower",
+            extent=extent,
+            cmap="viridis",
+            vmin=vmin,
+            vmax=vmax,
+            aspect="auto"
+        )
+        cb = fig.colorbar(im, ax=ax, pad=0.02)
+        cb.set_label("µK", fontsize=14)
+        
+        handles = []
+        from matplotlib.lines import Line2D
+        
+        if coldspot_df is not None and not coldspot_df.empty:
+            ax.scatter(
+                coldspot_df["lon"],
+                coldspot_df["lat"],
+                s=36,
+                c="crimson",
+                edgecolors="black",
+                linewidths=0.4,
+                alpha=0.6,
+                label="Cold Spots"
+            )
+            handles.append(Line2D([0], [0], marker='o', color='crimson', label='Cold Spots',
+                                  markerfacecolor='crimson', markersize=8, markeredgecolor='black', linewidth=0))
+        
+        marker_colors = {2: 'yellow', 3: 'orange', 4: 'cyan', 5: 'magenta'}
+        if aoe_df is not None and not aoe_df.empty:
+            for ell_val in sorted(aoe_df['ell'].unique()):
+                axes_ell = aoe_df[aoe_df['ell'] == ell_val]
+                color = marker_colors.get(ell_val, 'white')
+                ax.scatter(
+                    axes_ell["axis_lon"],
+                    axes_ell["axis_lat"],
+                    s=40,
+                    c=color,
+                    marker='s',
+                    edgecolors="black",
+                    linewidths=0.5,
+                    alpha=0.75,
+                    label=f"ℓ={ell_val}"
+                )
+                handles.append(Line2D([0], [0], marker='s', color=color, label=f"ℓ={ell_val} AOE",
+                                      markerfacecolor=color, markersize=8, markeredgecolor='black', linewidth=0))
+        
+        ax.set_xlim(0, 360)
+        ax.set_ylim(-90, 90)
+        ax.set_xticks(np.arange(0, 361, 60))
+        ax.set_yticks(np.arange(-90, 91, 30))
+        ax.set_xlabel("Longitude (deg)", fontsize=14)
+        ax.set_ylabel("Latitude (deg)", fontsize=14)
+        ax.set_title(f"Combined CMB Anomalies - {variant_name} (Fallback)", fontsize=16, pad=16)
+        ax.grid(True, linestyle="--", alpha=0.3)
+        if handles:
+            ax.legend(handles=handles, loc="upper right", fontsize=11)
+        plt.tight_layout()
+        
+        return ctx.save_fig(
+            os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], filename),
+            category="cmb",
+            fig=fig
+        )
+    
+    try:
+        i_def = ctx.config.get("I_DEFINITION_MODE", "default")
+        variant_name = "E-only" if ctx.variant == "energy_only" else i_def
+        
+        # Load coldspot catalogue
+        coldspot_base = os.path.join(
+            ctx.paths["AGGREGATE_DIR"],
+            f"cmb_coldspots_summary_{i_def if ctx.variant != 'energy_only' else 'eonly'}.csv"
+        )
+        coldspot_file = ctx.resolve_variant_path(coldspot_base)
+        coldspot_df = None
+        if coldspot_file and os.path.exists(coldspot_file) and os.path.getsize(coldspot_file) >= 100:
+            coldspot_df = pd.read_csv(coldspot_file)
+            if not {'lon', 'lat'}.issubset(coldspot_df.columns):
+                coldspot_df = None
+        
+        # Load AOE catalogue
+        aoe_base = os.path.join(ctx.paths["AGGREGATE_DIR"], f"cmb_aoe_summary_{i_def if ctx.variant != 'energy_only' else 'eonly'}.csv")
+        aoe_file = ctx.resolve_variant_path(aoe_base)
+        aoe_df = None
+        if aoe_file and os.path.exists(aoe_file) and os.path.getsize(aoe_file) >= 100:
+            aoe_df = pd.read_csv(aoe_file)
+            if not {'axis_lon', 'axis_lat', 'ell'}.issubset(aoe_df.columns):
+                aoe_df = None
+        
+        if (coldspot_df is None or coldspot_df.empty) and (aoe_df is None or aoe_df.empty):
+            if ctx.config.get("VERBOSE", True):
+                print("[COMBINED OVERLAY] Skipping combined anomaly overlay (no data)")
+            return
+        
+        combined_filename = "aggregate_cmb_anomaly_overlay.png"
+        combined_base = os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], combined_filename)
+        
+        global HEALPY_AVAILABLE
+        if not HEALPY_AVAILABLE:
+            HEALPY_AVAILABLE = _ensure_healpy_available()
+        
+        healpy_ok = HEALPY_AVAILABLE
+        overlay_saved = False
+        
+        if healpy_ok:
+            try:
+                import healpy as hp
+                nside = 64
+                npix = hp.nside2npix(nside)
+                density_map = np.zeros(npix)
+                if coldspot_df is not None and not coldspot_df.empty:
+                    for _, spot in coldspot_df.iterrows():
+                        theta = np.deg2rad(90 - spot['lat'])
+                        phi = np.deg2rad(spot['lon'])
+                        density_map[hp.ang2pix(nside, theta, phi)] += 1.0
+                density_map_smooth = hp.smoothing(density_map, fwhm=np.deg2rad(5.0), verbose=False) if np.any(density_map) else density_map
+                density_display, vmin, vmax = _normalize_healpy_density_local(density_map_smooth if np.any(density_map) else density_map + 1e-6)
+                
+                base_map = _generate_planck_background_map(ctx, nside, seed_offset=4321)
+                colorbar_label = "µK"
+                if base_map is not None and np.any(np.isfinite(base_map)):
+                    v_background = np.percentile(np.abs(base_map[np.isfinite(base_map)]), 99.5)
+                    v_background = max(v_background, 1e-3)
+                    _hp_mollview_safe(
+                        base_map,
+                        title=f'Combined CMB Anomalies - {variant_name}',
+                        cmap=ctx.config.get("CMB_BACKGROUND_CMAP", "coolwarm"),
+                        unit='µK',
+                        min=-v_background,
+                        max=v_background,
+                        hold=False,
+                        cbar=True,
+                        notext=False,
+                        fontsize={'title': 18, 'xtick_label': 13, 'ytick_label': 13}
+                    )
+                else:
+                    _hp_mollview_safe(
+                        density_display,
+                        title=f'Combined CMB Anomalies - {variant_name}',
+                        cmap='viridis',
+                        unit='density (z-score)',
+                        min=vmin,
+                        max=vmax,
+                        hold=False,
+                        cbar=True,
+                        notext=False,
+                        fontsize={'title': 18, 'xtick_label': 13, 'ytick_label': 13}
+                    )
+                    colorbar_label = "density (z-score)"
+                
+                from matplotlib.lines import Line2D
+                handles = []
+                
+                if coldspot_df is not None and not coldspot_df.empty:
+                    for _, spot in coldspot_df.iterrows():
+                        theta = np.deg2rad(90 - spot['lat'])
+                        phi = np.deg2rad(spot['lon'])
+                        hp.projscatter(
+                            theta, phi,
+                            marker='o',
+                            s=55,
+                            c='crimson',
+                            edgecolors='black',
+                            linewidths=0.6,
+                            alpha=0.7,
+                            zorder=12
+                        )
+                    handles.append(Line2D([0], [0], marker='o', color='crimson', label='Cold Spots',
+                                          markerfacecolor='crimson', markersize=8, markeredgecolor='black', linewidth=0))
+                
+                marker_colors = {2: 'yellow', 3: 'orange', 4: 'cyan', 5: 'magenta'}
+                if aoe_df is not None and not aoe_df.empty:
+                    for ell_val in sorted(aoe_df['ell'].unique()):
+                        axes_ell = aoe_df[aoe_df['ell'] == ell_val]
+                        color = marker_colors.get(ell_val, 'white')
+                        for _, axis in axes_ell.iterrows():
+                            theta = np.deg2rad(90 - axis['axis_lat'])
+                            phi = np.deg2rad(axis['axis_lon'])
+                            hp.projscatter(
+                                theta, phi,
+                                marker='s',
+                                s=75,
+                                c=color,
+                                edgecolors='black',
+                                linewidths=0.7,
+                                alpha=0.85,
+                                zorder=13
+                            )
+                        handles.append(Line2D([0], [0], marker='s', color=color, label=f"ℓ={ell_val} AOE",
+                                              markerfacecolor=color, markersize=8, markeredgecolor='black', linewidth=0))
+                
+                hp.graticule(dpar=30, dmer=30, verbose=False)
+                _style_healpy_colorbar_local(colorbar_label)
+                if handles:
+                    plt.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.0, -0.15), ncol=min(len(handles), 4), fontsize=11)
+                
+                saved_path = ctx.save_fig(
+                    combined_base,
+                    category="cmb",
+                    fig=plt.gcf()
+                )
+                overlay_saved = bool(saved_path and os.path.exists(saved_path))
+            except Exception as healpy_err:
+                overlay_saved = False
+                if ctx.config.get("VERBOSE", True):
+                    print(f"[COMBINED OVERLAY] Combined healpy overlay failed: {healpy_err}")
+        
+        if not overlay_saved:
+            # Fallback to planar plot
+            _plot_combined_planar_local(coldspot_df, aoe_df, variant_name, combined_filename)
+            
+    except Exception as e:
+        if ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [COMBINED OVERLAY] Error generating combined CMB anomaly overlay: {e}")
+
 def _create_aoe_alignment_histogram(ctx: PipelineContext, df: pd.DataFrame):
     """Create Axis-of-Evil Alignment Angle Histogram using REAL simulation data."""
     try:
         # Try to load REAL AOE data from the pipeline (with I-definition in filename)
         i_def = ctx.config.get("I_DEFINITION_MODE", "default")
+        # FIX: Handle E-only mode correctly
+        if ctx.variant == "energy_only":
+            i_def = "eonly"
+        else:
+            i_def = ctx.config.get("I_DEFINITION_MODE", "default")
         aoe_base = os.path.join(ctx.paths["AGGREGATE_DIR"], f"cmb_aoe_summary_{i_def}.csv")
         aoe_file = ctx.resolve_variant_path(aoe_base)
         
@@ -8804,7 +9153,8 @@ def phase_23_enhanced_physics_analysis(ctx: PipelineContext, df: pd.DataFrame):
             'enhanced_physics_enabled': True
         }
         
-        enhanced_physics_path = ctx.with_variant("enhanced_physics_analysis.json")
+        # FIX: Use AGGREGATE_DIR for JSON files
+        enhanced_physics_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_analysis.json")
         with open(enhanced_physics_path, 'w') as f:
             json.dump(enhanced_physics_data, f, indent=2, default=str)
         
@@ -9159,7 +9509,8 @@ def phase_24_comprehensive_data_extraction(ctx: PipelineContext, df: pd.DataFram
         
         # Save comprehensive data
         comprehensive_df = pd.DataFrame(all_universe_data)
-        comprehensive_csv_path = ctx.with_variant("comprehensive_universe_physics_data.csv")
+        # FIX: Use AGGREGATE_DIR for CSV files
+        comprehensive_csv_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "comprehensive_universe_physics_data.csv")
         comprehensive_df.to_csv(comprehensive_csv_path, index=False)
         
         # Create additional analysis plots
@@ -9251,8 +9602,57 @@ def _create_comprehensive_physics_analysis_plots(df: pd.DataFrame, ctx: Pipeline
         ctx.save_fig(plot_path)
         plt.close()
         
+        # FIX: Create comprehensive physics analysis summary plot (all 4 plots in one figure)
+        fig, axes = plt.subplots(2, 2, figsize=(20, 16), constrained_layout=True)
+        fig.suptitle('Comprehensive Physics Analysis Summary', fontsize=20, fontweight='bold')
+        
+        # 1. Universe Age vs Dark Energy (by Stability)
+        stable_mask = df['stable'] == 1
+        axes[0,0].scatter(df.loc[~stable_mask, 'E'], df.loc[~stable_mask, 'age_Gyr'], 
+                  c='red', alpha=0.6, s=30, label='Unstable')
+        axes[0,0].scatter(df.loc[stable_mask, 'E'], df.loc[stable_mask, 'age_Gyr'], 
+                  c='blue', alpha=0.6, s=30, label='Stable')
+        axes[0,0].set_xlabel('Dark Energy Density (E)', fontweight='light', fontsize=12)
+        axes[0,0].set_ylabel('Universe Age (Gyr)', fontweight='light', fontsize=12)
+        axes[0,0].set_title('Universe Age vs Dark Energy (by Stability)', fontweight='light', fontsize=14)
+        axes[0,0].legend(fontsize=10)
+        axes[0,0].grid(True, alpha=0.3)
+        
+        # 2. Vacuum Energy vs Entanglement (by Stability)
+        axes[0,1].scatter(df.loc[~stable_mask, 'vacuum_energy'], df.loc[~stable_mask, 'entanglement_entropy'], 
+                  c='red', alpha=0.6, s=30, label='Unstable')
+        axes[0,1].scatter(df.loc[stable_mask, 'vacuum_energy'], df.loc[stable_mask, 'entanglement_entropy'], 
+                  c='blue', alpha=0.6, s=30, label='Stable')
+        axes[0,1].set_xlabel('Vacuum Energy', fontweight='light', fontsize=12)
+        axes[0,1].set_ylabel('Entanglement Entropy', fontweight='light', fontsize=12)
+        axes[0,1].set_title('Vacuum Energy vs Entanglement (by Stability)', fontweight='light', fontsize=14)
+        axes[0,1].legend(fontsize=10)
+        axes[0,1].grid(True, alpha=0.3)
+        
+        # 3. Holographic Entropy vs Magnetic Field (by Lock-in)
+        lockin_mask = df['lockin'] == 1
+        axes[1,0].scatter(df.loc[~lockin_mask, 'holographic_entropy'], df.loc[~lockin_mask, 'magnetic_field_strength'], 
+                  c='orange', alpha=0.6, s=30, label='No Lock-in')
+        axes[1,0].scatter(df.loc[lockin_mask, 'holographic_entropy'], df.loc[lockin_mask, 'magnetic_field_strength'], 
+                  c='green', alpha=0.6, s=30, label='Lock-in')
+        axes[1,0].set_xlabel('Holographic Entropy', fontweight='light', fontsize=12)
+        axes[1,0].set_ylabel('Magnetic Field Strength', fontweight='light', fontsize=12)
+        axes[1,0].set_title('Holographic Entropy vs Magnetic Field (by Lock-in)', fontweight='light', fontsize=14)
+        axes[1,0].legend(fontsize=10)
+        axes[1,0].grid(True, alpha=0.3)
+        
+        # 4. Physical anomalies distribution
+        anomaly_counts = df['topological_defects'].value_counts()
+        axes[1,1].pie(anomaly_counts.values, labels=['No Defects', 'Has Defects'], autopct='%1.1f%%')
+        axes[1,1].set_title('Topological Defects Distribution', fontweight='light', fontsize=14)
+        
+        # Save comprehensive summary plot
+        comprehensive_path = ctx.with_variant("comprehensive_physics_analysis.png")
+        ctx.save_fig(comprehensive_path, category="physics")
+        plt.close(fig)
+        
         if ctx.config.get("VERBOSE", True):
-            print(f"[COMPREHENSIVE PHYSICS] 4 individual analysis plots saved to {png_dir}")
+            print(f"[COMPREHENSIVE PHYSICS] 4 individual analysis plots + 1 comprehensive summary saved to {png_dir}")
             
     except Exception as e:
         if ctx.config.get("VERBOSE", True):
@@ -9263,50 +9663,96 @@ def phase_25_advanced_anomaly_detection(ctx: PipelineContext, df: pd.DataFrame):
     if not ctx.config.get("ENABLE_QUANTUM_ANOMALY_DETECTION", True):
         return
 
-    print("\n🔍 [ANOMALY DETECTION] Starting advanced anomaly detection...")
+    try:
+        print("\n🔍 [ANOMALY DETECTION] Starting advanced anomaly detection...")
 
-    anomaly_results = []
+        anomaly_results = []
 
-    # Quantum Field Anomalies
-    if ctx.config.get("ENABLE_QUANTUM_ANOMALY_DETECTION", True):
-        quantum_anomalies = _detect_quantum_field_anomalies(df, ctx)
-        anomaly_results.extend(quantum_anomalies)
+        # Quantum Field Anomalies
+        if ctx.config.get("ENABLE_QUANTUM_ANOMALY_DETECTION", True):
+            try:
+                quantum_anomalies = _detect_quantum_field_anomalies(df, ctx)
+                if quantum_anomalies:
+                    anomaly_results.extend(quantum_anomalies)
+            except Exception as e:
+                if ctx.config.get("VERBOSE", True):
+                    print(f"⚠️ [ANOMALY] Error in quantum field anomaly detection: {e}")
 
-    # Entropy Anomalies
-    if ctx.config.get("ENABLE_ENTROPY_ANOMALY_DETECTION", True):
-        entropy_anomalies = _detect_entropy_anomalies(df, ctx)
-        anomaly_results.extend(entropy_anomalies)
+        # Entropy Anomalies
+        if ctx.config.get("ENABLE_ENTROPY_ANOMALY_DETECTION", True):
+            try:
+                entropy_anomalies = _detect_entropy_anomalies(df, ctx)
+                if entropy_anomalies:
+                    anomaly_results.extend(entropy_anomalies)
+            except Exception as e:
+                if ctx.config.get("VERBOSE", True):
+                    print(f"⚠️ [ANOMALY] Error in entropy anomaly detection: {e}")
 
-    # Topological Anomalies
-    if ctx.config.get("ENABLE_TOPOLOGICAL_ANOMALY_DETECTION", True):
-        topological_anomalies = _detect_topological_anomalies(df, ctx)
-        anomaly_results.extend(topological_anomalies)
+        # Topological Anomalies
+        if ctx.config.get("ENABLE_TOPOLOGICAL_ANOMALY_DETECTION", True):
+            try:
+                topological_anomalies = _detect_topological_anomalies(df, ctx)
+                if topological_anomalies:
+                    anomaly_results.extend(topological_anomalies)
+            except Exception as e:
+                if ctx.config.get("VERBOSE", True):
+                    print(f"⚠️ [ANOMALY] Error in topological anomaly detection: {e}")
 
-    # Energy Conservation Anomalies
-    if ctx.config.get("ENABLE_ENERGY_ANOMALY_DETECTION", True):
-        energy_anomalies = _detect_energy_anomalies(df, ctx)
-        anomaly_results.extend(energy_anomalies)
+        # Energy Conservation Anomalies
+        if ctx.config.get("ENABLE_ENERGY_ANOMALY_DETECTION", True):
+            try:
+                energy_anomalies = _detect_energy_anomalies(df, ctx)
+                if energy_anomalies:
+                    anomaly_results.extend(energy_anomalies)
+            except Exception as e:
+                if ctx.config.get("VERBOSE", True):
+                    print(f"⚠️ [ANOMALY] Error in energy anomaly detection: {e}")
 
-    # Information Theory Anomalies
-    if ctx.config.get("ENABLE_INFORMATION_ANOMALY_DETECTION", True):
-        info_anomalies = _detect_information_anomalies(df, ctx)
-        anomaly_results.extend(info_anomalies)
+        # Information Theory Anomalies
+        if ctx.config.get("ENABLE_INFORMATION_ANOMALY_DETECTION", True):
+            try:
+                info_anomalies = _detect_information_anomalies(df, ctx)
+                if info_anomalies:
+                    anomaly_results.extend(info_anomalies)
+            except Exception as e:
+                if ctx.config.get("VERBOSE", True):
+                    print(f"⚠️ [ANOMALY] Error in information anomaly detection: {e}")
 
-    # CMB Statistical Anomalies
-    if ctx.config.get("ENABLE_CMB_ANOMALY_DETECTION", True):
-        cmb_anomalies = _detect_cmb_statistical_anomalies(df, ctx)
-        anomaly_results.extend(cmb_anomalies)
+        # CMB Statistical Anomalies
+        if ctx.config.get("ENABLE_CMB_ANOMALY_DETECTION", True):
+            try:
+                cmb_anomalies = _detect_cmb_statistical_anomalies(df, ctx)
+                if cmb_anomalies:
+                    anomaly_results.extend(cmb_anomalies)
+            except Exception as e:
+                if ctx.config.get("VERBOSE", True):
+                    print(f"⚠️ [ANOMALY] Error in CMB anomaly detection: {e}")
 
-    # Save results
-    if anomaly_results:
-        anomaly_df = pd.DataFrame(anomaly_results)
-        ctx.save_csv(anomaly_df, "advanced_anomaly_detection_results.csv", category="anomaly")
-        
-        # Create visualization
-        _create_anomaly_detection_plots(anomaly_df, ctx)
-        
+        # Save results
+        if anomaly_results:
+            try:
+                anomaly_df = pd.DataFrame(anomaly_results)
+                ctx.save_csv(anomaly_df, "advanced_anomaly_detection_results.csv", category="anomaly")
+                
+                # Create visualization
+                try:
+                    _create_anomaly_detection_plots(anomaly_df, ctx)
+                except Exception as e:
+                    if ctx.config.get("VERBOSE", True):
+                        print(f"⚠️ [ANOMALY] Error creating anomaly plots: {e}")
+                
+                if ctx.config.get("VERBOSE", True):
+                    print(f"[ANOMALY] Detected {len(anomaly_results)} anomalies across all domains")
+            except Exception as e:
+                if ctx.config.get("VERBOSE", True):
+                    print(f"⚠️ [ANOMALY] Error saving anomaly results: {e}")
+        else:
+            if ctx.config.get("VERBOSE", True):
+                print("[ANOMALY] No anomalies detected")
+                
+    except Exception as e:
         if ctx.config.get("VERBOSE", True):
-            print(f"[ANOMALY] Detected {len(anomaly_results)} anomalies across all domains")
+            print(f"⚠️ [ANOMALY DETECTION] Error in phase 25: {e}")
 
 def phase_26_advanced_law_detection(ctx: PipelineContext, df: pd.DataFrame):
     """Phase 26: Advanced law detection across multiple physics domains."""
@@ -9385,28 +9831,60 @@ def phase_27_comprehensive_visualization_extraction(ctx: PipelineContext, df: pd
             print("\n[COMPREHENSIVE VISUALIZATION] Extracting all possible visualizations...")
         
         # 1. Parameter Space Heatmaps
-        _create_parameter_space_heatmaps(ctx, df)
+        try:
+            _create_parameter_space_heatmaps(ctx, df)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [VISUALIZATION] Error in parameter space heatmaps: {e}")
         
         # 2. Multi-dimensional Analysis
-        _create_multidimensional_analysis(ctx, df)
+        try:
+            _create_multidimensional_analysis(ctx, df)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [VISUALIZATION] Error in multidimensional analysis: {e}")
         
         # 3. Statistical Distribution Analysis
-        _create_statistical_distribution_analysis(ctx, df)
+        try:
+            _create_statistical_distribution_analysis(ctx, df)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [VISUALIZATION] Error in statistical distribution analysis: {e}")
         
         # 4. Correlation Network Analysis
-        _create_correlation_network_analysis(ctx, df)
+        try:
+            _create_correlation_network_analysis(ctx, df)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [VISUALIZATION] Error in correlation network analysis: {e}")
         
         # 5. Phase Space Dynamics
-        _create_phase_space_dynamics(ctx, df)
+        try:
+            _create_phase_space_dynamics(ctx, df)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [VISUALIZATION] Error in phase space dynamics: {e}")
         
         # 6. Information Theory Analysis
-        _create_information_theory_analysis(ctx, df)
+        try:
+            _create_information_theory_analysis(ctx, df)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [VISUALIZATION] Error in information theory analysis: {e}")
         
         # 7. Quantum Field Analysis
-        _create_quantum_field_analysis(ctx, df)
+        try:
+            _create_quantum_field_analysis(ctx, df)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [VISUALIZATION] Error in quantum field analysis: {e}")
         
         # 8. Cosmological Evolution Analysis
-        _create_cosmological_evolution_analysis(ctx, df)
+        try:
+            _create_cosmological_evolution_analysis(ctx, df)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [VISUALIZATION] Error in cosmological evolution analysis: {e}")
         
         if ctx.config.get("VERBOSE", True):
             print(f"[COMPREHENSIVE VISUALIZATION] All visualizations extracted")
@@ -11016,6 +11494,9 @@ def phase_28_final_summary(ctx: PipelineContext, df: pd.DataFrame, peak_x: float
             # E+I importance analysis
             "ei_importance_comparison": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "ei_importance_comparison.png")),
             
+            # Bayesian Goldilocks optimization plot (from Phase 1)
+            "goldilocks_zone_bayesian": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["SAVE_DIR"], "Goldilocks_Results", f"goldilocks_zone_{i_def_name}.png")) or os.path.join(ctx.paths["SAVE_DIR"], "Goldilocks_Results", f"goldilocks_zone_{i_def_name}.png")),
+            
             # Multi-mode Goldilocks plots (all 10 I-definitions)
             "goldilocks_zone_kl_divergence": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "goldilocks_zone_kl_divergence.png")),
             "goldilocks_zone_shannon": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "goldilocks_zone_shannon.png")),
@@ -11074,6 +11555,17 @@ def phase_28_final_summary(ctx: PipelineContext, df: pd.DataFrame, peak_x: float
             "quantum_field_analysis": _rel_path(ctx.with_variant("quantum_field_analysis.png")),
             "cosmological_evolution_analysis": _rel_path(ctx.with_variant("cosmological_evolution_analysis.png")),
             
+            # Bayesian analysis plots (conditional on ENABLE_BAYESIAN_ANALYSIS / ENABLE_NESTED_SAMPLING)
+            "bayesian_comparison": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], f"bayesian_comparison_{i_def_name}.png")) if ctx.config.get("ENABLE_BAYESIAN_ANALYSIS", False) else None,
+            "corner_plot": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], f"corner_plot_{i_def_name}.png")) if ctx.config.get("ENABLE_NESTED_SAMPLING", False) else None,
+            
+            # I-Definitions comparison (conditional on COMPUTE_ALL_I_DEFINITIONS and NOT E-only)
+            "i_definitions_comparison": _rel_path(os.path.join(ctx.paths["MAIN_PNG_DIR"], "I_Definitions_Comparison.png")) if ctx.config.get("COMPUTE_ALL_I_DEFINITIONS", False) and ctx.variant != "energy_only" else None,
+            
+            # Complexity analysis plots (conditional on ENABLE_COMPLEXITY_ANALYSIS)
+            "complexity_components": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "complexity_life_components.png")) if ctx.config.get("ENABLE_COMPLEXITY_ANALYSIS", False) else None,
+            "complexity_top_universes": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "complexity_top_universes.png")) if ctx.config.get("ENABLE_COMPLEXITY_ANALYSIS", False) and ctx.config.get("COMPLEXITY_TOP_N", 0) > 0 else None,
+            
             # Directory references
             "categorized_results_dir": ctx.get_rel_path(ctx.paths["CATEGORIZED_DIR"]),
         },
@@ -11088,9 +11580,14 @@ def phase_28_final_summary(ctx: PipelineContext, df: pd.DataFrame, peak_x: float
             "planck_reference_file": ctx.get_rel_path(ctx.paths["PLANCK_DATA_RUN_PATH"]) if ctx.paths.get("PLANCK_DATA_RUN_PATH") else None,
             "planck_best_fit_json": planck_best_fit_rel,
             
+            # Goldilocks optimization data
+            "goldilocks_optimization_json": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["SAVE_DIR"], "Goldilocks_Results", f"goldilocks_optimization_{i_def_name}.json")) or os.path.join(ctx.paths["SAVE_DIR"], "Goldilocks_Results", f"goldilocks_optimization_{i_def_name}.json")),
+            "bayesian_goldilocks_calibration_csv": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["SAVE_DIR"], "Goldilocks_Results", f"bayesian_calibration_{i_def_name}.csv")) or os.path.join(ctx.paths["SAVE_DIR"], "Goldilocks_Results", f"bayesian_calibration_{i_def_name}.csv")),
+            
             # Stability analysis data
             "stability_by_I_zero_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "stability_by_I_zero.csv")),
             "stability_by_I_eps_sweep_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "stability_by_I_eps_sweep.csv")),
+            "stability_distribution_five_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "stability_distribution_five.csv")),
             "avg_lockin_curve_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "avg_lockin_curve.csv")),
             
             # Fluctuation timeseries data
@@ -11109,6 +11606,9 @@ def phase_28_final_summary(ctx: PipelineContext, df: pd.DataFrame, peak_x: float
             "statistical_finetuning_summary_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "statistical_finetuning_summary.csv")),
             
             # CMB analysis data (with I-definition in filename)
+            "cmb_gaussianity_check_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "cmb_gaussianity_check.csv")),
+            "cmb_isotropy_check_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "cmb_isotropy_check.csv")),
+            "cmb_power_spectrum_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "cmb_power_spectrum.csv")),
             "aggregate_coldspot_summary_csv": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["AGGREGATE_DIR"], f"cmb_coldspots_summary_{i_def_name}.csv"))),
             "aggregate_aoe_summary_csv": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["AGGREGATE_DIR"], f"cmb_aoe_summary_{i_def_name}.csv"))),
             "entropy_volatility_summary_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "entropy_volatility_summary.csv")),
@@ -11127,15 +11627,48 @@ def phase_28_final_summary(ctx: PipelineContext, df: pd.DataFrame, peak_x: float
             "performance_metrics_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "performance_metrics.csv")),
             
             # Enhanced physics analysis data
-            "enhanced_physics_friedmann_evolution_csv": _rel_path(ctx.with_variant("enhanced_physics_friedmann_evolution.csv")),
-            "enhanced_physics_quantum_fields_csv": _rel_path(ctx.with_variant("enhanced_physics_quantum_fields.csv")),
-            "enhanced_physics_entanglement_network_csv": _rel_path(ctx.with_variant("enhanced_physics_entanglement_network.csv")),
-            "enhanced_physics_physical_anomalies_csv": _rel_path(ctx.with_variant("enhanced_physics_physical_anomalies.csv")),
-            "enhanced_physics_comprehensive_summary_csv": _rel_path(ctx.with_variant("enhanced_physics_comprehensive_summary.csv")),
-            "enhanced_physics_analysis_json": _rel_path(ctx.with_variant("enhanced_physics_analysis.json")),
+            # FIX: Use resolve_variant_path to find actual files (with variant tags if applicable)
+            "enhanced_physics_friedmann_evolution_csv": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_friedmann_evolution.csv")) or os.path.join(ctx.paths["AGGREGATE_DIR"], ctx.with_variant("enhanced_physics_friedmann_evolution.csv"))),
+            "enhanced_physics_quantum_fields_csv": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_quantum_fields.csv")) or os.path.join(ctx.paths["AGGREGATE_DIR"], ctx.with_variant("enhanced_physics_quantum_fields.csv"))),
+            "enhanced_physics_entanglement_network_csv": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_entanglement_network.csv")) or os.path.join(ctx.paths["AGGREGATE_DIR"], ctx.with_variant("enhanced_physics_entanglement_network.csv"))),
+            "enhanced_physics_physical_anomalies_csv": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_physical_anomalies.csv")) or os.path.join(ctx.paths["AGGREGATE_DIR"], ctx.with_variant("enhanced_physics_physical_anomalies.csv"))),
+            "enhanced_physics_comprehensive_summary_csv": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_comprehensive_summary.csv")) or os.path.join(ctx.paths["AGGREGATE_DIR"], ctx.with_variant("enhanced_physics_comprehensive_summary.csv"))),
+            "enhanced_physics_analysis_json": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_analysis.json")),
             
             # Comprehensive data extraction
-            "comprehensive_universe_physics_data_csv": _rel_path(ctx.with_variant("comprehensive_universe_physics_data.csv")),
+            "comprehensive_universe_physics_data_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "comprehensive_universe_physics_data.csv")),
+            
+            # Advanced anomaly and law detection data
+            "advanced_anomaly_detection_results_csv": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "advanced_anomaly_detection_results.csv")) or os.path.join(ctx.paths["AGGREGATE_DIR"], ctx.with_variant("advanced_anomaly_detection_results.csv"))),
+            "advanced_law_detection_results_csv": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "advanced_law_detection_results.csv")) or os.path.join(ctx.paths["AGGREGATE_DIR"], ctx.with_variant("advanced_law_detection_results.csv"))),
+            
+            # Bayesian analysis data (conditional on ENABLE_BAYESIAN_ANALYSIS / ENABLE_NESTED_SAMPLING)
+            "bayesian_metrics_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], f"bayesian_metrics_{i_def_name}.csv")) if ctx.config.get("ENABLE_BAYESIAN_ANALYSIS", False) else None,
+            "nested_sampling_samples_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "nested_sampling_samples.csv")) if ctx.config.get("ENABLE_NESTED_SAMPLING", False) else None,
+            
+            # I-Definitions comparison data (conditional on COMPUTE_ALL_I_DEFINITIONS and NOT E-only)
+            "i_definitions_comparison_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "I_Definitions_Comparison.csv")) if ctx.config.get("COMPUTE_ALL_I_DEFINITIONS", False) and ctx.variant != "energy_only" else None,
+            
+            # Complexity analysis data (conditional on ENABLE_COMPLEXITY_ANALYSIS)
+            "complexity_metrics_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "complexity_metrics_summary.csv")) if ctx.config.get("ENABLE_COMPLEXITY_ANALYSIS", False) else None,
+            "life_compatibility_json": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "life_compatibility_summary.json")) if ctx.config.get("ENABLE_COMPLEXITY_ANALYSIS", False) else None,
+            "complexity_universe_ranking_csv": _rel_path(os.path.join(ctx.paths["AGGREGATE_DIR"], "complexity_universe_ranking.csv")) if ctx.config.get("ENABLE_COMPLEXITY_ANALYSIS", False) and ctx.config.get("COMPLEXITY_TOP_N", 0) > 0 else None,
+        },
+        "cmb_map_registry": {
+            "total_maps": len(ctx.map_registry) if hasattr(ctx, "map_registry") else 0,
+            "healpix_maps": len([r for r in ctx.map_registry if r.get("mode") == "healpix"]) if hasattr(ctx, "map_registry") else 0,
+            "flat_maps": len([r for r in ctx.map_registry if r.get("mode") == "flat"]) if hasattr(ctx, "map_registry") else 0,
+            "maps_location": ctx.get_rel_path(ctx.paths["CATEGORIZED_DIR"]) if hasattr(ctx, "map_registry") and ctx.map_registry else None,
+        },
+        "categorized_results": {
+            "categories": list(set(ctx.universe_category_map.values())) if hasattr(ctx, "universe_category_map") else [],
+            "total_categorized_universes": len(ctx.universe_category_map) if hasattr(ctx, "universe_category_map") else 0,
+            "location": ctx.get_rel_path(ctx.paths["CATEGORIZED_DIR"]),
+            "structure": {
+                "1_FIGURES": "Entropy evolution plots (best_uni_{category}_rank{rank}_uid{uid}_entropy_evolution.png)",
+                "2_DATA_FILES": "Entropy timeseries CSV files (best_uni_{category}_rank{rank}_uid{uid}_entropy_timeseries.csv) and category catalogues ({category}_catalogue.csv)",
+                "3_CMB_MAPS": "CMB FITS/NPY files (cmb_uid{uid:05d}.fits/npy) and overlay visualizations (coldspots_overlay/aoe_overlay)"
+            }
         },
         "meta": {
             "code_version": "TQE_Universe_Simulation_Full_Pipeline_v4.2.0_Pro",
