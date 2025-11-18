@@ -1,0 +1,9 @@
+category,count,percentage
+Unstable,0,0.0
+Stable,350,100.0
+"Lock-in
+(from Stable)",350,100.0
+"Finely-tuned
+|E-I|≤0.5",0,0.0
+"Coarsely-tuned
+|E-I|>0.5",350,100.0

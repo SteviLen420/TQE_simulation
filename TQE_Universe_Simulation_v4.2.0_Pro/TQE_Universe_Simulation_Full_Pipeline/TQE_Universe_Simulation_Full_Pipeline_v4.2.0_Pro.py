@@ -81,13 +81,13 @@
 #        - Compares to Planck 2018 data (Phase 15 only)
 #     
 #     3. BATCH E+I (batch_ei): Multi-definition comparison
-#        - All 10 I-definitions run independently (no E-only)
+#        - All 11 I-definitions run independently (no E-only)
 #        - Each: PHASES 1-28 with independent Bayesian Goldilocks
 #        - Each generates independent simulated CMB maps
 #        - Use external comparison tool for cross-definition analysis
 #     
 #     4. BATCH ALL (batch_all): Comprehensive comparison
-#        - E-only baseline + all 10 I-definitions (11 total runs)
+#        - E-only baseline + all 11 I-definitions (12 total runs)
 #        - Each: PHASES 1-28 with independent Bayesian Goldilocks
 #        - Each generates independent simulated CMB maps
 #        - Each compares to Planck 2018 data (Phase 15)
@@ -589,7 +589,8 @@ MASTER_CTRL = {
     # === I-PARAMETER ===
     "I_DEFINITION_MODE":     "jensen_shannon",  # Active I-definition (used if RUN_MODE = "single_ei")
     # Available I-definitions: kl_divergence, shannon, renyi, mutual_info, composite, 
-    #                          kl_shannon, entanglement, fisher, fisher_kl_fusion, jensen_shannon (10 total)
+    #                          kl_shannon, entanglement, fisher, fisher_kl_fusion, jensen_shannon,
+    #                          kl_shannon_entanglement (11 total)
 
     # === GOLDILOCKS - BAYESIAN ADAPTIVE OPTIMIZATION (ONLY METHOD) ===
     # Bayesian Adaptive Sampling uses Gaussian Process Regression to intelligently
@@ -608,8 +609,8 @@ MASTER_CTRL = {
                                                    # Recommended: 0.005 (low noise), 0.01 (balanced), 0.05 (high noise)
 
     # === UNIVERSE SAMPLING ===
-    "NUM_UNIVERSES":         250,       # PHASE 1-28 universes (main simulation) - OPTIMALIZÁLT TESZTELÉSHEZ
-                                        # 30% Bayesian (60) + 70% full sim (140) - elég statisztika + viszonylag gyors
+    "NUM_UNIVERSES":         500,       # PHASE 1-28 universes (main simulation) - OPTIMALIZÁLT TESZTELÉSHEZ
+                                        # 30% Bayesian (150) + 70% full sim (350) - elég statisztika + viszonylag gyors
     "SEED":                  None,     # Master seed (None = auto)
 
     # === EPOCH SETTINGS ===
@@ -809,7 +810,7 @@ MASTER_CTRL = {
     "OUTSIDE_PENALTY":       5.0,        # sigma multiplier outside Goldilocks zone
 
     # --- I-parameter definition comparison (new controls) ---
-    "COMPUTE_ALL_I_DEFINITIONS": True, # Enable CSV export for all 10 I-definitions
+    "COMPUTE_ALL_I_DEFINITIONS": True, # Enable CSV export for all 11 I-definitions
     "I_DEFINITIONS_SAMPLE_POINTS": 50,  # Sample points for a-grid if needed
 
     # --- Single Run E+I Multi-Definition Mode ---
@@ -2421,7 +2422,7 @@ class PhysicsEngine:
 
     def compute_all_I_definitions(self, E: float, a: float = 1.0) -> dict:
         """
-        Compute 10 I-parameter definitions, normalized to [0,1].
+        Compute 11 I-parameter definitions, normalized to [0,1].
         Returns a dict with consistent keys for comparative analysis.
         
         Uses pure, independent KL and Shannon measurements.
@@ -2429,6 +2430,7 @@ class PhysicsEngine:
         
         NOTE: horizon_entropy and phenomenological are REMOVED (not used in production).
          jensen_shannon added (symmetric KL-divergence, validated with Planck 2018 data).
+         kl_shannon_entanglement added (combines best Planck validation + best complexity).
         """
         # Base building blocks
         eps = self.config.get("KL_EPS", 1e-12)
@@ -2470,6 +2472,11 @@ class PhysicsEngine:
         # 10) Jensen-Shannon divergence (symmetric, bounded KL-divergence)
         # This is the optimal method for real universe measurements (validated with Planck 2018 data)
         I_js = self.sample_information_jensen_shannon(dim, eps, E=E)
+        
+        # 11) KL-Shannon-Entanglement Fusion: Combines best Planck validation (KL-Shannon) 
+        #     with best complexity (Entanglement) for optimal TQE performance
+        # Weighted combination: 50% KL-Shannon (Planck validation) + 50% Entanglement (complexity)
+        I_kls_ent = float(np.clip(0.5 * I_kls + 0.5 * I_ent, 0.0, 1.0))
 
         return {
             'kl_divergence': I_kl,
@@ -2481,7 +2488,8 @@ class PhysicsEngine:
             'entanglement': I_ent,
             'fisher': I_fisher,
             'fisher_kl_fusion': I_fkl,
-            'jensen_shannon': I_js  #  Symmetric, bounded information measure (validated with real CMB data)
+            'jensen_shannon': I_js,  #  Symmetric, bounded information measure (validated with real CMB data)
+            'kl_shannon_entanglement': I_kls_ent  # Best of both: Planck validation + Complexity
         }
 
     def calculate_real_world_physics(self, E: float, I: float) -> dict:
@@ -6187,7 +6195,7 @@ def phase_18_multi_mode_goldilocks_comparison(ctx: PipelineContext, df: pd.DataF
         return
 
     try:
-        # All 10 I parameter modes
+        # All 11 I parameter modes
         i_modes = {
             "kl_divergence": "KL-Divergence",
             "shannon": "Shannon Entropy",
@@ -6198,7 +6206,8 @@ def phase_18_multi_mode_goldilocks_comparison(ctx: PipelineContext, df: pd.DataF
             "entanglement": "Quantum Entanglement Entropy", 
             "fisher": "Quantum Fisher Information",
             "fisher_kl_fusion": "Fisher-KL Fusion",
-            "jensen_shannon": "Jensen-Shannon Divergence"  #  Symmetric KL-divergence (validated with Planck 2018)
+            "jensen_shannon": "Jensen-Shannon Divergence",  #  Symmetric KL-divergence (validated with Planck 2018)
+            "kl_shannon_entanglement": "KL-Shannon-Entanglement Fusion"  # Best of both: Planck validation + Complexity
         }
         
         # Store original mode
@@ -11369,7 +11378,7 @@ def phase_28_final_summary(ctx: PipelineContext, df: pd.DataFrame, peak_x: float
         # Sample E values across the observed range from df
         E_samples = np.linspace(df["E"].min(), df["E"].max(), ctx.config.get("I_DEFINITIONS_SAMPLE_POINTS", 50))
         
-        # Compute all 10 I-definitions for each E (horizon_entropy and phenomenological removed, jensen_shannon added)
+        # Compute all 11 I-definitions for each E (horizon_entropy and phenomenological removed, jensen_shannon and kl_shannon_entanglement added)
         rows = []
         for E_val in E_samples:
             I_defs = physics.compute_all_I_definitions(E_val, a=1.0)
@@ -11497,7 +11506,7 @@ def phase_28_final_summary(ctx: PipelineContext, df: pd.DataFrame, peak_x: float
             # Bayesian Goldilocks optimization plot (from Phase 1)
             "goldilocks_zone_bayesian": _rel_path(ctx.resolve_variant_path(os.path.join(ctx.paths["SAVE_DIR"], "Goldilocks_Results", f"goldilocks_zone_{i_def_name}.png")) or os.path.join(ctx.paths["SAVE_DIR"], "Goldilocks_Results", f"goldilocks_zone_{i_def_name}.png")),
             
-            # Multi-mode Goldilocks plots (all 10 I-definitions)
+            # Multi-mode Goldilocks plots (all 11 I-definitions)
             "goldilocks_zone_kl_divergence": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "goldilocks_zone_kl_divergence.png")),
             "goldilocks_zone_shannon": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "goldilocks_zone_shannon.png")),
             "goldilocks_zone_renyi": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "goldilocks_zone_renyi.png")),
@@ -11508,6 +11517,7 @@ def phase_28_final_summary(ctx: PipelineContext, df: pd.DataFrame, peak_x: float
             "goldilocks_zone_fisher": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "goldilocks_zone_fisher.png")),
             "goldilocks_zone_fisher_kl_fusion": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "goldilocks_zone_fisher_kl_fusion.png")),
             "goldilocks_zone_jensen_shannon": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "goldilocks_zone_jensen_shannon.png")),  #  Symmetric KL-divergence
+            "goldilocks_zone_kl_shannon_entanglement": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "goldilocks_zone_kl_shannon_entanglement.png")),  # Best of both
             
             # CMB analysis plots
             "cmb_gaussianity_check": _rel_path(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "cmb_gaussianity_check.png")),
@@ -12821,30 +12831,38 @@ if __name__ == "__main__":
     # 4 execution modes:
     #   • single_eonly: E-only baseline (I disabled, Bayesian Goldilocks integrated in Phase 1)
     #   • single_ei:    Single E+I run with selected I-definition (Bayesian Goldilocks integrated in Phase 1)
-    #   • batch_ei:     All 10 I-definitions (independent runs, each with Goldilocks in Phase 1)
-    #   • batch_all:    E-only + all 10 I-definitions (11 independent runs)
+    #   • batch_ei:     All 11 I-definitions (independent runs, each with Goldilocks in Phase 1)
+    #   • batch_all:    E-only + all 11 I-definitions (12 independent runs)
     # 
     # Each run executes PHASES 1-28 independently with Bayesian Goldilocks integrated into Phase 1.
     # ===================================================================
 
     run_mode = MASTER_CTRL.get("RUN_MODE", "single_ei")
 
-    # 10 I-parameter definitions (removed horizon_entropy and phenomenological)
+    # 11 I-parameter definitions (removed horizon_entropy and phenomenological)
     #  jensen_shannon added (symmetric KL-divergence, validated with Planck 2018 CMB data)
+    #  kl_shannon_entanglement added (combines best Planck validation + best complexity)
     ALL_I_DEFINITIONS = [
         "kl_divergence", "shannon", "renyi", "mutual_info", 
         "composite", "kl_shannon", "entanglement", "fisher", 
-        "fisher_kl_fusion", "jensen_shannon"  #  Symmetric KL-divergence (validated with Planck 2018)
+        "fisher_kl_fusion", "jensen_shannon",  #  Symmetric KL-divergence (validated with Planck 2018)
+        "kl_shannon_entanglement"  # Best of both: KL-Shannon (Planck) + Entanglement (Complexity)
             ]
             
     # Create run-mode-specific directory WITH TIMESTAMP
     timestamp = time.strftime("%Y%m%d_%H%M%S")
 
+    # Determine repo root
     if IN_COLAB:
-        base_dir = "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO"
+        repo_root = "/content/drive/MyDrive"
     else:
-        base_dir = os.path.join(os.getcwd(), "TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO")
-
+        # Go up from script directory to repo root
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        repo_root = os.path.dirname(os.path.dirname(script_dir))  # Go up 2 levels to repo root
+    
+    # Use SIMULATION_RUNS/universe for batch runs
+    base_dir = os.path.join(repo_root, "SIMULATION_RUNS", "universe")
+    
     # Create base directory
     os.makedirs(base_dir, exist_ok=True)
 
@@ -12916,9 +12934,9 @@ if __name__ == "__main__":
         # Summary printed by _print_pipeline_completion()
 
     # ===================================================================
-    # MODE 3: BATCH E+I (all 10 I-definitions, NO E-only)
+    # MODE 3: BATCH E+I (all 11 I-definitions, NO E-only)
     # ===================================================================
-    # Batch execution: All 10 I-parameter definitions independently
+    # Batch execution: All 11 I-parameter definitions independently
     # - Each I-definition runs PHASES 1-28 independently
     # - Each has its own Bayesian Goldilocks calibration (Phase 1)
     # - Each generates independent simulated CMB maps (Phase 12-13)
@@ -12927,7 +12945,7 @@ if __name__ == "__main__":
     # ===================================================================
     elif run_mode == "batch_ei":
         print("=" * 70)
-        print("RUN MODE: BATCH E+I (10 I-definitions)")
+        print("RUN MODE: BATCH E+I (11 I-definitions)")
         print("=" * 70)
         print(f"Batch Directory: {batch_dir}\n")
         
@@ -12961,15 +12979,15 @@ if __name__ == "__main__":
                 print(f"❌ ERROR in '{i_def}': {e}\n")
         
         print(f"\n{'='*70}")
-        print(f"BATCH E+I COMPLETED: {successful}/10 successful, {failed}/10 failed")
+        print(f"BATCH E+I COMPLETED: {successful}/11 successful, {failed}/11 failed")
         print(f"Results saved to: {batch_dir}")
         print(f"{'='*70}")
 
     # ===================================================================
-    # MODE 4: BATCH ALL (E-only + all 10 I-definitions)
+    # MODE 4: BATCH ALL (E-only + all 11 I-definitions)
     # ===================================================================
-    # Comprehensive batch: E-only baseline + all 10 I-definitions
-    # - Total: 11 independent runs (1 E-only + 10 E+I)
+    # Comprehensive batch: E-only baseline + all 11 I-definitions
+    # - Total: 12 independent runs (1 E-only + 11 E+I)
     # - Each runs PHASES 1-28 independently
     # - Each has its own Bayesian Goldilocks calibration (Phase 1)
     # - Each generates independent simulated CMB maps (Phase 12-13)
@@ -12979,7 +12997,7 @@ if __name__ == "__main__":
     # ===================================================================
     elif run_mode == "batch_all":
         print("=" * 70)
-        print("RUN MODE: BATCH ALL (E-only + 10 I-definitions)")
+        print("RUN MODE: BATCH ALL (E-only + 11 I-definitions)")
         print("=" * 70)
         print(f"Batch Directory: {batch_dir}\n")
         
@@ -13014,10 +13032,10 @@ if __name__ == "__main__":
             failed += 1
             print(f"❌ ERROR in E-only: {e}\n")
         
-        # 2. Run all 10 E+I
+        # 2. Run all 11 E+I
         for idx, i_def in enumerate(ALL_I_DEFINITIONS):
             print(f"\n{'─'*70}")
-            print(f"E+I Run {idx+2}/11: {i_def}")
+            print(f"E+I Run {idx+2}/12: {i_def}")
             print(f"{'─'*70}")
             
             config_ei = MASTER_CTRL.copy()
@@ -13045,7 +13063,7 @@ if __name__ == "__main__":
                 print(f"❌ ERROR in '{i_def}': {e}\n")
         
         print(f"\n{'='*70}")
-        print(f"BATCH ALL COMPLETED: {successful}/11 successful, {failed}/11 failed")
+        print(f"BATCH ALL COMPLETED: {successful}/12 successful, {failed}/12 failed")
         print(f"Results saved to: {batch_dir}")
         print(f"{'='*70}")
 

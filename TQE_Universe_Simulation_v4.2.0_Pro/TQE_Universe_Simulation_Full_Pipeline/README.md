@@ -253,7 +253,7 @@ The behavior of the TQE Framework is controlled by the central `MASTER_CTRL` Pyt
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `RUN_MODE` | string | `"single_ei"` | Execution mode: `"single_eonly"`, `"single_ei"`, `"batch_ei"`, or `"batch_all"` |
-| `I_DEFINITION_MODE` | string | `"jensen_shannon"` | Active I-definition (used if `RUN_MODE = "single_ei"`). Options: `"kl_divergence"`, `"shannon"`, `"renyi"`, `"mutual_info"`, `"composite"`, `"kl_shannon"`, `"entanglement"`, `"fisher"`, `"fisher_kl_fusion"`, `"jensen_shannon"` |
+| `I_DEFINITION_MODE` | string | `"jensen_shannon"` | Active I-definition (used if `RUN_MODE = "single_ei"`). Options: `"kl_divergence"`, `"shannon"`, `"renyi"`, `"mutual_info"`, `"composite"`, `"kl_shannon"`, `"entanglement"`, `"fisher"`, `"fisher_kl_fusion"`, `"jensen_shannon"`, `"kl_shannon_entanglement"` |
 | `NUM_UNIVERSES` | int | `250` | Number of universes to simulate in the Monte Carlo run (default: 250, recommended: 1000-10000 for production runs) |
 | `SEED` | int/None | `None` | Master seed for reproducibility. If `None`, auto-generated |
 | `PIPELINE_VARIANT` | string | `"full"` | Auto-set by `RUN_MODE`: `"full"` (E+I) or `"energy_only"` (E-only) |
