@@ -1,0 +1,33 @@
+{
+  "metrics": {
+    "run_id": null,
+    "i_definition": "fisher",
+    "total_universes": 175,
+    "stable_universes": 90,
+    "lockin_universes": 23,
+    "complexity_score": 63.9418,
+    "life_compatibility_score": 41.8519,
+    "information_richness": 65.7143,
+    "lockin_quality_component": 26.2857,
+    "goldilocks_precision_component": 99.8254,
+    "planck_fit_component": 0.0,
+    "stability_quality_component": 25.5556,
+    "goldilocks_robustness_component": 100.0,
+    "meets_complexity_threshold": true,
+    "meets_life_threshold": false
+  },
+  "complexity_components": {
+    "lockin_quality": 26.285714285714285,
+    "goldilocks_precision": 99.82540165373415,
+    "information_richness": 65.71428571428571
+  },
+  "life_components": {
+    "planck_fit_quality": 0.0,
+    "stability_quality": 25.555555555555554,
+    "goldilocks_robustness": 100.0
+  },
+  "thresholds": {
+    "complexity": 60.0,
+    "life_compatibility": 60.0
+  }
+}

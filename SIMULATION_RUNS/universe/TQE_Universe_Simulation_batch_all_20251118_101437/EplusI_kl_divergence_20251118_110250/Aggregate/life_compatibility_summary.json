@@ -1,0 +1,33 @@
+{
+  "metrics": {
+    "run_id": null,
+    "i_definition": "kl_divergence",
+    "total_universes": 175,
+    "stable_universes": 77,
+    "lockin_universes": 15,
+    "complexity_score": 53.2733,
+    "life_compatibility_score": 39.8268,
+    "information_richness": 42.8571,
+    "lockin_quality_component": 17.1429,
+    "goldilocks_precision_component": 99.8199,
+    "planck_fit_component": 0.0,
+    "stability_quality_component": 19.4805,
+    "goldilocks_robustness_component": 100.0,
+    "meets_complexity_threshold": false,
+    "meets_life_threshold": false
+  },
+  "complexity_components": {
+    "lockin_quality": 17.142857142857142,
+    "goldilocks_precision": 99.81994343337956,
+    "information_richness": 42.857142857142854
+  },
+  "life_components": {
+    "planck_fit_quality": 0.0,
+    "stability_quality": 19.480519480519483,
+    "goldilocks_robustness": 100.0
+  },
+  "thresholds": {
+    "complexity": 60.0,
+    "life_compatibility": 60.0
+  }
+}

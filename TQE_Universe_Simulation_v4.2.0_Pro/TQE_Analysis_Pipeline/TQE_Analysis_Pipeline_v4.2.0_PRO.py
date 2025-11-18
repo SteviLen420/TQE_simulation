@@ -87,11 +87,11 @@ MASTER_CTRL = {
     
     # TARGET_TIMESTAMP: Specify which simulation batch to analyze
     #   - None: Auto-detect latest batch (recommended for most recent results)
-    #   - "YYYYMMDD_HHMMSS": Specific timestamp (e.g., "20251105_070107")
+    #   - "YYYYMMDD_HHMMSS": Specific timestamp (e.g., "20251118_101437")
     #   
-    #   Current: "20251105_070107" - batch_all with 10 E+I runs including jensen_shannon
-    #   This batch contains all I-definitions for comprehensive comparison.
-    "TARGET_TIMESTAMP": "20251105_065930",
+    #   Current: None - auto-detect latest batch_all run
+    #   Latest batch: "20251118_101437" - batch_all with 11 runs (1 E-only + 10 E+I)
+    "TARGET_TIMESTAMP": None,  # Auto-detect latest batch
     
     # === PATH CONFIGURATION ===
     # AUTO-DETECT: These are set automatically, override only if needed
@@ -185,16 +185,19 @@ def setup_paths():
         # Google Colab or Jupyter environment
         if os.path.exists("/content/drive/MyDrive"):
             # Colab with mounted Drive
-            SIMULATION_ROOT = "/content/drive/MyDrive/TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO"
-            ANALYSIS_OUTPUT_ROOT = "/content/drive/MyDrive/TQE_Analysis_Pipeline_v4.2.0_PRO/analysis_results"
+            SIMULATION_ROOT = "/content/drive/MyDrive/SIMULATION_RUNS/universe"
+            ANALYSIS_OUTPUT_ROOT = "/content/drive/MyDrive/SIMULATION_RUNS/analysis"
         else:
             # Colab without mounted drive or local Jupyter - use current directory
-            SIMULATION_ROOT = os.path.abspath(os.path.join(os.getcwd(), "..", "TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO"))
-            ANALYSIS_OUTPUT_ROOT = os.path.abspath(os.path.join(os.getcwd(), "analysis_results"))
+            SIMULATION_ROOT = os.path.abspath(os.path.join(os.getcwd(), "..", "SIMULATION_RUNS", "universe"))
+            ANALYSIS_OUTPUT_ROOT = os.path.abspath(os.path.join(os.getcwd(), "..", "SIMULATION_RUNS", "analysis"))
     else:
         # Running as script (not in IPython/Jupyter)
-        SIMULATION_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO"))
-        ANALYSIS_OUTPUT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "analysis_results"))
+        # FIX: Go to repo root (2 levels up from Analysis Pipeline), then to Simulation runs directory
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        repo_root = os.path.dirname(os.path.dirname(script_dir))  # Go up 2 levels to repo root
+        SIMULATION_ROOT = os.path.join(repo_root, "SIMULATION_RUNS", "universe")
+        ANALYSIS_OUTPUT_ROOT = os.path.join(repo_root, "SIMULATION_RUNS", "analysis")
     
     # Override with MASTER_CTRL if specified
     if MASTER_CTRL.get("SIMULATION_ROOT") is not None:

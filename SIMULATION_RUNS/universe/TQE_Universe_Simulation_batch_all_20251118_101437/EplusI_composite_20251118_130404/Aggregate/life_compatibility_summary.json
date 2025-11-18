@@ -1,0 +1,33 @@
+{
+  "metrics": {
+    "run_id": null,
+    "i_definition": "composite",
+    "total_universes": 175,
+    "stable_universes": 110,
+    "lockin_universes": 32,
+    "complexity_score": 75.9477,
+    "life_compatibility_score": 43.0303,
+    "information_richness": 91.4286,
+    "lockin_quality_component": 36.5714,
+    "goldilocks_precision_component": 99.843,
+    "planck_fit_component": 0.0,
+    "stability_quality_component": 29.0909,
+    "goldilocks_robustness_component": 100.0,
+    "meets_complexity_threshold": true,
+    "meets_life_threshold": false
+  },
+  "complexity_components": {
+    "lockin_quality": 36.57142857142857,
+    "goldilocks_precision": 99.84303588297236,
+    "information_richness": 91.42857142857142
+  },
+  "life_components": {
+    "planck_fit_quality": 0.0,
+    "stability_quality": 29.09090909090909,
+    "goldilocks_robustness": 100.0
+  },
+  "thresholds": {
+    "complexity": 60.0,
+    "life_compatibility": 60.0
+  }
+}

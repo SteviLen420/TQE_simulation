@@ -1,0 +1,15 @@
+{
+  "E": 0.766,
+  "I": 0.35561377045883613,
+  "alpha": 10.570600048671581,
+  "chi2_raw": 413147.3362579774,
+  "chi2_prior": 0.018677777777777713,
+  "chi2_total": 413147.3549357552,
+  "chi2_reduced": 1078.7137204588907,
+  "chi2_reduced_raw": 1081.537529471145,
+  "degrees_of_freedom": 382,
+  "prior_sigma": 0.03,
+  "prior_weight": 1.0,
+  "amplitude_calibrated": true,
+  "planck_score": 12970.465951513286
+}

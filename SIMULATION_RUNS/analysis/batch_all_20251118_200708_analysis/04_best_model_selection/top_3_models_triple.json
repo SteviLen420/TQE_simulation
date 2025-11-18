@@ -1,0 +1,92 @@
+{
+  "stability_focused": [
+    {
+      "i_definition": "shannon",
+      "stability_score": 100.0,
+      "lockin_score": 100.0,
+      "precision_score": 27.584359454774308,
+      "planck_score": 0.3280137529384053,
+      "anomaly_score": 20.54945054945055,
+      "bayesian_score": 87.49303483751768,
+      "stability_total_score": 60.63285346562477
+    },
+    {
+      "i_definition": "entanglement",
+      "stability_score": 100.0,
+      "lockin_score": 100.0,
+      "precision_score": 20.850106076815113,
+      "planck_score": 0.14847844180873038,
+      "anomaly_score": 20.54945054945055,
+      "bayesian_score": 87.4923871159948,
+      "stability_total_score": 59.58677601062881
+    },
+    {
+      "i_definition": "renyi",
+      "stability_score": 92.0,
+      "lockin_score": 69.14285714285714,
+      "precision_score": 15.88844806091626,
+      "planck_score": 0.3954497416134184,
+      "anomaly_score": 20.54945054945055,
+      "bayesian_score": 87.49190988823017,
+      "stability_total_score": 50.320469135388116
+    }
+  ],
+  "complexity_focused": [
+    {
+      "i_definition": "entanglement",
+      "complexity_score": 66.61591410663202,
+      "life_compatibility_score": 3.3355297976095777,
+      "information_richness": 100.0,
+      "stability_quality": 200.0,
+      "observational_score": 0.14847844180873038,
+      "complexity_total_score": 64.16430023090447
+    },
+    {
+      "i_definition": "shannon",
+      "complexity_score": 66.6202322501179,
+      "life_compatibility_score": 3.099767504350807,
+      "information_richness": 100.0,
+      "stability_quality": 200.0,
+      "observational_score": 0.3280137529384053,
+      "complexity_total_score": 64.12482453892281
+    },
+    {
+      "i_definition": "fisher_kl_fusion",
+      "complexity_score": 66.60506836859695,
+      "life_compatibility_score": 4.310625867536976,
+      "information_richness": 100.0,
+      "stability_quality": 149.71428571428572,
+      "observational_score": 0.5257364295931377,
+      "complexity_total_score": 59.41343261028106
+    }
+  ],
+  "physical_laws_focused": [
+    {
+      "i_definition": "shannon",
+      "emergent_laws_quality": 75.0,
+      "friedmann_consistency": 9.090909090909092,
+      "cmb_anomaly_match": 40.0,
+      "lockin_efficiency": 53.08311688311689,
+      "quantum_field_realism": 50.0,
+      "physical_laws_total_score": 45.73519480519481
+    },
+    {
+      "i_definition": "entanglement",
+      "emergent_laws_quality": 75.0,
+      "friedmann_consistency": 9.090909090909092,
+      "cmb_anomaly_match": 40.0,
+      "lockin_efficiency": 52.52727272727273,
+      "quantum_field_realism": 50.0,
+      "physical_laws_total_score": 45.651818181818186
+    },
+    {
+      "i_definition": "mutual_info",
+      "emergent_laws_quality": 75.0,
+      "friedmann_consistency": 9.090909090909092,
+      "cmb_anomaly_match": 40.0,
+      "lockin_efficiency": 34.89328063241107,
+      "quantum_field_realism": 50.0,
+      "physical_laws_total_score": 43.006719367588936
+    }
+  ]
+}

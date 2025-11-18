@@ -1,0 +1,2 @@
+i_definition,variant,BIC,AIC,AICc,log_likelihood,chi_squared,chi_squared_reduced,n_parameters,n_data_points,log_evidence,log_evidence_error,nested_n_iterations,nested_n_calls
+kl_divergence,full,413774.4473492095,413767.70186348335,413768.065499847,-206880.85093174168,413761.70186348335,6175.547789007214,3,70,-0.269807013470778,0.0032194684383614128,0,1

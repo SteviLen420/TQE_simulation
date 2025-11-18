@@ -1,0 +1,2 @@
+i_definition,variant,BIC,AIC,AICc,log_likelihood,chi_squared,chi_squared_reduced,n_parameters,n_data_points,log_evidence,log_evidence_error,nested_n_iterations,nested_n_calls
+mutual_info,full,412014.3497418347,412007.6042561085,412007.96789247217,-206000.80212805426,412001.6042561085,6149.277675464306,3,70,-0.29622822697212453,0.003219468438364398,0,1

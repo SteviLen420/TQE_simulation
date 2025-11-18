@@ -1,0 +1,2 @@
+i_definition,variant,BIC,AIC,AICc,log_likelihood,chi_squared,chi_squared_reduced,n_parameters,n_data_points,log_evidence,log_evidence_error,nested_n_iterations,nested_n_calls
+renyi,full,412138.2277682951,412131.48228256893,412131.8459189326,-206062.74114128447,412125.48228256893,6151.126601232372,3,70,-0.25668744469404864,0.0032194684383561683,0,1

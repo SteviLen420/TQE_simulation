@@ -1,0 +1,4 @@
+universe_type,count,percentage
+Unstable Only,98,56.0
+Stable Only,62,35.43
+Stable + Lock-in,15,8.57

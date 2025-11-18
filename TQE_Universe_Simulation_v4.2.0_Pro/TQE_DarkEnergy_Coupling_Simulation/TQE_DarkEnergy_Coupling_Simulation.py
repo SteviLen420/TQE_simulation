@@ -8829,16 +8829,19 @@ def run_automatic_tqe_darkenergy_pipeline():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_folder_name = f"TQE_DarkEnergy_Coupling_Simulation_v4.2.0PRO_{timestamp}"
     
-    # Google Drive integration - fixed path structure
+    # Output directory setup - Colab or local
     if COLAB:
         main_dir = "/content/drive/MyDrive/TQE_DarkEnergy_Coupling_Simulation"
         run_dir = f"{main_dir}/{run_folder_name}"
         print(f"✅ Google Drive main folder: {main_dir}")
         print(f"✅ Google Drive run folder: {run_dir}")
     else:
-        print("❌ Local execution detected - not supported")
-        print("💡 This pipeline requires Google Colab + Google Drive")
-        return None
+        # Local execution - use SIMULATION_RUNS/dark_energy
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        main_dir = os.path.join(repo_root, "SIMULATION_RUNS", "dark_energy")
+        run_dir = os.path.join(main_dir, run_folder_name)
+        print(f"✅ Local main folder: {main_dir}")
+        print(f"✅ Local run folder: {run_dir}")
     
     # Create directories
     try:

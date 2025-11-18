@@ -1,0 +1,2 @@
+i_definition,variant,BIC,AIC,AICc,log_likelihood,chi_squared,chi_squared_reduced,n_parameters,n_data_points,log_evidence,log_evidence_error,nested_n_iterations,nested_n_calls
+entanglement,full,413160.10042148136,413153.3549357552,413153.71857211884,-206573.6774678776,413147.3549357552,6166.378431876943,3,70,-0.3167444182904304,0.0032194684383569754,0,1

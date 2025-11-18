@@ -1225,12 +1225,12 @@ class PipelineContext:
         # Check if we're in multi-I parameter analysis mode
         elif self.config.get("MULTI_I_ANALYSIS_MODE", False):
             # Use the master save directory from multi-I analysis + run_id as subdirectory
-            master_save_dir = self.config.get("MULTI_I_SAVE_DIR", os.path.join(repo_root, "TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO"))
+            master_save_dir = self.config.get("MULTI_I_SAVE_DIR", os.path.join(repo_root, "SIMULATION_RUNS", "universe"))
             save_dir = os.path.join(master_save_dir, self.run_id)
             output_root = os.path.dirname(master_save_dir)  # Parent of master_save_dir
         else:
-            # Structure: TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO/TQE_Universe_Simulation_Full_Pipeline_EI_YYYYMMDD_HHMMSS/
-            output_root = os.path.join(repo_root, "TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO")
+            # Structure: SIMULATION_RUNS/universe/TQE_Universe_Simulation_{mode}_{timestamp}/
+            output_root = os.path.join(repo_root, "SIMULATION_RUNS", "universe")
             save_dir = os.path.join(output_root, self.run_id)
 
         # Simple directory structure - only PNG_Visualizations folder

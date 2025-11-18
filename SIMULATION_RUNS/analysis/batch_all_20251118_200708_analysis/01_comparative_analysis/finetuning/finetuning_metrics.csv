@@ -1,0 +1,11 @@
+i_definition,finetuning_score,age_deviation_from_planck,H0_deviation_from_planck,X_peak_uncertainty
+composite,,,,0.0032560582480705607
+entanglement,,,,0.0032424000541314145
+fisher,,,,0.003235281202623646
+fisher_kl_fusion,,,,0.003264815392581958
+jensen_shannon,,,,0.0032367354284770526
+kl_divergence,,,,0.0032756009428802873
+kl_shannon,,,,0.0032872202882173905
+mutual_info,,,,0.0032458432029507877
+renyi,,,,0.003256463588013859
+shannon,,,,0.003269750714758137

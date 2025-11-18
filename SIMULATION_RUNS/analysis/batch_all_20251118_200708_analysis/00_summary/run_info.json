@@ -1,0 +1,8 @@
+{
+  "target_mode": "batch_all",
+  "target_path": "/Users/stevilen/Documents/GitHub/TQE_simulation/TQE_Universe_Simulation_Full_Pipeline_v4.2.0_PRO/TQE_Universe_Simulation_batch_all_20251118_101437",
+  "has_eonly": true,
+  "n_eonly_runs": 1,
+  "n_ei_runs": 10,
+  "collection_timestamp": "20251118_200708"
+}

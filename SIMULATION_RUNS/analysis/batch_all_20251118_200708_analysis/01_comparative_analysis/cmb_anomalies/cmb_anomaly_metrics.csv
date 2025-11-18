@@ -1,0 +1,11 @@
+i_definition,n_coldspots_mean,coldspot_depth_mean,alignment_angle_mean,alignment_angle_std
+composite,0.0,,,
+entanglement,0.0,,,
+fisher,0.0,,,
+fisher_kl_fusion,0.0,,,
+jensen_shannon,0.0,,,
+kl_divergence,0.0,,,
+kl_shannon,0.0,,,
+mutual_info,0.0,,,
+renyi,0.0,,,
+shannon,0.0,,,

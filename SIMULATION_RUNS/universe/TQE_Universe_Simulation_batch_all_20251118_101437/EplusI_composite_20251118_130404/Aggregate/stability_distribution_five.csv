@@ -1,0 +1,9 @@
+category,count,percentage
+Unstable,65,37.142857142857146
+Stable,110,62.857142857142854
+"Lock-in
+(from Stable)",32,18.285714285714285
+"Finely-tuned
+|E-I|≤0.5",9,5.142857142857142
+"Coarsely-tuned
+|E-I|>0.5",23,13.142857142857142

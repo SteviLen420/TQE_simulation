@@ -1,0 +1,33 @@
+{
+  "metrics": {
+    "run_id": null,
+    "i_definition": "kl_shannon",
+    "total_universes": 175,
+    "stable_universes": 135,
+    "lockin_universes": 89,
+    "complexity_score": 99.9454,
+    "life_compatibility_score": 55.3086,
+    "information_richness": 100.0,
+    "lockin_quality_component": 100.0,
+    "goldilocks_precision_component": 99.8362,
+    "planck_fit_component": 0.0,
+    "stability_quality_component": 65.9259,
+    "goldilocks_robustness_component": 100.0,
+    "meets_complexity_threshold": true,
+    "meets_life_threshold": false
+  },
+  "complexity_components": {
+    "lockin_quality": 100.0,
+    "goldilocks_precision": 99.83621610355303,
+    "information_richness": 100.0
+  },
+  "life_components": {
+    "planck_fit_quality": 0.0,
+    "stability_quality": 65.92592592592592,
+    "goldilocks_robustness": 100.0
+  },
+  "thresholds": {
+    "complexity": 60.0,
+    "life_compatibility": 60.0
+  }
+}

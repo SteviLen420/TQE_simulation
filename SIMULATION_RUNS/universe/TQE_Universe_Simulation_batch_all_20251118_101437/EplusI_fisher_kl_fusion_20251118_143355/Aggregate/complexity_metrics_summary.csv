@@ -1,0 +1,2 @@
+run_id,i_definition,total_universes,stable_universes,lockin_universes,complexity_score,life_compatibility_score,information_richness,lockin_quality_component,goldilocks_precision_component,planck_fit_component,stability_quality_component,goldilocks_robustness_component,meets_complexity_threshold,meets_life_threshold
+,fisher_kl_fusion,175,161,131,99.9384,60.4555,100.0,100.0,99.8152,0.0,81.3665,100.0,True,True

@@ -1,0 +1,777 @@
+{
+  "friedmann_results": [
+    {
+      "universe_id": "156",
+      "E": 0.766,
+      "I": 0.09630388175843344,
+      "age_Gyr": 305391684.58036417,
+      "redshift_analysis": [
+        {
+          "redshift": 0.0,
+          "scale_factor": 1.0,
+          "hubble_parameter": 67.36,
+          "matter_density": 0.3153,
+          "dark_energy_density": 0.766,
+          "total_density": 1.0813000000000001,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 1.0,
+          "scale_factor": 0.5,
+          "hubble_parameter": 115.95315260362695,
+          "matter_density": 2.5224,
+          "dark_energy_density": 0.766,
+          "total_density": 3.2884,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 3.0,
+          "scale_factor": 0.25,
+          "hubble_parameter": 298.5530160126338,
+          "matter_density": 20.1792,
+          "dark_energy_density": 0.766,
+          "total_density": 20.9452,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 10.0,
+          "scale_factor": 0.09090909090909091,
+          "hubble_parameter": 1364.9220476542973,
+          "matter_density": 419.6643,
+          "dark_energy_density": 0.766,
+          "total_density": 420.43030000000005,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 1100.0,
+          "scale_factor": 0.0009082652134423251,
+          "hubble_parameter": 1381637.7212936003,
+          "matter_density": 420809879.80530006,
+          "dark_energy_density": 0.766,
+          "total_density": 420809880.5713,
+          "epoch": "matter_dominated"
+        }
+      ],
+      "quantum_fluctuations": {
+        "vacuum_energy": 0.735076877342696,
+        "quantum_correction": 4.3721894676875243e-08,
+        "entanglement_entropy": 0.06675276411783648,
+        "information_bound": 0.01734487437273741,
+        "scale_factor": 1.0
+      },
+      "entanglement_network": {
+        "causal_scale": 101.32000000000001,
+        "entanglement_density": 0.03589279780109004,
+        "error_correction_threshold": 0.07981519408792168,
+        "holographic_entropy": 32561.368446598415,
+        "comoving_distance": 100.0
+      },
+      "anomalies": {
+        "topological_defects": "False",
+        "magnetic_field_strength": 9.078945729569386e-10,
+        "string_tension": 1.0264e-06,
+        "string_density": 0.09192607763516868,
+        "wall_energy_density": 1.0198e-12,
+        "wall_probability": 0.041926077635168674,
+        "pbh_mass_fraction": 9.728303881758433e-07,
+        "anomaly_seed": 42
+      }
+    },
+    {
+      "universe_id": "145",
+      "E": 0.766,
+      "I": 0.18558900396100386,
+      "age_Gyr": 305391684.58036417,
+      "redshift_analysis": [
+        {
+          "redshift": 0.0,
+          "scale_factor": 1.0,
+          "hubble_parameter": 67.36,
+          "matter_density": 0.3153,
+          "dark_energy_density": 0.766,
+          "total_density": 1.0813000000000001,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 1.0,
+          "scale_factor": 0.5,
+          "hubble_parameter": 115.95315260362695,
+          "matter_density": 2.5224,
+          "dark_energy_density": 0.766,
+          "total_density": 3.2884,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 3.0,
+          "scale_factor": 0.25,
+          "hubble_parameter": 298.5530160126338,
+          "matter_density": 20.1792,
+          "dark_energy_density": 0.766,
+          "total_density": 20.9452,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 10.0,
+          "scale_factor": 0.09090909090909091,
+          "hubble_parameter": 1364.9220476542973,
+          "matter_density": 419.6643,
+          "dark_energy_density": 0.766,
+          "total_density": 420.43030000000005,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 1100.0,
+          "scale_factor": 0.0009082652134423251,
+          "hubble_parameter": 1381637.7212936003,
+          "matter_density": 420809879.80530006,
+          "dark_energy_density": 0.766,
+          "total_density": 420809880.5713,
+          "epoch": "matter_dominated"
+        }
+      ],
+      "quantum_fluctuations": {
+        "vacuum_energy": 0.7419161177034129,
+        "quantum_correction": 8.425727744519098e-08,
+        "entanglement_entropy": 0.12864049483849835,
+        "information_bound": 0.04132399051158821,
+        "scale_factor": 1.0
+      },
+      "entanglement_network": {
+        "causal_scale": 101.32000000000001,
+        "entanglement_density": 0.0691696790580788,
+        "error_correction_threshold": 0.0842794501980502,
+        "holographic_entropy": 32849.31993804373,
+        "comoving_distance": 100.0
+      },
+      "anomalies": {
+        "topological_defects": "False",
+        "magnetic_field_strength": 9.355640323275152e-10,
+        "string_tension": 1.0264e-06,
+        "string_density": 0.09371178007922008,
+        "wall_energy_density": 1.0198e-12,
+        "wall_probability": 0.04371178007922008,
+        "pbh_mass_fraction": 9.817589003961004e-07,
+        "anomaly_seed": 42
+      }
+    },
+    {
+      "universe_id": "101",
+      "E": 0.728188465060694,
+      "I": 0.23340366026112402,
+      "age_Gyr": 305391684.58036417,
+      "redshift_analysis": [
+        {
+          "redshift": 0.0,
+          "scale_factor": 1.0,
+          "hubble_parameter": 67.35999999999999,
+          "matter_density": 0.3153,
+          "dark_energy_density": 0.728188465060694,
+          "total_density": 1.043488465060694,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 1.0,
+          "scale_factor": 0.5,
+          "hubble_parameter": 118.15171740693758,
+          "matter_density": 2.5224,
+          "dark_energy_density": 0.728188465060694,
+          "total_density": 3.2505884650606944,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 3.0,
+          "scale_factor": 0.25,
+          "hubble_parameter": 302.83225886236784,
+          "matter_density": 20.1792,
+          "dark_energy_density": 0.728188465060694,
+          "total_density": 20.907388465060695,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 10.0,
+          "scale_factor": 0.09090909090909091,
+          "hubble_parameter": 1372.4430717783353,
+          "matter_density": 419.6643,
+          "dark_energy_density": 0.728188465060694,
+          "total_density": 420.3924884650607,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 1100.0,
+          "scale_factor": 0.0009082652134423251,
+          "hubble_parameter": 1381712.9817311042,
+          "matter_density": 420809879.80530006,
+          "dark_energy_density": 0.728188465060694,
+          "total_density": 420809880.5334885,
+          "epoch": "matter_dominated"
+        }
+      ],
+      "quantum_fluctuations": {
+        "vacuum_energy": 0.7087752271181689,
+        "quantum_correction": 1.0596509782161908e-07,
+        "entanglement_entropy": 0.16178308904236946,
+        "information_bound": 0.06501190452753809,
+        "scale_factor": 1.0
+      },
+      "entanglement_network": {
+        "causal_scale": 100.5637693012139,
+        "entanglement_density": 0.08634712330636458,
+        "error_correction_threshold": 0.0866701830130562,
+        "holographic_entropy": 32512.70205640669,
+        "comoving_distance": 100.0
+      },
+      "anomalies": {
+        "topological_defects": "False",
+        "magnetic_field_strength": 9.329880893674786e-10,
+        "string_tension": 1.0112753860242775e-06,
+        "string_density": 0.09466807320522248,
+        "wall_energy_density": 1.0084565395182082e-12,
+        "wall_probability": 0.04466807320522248,
+        "pbh_mass_fraction": 9.789780590382512e-07,
+        "anomaly_seed": 42
+      }
+    },
+    {
+      "universe_id": "127",
+      "E": 0.72,
+      "I": 0.1310686136303733,
+      "age_Gyr": 305391684.58036417,
+      "redshift_analysis": [
+        {
+          "redshift": 0.0,
+          "scale_factor": 1.0,
+          "hubble_parameter": 67.35999999999999,
+          "matter_density": 0.3153,
+          "dark_energy_density": 0.72,
+          "total_density": 1.0352999999999999,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 1.0,
+          "scale_factor": 0.5,
+          "hubble_parameter": 118.62247090463089,
+          "matter_density": 2.5224,
+          "dark_energy_density": 0.72,
+          "total_density": 3.2424,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 3.0,
+          "scale_factor": 0.25,
+          "hubble_parameter": 303.7510302768371,
+          "matter_density": 20.1792,
+          "dark_energy_density": 0.72,
+          "total_density": 20.8992,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 10.0,
+          "scale_factor": 0.09090909090909091,
+          "hubble_parameter": 1374.0664017305714,
+          "matter_density": 419.6643,
+          "dark_energy_density": 0.72,
+          "total_density": 420.38430000000005,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 1100.0,
+          "scale_factor": 0.0009082652134423251,
+          "hubble_parameter": 1381729.2795895697,
+          "matter_density": 420809879.80530006,
+          "dark_energy_density": 0.72,
+          "total_density": 420809880.5253001,
+          "epoch": "matter_dominated"
+        }
+      ],
+      "quantum_fluctuations": {
+        "vacuum_energy": 0.6934369401813869,
+        "quantum_correction": 5.9505058528852135e-08,
+        "entanglement_entropy": 0.09084983999779407,
+        "information_bound": 0.02437990910551045,
+        "scale_factor": 1.0
+      },
+      "entanglement_network": {
+        "causal_scale": 100.4,
+        "entanglement_density": 0.048409932906046546,
+        "error_correction_threshold": 0.08155343068151867,
+        "holographic_entropy": 32082.821498483754,
+        "comoving_distance": 100.0
+      },
+      "anomalies": {
+        "topological_defects": "False",
+        "magnetic_field_strength": 8.982137899300031e-10,
+        "string_tension": 1.008e-06,
+        "string_density": 0.09262137227260747,
+        "wall_energy_density": 1.006e-12,
+        "wall_probability": 0.04262137227260747,
+        "pbh_mass_fraction": 9.671068613630373e-07,
+        "anomaly_seed": 42
+      }
+    },
+    {
+      "universe_id": "141",
+      "E": 0.766,
+      "I": 0.14020599697748914,
+      "age_Gyr": 305391684.58036417,
+      "redshift_analysis": [
+        {
+          "redshift": 0.0,
+          "scale_factor": 1.0,
+          "hubble_parameter": 67.36,
+          "matter_density": 0.3153,
+          "dark_energy_density": 0.766,
+          "total_density": 1.0813000000000001,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 1.0,
+          "scale_factor": 0.5,
+          "hubble_parameter": 115.95315260362695,
+          "matter_density": 2.5224,
+          "dark_energy_density": 0.766,
+          "total_density": 3.2884,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 3.0,
+          "scale_factor": 0.25,
+          "hubble_parameter": 298.5530160126338,
+          "matter_density": 20.1792,
+          "dark_energy_density": 0.766,
+          "total_density": 20.9452,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 10.0,
+          "scale_factor": 0.09090909090909091,
+          "hubble_parameter": 1364.9220476542973,
+          "matter_density": 419.6643,
+          "dark_energy_density": 0.766,
+          "total_density": 420.43030000000005,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 1100.0,
+          "scale_factor": 0.0009082652134423251,
+          "hubble_parameter": 1381637.7212936003,
+          "matter_density": 420809879.80530006,
+          "dark_energy_density": 0.766,
+          "total_density": 420809880.5713,
+          "epoch": "matter_dominated"
+        }
+      ],
+      "quantum_fluctuations": {
+        "vacuum_energy": 0.7384397793684757,
+        "quantum_correction": 6.365342415057171e-08,
+        "entanglement_entropy": 0.0971833915025428,
+        "information_bound": 0.02665037739778445,
+        "scale_factor": 1.0
+      },
+      "entanglement_network": {
+        "causal_scale": 101.32000000000001,
+        "entanglement_density": 0.052255271626915165,
+        "error_correction_threshold": 0.08201029984887447,
+        "holographic_entropy": 32702.95619652891,
+        "comoving_distance": 100.0
+      },
+      "anomalies": {
+        "topological_defects": "False",
+        "magnetic_field_strength": 9.21499838463324e-10,
+        "string_tension": 1.0264e-06,
+        "string_density": 0.09280411993954979,
+        "wall_energy_density": 1.0198e-12,
+        "wall_probability": 0.04280411993954979,
+        "pbh_mass_fraction": 9.77220599697749e-07,
+        "anomaly_seed": 42
+      }
+    },
+    {
+      "universe_id": "139",
+      "E": 0.766,
+      "I": 0.1014791123853777,
+      "age_Gyr": 305391684.58036417,
+      "redshift_analysis": [
+        {
+          "redshift": 0.0,
+          "scale_factor": 1.0,
+          "hubble_parameter": 67.36,
+          "matter_density": 0.3153,
+          "dark_energy_density": 0.766,
+          "total_density": 1.0813000000000001,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 1.0,
+          "scale_factor": 0.5,
+          "hubble_parameter": 115.95315260362695,
+          "matter_density": 2.5224,
+          "dark_energy_density": 0.766,
+          "total_density": 3.2884,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 3.0,
+          "scale_factor": 0.25,
+          "hubble_parameter": 298.5530160126338,
+          "matter_density": 20.1792,
+          "dark_energy_density": 0.766,
+          "total_density": 20.9452,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 10.0,
+          "scale_factor": 0.09090909090909091,
+          "hubble_parameter": 1364.9220476542973,
+          "matter_density": 419.6643,
+          "dark_energy_density": 0.766,
+          "total_density": 420.43030000000005,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 1100.0,
+          "scale_factor": 0.0009082652134423251,
+          "hubble_parameter": 1381637.7212936003,
+          "matter_density": 420809879.80530006,
+          "dark_energy_density": 0.766,
+          "total_density": 420809880.5713,
+          "epoch": "matter_dominated"
+        }
+      ],
+      "quantum_fluctuations": {
+        "vacuum_energy": 0.73547330000872,
+        "quantum_correction": 4.6071445746554546e-08,
+        "entanglement_entropy": 0.07033996063565037,
+        "information_bound": 0.01824933237822029,
+        "scale_factor": 1.0
+      },
+      "entanglement_network": {
+        "causal_scale": 101.32000000000001,
+        "entanglement_density": 0.03782162458434327,
+        "error_correction_threshold": 0.08007395561926889,
+        "holographic_entropy": 32578.058969507947,
+        "comoving_distance": 100.0
+      },
+      "anomalies": {
+        "topological_defects": "False",
+        "magnetic_field_strength": 9.094983769282286e-10,
+        "string_tension": 1.0264e-06,
+        "string_density": 0.09202958224770756,
+        "wall_energy_density": 1.0198e-12,
+        "wall_probability": 0.04202958224770756,
+        "pbh_mass_fraction": 9.73347911238538e-07,
+        "anomaly_seed": 42
+      }
+    },
+    {
+      "universe_id": "42",
+      "E": 0.766,
+      "I": 0.14070444582880126,
+      "age_Gyr": 305391684.58036417,
+      "redshift_analysis": [
+        {
+          "redshift": 0.0,
+          "scale_factor": 1.0,
+          "hubble_parameter": 67.36,
+          "matter_density": 0.3153,
+          "dark_energy_density": 0.766,
+          "total_density": 1.0813000000000001,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 1.0,
+          "scale_factor": 0.5,
+          "hubble_parameter": 115.95315260362695,
+          "matter_density": 2.5224,
+          "dark_energy_density": 0.766,
+          "total_density": 3.2884,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 3.0,
+          "scale_factor": 0.25,
+          "hubble_parameter": 298.5530160126338,
+          "matter_density": 20.1792,
+          "dark_energy_density": 0.766,
+          "total_density": 20.9452,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 10.0,
+          "scale_factor": 0.09090909090909091,
+          "hubble_parameter": 1364.9220476542973,
+          "matter_density": 419.6643,
+          "dark_energy_density": 0.766,
+          "total_density": 420.43030000000005,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 1100.0,
+          "scale_factor": 0.0009082652134423251,
+          "hubble_parameter": 1381637.7212936003,
+          "matter_density": 420809879.80530006,
+          "dark_energy_density": 0.766,
+          "total_density": 420809880.5713,
+          "epoch": "matter_dominated"
+        }
+      ],
+      "quantum_fluctuations": {
+        "vacuum_energy": 0.7384779605504862,
+        "quantum_correction": 6.387971957896932e-08,
+        "entanglement_entropy": 0.09752888991848314,
+        "information_bound": 0.026779981221307973,
+        "scale_factor": 1.0
+      },
+      "entanglement_network": {
+        "causal_scale": 101.32000000000001,
+        "entanglement_density": 0.05244104527910509,
+        "error_correction_threshold": 0.08203522229144007,
+        "holographic_entropy": 32704.563732998635,
+        "comoving_distance": 100.0
+      },
+      "anomalies": {
+        "topological_defects": "False",
+        "magnetic_field_strength": 9.216543077623455e-10,
+        "string_tension": 1.0264e-06,
+        "string_density": 0.09281408891657603,
+        "wall_energy_density": 1.0198e-12,
+        "wall_probability": 0.04281408891657603,
+        "pbh_mass_fraction": 9.772704445828803e-07,
+        "anomaly_seed": 42
+      }
+    },
+    {
+      "universe_id": "15",
+      "E": 0.72,
+      "I": 0.19002829322938777,
+      "age_Gyr": 305391684.58036417,
+      "redshift_analysis": [
+        {
+          "redshift": 0.0,
+          "scale_factor": 1.0,
+          "hubble_parameter": 67.35999999999999,
+          "matter_density": 0.3153,
+          "dark_energy_density": 0.72,
+          "total_density": 1.0352999999999999,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 1.0,
+          "scale_factor": 0.5,
+          "hubble_parameter": 118.62247090463089,
+          "matter_density": 2.5224,
+          "dark_energy_density": 0.72,
+          "total_density": 3.2424,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 3.0,
+          "scale_factor": 0.25,
+          "hubble_parameter": 303.7510302768371,
+          "matter_density": 20.1792,
+          "dark_energy_density": 0.72,
+          "total_density": 20.8992,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 10.0,
+          "scale_factor": 0.09090909090909091,
+          "hubble_parameter": 1374.0664017305714,
+          "matter_density": 419.6643,
+          "dark_energy_density": 0.72,
+          "total_density": 420.38430000000005,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 1100.0,
+          "scale_factor": 0.0009082652134423251,
+          "hubble_parameter": 1381729.2795895697,
+          "matter_density": 420809879.80530006,
+          "dark_energy_density": 0.72,
+          "total_density": 420809880.5253001,
+          "epoch": "matter_dominated"
+        }
+      ],
+      "quantum_fluctuations": {
+        "vacuum_energy": 0.6976820371125159,
+        "quantum_correction": 8.627271165499081e-08,
+        "entanglement_entropy": 0.13171757567856868,
+        "information_bound": 0.043118927129579585,
+        "scale_factor": 1.0
+      },
+      "entanglement_network": {
+        "causal_scale": 100.4,
+        "entanglement_density": 0.07018657381566598,
+        "error_correction_threshold": 0.08450141466146939,
+        "holographic_entropy": 32269.533576777052,
+        "comoving_distance": 100.0
+      },
+      "anomalies": {
+        "topological_defects": "False",
+        "magnetic_field_strength": 9.160785728485044e-10,
+        "string_tension": 1.008e-06,
+        "string_density": 0.09380056586458776,
+        "wall_energy_density": 1.006e-12,
+        "wall_probability": 0.043800565864587755,
+        "pbh_mass_fraction": 9.730028293229388e-07,
+        "anomaly_seed": 42
+      }
+    },
+    {
+      "universe_id": "126",
+      "E": 0.735005194898567,
+      "I": 0.09792466110079612,
+      "age_Gyr": 305391684.58036417,
+      "redshift_analysis": [
+        {
+          "redshift": 0.0,
+          "scale_factor": 1.0,
+          "hubble_parameter": 67.35999999999999,
+          "matter_density": 0.3153,
+          "dark_energy_density": 0.735005194898567,
+          "total_density": 1.0503051948985669,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 1.0,
+          "scale_factor": 0.5,
+          "hubble_parameter": 117.75838933169688,
+          "matter_density": 2.5224,
+          "dark_energy_density": 0.735005194898567,
+          "total_density": 3.257405194898567,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 3.0,
+          "scale_factor": 0.25,
+          "hubble_parameter": 302.065268885083,
+          "matter_density": 20.1792,
+          "dark_energy_density": 0.735005194898567,
+          "total_density": 20.914205194898567,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 10.0,
+          "scale_factor": 0.09090909090909091,
+          "hubble_parameter": 1371.0902167778095,
+          "matter_density": 419.6643,
+          "dark_energy_density": 0.735005194898567,
+          "total_density": 420.3993051948986,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 1100.0,
+          "scale_factor": 0.0009082652134423251,
+          "hubble_parameter": 1381699.4139503338,
+          "matter_density": 420809879.80530006,
+          "dark_energy_density": 0.735005194898567,
+          "total_density": 420809880.54030526,
+          "epoch": "matter_dominated"
+        }
+      ],
+      "quantum_fluctuations": {
+        "vacuum_energy": 0.7054524486154153,
+        "quantum_correction": 4.445772735991277e-08,
+        "entanglement_entropy": 0.06787620274930498,
+        "information_bound": 0.017623292391878993,
+        "scale_factor": 1.0
+      },
+      "entanglement_network": {
+        "causal_scale": 100.70010389797135,
+        "entanglement_density": 0.036275797520876965,
+        "error_correction_threshold": 0.07989623305503982,
+        "holographic_entropy": 32169.316691352677,
+        "comoving_distance": 100.0
+      },
+      "anomalies": {
+        "topological_defects": "False",
+        "magnetic_field_strength": 8.947687869392114e-10,
+        "string_tension": 1.0140020779594268e-06,
+        "string_density": 0.09195849322201594,
+        "wall_energy_density": 1.01050155846957e-12,
+        "wall_probability": 0.041958493222015926,
+        "pbh_mass_fraction": 9.667935050897932e-07,
+        "anomaly_seed": 42
+      }
+    },
+    {
+      "universe_id": "65",
+      "E": 0.766,
+      "I": 0.22602670841955183,
+      "age_Gyr": 305391684.58036417,
+      "redshift_analysis": [
+        {
+          "redshift": 0.0,
+          "scale_factor": 1.0,
+          "hubble_parameter": 67.36,
+          "matter_density": 0.3153,
+          "dark_energy_density": 0.766,
+          "total_density": 1.0813000000000001,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 1.0,
+          "scale_factor": 0.5,
+          "hubble_parameter": 115.95315260362695,
+          "matter_density": 2.5224,
+          "dark_energy_density": 0.766,
+          "total_density": 3.2884,
+          "epoch": "transition_era"
+        },
+        {
+          "redshift": 3.0,
+          "scale_factor": 0.25,
+          "hubble_parameter": 298.5530160126338,
+          "matter_density": 20.1792,
+          "dark_energy_density": 0.766,
+          "total_density": 20.9452,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 10.0,
+          "scale_factor": 0.09090909090909091,
+          "hubble_parameter": 1364.9220476542973,
+          "matter_density": 419.6643,
+          "dark_energy_density": 0.766,
+          "total_density": 420.43030000000005,
+          "epoch": "matter_dominated"
+        },
+        {
+          "redshift": 1100.0,
+          "scale_factor": 0.0009082652134423251,
+          "hubble_parameter": 1381637.7212936003,
+          "matter_density": 420809879.80530006,
+          "dark_energy_density": 0.766,
+          "total_density": 420809880.5713,
+          "epoch": "matter_dominated"
+        }
+      ],
+      "quantum_fluctuations": {
+        "vacuum_energy": 0.7450136458649377,
+        "quantum_correction": 1.0261596686693297e-07,
+        "entanglement_entropy": 0.1566697756722572,
+        "information_bound": 0.060669122225381976,
+        "scale_factor": 1.0
+      },
+      "entanglement_network": {
+        "causal_scale": 101.32000000000001,
+        "entanglement_density": 0.08424095472390934,
+        "error_correction_threshold": 0.0863013354209776,
+        "holographic_entropy": 32979.73469273315,
+        "comoving_distance": 100.0
+      },
+      "anomalies": {
+        "topological_defects": "False",
+        "magnetic_field_strength": 9.480956769392192e-10,
+        "string_tension": 1.0264e-06,
+        "string_density": 0.09452053416839104,
+        "wall_energy_density": 1.0198e-12,
+        "wall_probability": 0.04452053416839104,
+        "pbh_mass_fraction": 9.858026708419553e-07,
+        "anomaly_seed": 42
+      }
+    }
+  ],
+  "analysis_timestamp": "2025-11-18T14:32:54.230868",
+  "pipeline_variant": "full",
+  "enhanced_physics_enabled": true
+}

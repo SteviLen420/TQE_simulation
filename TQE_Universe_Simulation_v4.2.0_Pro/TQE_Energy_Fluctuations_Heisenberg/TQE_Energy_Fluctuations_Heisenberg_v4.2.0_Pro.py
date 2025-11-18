@@ -412,7 +412,9 @@ BASE_FOLDER_NAME = MASTER_CTRL["BASE_FOLDER_NAME"]
 if IN_COLAB:
     ROOT_DIR = f"/content/drive/MyDrive/{BASE_FOLDER_NAME}"
 else:
-    ROOT_DIR = os.path.join(os.getcwd(), BASE_FOLDER_NAME)
+    # Use SIMULATION_RUNS/heisenberg directory in repo root
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ROOT_DIR = os.path.join(repo_root, "SIMULATION_RUNS", "heisenberg")
 
 os.makedirs(ROOT_DIR, exist_ok=True)
 

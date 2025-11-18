@@ -1,0 +1,10 @@
+law_type,law_strength,law_quality,statistical_significance,universe_count
+energy_conservation,0.976098359759215,excellent,0.9755130822608071,175
+E_I_symmetry,0.6455090560407775,good,0.6455090560407775,175
+X_stability_scaling,,fair,,175
+lock_in_emergence,1.0,excellent,1.0,175
+quantum_uncertainty,0.37163599173255024,excellent,0.37163599173255024,175
+boltzmann_distribution,0.9464471542688919,excellent,0.9464471542688919,175
+field_correlation,0.6455090560407775,good,0.6455090560407775,175
+geometric_scaling,4.891063647965675,good,0.4891063647965675,175
+information_conservation,0.9000497334324576,good,0.8889502847955202,175

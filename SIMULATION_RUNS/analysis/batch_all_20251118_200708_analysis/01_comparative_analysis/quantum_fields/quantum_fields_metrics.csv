@@ -1,0 +1,11 @@
+i_definition,vacuum_energy_mean,vacuum_energy_std,zero_point_energy_mean,quantum_fluctuation_mean
+composite,,,,
+entanglement,,,,
+fisher,,,,
+fisher_kl_fusion,,,,
+jensen_shannon,,,,
+kl_divergence,,,,
+kl_shannon,,,,
+mutual_info,,,,
+renyi,,,,
+shannon,,,,

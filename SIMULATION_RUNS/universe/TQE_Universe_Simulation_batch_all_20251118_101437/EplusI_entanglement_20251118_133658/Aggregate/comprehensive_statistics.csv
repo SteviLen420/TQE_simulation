@@ -1,0 +1,2 @@
+total_universes,stable_universes,unstable_universes,lockin_universes,E_mean,E_std,E_min,E_max,E_median,I_mean,I_std,I_min,I_max,I_median,X_mean,X_std,X_min,X_max,X_median,stability_rate,lockin_rate,E_I_correlation,E_stability_correlation,I_stability_correlation,X_stability_correlation
+175,175,0,175,0.7520679108997799,0.018051453878309306,0.72,0.766,0.766,0.39492036385817203,0.061284940419845835,0.2311454745072297,0.563925282865585,0.3936881948987882,22.14992476744269,0.9486089246627639,19.480618541130134,24.55065509158053,22.242949957285187,1.0,1.0,-0.5616616216545633,,,

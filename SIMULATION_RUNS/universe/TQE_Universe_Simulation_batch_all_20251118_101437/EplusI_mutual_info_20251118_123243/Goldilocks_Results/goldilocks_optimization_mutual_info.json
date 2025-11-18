@@ -1,0 +1,17 @@
+{
+  "i_definition": "mutual_info",
+  "variant": "full",
+  "X_low": 20.081884514798503,
+  "X_high": 29.04458694221255,
+  "X_peak": 20.081884514798503,
+  "X_peak_std": 0.0032458432029507877,
+  "stability_peak": 1.0,
+  "total_sampled": 75,
+  "calibration_budget": 75,
+  "method": "bayesian_adaptive_gp",
+  "acquisition_function": "UCB",
+  "n_iterations": 75,
+  "exploration_samples": 22,
+  "exploitation_samples": 30,
+  "refinement_samples": 23
+}
