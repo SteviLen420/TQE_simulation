@@ -19,7 +19,7 @@ MASTER_CTRL = {
     "PIPELINE_VARIANT":      "full",        # "full" (E+I) | "energy_only" (E-only) - auto-set by RUN_MODE
     
     # === RUN MODE SELECTION ===
-    "RUN_MODE":              "single_ei",   # "single_eonly" | "single_ei" | "batch_ei" | "batch_all"
+    "RUN_MODE":              "batch_all",   # "single_eonly" | "single_ei" | "batch_ei" | "batch_all"
     
     # === I-PARAMETER ===
     "I_DEFINITION_MODE":     "jensen_shannon",  # Active I-definition (used if RUN_MODE = "single_ei")
@@ -51,7 +51,7 @@ MASTER_CTRL = {
                                                    # Recommended: 0.005 (low noise), 0.01 (balanced), 0.05 (high noise)
     
     # === UNIVERSE SAMPLING ===
-    "NUM_UNIVERSES":         300,       # PHASE 1-28 universes (main simulation) - kompromisszum: gyors + elég statisztika
+    "NUM_UNIVERSES":         500,       # PHASE 1-28 universes (main simulation) - kompromisszum: gyors + elég statisztika
                                         # 30% Bayesian (90) + 70% full sim (210) - jobb esély a Planck értékekhez
     "SEED":                  None,     # Master seed (None = auto)
     

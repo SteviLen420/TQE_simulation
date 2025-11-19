@@ -3,6 +3,7 @@
 #
 # Monte Carlo simulation module
 #
+import os
 import numpy as np
 import pandas as pd
 import multiprocessing
@@ -10,6 +11,7 @@ from tqdm.auto import tqdm
 from ..config.master_ctrl import MASTER_CTRL
 from ..core.pipeline_context import PipelineContext
 from ..core.physics_engine import PhysicsEngine
+from .goldilocks import bayesian_adaptive_goldilocks, simulate_lock_in
 
 def _run_single_universe(args):
     """Multiprocessing worker function."""

@@ -13,6 +13,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
 _PLANCK_WARNING_EMITTED = False
 
 class PipelineContext:
@@ -97,7 +99,7 @@ class PipelineContext:
         
         # Simple paths structure - only PNG_Visualizations folder + Categorized_Results
         paths = {
-            "REPO_ROOT": repo_root,
+            "REPO_ROOT": REPO_ROOT,
             "OUTPUT_ROOT": output_root,
             "SAVE_DIR": save_dir,
             "GOLDILOCKS_DIR": goldilocks_results_dir,

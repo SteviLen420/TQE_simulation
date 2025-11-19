@@ -1,7 +1,6 @@
 SPDX-License-Identifier: MIT
 
-**Author:** Stefan Len  
-**Contact:** stefan@tqe-theory.space
+Copyright (c) 2025 Stefan Len
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
@@ -12,6 +11,9 @@ SPDX-License-Identifier: MIT
 [![Status](https://img.shields.io/badge/status-active%20development-green)](#)
 
 # TQE Universe Simulation Suite v4.2.0 PRO
+
+**Author:** Stefan Len  
+**Contact:** stefan@tqe-theory.space
 
 This repository hosts every active component of the TQE research stack. All pipelines run locally (no Colab), write their outputs either to `~/SIMULATION_RUNS` or to user Desktop folders, and rely on the shared Planck dataset located in `~/Desktop/CMB_MAPS`. The repository also keeps the original monolithic scripts archived for reference.
 

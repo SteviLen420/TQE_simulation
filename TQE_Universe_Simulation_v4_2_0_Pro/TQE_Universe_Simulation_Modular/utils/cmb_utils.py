@@ -4,6 +4,14 @@
 # CMB utility functions
 #
 import numpy as np
+from ..core.pipeline_context import PipelineContext
+
+try:
+    import healpy as hp  # type: ignore
+    HEALPY_AVAILABLE = True
+except ImportError:
+    hp = None  # type: ignore
+    HEALPY_AVAILABLE = False
 
 # CMB cache functions
 # ======== PERFORMANCE: CMB CACHE ========

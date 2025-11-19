@@ -3,10 +3,14 @@
 #
 # Goldilocks optimization module
 #
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from tqdm.auto import tqdm
 from ..config.master_ctrl import MASTER_CTRL
+from ..core.pipeline_context import PipelineContext
+from ..core.physics_engine import PhysicsEngine
 
 def bayesian_adaptive_goldilocks(ctx: PipelineContext, total_budget: int = 1000):
     """
