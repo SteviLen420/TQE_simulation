@@ -1,2 +1,0 @@
-run_id,i_definition,total_universes,stable_universes,lockin_universes,complexity_score,life_compatibility_score,information_richness,lockin_quality_component,goldilocks_precision_component,planck_fit_component,stability_quality_component,goldilocks_robustness_component,meets_complexity_threshold,meets_life_threshold
-,energy_only,175,175,175,66.5929,50.0,0.0,100.0,99.7787,0.0,100.0,50.0,True,False

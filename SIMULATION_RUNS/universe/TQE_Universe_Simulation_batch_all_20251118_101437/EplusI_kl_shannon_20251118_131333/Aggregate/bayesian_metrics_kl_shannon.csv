@@ -1,2 +1,0 @@
-i_definition,variant,BIC,AIC,AICc,log_likelihood,chi_squared,chi_squared_reduced,n_parameters,n_data_points,log_evidence,log_evidence_error,nested_n_iterations,nested_n_calls
-kl_shannon,full,411320.7809905246,411314.03550479846,411314.3991411621,-205654.01775239923,411308.03550479846,6138.925903056694,3,70,-0.27865552934170573,0.003219468438364163,0,1

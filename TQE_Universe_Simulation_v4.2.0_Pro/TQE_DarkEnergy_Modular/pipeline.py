@@ -9,9 +9,42 @@
 
 import numpy as np
 import os
+import json
+import glob
+from datetime import datetime
+import pandas as pd
+from tqdm import tqdm
 from .config import MASTER_CTRL, FIDUCIAL_PARAMS
 from .simulation import TQEDarkEnergyCouplingSimulation
 from .tqe_core import EnergyInformationContent, CouplingModel
+from .utils import (
+    set_deterministic_seed, cleanup_memory, save_reproducibility_snapshot
+)
+from .visualization import (
+    compare_eonly_vs_eplusi, find_goldilocks_zone_bayesian,
+    compute_bayes_factors_all_models, create_bayes_factor_plot, get_file_prefix
+)
+from .diagnostics import (
+    run_preflight_diagnostics,
+    report_preflight_results,
+    run_postrun_diagnostics,
+    report_postrun_results,
+)
+try:
+    from .data_loader import PlanckCMBDataLoader, CMBPlanckValidation
+    CMB_VALIDATION_AVAILABLE = True
+except ImportError:
+    CMB_VALIDATION_AVAILABLE = False
+try:
+    from .structure import GalaxyStructureAnalyzer
+    GALAXY_ANALYSIS_AVAILABLE = True
+except ImportError:
+    GALAXY_ANALYSIS_AVAILABLE = False
+try:
+    from .inference import BayesianInferenceEngine
+    MCMC_AVAILABLE = True
+except ImportError:
+    MCMC_AVAILABLE = False
 
 def run_automatic_tqe_darkenergy_pipeline():
     """
@@ -67,6 +100,18 @@ def run_automatic_tqe_darkenergy_pipeline():
     print("🚀 TQE DARK ENERGY COUPLING SIMULATION - AUTOMATIC PIPELINE")
     print("="*60)
     print("💾 IMMEDIATE SAVE MODE: All data saved after each model run")
+
+    feature_flags = {
+        "cmb_validation_available": CMB_VALIDATION_AVAILABLE,
+        "galaxy_analysis_available": GALAXY_ANALYSIS_AVAILABLE,
+        "mcmc_available": MCMC_AVAILABLE,
+    }
+    preflight_report = run_preflight_diagnostics(MASTER_CTRL, feature_flags)
+    report_preflight_results(preflight_report)
+    if preflight_report["status"] == "error":
+        raise RuntimeError(
+            "Preflight diagnostics reported blocking issues. Resolve them before rerunning."
+        )
     
     # PHASE 2: Check coupling mode
     coupling_mode = MASTER_CTRL.get('COUPLING_MODE', 'EplusI')
@@ -79,17 +124,6 @@ def run_automatic_tqe_darkenergy_pipeline():
         print(f"🎯 SINGLE MODE: Running {coupling_mode} coupling only")
         coupling_modes = [coupling_mode]
     
-    # Check Google Drive status
-    if COLAB:
-        drive_ready, status_msg = check_google_drive_status()
-        print(f"📁 Google Drive Status: {status_msg}")
-        
-        if not drive_ready:
-            drive_setup_success = setup_google_drive_automatically()
-            if not drive_setup_success:
-                print("❌ Google Drive setup failed")
-                return None
-    
     # Set global deterministic seed from MASTER_CTRL
     master_seed_string = MASTER_CTRL['MASTER_SEED']
     global_seed_hash = set_deterministic_seed(master_seed_string)
@@ -99,21 +133,15 @@ def run_automatic_tqe_darkenergy_pipeline():
     print(f"  Master seed hash: {global_seed_hash}")
     print(f"  Each model gets unique derived seed")
     
-    # Setup directory structure FIRST (needed for Goldilocks)
-    main_project_name = "TQE_DarkEnergy_Coupling_Simulation"
+    # Setup directory structure on Desktop FIRST (needed for Goldilocks)
+    desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+    main_dir = os.path.join(desktop_path, "TQE_DarkEnergy_Modular_Results")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_folder_name = f"TQE_DarkEnergy_Coupling_Simulation_v4.2.0PRO_{timestamp}"
+    run_dir = os.path.join(main_dir, run_folder_name)
     
-    # Google Drive integration - fixed path structure
-    if COLAB:
-        main_dir = "/content/drive/MyDrive/TQE_DarkEnergy_Coupling_Simulation"
-        run_dir = f"{main_dir}/{run_folder_name}"
-        print(f"✅ Google Drive main folder: {main_dir}")
-        print(f"✅ Google Drive run folder: {run_dir}")
-    else:
-        print("❌ Local execution detected - not supported")
-        print("💡 This pipeline requires Google Colab + Google Drive")
-        return None
+    print(f"✅ Desktop main folder: {main_dir}")
+    print(f"✅ Desktop run folder: {run_dir}")
     
     # Create directories
     try:
@@ -121,17 +149,10 @@ def run_automatic_tqe_darkenergy_pipeline():
         os.makedirs(run_dir, exist_ok=True)
         
         # Test write access
-        test_file = f"{run_dir}/00_Google_Drive_Test.txt"
+        test_file = os.path.join(run_dir, "00_Desktop_Write_Test.txt")
         with open(test_file, 'w') as f:
-            f.write("Google Drive write test successful!")
-        print(f"✅ Google Drive write test: SUCCESS")
-        
-        # Copy Auto_Aggregator to Google Drive main folder for execution
-        if COLAB:
-            print(f"\n📦 Setting up Auto_Aggregator...")
-            # Auto_Aggregator will be available in the same directory as main file
-            # No copy needed - both files uploaded together to Colab
-            print(f"  ✓ Auto_Aggregator ready for execution")
+            f.write("Desktop write test successful!")
+        print(f"✅ Desktop write test: SUCCESS")
                 
     except Exception as e:
         print(f"❌ Directory creation failed: {e}")
@@ -254,6 +275,8 @@ def run_automatic_tqe_darkenergy_pipeline():
               bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]',
                     colour='green', ncols=80)
     
+    aggregator_results = None
+    
     try:
         
         for coupling_mode in coupling_modes:
@@ -328,7 +351,7 @@ def run_automatic_tqe_darkenergy_pipeline():
                 # GALAXY STRUCTURE ANALYSIS
                 # ==========================================================================================
                 
-                if MASTER_CTRL.get('RUN_GALAXY_STRUCTURE_ANALYSIS', True):
+                if MASTER_CTRL.get('RUN_GALAXY_STRUCTURE_ANALYSIS', True) and GALAXY_ANALYSIS_AVAILABLE:
                     progress.set_description(f"Model {model_idx+1}/{len(models_config)} ({coupling_mode}): Galaxy Structure")
                     try:
                         galaxy_analyzer = GalaxyStructureAnalyzer(simulation)
@@ -363,7 +386,7 @@ def run_automatic_tqe_darkenergy_pipeline():
                 # ==========================================================================================
                 # CMB PLANCK VALIDATION (if enabled and healpy available)
                 # ==========================================================================================
-                if MASTER_CTRL.get('USE_REAL_CMB_PLANCK_MAPS', False):
+                if MASTER_CTRL.get('USE_REAL_CMB_PLANCK_MAPS', False) and CMB_VALIDATION_AVAILABLE:
                     progress.set_description(f"Model {model_idx+1}/{len(models_config)} ({coupling_mode}): CMB Planck Validation")
                     
                     cmb_validation = None
@@ -591,7 +614,7 @@ def run_automatic_tqe_darkenergy_pipeline():
                         'timestamp': datetime.now().isoformat(),
                         'status': 'completed',
                         'model_directory': model_dir,
-                        'google_drive_path': model_dir if COLAB else 'N/A'
+                        'output_path': model_dir
                     }, f, indent=2)
                 
                 # Store results for comparison
@@ -733,6 +756,17 @@ def run_automatic_tqe_darkenergy_pipeline():
             progress.update(1)
         else:
             progress.update(1)
+        
+        postrun_report = run_postrun_diagnostics(
+            run_dir,
+            MASTER_CTRL,
+            feature_flags,
+            aggregator_results,
+        )
+        report_postrun_results(postrun_report)
+        pipeline_summary.setdefault("diagnostics", {})
+        pipeline_summary["diagnostics"]["preflight"] = preflight_report
+        pipeline_summary["diagnostics"]["postrun"] = postrun_report
         
         return pipeline_summary
         

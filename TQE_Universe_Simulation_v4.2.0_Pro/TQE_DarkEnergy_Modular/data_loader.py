@@ -363,7 +363,9 @@ class PlanckCMBDataLoader:
     - Power spectrum computation (C_ℓ via healpy.anafast)
     
     Usage:
-        loader = PlanckCMBDataLoader(base_path="/content/drive/MyDrive/CMB_Planck_Maps")
+        # Auto-detect Planck data path (check repo structure)
+        base_path = None  # Will auto-detect in repo
+        loader = PlanckCMBDataLoader(base_path=base_path)
         skymap = loader.load_smica_map()
         mask = loader.load_common_mask()
         cl = loader.compute_power_spectrum(skymap, mask, lmax=2000)
@@ -372,7 +374,8 @@ class PlanckCMBDataLoader:
     def __init__(self, base_path=None):
         """Initialize Planck CMB data loader."""
         if base_path is None:
-            base_path = MASTER_CTRL.get("CMB_PLANCK_BASE_PATH", "/content/drive/MyDrive/CMB_Planck_Maps")
+            # Auto-detect Planck data path (check repo structure)
+            base_path = MASTER_CTRL.get("CMB_PLANCK_BASE_PATH", None)  # None = auto-detect
         
         self.base_path = base_path
         self.maps = {}          # Store loaded maps

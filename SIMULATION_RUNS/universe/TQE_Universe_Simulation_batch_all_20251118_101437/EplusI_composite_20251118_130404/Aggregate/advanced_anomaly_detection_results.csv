@@ -1,3 +1,0 @@
-universe_id,anomaly_type,anomaly_value,expected_value,deviation_sigma,significance
-29,information_entropy,0.4405796104920904,0.2270213311743026,3.222786669991954,medium
-64,information_entropy,0.4654899752917985,0.2270213311743026,3.598706497954575,medium

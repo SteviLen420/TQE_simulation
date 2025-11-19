@@ -14,10 +14,7 @@ import sys
 def install_package(package_name):
     # Install package using pip
     try:
-        if 'google.colab' in sys.modules:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', package_name, '--quiet'])
-        else:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', package_name, '--quiet'])
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', package_name, '--quiet'])
         return True
     except Exception as e:
         print(f"⚠ Failed to install {package_name}: {e}")
@@ -84,14 +81,14 @@ import numpy as np
 import gc
 from functools import lru_cache
 
-# Set matplotlib backend BEFORE importing pyplot (critical for Colab PNG generation)
+# Set matplotlib backend BEFORE importing pyplot (non-interactive for saving figures)
 import matplotlib
 matplotlib.use('Agg')  # Non-interactive backend for saving figures
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
-# Configure matplotlib for proper PNG generation (prevent white/empty images in Colab)
-plt.ioff()  # Turn off interactive mode (critical for Colab)
+# Configure matplotlib for proper PNG generation
+plt.ioff()  # Turn off interactive mode
 plt.rcParams['figure.facecolor'] = 'white'
 plt.rcParams['axes.facecolor'] = 'white'
 plt.rcParams['savefig.facecolor'] = 'white'
@@ -156,20 +153,8 @@ except ImportError:
     ASTROPY_AVAILABLE = False
     print("⚠ Astropy not available")
 
-# Google Drive integration for Colab environment
-try:
-    from google.colab import drive
-    from google.colab import files
-    COLAB = True
-    print("✅ Google Colab environment detected")
-    if os.path.exists('/content/drive/MyDrive'):
-        print("✅ Google Drive already mounted - no setup needed")
-    else:
-        print("📁 Google Drive not mounted - will be set up during pipeline execution")
-        print("💡 One-time authorization will be required when pipeline starts")
-except ImportError:
-    COLAB = False
-    print("❌ Local environment detected - Google Colab required")
+# Local execution only - Colab support removed
+COLAB = False
 
 # ==========================================================================================
 # PERFORMANCE: MEMORY OPTIMIZATION
@@ -216,60 +201,13 @@ def apply_performance_mode(mode=None, MASTER_CTRL=None):
 # ==========================================================================================
 
 def setup_google_drive_automatically():
-    # Setup Google Drive - ask for authorization only once at the beginning
-    if not COLAB:
-        print("⚠ Not in Colab environment - skipping Google Drive setup")
-        return True
-    
-    print("🚀 Setting up Google Drive...")
-    
-    try:
-        # Check if already mounted
-        if os.path.exists('/content/drive/MyDrive'):
-            print("✅ Google Drive already mounted - no authorization needed")
-            return True
-        
-        # First time setup - ask for authorization
-        print("🔐 FIRST TIME GOOGLE DRIVE SETUP")
-        print("="*50)
-        print("📋 You need to authorize Google Drive access:")
-        print("   1. A popup will appear with an authorization link")
-        print("   2. Click the link and sign in to your Google account")
-        print("   3. Copy the authorization code")
-        print("   4. Paste it in the input field below")
-        print("   5. Press Enter")
-        print("   6. This is a ONE-TIME setup - won't ask again!")
-        print("="*50)
-        
-        # Mount with user authorization (one-time only)
-        print("📁 Mounting Google Drive (one-time authorization required)...")
-        drive.mount('/content/drive')
-        
-        # Verify mount was successful
-        if os.path.exists('/content/drive/MyDrive'):
-            print("✅ Google Drive mounted successfully!")
-            print("🎉 ONE-TIME AUTHORIZATION COMPLETED!")
-            print("💡 Google Drive will stay mounted for this entire Colab session")
-            print("💡 No more authorization needed - pipeline can run multiple times")
-            return True
-        else:
-            print("❌ Google Drive mount verification failed")
-            return False
-        
-    except Exception as e:
-        print(f"❌ Google Drive setup failed: {e}")
-        print("💡 Please try running the cell again")
-        return False
+    # Colab support removed - local execution only
+    print("⚠ Google Drive setup not available - local execution only")
+    return True
 
 def check_google_drive_status():
-    # Check Google Drive mount status and provide clear feedback
-    if not COLAB:
-        return False, "Local environment - Google Colab required"
-    
-    if os.path.exists('/content/drive/MyDrive'):
-        return True, "Google Drive already mounted - ready to use"
-    else:
-        return False, "Google Drive not mounted - authorization required"
+    # Colab support removed - local execution only
+    return False, "Local execution - Google Drive not available"
 
 # ==========================================================================================
 # DETERMINISTIC SEEDING
@@ -317,8 +255,8 @@ def save_reproducibility_snapshot(run_dir, MASTER_CTRL=None):
         'master_control_panel': MASTER_CTRL,
         'package_versions': packages,
         'environment': {
-            'colab': COLAB,
-            'google_drive_mounted': os.path.exists('/content/drive/MyDrive') if COLAB else False,
+            'colab': False,  # Colab support removed
+            'google_drive_mounted': False,  # Local execution only
             'camb_available': CAMB_AVAILABLE,
             'mcmc_available': MCMC_AVAILABLE,
             'astropy_available': ASTROPY_AVAILABLE

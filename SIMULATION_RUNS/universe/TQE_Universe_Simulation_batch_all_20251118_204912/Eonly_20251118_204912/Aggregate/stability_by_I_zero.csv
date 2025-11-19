@@ -1,3 +1,0 @@
-group,n,stable_n,stable_ratio,lockin_n,lockin_ratio
-I == 0,350,350,1.0,350,1.0
-I > 0,0,0,,0,

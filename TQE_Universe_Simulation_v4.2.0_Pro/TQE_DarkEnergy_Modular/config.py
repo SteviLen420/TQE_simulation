@@ -16,6 +16,10 @@
 # VERSION: v4.2.0 PRO
 #
 # ==========================================================================================
+# Standard library imports
+import os
+
+# ==========================================================================================
 # COSMOLOGICAL CONSTANTS (Planck 2018 Fiducial Values)
 # ==========================================================================================
 # Reference values used throughout the pipeline
@@ -68,7 +72,7 @@ MASTER_CTRL = {
     # ==========================================================================================
     # PRODUCTION HARDENING PARAMETERS
     # ==========================================================================================
-    # NOTE: Set ALLOW_MOCK_DATA=True for Colab testing without real data files
+    # NOTE: Set ALLOW_MOCK_DATA=True for testing without real data files
     #       Set ALLOW_MOCK_DATA=False for production with real Pantheon+/BOSS/Planck data
     "ALLOW_MOCK_DATA": True,       # TESTING MODE: True = use enhanced mock data (50 SNe, 10 BAO, 47 CMB)
                                    # PRODUCTION MODE: False = require real data files
@@ -292,7 +296,7 @@ MASTER_CTRL = {
     # CMB PLANCK VALIDATION PARAMETERS (REAL MAPS)
     # ==========================================================================================
     "USE_REAL_CMB_PLANCK_MAPS": True,       # Enable real Planck CMB map validation
-    "CMB_PLANCK_BASE_PATH": "/content/drive/MyDrive/CMB_Planck_Maps",  # Google Drive path
+    "CMB_PLANCK_BASE_PATH": os.path.join(os.path.expanduser("~"), "Desktop", "CMB_MAPS"),  # Absolute path to Planck maps
     
     # Component-separated CMB maps (4 methods)
     "CMB_USE_SMICA": True,                  # SMICA (primary, official Planck map)
@@ -418,7 +422,7 @@ MASTER_CTRL = {
     # PERFORMANCE AND OPTIMIZATION PARAMETERS
     # ==========================================================================================
     "USE_VECTORIZATION": True,     # Enable vectorized operations
-    "USE_PARALLEL": False,         # Parallel processing (Colab limitations)
+    "USE_PARALLEL": False,         # Parallel processing (set to True for local execution)
     "REDUCE_MEMORY": True,         # Reduce memory usage
     "VERBOSE": True,               # Verbose output
     "PROGRESS_BARS": True,         # Show progress bars

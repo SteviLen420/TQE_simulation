@@ -1,2 +1,0 @@
-run_id,i_definition,total_universes,stable_universes,lockin_universes,complexity_score,life_compatibility_score,information_richness,lockin_quality_component,goldilocks_precision_component,planck_fit_component,stability_quality_component,goldilocks_robustness_component,meets_complexity_threshold,meets_life_threshold
-,renyi,175,161,121,99.9461,58.3851,100.0,100.0,99.8382,0.0,75.1553,100.0,True,False

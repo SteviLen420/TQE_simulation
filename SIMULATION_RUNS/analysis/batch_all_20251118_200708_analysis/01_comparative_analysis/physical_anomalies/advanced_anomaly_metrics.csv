@@ -1,6 +1,0 @@
-i_definition,advanced_anomaly_sigma_mean,advanced_anomaly_sigma_max,physical_anomaly_count,cmb_gaussianity_p_mean,cmb_anisotropy_index_mean
-jensen_shannon,3.843703487585199,3.843703487585199,10,,
-fisher,3.618266115383627,4.2203485539367165,10,,
-composite,3.4107465839732645,3.598706497954575,10,,
-kl_divergence,3.330706842863013,3.330706842863013,10,,
-shannon,3.180939634614438,3.180939634614438,10,,

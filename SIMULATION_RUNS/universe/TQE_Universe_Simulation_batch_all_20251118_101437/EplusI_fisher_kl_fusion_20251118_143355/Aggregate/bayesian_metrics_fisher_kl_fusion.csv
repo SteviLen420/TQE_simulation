@@ -1,2 +1,0 @@
-i_definition,variant,BIC,AIC,AICc,log_likelihood,chi_squared,chi_squared_reduced,n_parameters,n_data_points,log_evidence,log_evidence_error,nested_n_iterations,nested_n_calls
-fisher_kl_fusion,full,411599.1513508086,411592.40586508246,411592.7695014461,-205793.20293254123,411586.40586508246,6143.08068455347,3,70,-0.2444290325064729,0.0032194684383607657,0,1

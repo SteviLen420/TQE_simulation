@@ -1,6 +1,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17627756.svg)](https://doi.org/10.5281/zenodo.17627756)
+[![Execution](https://img.shields.io/badge/runtime-local__desktop-orange)](#)
+[![Planck Data](https://img.shields.io/badge/CMB%20input-%7E%2FDesktop%2FCMB__MAPS-informational)](#)
+[![Diagnostics](https://img.shields.io/badge/diagnostics-preflight%20%2B%20postrun-success)](#)
+[![Status](https://img.shields.io/badge/status-active%20development-green)](#)
 [![Research Status](https://img.shields.io/badge/status-active%20research-green)](https://github.com/SteviLen420/TQE_simulation)
 
 # TQE Dark Energy Modular Pipeline
@@ -19,7 +23,8 @@ This directory contains the **modularized** version of the TQE Dark Energy Coupl
 - Running the full E-only vs E+I dual-mode campaign with Bayesian post-processing
 - Swapping/adding coupling models, I-parameter definitions, or observational data loaders
 - Calling individual components (cosmology, observables, inference, structure analysis) in notebooks
-- Maintaining Colab-first workflows with deterministic seeding and Google Drive output sinks
+- Local execution with Desktop output (no Colab dependency)
+- Built-in diagnostics before/after every run (Desktop write test, dataset checks, artifact audit)
 
 ---
 
@@ -38,7 +43,7 @@ TQE_DarkEnergy_Modular/
 ├── simulation.py             # TQEDarkEnergyCouplingSimulation class (per-model workflow)
 ├── structure.py              # GalaxyStructureAnalyzer (cosmic web, catalogues)
 ├── tqe_core.py               # EnergyInformationContent + CouplingModel definitions
-├── utils.py                  # Package installs, Colab/Drive setup, seeding, perf helpers
+├── utils.py                  # Package installs, seeding, perf helpers
 ├── visualization.py          # Cross-mode dashboards, comparison plots
 └── (support modules)         # observables, visualization, etc. imported throughout
 ```
@@ -51,7 +56,7 @@ Every module can be imported independently (e.g., `from TQE_DarkEnergy_Modular.c
 
 | Module | Purpose / Key Classes |
 | --- | --- |
-| `config.py` | Central `MASTER_CTRL`, Planck 2018 cosmological constants, performance knobs, data paths, visualization palette, Google Drive settings. |
+| `config.py` | Central `MASTER_CTRL`, Planck 2018 cosmological constants, performance knobs, data paths, visualization palette. |
 | `tqe_core.py` | Implements **EnergyInformationContent** (phenomenological, EFT, and TQE-compliant energy-based I definitions) and **CouplingModel** (covariant pressure, uniform w, geometric, null ΛCDM). |
 | `cosmology.py` | `FriedmannEvolution` with TQE-aware Ω_DE(a), distance ladder, log-spaced integrators, growth-factor ODE, and flatness guards. |
 | `data_loader.py` | Reusable loaders for Pantheon+, BOSS/eBOSS/DESI BAO, Planck spectra/maps with fallbacks to “enhanced” mock data when `ALLOW_MOCK_DATA=True`. |
@@ -61,33 +66,23 @@ Every module can be imported independently (e.g., `from TQE_DarkEnergy_Modular.c
 | `simulation.py` | `TQEDarkEnergyCouplingSimulation`: per-model execution (H(a), I(a), ρ_DE(a), S₈(z), I–E correlations, observables, galaxy structure, sanity/sensitivity checks, visualization + file export). |
 | `pipeline.py` | End-to-end pipeline orchestrator: Goldilocks search, model loops, dual coupling modes, β₀ sweeps, result aggregation, aggregator dashboards, reproducibility snapshots. |
 | `visualization.py` | Comparison dashboards (E-only vs E+I), Bayes-factor plots, β₀ sweep figures. |
-| `utils.py` | Dependency installation, Colab/Drive detection, deterministic seeding, performance modes, memory cleanup, ZIP archiving. |
+| `utils.py` | Dependency installation, deterministic seeding, performance modes, memory cleanup, ZIP archiving. |
 
 ---
 
 ## 3. Requirements & Environment
 
 - **Python 3.9+** (tested on CPython 3.9–3.11)
-- **Google Colab + Google Drive** are the intended runtime (pipeline aborts on purely local execution for reproducibility reasons).
+- **Local execution only** (no Colab support)
 - Core dependencies: `numpy`, `scipy`, `pandas`, `matplotlib`, `tqdm`, `scikit-learn`, `camb`, `emcee`, `dynesty`, `corner`, `healpy` (optional), `astropy`, `h5py`.
-- `utils.check_and_install_all_packages()` auto-installs missing packages (quiet pip installs, Colab-safe).
+- `utils.check_and_install_all_packages()` auto-installs missing packages (quiet pip installs).
 - CAMB, emcee, dynesty, and healpy are loaded lazily; the pipeline attempts installation if imports fail.
 
-> **Tip:** When running in Colab, upload the `TQE_DarkEnergy_Modular` folder, mount Drive, and execute `python -m TQE_DarkEnergy_Modular.main`. The script mounts Drive (if needed) and writes all artifacts under `/content/drive/MyDrive/TQE_DarkEnergy_Coupling_Simulation/`.
+> **Note:** All results are saved to `Desktop/TQE_DarkEnergy_Modular_Results/`. The pipeline is optimized for local execution.
 
 ---
 
 ## 4. Quickstart
-
-### Colab (recommended)
-
-```python
-from google.colab import drive
-drive.mount('/content/drive')
-
-%cd /content/TQE_DarkEnergy_Modular
-!python -m TQE_DarkEnergy_Modular.main
-```
 
 ### As a module
 
@@ -139,7 +134,7 @@ All knobs live in `MASTER_CTRL` (`config.py`). The most-used blocks:
 
 ## 6. Pipeline Flow (Modular Build)
 
-1. **Environment setup** – package checks, Drive mount, deterministic seeding (`utils.py`).
+1. **Environment setup** – package checks, deterministic seeding (`utils.py`).
 2. **Goldilocks optimization (optional)** – `find_goldilocks_zone_bayesian` (from monolithic helper) stores optimal parameters and patches `MASTER_CTRL`.
 3. **Model expansion** – `pipeline.py` builds per-model configs (covariant pressure, uniform w(I), geometric, null) + optional β₀ sweep clones.
 4. **Dual-mode execution** – For each coupling mode (E-only / E+I) and model:
@@ -154,8 +149,8 @@ All knobs live in `MASTER_CTRL` (`config.py`). The most-used blocks:
 
 ## 7. Outputs
 
-Each run creates a Drive folder:  
-`/content/drive/MyDrive/TQE_DarkEnergy_Coupling_Simulation/TQE_DarkEnergy_Coupling_Simulation_v4.2.0PRO_<timestamp>/`
+Each run creates a folder on Desktop:  
+`Desktop/TQE_DarkEnergy_Modular_Results/TQE_DarkEnergy_Coupling_Simulation_v4.2.0PRO_<timestamp>/`
 
 ```
 ├── 00_Pipeline_Summary/
@@ -197,7 +192,7 @@ All CSV/JSON files include metadata (timestamp, seed hash, coupling mode) so dow
 
 ## 9. Troubleshooting & Tips
 
-- **Pipeline exits immediately** → Running locally without Drive/Colab. Either move to Colab or adapt `pipeline.py` (lines enforcing COLAB) if you accept manual storage.
+- **Pipeline exits immediately** → Check that Desktop write permissions are available. The pipeline saves all results to `Desktop/TQE_DarkEnergy_Modular_Results/`.
 - **healpy missing** → Install via `pip install healpy` or set `USE_REAL_CMB_PLANCK_MAPS=False`.
 - **Memory pressure** → Enable `MEMORY_EFFICIENT_MODE=True`, reduce `A_GRID_N_LOG`, set `PERFORMANCE_MODE="fast"`, or disable galaxy structure analysis.
 - **Long Bayesian runs** → Lower `MCMC_NSTEPS`, `NESTED_NLIVE`, or switch off Bayesian blocks until ready for publication-grade sweeps.
@@ -233,7 +228,7 @@ Please cite the repository when reusing the modular pipeline:
 
 - Monolithic reference implementation: `../TQE_DarkEnergy_Coupling_Simulation/TQE_DarkEnergy_Coupling_Simulation.py`
 - Full pipeline README (non-modular): `../TQE_DarkEnergy_Coupling_Simulation/README.md`
-- Universe modular reference: `../TQE_Universe_Modular/README_MODULAR.md`
+- Universe modular reference: `../TQE_Universe_Simulation_Modular/README_MODULAR.md`
 - Research context: `../../TQE_Research_Notes.md`, `../../AI_METHODOLOGY.md`
 
 ---

@@ -1,3 +1,0 @@
-group,n,stable_n,stable_ratio,lockin_n,lockin_ratio
-I == 0,0,0,,0,
-I > 0,175,120,0.6857142857142857,51,0.2914285714285714
