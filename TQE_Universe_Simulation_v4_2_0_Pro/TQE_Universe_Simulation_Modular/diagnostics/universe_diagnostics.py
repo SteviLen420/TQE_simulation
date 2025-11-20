@@ -351,6 +351,128 @@ def run_postrun_diagnostics(ctx, summary: Dict) -> Dict:
         path=goldilocks_dir,
     )
 
+    # Phase 16: CMB Anomaly Detection CSV files
+    if ctx.variant != "energy_only":
+        i_def = ctx.config.get("I_DEFINITION_MODE", "default")
+        variant_suffix = i_def if ctx.variant != "energy_only" else "eonly"
+        coldspot_csv = os.path.join(aggregate_dir, f"cmb_coldspots_summary_{variant_suffix}.csv")
+        aoe_csv = os.path.join(aggregate_dir, f"cmb_aoe_summary_{variant_suffix}.csv")
+        _add_check(
+            report,
+            "Phase 16: CMB anomaly CSV files",
+            os.path.exists(coldspot_csv) and os.path.exists(aoe_csv),
+            severity="warning",
+            details=f"Cold spots: {os.path.exists(coldspot_csv)}, AOE: {os.path.exists(aoe_csv)}",
+        )
+
+    # Phase 22: Anomaly PNG files
+    if ctx.variant != "energy_only":
+        anomaly_pngs = [
+            "aggregate_coldspot_density_map.png",
+            "aggregate_cmb_anomaly_overlay.png",
+            "aoe_alignment_histogram.png",
+            "coldspot_position_heatmap.png",
+            "coldspot_depth_histogram.png",
+            "aggregate_aoe_density_map.png"
+        ]
+        found_anomaly = sum(1 for png in anomaly_pngs if os.path.exists(os.path.join(png_dir, png)))
+        _add_check(
+            report,
+            "Phase 22: Anomaly visualization PNGs",
+            found_anomaly >= len(anomaly_pngs) * 0.8,  # At least 80% should exist
+            severity="warning",
+            details=f"{found_anomaly}/{len(anomaly_pngs)} anomaly PNG files found",
+        )
+
+    # Phase 23: Enhanced Physics files
+    if ctx.config.get("USE_ENHANCED_PHYSICS", True) and ctx.variant != "energy_only":
+        enhanced_files = [
+            "enhanced_physics_analysis.json",
+            "enhanced_physics_comprehensive_summary.csv",
+            "enhanced_physics_entanglement_network.csv",
+            "enhanced_physics_friedmann_evolution.csv",
+            "enhanced_physics_physical_anomalies.csv",
+            "enhanced_physics_quantum_fields.csv"
+        ]
+        # Check with variant tags
+        found_enhanced = 0
+        for f in enhanced_files:
+            base_name = f.split('.')[0]
+            ext = f.split('.')[1]
+            pattern = os.path.join(aggregate_dir, f"{base_name}*{ext}")
+            if glob.glob(pattern):
+                found_enhanced += 1
+        _add_check(
+            report,
+            "Phase 23: Enhanced Physics files",
+            found_enhanced >= len(enhanced_files) * 0.8,
+            severity="warning",
+            details=f"{found_enhanced}/{len(enhanced_files)} enhanced physics files found",
+        )
+
+    # Phase 21: Advanced Statistics files
+    if ctx.variant != "energy_only":
+        phase21_files = [
+            "comprehensive_statistics.csv",
+            "parameter_sensitivity_analysis.csv",
+            "universe_classification.csv",
+            "performance_metrics.csv"
+        ]
+        found_phase21 = sum(1 for f in phase21_files if os.path.exists(os.path.join(aggregate_dir, f)))
+        _add_check(
+            report,
+            "Phase 21: Advanced Statistics files",
+            found_phase21 >= len(phase21_files) * 0.75,
+            severity="warning",
+            details=f"{found_phase21}/{len(phase21_files)} statistics files found",
+        )
+
+    # Phase 24: Comprehensive Data
+    if ctx.config.get("USE_ENHANCED_PHYSICS", True):
+        comprehensive_pattern = os.path.join(aggregate_dir, "comprehensive_universe_physics_data*.csv")
+        has_comprehensive = bool(glob.glob(comprehensive_pattern))
+        _add_check(
+            report,
+            "Phase 24: Comprehensive universe physics data",
+            has_comprehensive,
+            severity="warning",
+            details="Comprehensive data CSV present" if has_comprehensive else "Missing comprehensive data CSV",
+        )
+
+    # Phase 25: Advanced Anomaly Detection
+    if ctx.config.get("ENABLE_QUANTUM_ANOMALY_DETECTION", True):
+        anomaly_csv = os.path.join(aggregate_dir, "advanced_anomaly_detection_results.csv")
+        _add_check(
+            report,
+            "Phase 25: Advanced anomaly detection CSV",
+            os.path.exists(anomaly_csv),
+            severity="warning",
+            details="Advanced anomaly results present" if os.path.exists(anomaly_csv) else "Missing advanced anomaly CSV",
+        )
+
+    # Phase 15: Planck best fit JSON
+    if ctx.config.get("RUN_PLANCK_VALIDATION", True):
+        planck_json = os.path.join(aggregate_dir, "planck_best_fit_summary.json")
+        _add_check(
+            report,
+            "Phase 15: Planck best fit summary JSON",
+            os.path.exists(planck_json),
+            severity="warning",
+            details="Planck best fit JSON present" if os.path.exists(planck_json) else "Missing planck_best_fit_summary.json",
+        )
+
+    # Phase 18: Goldilocks optimization JSON (specific to I-definition)
+    if ctx.variant != "energy_only":
+        i_def = ctx.config.get("I_DEFINITION_MODE", "default")
+        goldilocks_json = os.path.join(goldilocks_dir, f"goldilocks_optimization_{i_def}.json")
+        _add_check(
+            report,
+            "Phase 18: Goldilocks optimization JSON",
+            os.path.exists(goldilocks_json),
+            severity="warning",
+            details=f"Goldilocks JSON for {i_def} present" if os.path.exists(goldilocks_json) else f"Missing goldilocks_optimization_{i_def}.json",
+        )
+
     stability = summary.get("stability_summary", {})
     total_universes = int(stability.get("total_universes", 0))
     _add_check(

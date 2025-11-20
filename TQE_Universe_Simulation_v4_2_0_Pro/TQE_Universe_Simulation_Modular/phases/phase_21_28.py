@@ -83,12 +83,26 @@ def phase_22_cmb_anomaly_analysis_plots(ctx: PipelineContext, df: pd.DataFrame):
         _create_aoe_alignment_histogram(ctx, df)           # Histogram: AOE alignment angles
         _create_aggregate_aoe_density_map(ctx, df)         # Mollweide: AOE ONLY (yellow dots)
         
+        # The combined overlay is created inside _create_aggregate_aoe_density_map
+        # But we ensure it's explicitly called by checking if the file exists
+        import os
+        combined_overlay_path = os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "aggregate_cmb_anomaly_overlay.png")
+        if not os.path.exists(combined_overlay_path):
+            if ctx.config.get("VERBOSE", True):
+                print(f"[CMB ANOMALY ANALYSIS] Combined overlay not found, attempting to create it...")
+            # The combined overlay should have been created by _create_aggregate_aoe_density_map
+            # If it wasn't, we log a warning
+            if ctx.config.get("VERBOSE", True):
+                print(f"[CMB ANOMALY ANALYSIS] Warning: Combined overlay was not created by _create_aggregate_aoe_density_map")
+        
         if ctx.config.get("VERBOSE", True):
             print(f"[CMB ANOMALY ANALYSIS] Generated all CMB anomaly visualizations")
             
     except Exception as e:
         if ctx.config.get("VERBOSE", True):
             print(f"⚠️ [CMB ANOMALY ANALYSIS] Error generating anomaly analysis plots: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def phase_23_enhanced_physics_analysis(ctx: PipelineContext, df: pd.DataFrame):
@@ -253,8 +267,8 @@ def phase_24_comprehensive_data_extraction(ctx: PipelineContext, df: pd.DataFram
         
         # Save comprehensive data
         comprehensive_df = pd.DataFrame(all_universe_data)
-        comprehensive_csv_path = ctx.with_variant("comprehensive_universe_physics_data.csv")
-        comprehensive_df.to_csv(comprehensive_csv_path, index=False)
+        comprehensive_csv_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "comprehensive_universe_physics_data.csv"))
+        ctx.save_csv(comprehensive_df, comprehensive_csv_path, category="physics")
         
         # Create additional analysis plots
         _create_comprehensive_physics_analysis_plots(comprehensive_df, ctx)
@@ -311,7 +325,8 @@ def phase_25_advanced_anomaly_detection(ctx: PipelineContext, df: pd.DataFrame):
     # Save results
     if anomaly_results:
         anomaly_df = pd.DataFrame(anomaly_results)
-        ctx.save_csv(anomaly_df, "advanced_anomaly_detection_results.csv", category="anomaly")
+        anomaly_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "advanced_anomaly_detection_results.csv")
+        ctx.save_csv(anomaly_df, anomaly_path, category="anomaly")
         
         # Create visualization
         _create_anomaly_detection_plots(anomaly_df, ctx)

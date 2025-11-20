@@ -489,6 +489,17 @@ def phase_15_planck_validation(ctx: PipelineContext, df: pd.DataFrame):
         df_chi2 = validate_against_planck(df, ctx.map_registry, ctx)
         if df_chi2 is not None and len(df_chi2) > 0:
             best_chi2 = df_chi2.iloc[0].get('chi2_total', df_chi2.iloc[0]['chi2'])
+            # Store best fit data for Phase 28
+            best_fit_row = df_chi2.iloc[0]
+            ctx.planck_best_fit = {
+                'universe_id': int(best_fit_row.get('universe_id', 0)),
+                'E': float(best_fit_row.get('E', 0.0)),
+                'I': float(best_fit_row.get('I', 0.0)),
+                'chi2': float(best_fit_row.get('chi2', 0.0)),
+                'chi2_reduced': float(best_fit_row.get('chi2_reduced', 0.0)),
+                'alpha': float(best_fit_row.get('alpha', 1.0)),
+                'dof': int(best_fit_row.get('dof', 0))
+            }
             return df_chi2, best_chi2
         return df_chi2, None
     return None, None
@@ -556,14 +567,30 @@ def phase_16_cmb_anomaly_detection(ctx: PipelineContext, df: pd.DataFrame):
         else:
             i_def = ctx.config.get("I_DEFINITION_MODE", "default")
         
+        # Always save CSV files, even if empty (Phase 22 needs them)
         if cold_spots_all:
             df_cold = pd.concat(cold_spots_all, ignore_index=True)
-            coldspot_filename = f"cmb_coldspots_summary_{i_def}.csv"
-            ctx.save_csv(df_cold, os.path.join(ctx.paths["AGGREGATE_DIR"], coldspot_filename))
+        else:
+            # Create empty DataFrame with expected columns
+            df_cold = pd.DataFrame(columns=['uid', 'lon', 'lat', 'temp_uK', 'E', 'I', 'lock_epoch'])
+        
+        coldspot_filename = f"cmb_coldspots_summary_{i_def}.csv"
+        coldspot_path = os.path.join(ctx.paths["AGGREGATE_DIR"], coldspot_filename)
+        ctx.save_csv(df_cold, coldspot_path)
+        if ctx.config.get("VERBOSE", True):
+            print(f"[CMB ANOMALY] Saved cold spots summary: {coldspot_path} ({len(df_cold)} spots)")
+        
         if aoe_results_all:
             df_aoe = pd.concat(aoe_results_all, ignore_index=True)
-            aoe_filename = f"cmb_aoe_summary_{i_def}.csv"
-            ctx.save_csv(df_aoe, os.path.join(ctx.paths["AGGREGATE_DIR"], aoe_filename))
+        else:
+            # Create empty DataFrame with expected columns
+            df_aoe = pd.DataFrame(columns=['uid', 'axis_lon', 'axis_lat', 'ell', 'E', 'I', 'lock_epoch'])
+        
+        aoe_filename = f"cmb_aoe_summary_{i_def}.csv"
+        aoe_path = os.path.join(ctx.paths["AGGREGATE_DIR"], aoe_filename)
+        ctx.save_csv(df_aoe, aoe_path)
+        if ctx.config.get("VERBOSE", True):
+            print(f"[CMB ANOMALY] Saved AOE summary: {aoe_path} ({len(df_aoe)} axes)")
 
 
 
@@ -920,10 +947,27 @@ def phase_18_multi_mode_goldilocks_comparison(ctx: PipelineContext, df: pd.DataF
         filename = f"goldilocks_zone_{safe_mode_name}.png"
         ctx.save_fig(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], filename))
         
+        # Save Goldilocks optimization JSON
+        goldilocks_data = {
+            'mode': mode,
+            'mode_name': mode_name,
+            'peak_x': float(peak_x_location) if peak_x_location is not None else None,
+            'peak_y': float(peak_y) if peak_y is not None else None,
+            'goldilocks_left': float(goldi_left) if goldi_left is not None else None,
+            'goldilocks_right': float(goldi_right) if goldi_right is not None else None,
+            'goldilocks_width': float(goldi_right - goldi_left) if (goldi_left is not None and goldi_right is not None) else None,
+            'X_c_low': float(X_c_low) if X_c_low is not None else None,
+            'X_c_high': float(X_c_high) if X_c_high is not None else None,
+            'n_samples': len(mode_df)
+        }
+        goldilocks_json_path = os.path.join(ctx.paths["GOLDILOCKS_DIR"], f"goldilocks_optimization_{safe_mode_name}.json")
+        ctx.save_json(goldilocks_json_path, goldilocks_data)
+        
         if ctx.config.get("VERBOSE", True):
             print(f"[MULTI-MODE] Generated {mode_name} Goldilocks diagram")
             print(f"[MULTI-MODE] Peak at X = {peak_x_location:.2f}" if peak_x_location else "[MULTI-MODE] No peak found")
             print(f"[MULTI-MODE] Saved: {filename}")
+            print(f"[MULTI-MODE] Saved JSON: goldilocks_optimization_{safe_mode_name}.json")
         
         if ctx.config.get("VERBOSE", True):
             print(f"[MULTI-MODE] Generated Goldilocks diagrams for {len(mode_results)} I parameter modes")
@@ -2314,7 +2358,8 @@ def _create_statistical_summary_analysis(ctx: PipelineContext, df: pd.DataFrame)
         
         # Save comprehensive statistics
         stats_df = pd.DataFrame([stats_summary])
-        ctx.save_csv(stats_df, os.path.join(ctx.paths["AGGREGATE_DIR"], "comprehensive_statistics.csv"))
+        stats_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "comprehensive_statistics.csv")
+        ctx.save_csv(stats_df, stats_path, category="stats")
         
         # Create visualization
         # PUBLICATION: Larger 2x2 with constrained_layout (was: 15,12)
@@ -2398,7 +2443,8 @@ def _create_parameter_sensitivity_analysis(ctx: PipelineContext, df: pd.DataFram
         }
         
         sensitivity_df = pd.DataFrame(sensitivity_data)
-        ctx.save_csv(sensitivity_df, os.path.join(ctx.paths["AGGREGATE_DIR"], "parameter_sensitivity_analysis.csv"))
+        sensitivity_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "parameter_sensitivity_analysis.csv")
+        ctx.save_csv(sensitivity_df, sensitivity_path, category="stats")
         
         # Create visualization
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
@@ -2470,7 +2516,8 @@ def _create_universe_classification_analysis(ctx: PipelineContext, df: pd.DataFr
             'count': type_counts.values,
             'percentage': (type_counts.values / len(df) * 100).round(2)
         })
-        ctx.save_csv(classification_df, os.path.join(ctx.paths["AGGREGATE_DIR"], "universe_classification.csv"))
+        classification_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "universe_classification.csv")
+        ctx.save_csv(classification_df, classification_path, category="stats")
         
         # Create visualization
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
@@ -2532,7 +2579,8 @@ def _create_performance_metrics_analysis(ctx: PipelineContext, df: pd.DataFrame)
         
         # Save performance metrics
         performance_df = pd.DataFrame([performance_metrics])
-        ctx.save_csv(performance_df, os.path.join(ctx.paths["AGGREGATE_DIR"], "performance_metrics.csv"))
+        performance_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "performance_metrics.csv")
+        ctx.save_csv(performance_df, performance_path, category="stats")
         
         # Create visualization
         # PUBLICATION: Larger 2x2 with constrained_layout (was: 15,12)
@@ -2677,8 +2725,10 @@ def _create_coldspot_position_heatmap(ctx: PipelineContext, df: pd.DataFrame):
         # Tight layout
         plt.tight_layout()
         
-        # Save
-        ctx.save_fig(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "coldspot_position_heatmap.png"))
+        output_png = os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "coldspot_position_heatmap.png")
+        output_csv = os.path.join(ctx.paths["AGGREGATE_DIR"], "coldspot_position_heatmap_data.csv")
+        ctx.save_fig(output_png)
+        ctx.save_csv(pd.DataFrame({"lon": lon, "lat": lat}), output_csv)
         
     except Exception as e:
         if ctx.config.get("VERBOSE", True):
@@ -2768,8 +2818,10 @@ def _create_coldspot_depth_histogram(ctx: PipelineContext, df: pd.DataFrame):
         # Tight layout
         plt.tight_layout()
         
-        # Save
-        ctx.save_fig(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "coldspot_depth_histogram.png"))
+        output_png = os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "coldspot_depth_histogram.png")
+        output_csv = os.path.join(ctx.paths["AGGREGATE_DIR"], "coldspot_depth_histogram_data.csv")
+        ctx.save_fig(output_png)
+        ctx.save_csv(pd.DataFrame({"temp_uK": all_depths}), output_csv)
         
     except Exception as e:
         if ctx.config.get("VERBOSE", True):
@@ -3715,7 +3767,8 @@ def _extract_enhanced_physics_data(friedmann_results: list, ctx: PipelineContext
                 })
         
         friedmann_df = pd.DataFrame(friedmann_data)
-        ctx.save_csv(friedmann_df, "enhanced_physics_friedmann_evolution.csv", category="physics")
+        friedmann_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_friedmann_evolution.csv"))
+        ctx.save_csv(friedmann_df, friedmann_path, category="physics")
         
         # 2. Quantum Field Fluctuations Data
         quantum_data = []
@@ -3733,7 +3786,8 @@ def _extract_enhanced_physics_data(friedmann_results: list, ctx: PipelineContext
             })
         
         quantum_df = pd.DataFrame(quantum_data)
-        ctx.save_csv(quantum_df, "enhanced_physics_quantum_fields.csv", category="physics")
+        quantum_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_quantum_fields.csv"))
+        ctx.save_csv(quantum_df, quantum_path, category="physics")
         
         # 3. Cosmic Entanglement Network Data
         entanglement_data = []
@@ -3751,7 +3805,8 @@ def _extract_enhanced_physics_data(friedmann_results: list, ctx: PipelineContext
             })
         
         entanglement_df = pd.DataFrame(entanglement_data)
-        ctx.save_csv(entanglement_df, "enhanced_physics_entanglement_network.csv", category="physics")
+        entanglement_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_entanglement_network.csv"))
+        ctx.save_csv(entanglement_df, entanglement_path, category="physics")
         
         # 4. Physical Anomalies Data
         anomalies_data = []
@@ -3772,7 +3827,8 @@ def _extract_enhanced_physics_data(friedmann_results: list, ctx: PipelineContext
             })
         
         anomalies_df = pd.DataFrame(anomalies_data)
-        ctx.save_csv(anomalies_df, "enhanced_physics_physical_anomalies.csv", category="physics")
+        anomalies_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_physical_anomalies.csv"))
+        ctx.save_csv(anomalies_df, anomalies_path, category="physics")
         
         # 5. Comprehensive Enhanced Physics Summary
         summary_data = []
@@ -3793,7 +3849,8 @@ def _extract_enhanced_physics_data(friedmann_results: list, ctx: PipelineContext
             })
         
         summary_df = pd.DataFrame(summary_data)
-        ctx.save_csv(summary_df, "enhanced_physics_comprehensive_summary.csv", category="physics")
+        summary_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_comprehensive_summary.csv"))
+        ctx.save_csv(summary_df, summary_path, category="physics")
         
         if ctx.config.get("VERBOSE", True):
             print(f"[ENHANCED PHYSICS DATA] Extracted comprehensive data:")
