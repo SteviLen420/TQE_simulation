@@ -7,6 +7,7 @@
 # TQE–ΛSim: Visualization functions for plots and dashboards
 # ==========================================================================================
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from .config import MASTER_CTRL

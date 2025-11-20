@@ -3,11 +3,23 @@
 #
 # Phases 01-10
 #
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.interpolate import UnivariateSpline
+from scipy.optimize import curve_fit
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from ..config.master_ctrl import MASTER_CTRL
 from ..core.pipeline_context import PipelineContext
+from ..simulation.goldilocks import compute_dynamic_goldilocks
+from ..phases.phase_11_20 import (
+    simulate_quantum_fluctuation_series,
+    simulate_superposition_series,
+    simulate_collapse_series,
+    simulate_expansion_panel
+)
 
 def phase_02_stability_curve(ctx: PipelineContext, df: pd.DataFrame) -> float:
     """Phase 2: Dynamic Goldilocks estimation + plot (stability rate vs X)."""
@@ -51,7 +63,6 @@ def phase_02_stability_curve(ctx: PipelineContext, df: pd.DataFrame) -> float:
         ax.plot(xx, yy, 'o', color='#87CEEB', markersize=10, label='bin means', zorder=5)
         
         # 2. Fit and plot spline (thick red line, matching reference)
-        from scipy.interpolate import UnivariateSpline
         if len(xx) >= 4:
             try:
                 # Use smaller smoothing parameter for sharper peak (like reference)
@@ -286,7 +297,7 @@ def phase_04_fluctuation_panels(ctx: PipelineContext, df: pd.DataFrame):
             ax.plot(te, Atrack, label="Amplitude A", ls="--", linewidth=3, color='#1f77b4', alpha=0.9)
             ax.plot(te, Itrack, label="Orientation I", ls="--", linewidth=3, color='#ff7f0e', alpha=0.9)
         
-        if (df["lock_epoch"] >= 0).any():
+        if len(df) > 0 and "lock_epoch" in df.columns and (df["lock_epoch"] >= 0).any():
             lock_ep = int(np.median(df.loc[df["lock_epoch"] >= 0, "lock_epoch"]))
             ax.axvline(lock_ep, color="red", ls="--", linewidth=3, label=f"Law lock-in ≈ {lock_ep}", alpha=0.8)
         

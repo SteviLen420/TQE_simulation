@@ -8,6 +8,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
+from scipy.stats import norm
+from scipy.interpolate import UnivariateSpline
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, WhiteKernel
 from ..config.master_ctrl import MASTER_CTRL
 from ..core.pipeline_context import PipelineContext
 from ..core.physics_engine import PhysicsEngine
@@ -28,10 +32,6 @@ def bayesian_adaptive_goldilocks(ctx: PipelineContext, total_budget: int = 1000)
     Returns:
         X_low, X_high, X_peak, X_peak_std (floats with uncertainty)
     """
-    from sklearn.gaussian_process import GaussianProcessRegressor
-    from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, WhiteKernel
-    from scipy.stats import norm
-    
     # Determine I-definition name for E-only vs E+I
     if ctx.config.get("PIPELINE_VARIANT", "full") == "energy_only":
         i_def = "energy_only"
@@ -560,7 +560,6 @@ def compute_dynamic_goldilocks(df_in: pd.DataFrame, config: dict, score_col: str
         try:
             if k_use >= 2:
                 # Use smaller smoothing for sharper peak (matching reference image)
-                from scipy.interpolate import UnivariateSpline
                 # s=0.01 gives sharp peak like reference, not over-smoothed
                 spline = UnivariateSpline(xx, yy, k=k_use, s=0.01)
                 ys = spline(xs)

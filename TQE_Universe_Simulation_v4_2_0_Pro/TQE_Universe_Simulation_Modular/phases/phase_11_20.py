@@ -11,17 +11,32 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
+from scipy import stats
+from sklearn.feature_selection import mutual_info_regression
 from ..config.master_ctrl import MASTER_CTRL
 from ..core.pipeline_context import PipelineContext
 from ..core.physics_engine import PhysicsEngine
 from ..utils.cmb_utils import detect_cold_spots_healpix, detect_axis_of_evil, generate_coldspot_overlay, generate_aoe_overlay, _axis_from_lmap, HEALPY_AVAILABLE
 from ..utils.plotting import apply_consistent_plot_style
+from ..simulation.goldilocks import compute_dynamic_goldilocks
 
 # Import healpy if available
 try:
     import healpy as hp
 except ImportError:
     hp = None
+
+# Import qutip if available (for quantum simulations)
+try:
+    import qutip as qt
+except ImportError:
+    qt = None
+    try:
+        import subprocess
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "qutip", "-q"])
+        import qutip as qt
+    except Exception:
+        qt = None
 
 
 def _ensure_healpy_available_local(verbose: bool = False) -> bool:
@@ -300,7 +315,7 @@ def phase_12_best_universe_plots(ctx: PipelineContext, df: pd.DataFrame):
                         l_arr, m_arr = hp.Alm.getlm(LMAX_AOE)
                         mask23 = (l_arr == 2) | (l_arr == 3)
                         alm_full[mask23] *= float(ctx.config.get("CMB_AOE_L23_BOOST", 7.0))
-                        m_uK = hp.alm2map(alm_full, nside=nside, verbose=False)
+                        m_uK = hp.alm2map(alm_full, nside=nside)
                         
                     map_path = os.path.join(maps_dir, f"cmb_uid{uid:05d}.fits")
                     try:
@@ -386,7 +401,7 @@ def phase_13_generate_missing_cmb_maps(ctx: PipelineContext, df: pd.DataFrame):
                 l_arr, m_arr = hp.Alm.getlm(LMAX_AOE)
                 mask23 = (l_arr == 2) | (l_arr == 3)
                 alm_full[mask23] *= float(ctx.config.get("CMB_AOE_L23_BOOST", 7.0))
-                m_uK = hp.alm2map(alm_full, nside=nside, verbose=False)
+                m_uK = hp.alm2map(alm_full, nside=nside)
                 
             map_path = os.path.join(maps_dir, f"cmb_uid{uid:05d}.fits")
             try:
@@ -488,6 +503,11 @@ def phase_16_cmb_anomaly_detection(ctx: PipelineContext, df: pd.DataFrame):
     - Saves anomaly CSV files (cmb_coldspots_summary.csv, cmb_aoe_summary.csv)
     - Does NOT use Planck data (uses simulated maps only)
     """
+    if not ctx.map_registry:
+        if ctx.config.get("VERBOSE", True):
+            print("[CMB ANOMALY] No CMB maps in registry - skipping anomaly detection")
+        return
+    
     if ctx.config.get("CMB_COLD_ENABLE", True) or ctx.config.get("CMB_AOE_ENABLE", True):
         
         cold_spots_all = []; aoe_results_all = []
@@ -501,7 +521,7 @@ def phase_16_cmb_anomaly_detection(ctx: PipelineContext, df: pd.DataFrame):
             maps_dir = os.path.join(ctx.paths["CATEGORIZED_DIR"], cat_name, "3_CMB_MAPS")
             
             try:
-                if rec["mode"] == "healpix": cmb_map = hp.read_map(map_path, verbose=False)
+                if rec["mode"] == "healpix": cmb_map = hp.read_map(map_path)
                 else: continue
             except Exception as e:
                 if ctx.config.get("VERBOSE", False): print(f"[ANOMALY][WARN] Failed to load map for UID {uid}: {e}")
@@ -1142,9 +1162,9 @@ def _generate_cmb_map(seed: int, config: dict) -> np.ndarray:
     Cl[2:] = 1.0 / np.maximum(ells[2:], 1.0) ** slope
     Cl *= float(config.get("CMB_AMPLITUDE_SCALE", 1e-10))
 
-    m_raw = hp.synfast(Cl, nside=nside, lmax=lmax, new=True, verbose=False) * 1e6
+    m_raw = hp.synfast(Cl, nside=nside, lmax=lmax, new=True) * 1e6
     fwhm_deg = float(config.get("CMB_SMOOTH_FWHM_DEG", 1.0))
-    m_uK = hp.smoothing(m_raw, fwhm=np.deg2rad(fwhm_deg), verbose=False) if fwhm_deg > 0 else m_raw
+    m_uK = hp.smoothing(m_raw, fwhm=np.deg2rad(fwhm_deg)) if fwhm_deg > 0 else m_raw
     return m_uK
 
 
@@ -1246,7 +1266,7 @@ def validate_against_planck(df: pd.DataFrame, map_registry: list, ctx: PipelineC
 
     for rec in tqdm(healpix_regs, desc="Computing χ² vs Planck", leave=False):
         uid, map_path, E_val, I_val = rec["uid"], rec["path"], rec["E"], rec["I"]
-        m_sim = hp.read_map(map_path, verbose=False)
+        m_sim = hp.read_map(map_path)
 
         nside = hp.npix2nside(m_sim.size)
         lmax_allowed = 3 * nside - 1
@@ -1342,6 +1362,8 @@ def simulate_superposition_series(T, dt, dim, noise, kick, obs_jitter, seed):
     
     FIX #2: Add quantum fluctuations to state evolution (not just decoherence).
     """
+    if qt is None:
+        raise ImportError("qutip is required for quantum simulations. Install with: pip install qutip")
     rgen = np.random.default_rng(seed)
     n = int(np.ceil(T/dt)) + 1
     times = np.linspace(0, T, n)
@@ -1384,6 +1406,8 @@ def simulate_quantum_fluctuation_series(T, dt, dim, kick, noise, obs_kind, obs_j
     Standalone 'quantum fluctuation' panel: <A> and Var(A) evolution.
     FIX #3: Smooth initial phase → gradual transition to noisy fluctuations.
     """
+    if qt is None:
+        raise ImportError("qutip is required for quantum simulations. Install with: pip install qutip")
     rgen = np.random.default_rng(seed)
     n = int(np.ceil(T/dt)) + 1
     times = np.linspace(0, T, n)
@@ -1440,6 +1464,8 @@ def simulate_quantum_fluctuation_series(T, dt, dim, kick, noise, obs_kind, obs_j
 
 def _pauli_like(dim: int, axis: str = "Z"):
     """Build a simple Pauli-like observable in higher dim."""
+    if qt is None:
+        raise ImportError("qutip is required for quantum simulations. Install with: pip install qutip")
     if axis == "Z":
         half = dim // 2
         vals = np.array([1.0]*half + [-1.0]*(dim-half), dtype=float)
@@ -1509,7 +1535,7 @@ def _create_gaussianity_check(ctx: PipelineContext, df: pd.DataFrame):
             if rec["mode"] != "healpix":
                 continue
             try:
-                cmb_map = hp.read_map(rec["path"], verbose=False)
+                cmb_map = hp.read_map(rec["path"])
                 all_pixels.extend(cmb_map)
                 n_maps_loaded += 1
             except Exception as e:
@@ -1613,7 +1639,7 @@ def _create_isotropy_check(ctx: PipelineContext, df: pd.DataFrame):
             if rec["mode"] != "healpix":
                 continue
             try:
-                cmb_map = hp.read_map(rec["path"], verbose=False)
+                cmb_map = hp.read_map(rec["path"])
                 nside = hp.get_nside(cmb_map)
                 npix = hp.nside2npix(nside)
                 
@@ -1730,7 +1756,7 @@ def _create_power_spectrum(ctx: PipelineContext, df: pd.DataFrame):
             if rec["mode"] != "healpix":
                 continue
             try:
-                cmb_map = hp.read_map(rec["path"], verbose=False)
+                cmb_map = hp.read_map(rec["path"])
                 nside = hp.get_nside(cmb_map)
                 
                 # Calculate power spectrum
@@ -1899,7 +1925,7 @@ def _create_sky_maps(ctx: PipelineContext, df: pd.DataFrame):
             # Smooth the density map for better visualization
             fwhm_deg = 5.0  # Smoothing scale in degrees
             fwhm_rad = np.deg2rad(fwhm_deg)
-            density_map_smooth = hp.smoothing(density_map, fwhm=fwhm_rad, verbose=False)
+            density_map_smooth = hp.smoothing(density_map, fwhm=fwhm_rad)
             
             # Create the plot
             full_title = f'Aggregate {title} Axis Density - {variant_name}'
@@ -1915,7 +1941,7 @@ def _create_sky_maps(ctx: PipelineContext, df: pd.DataFrame):
                               edgecolors='white', linewidths=1, zorder=10, alpha=0.7)
             
             # Add grid
-            hp.graticule(dpar=30, dmer=30, verbose=False)
+            hp.graticule(dpar=30, dmer=30)
             
             # Save directly (healpy mollview needs direct save)
             filename = f"cmb_{map_type}_axis_density.png"
@@ -2957,7 +2983,7 @@ def _create_aggregate_coldspot_density_map(ctx: PipelineContext, df: pd.DataFram
                         theta = np.deg2rad(90 - spot['lat'])
                         phi = np.deg2rad(spot['lon'])
                         density_map[hp.ang2pix(nside, theta, phi)] += 1.0
-                density_map_smooth = hp.smoothing(density_map, fwhm=np.deg2rad(5.0), verbose=False) if np.any(density_map) else density_map
+                density_map_smooth = hp.smoothing(density_map, fwhm=np.deg2rad(5.0)) if np.any(density_map) else density_map
                 density_display, vmin, vmax = _normalize_healpy_density(density_map_smooth if np.any(density_map) else density_map + 1e-6)
 
                 _hp_mollview_safe(
@@ -3014,7 +3040,7 @@ def _create_aggregate_coldspot_density_map(ctx: PipelineContext, df: pd.DataFram
                         handles.append(Line2D([0], [0], marker='s', color=color, label=f"ℓ={ell_val} AOE",
                                               markerfacecolor=color, markersize=8, markeredgecolor='black', linewidth=0))
 
-                hp.graticule(dpar=30, dmer=30, verbose=False)
+                hp.graticule(dpar=30, dmer=30)
                 _style_healpy_colorbar()
                 if handles:
                     plt.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.0, -0.15), ncol=min(len(handles), 4), fontsize=11)
@@ -3110,7 +3136,7 @@ def _create_aggregate_coldspot_density_map(ctx: PipelineContext, df: pd.DataFram
                     phi = np.deg2rad(spot['lon'])
                     density_map[hp.ang2pix(nside, theta, phi)] += 1.0
 
-                density_map_smooth = hp.smoothing(density_map, fwhm=np.deg2rad(5.0), verbose=False)
+                density_map_smooth = hp.smoothing(density_map, fwhm=np.deg2rad(5.0))
                 density_display, vmin, vmax = _normalize_healpy_density(density_map_smooth)
                 _hp_mollview_safe(
                     density_display,
@@ -3137,7 +3163,7 @@ def _create_aggregate_coldspot_density_map(ctx: PipelineContext, df: pd.DataFram
                         zorder=10,
                         alpha=0.75
                     )
-                hp.graticule(dpar=30, dmer=30, verbose=False)
+                hp.graticule(dpar=30, dmer=30)
                 _style_healpy_colorbar()
                 saved_path = ctx.save_fig(
                     base_output,
@@ -3376,7 +3402,7 @@ def _create_aggregate_aoe_density_map(ctx: PipelineContext, df: pd.DataFrame):
                     zorder=12,
                     alpha=0.85
                 )
-            hp.graticule(dpar=30, dmer=30, verbose=False)
+            hp.graticule(dpar=30, dmer=30)
             _style_healpy_colorbar()
             ell_filename = f"aggregate_aoe_density_map_ell{ell_val}.png"
             try:
@@ -4026,8 +4052,6 @@ def _create_statistical_distribution_analysis(ctx: PipelineContext, df: pd.DataF
         fig.suptitle('Statistical Distribution Analysis', fontsize=20, fontweight='bold')
         
         # Q-Q plots for normality testing
-        from scipy import stats
-        
         ax1 = axes[0,0]
         stats.probplot(df['E'], dist="norm", plot=ax1)
         ax1.set_title('Q-Q Plot: E Parameter')
@@ -4297,8 +4321,6 @@ def _create_information_theory_analysis(ctx: PipelineContext, df: pd.DataFrame):
         # Mutual information
         ax2 = axes[0,1]
         # Calculate mutual information between E and I
-        from sklearn.feature_selection import mutual_info_regression
-        
         E_binned = pd.cut(df['E'], bins=20, labels=False)
         I_binned = pd.cut(df['I'], bins=20, labels=False)
         

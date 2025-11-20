@@ -8,6 +8,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from ..config.master_ctrl import MASTER_CTRL
 from ..core.pipeline_context import PipelineContext
+from ..utils.plotting import (
+    apply_consistent_plot_style,
+    setup_scientific_plotting_style,
+)
 
 def _detect_quantum_field_anomalies(df: pd.DataFrame, ctx: PipelineContext) -> list:
     """Detect quantum field theory anomalies."""

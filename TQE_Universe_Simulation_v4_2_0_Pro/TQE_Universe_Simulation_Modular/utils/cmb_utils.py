@@ -3,7 +3,10 @@
 #
 # CMB utility functions
 #
+import os
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 from ..core.pipeline_context import PipelineContext
 
 try:
@@ -65,7 +68,7 @@ def _axis_from_lmap(alm_full, nside, ell_pick, lmax_used):
         return (0.0, 0.0, 0.0)
     fl[ell_pick] = 1.0
     alm_l  = hp.almxfl(alm_full, fl)
-    m_l    = hp.alm2map(alm_l, nside=nside, verbose=False)
+    m_l    = hp.alm2map(alm_l, nside=nside)
     ip     = int(np.argmax(np.abs(m_l)))
     th, ph = hp.pix2ang(nside, ip)
     return (float(np.degrees(ph) % 360.0),       # lon (deg)
@@ -92,7 +95,7 @@ def detect_cold_spots_healpix(cmb_map, uid, E_val, I_val, lock_ep, maps_dir, cat
         sigma_rad = np.deg2rad(sigma_arcmin / 60.0)
         
         try:
-            smoothed = hp.smoothing(cmb_map, fwhm=sigma_rad, verbose=False)
+            smoothed = hp.smoothing(cmb_map, fwhm=sigma_rad)
         except Exception as e:
             if config.get("VERBOSE", False): print(f"[COLD][WARN] Smoothing failed at {sigma_arcmin}': {e}")
             continue
@@ -170,7 +173,7 @@ def detect_axis_of_evil(cmb_map, uid, E_val, I_val, lock_ep, maps_dir, category_
         fl[ell] = 1.0
         alm_ell = hp.almxfl(alm_in, fl)
         try:
-            map_ell = hp.alm2map(alm_ell, nside=nside, verbose=False)
+            map_ell = hp.alm2map(alm_ell, nside=nside)
         except Exception:
             return None, None, 0.0
         ipix_max = np.argmax(np.abs(map_ell))
@@ -213,7 +216,7 @@ def detect_axis_of_evil(cmb_map, uid, E_val, I_val, lock_ep, maps_dir, category_
         phases = np.exp(2j * np.pi * aoe_rng.random(len(alm_rand)))
         alm_rand *= phases
         
-        map_rand = hp.alm2map(alm_rand, nside=nside, verbose=False)
+        map_rand = hp.alm2map(alm_rand, nside=nside)
         alm_rand_new = hp.map2alm(map_rand, lmax=lmax, iter=0)
         
         q_lon_r, q_lat_r, _ = extract_axis(alm_rand_new, 2)

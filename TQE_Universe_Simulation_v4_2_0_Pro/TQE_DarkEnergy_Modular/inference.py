@@ -7,6 +7,7 @@
 # TQE–ΛSim: Bayesian inference engine for parameter estimation and model comparison
 # ==========================================================================================
 
+import os
 import numpy as np
 from .config import MASTER_CTRL
 

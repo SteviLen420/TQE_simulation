@@ -979,7 +979,7 @@ class PhysicsEngine:
              cmb_rng = np.random.default_rng(seed)
              # Set legacy numpy state for healpy compatibility
              np.random.seed(seed)
-        cmb_map = hp.synfast(Cl_TT, nside=nside, new=True, verbose=False)
+        cmb_map = hp.synfast(Cl_TT, nside=nside, new=True)
         
         # Apply enhanced physics-based cold spot generation
         # NOTE: By default, this is DISABLED - cold spots should emerge naturally from CMB generation
@@ -1367,7 +1367,7 @@ class PhysicsEngine:
             Cl *= amp
 
         np.random.seed(seed)
-        cmb_map = hp.synfast(Cl, nside=nside, lmax=lmax, new=True, verbose=False)
+        cmb_map = hp.synfast(Cl, nside=nside, lmax=lmax, new=True)
 
         fwhm_deg = float(self.config.get("CMB_SMOOTH_FWHM_DEG", 1.0))
         if fwhm_deg > 0:

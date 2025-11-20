@@ -437,154 +437,272 @@ def run_pipeline(config_override: dict = None, run_id_override: str = None) -> d
     # OPTIMIZED PIPELINE EXECUTION STRUCTURE
     # ======================================================
     
+    # Track phase execution status
+    phase_errors = {}
+    
+    # Initialize peak_x for later phases
+    peak_x = None
+    
     # ===== GROUP 1: CORE SIMULATION & DATA GENERATION =====
     # 1. Monte Carlo Simulation + Goldilocks Calibration (INTEGRATED!)
     progress.set_description("1/28: Monte Carlo + Bayesian Goldilocks")
     # NOTE: Goldilocks is computed FROM the same universes generated here
-    df, X_c_low_used, X_c_high_used = phase_01_monte_carlo(ctx)
-    
-    # Save main universe data CSV
-    ctx.save_csv(df, os.path.join(ctx.paths["AGGREGATE_DIR"], "tqe_runs.csv"))
+    try:
+        df, X_c_low_used, X_c_high_used = phase_01_monte_carlo(ctx)
+        # Save main universe data CSV
+        ctx.save_csv(df, os.path.join(ctx.paths["AGGREGATE_DIR"], "tqe_runs.csv"))
+    except Exception as e:
+        phase_errors[1] = str(e)
+        print(f"⚠️ [PHASE 1] Critical Error: {e}")
+        # Create empty dataframe if Phase 1 fails
+        df = pd.DataFrame()
+        X_c_low_used, X_c_high_used = None, None
     progress.update(1)
     
     # ===== GROUP 2: BASIC ANALYSIS & VISUALIZATION =====
     # 2. Stability curve analysis
     progress.set_description("2/28: Stability Curve Analysis")
-    peak_x = phase_02_stability_curve(ctx, df)
+    try:
+        peak_x = phase_02_stability_curve(ctx, df)
+    except Exception as e:
+        phase_errors[2] = str(e)
+        print(f"⚠️ [PHASE 2] Error: {e}")
+        peak_x = None
     progress.update(1)
     
     # 3. E-I parameter space visualization
     progress.set_description("3/28: E-I Parameter Space")
-    phase_03_scatter_ei(ctx, df)
+    try:
+        phase_03_scatter_ei(ctx, df)
+    except Exception as e:
+        phase_errors[3] = str(e)
+        print(f"⚠️ [PHASE 3] Error: {e}")
     progress.update(1)
     
     # 4. Fluctuation dynamics
     progress.set_description("4/28: Fluctuation Dynamics")
-    phase_04_fluctuation_panels(ctx, df)
+    try:
+        phase_04_fluctuation_panels(ctx, df)
+    except Exception as e:
+        phase_errors[4] = str(e)
+        print(f"⚠️ [PHASE 4] Error: {e}")
     progress.update(1)
     
     # ===== GROUP 3: STABILITY & LOCK-IN ANALYSIS =====
     # 5. Stability-by-I analysis
     progress.set_description("5/28: Stability-by-I Analysis")
-    phase_05_stability_by_i(ctx, df)
+    try:
+        phase_05_stability_by_i(ctx, df)
+    except Exception as e:
+        phase_errors[5] = str(e)
+        print(f"⚠️ [PHASE 5] Error: {e}")
     progress.update(1)
     
     # 6. Lock-in histogram
     progress.set_description("6/28: Lock-in Histogram")
-    phase_06_lockin_histogram(ctx, df)
+    try:
+        phase_06_lockin_histogram(ctx, df)
+    except Exception as e:
+        phase_errors[6] = str(e)
+        print(f"⚠️ [PHASE 6] Error: {e}")
     progress.update(1)
     
     # 7. Stability distribution
     progress.set_description("7/28: Stability Distribution")
-    phase_07_stability_distribution(ctx, df)
+    try:
+        phase_07_stability_distribution(ctx, df)
+    except Exception as e:
+        phase_errors[7] = str(e)
+        print(f"⚠️ [PHASE 7] Error: {e}")
     progress.update(1)
     
     # 8. Average lock-in curve
     progress.set_description("8/28: Average Lock-in Curve")
-    phase_08_avg_lockin_curve(ctx, df)
+    try:
+        phase_08_avg_lockin_curve(ctx, df)
+    except Exception as e:
+        phase_errors[8] = str(e)
+        print(f"⚠️ [PHASE 8] Error: {e}")
     progress.update(1)
     
     # ===== GROUP 4: MACHINE LEARNING & EMERGENT LAWS =====
     # 9. Feature importance analysis
     progress.set_description("9/28: Feature Importance Analysis")
-    phase_09_feature_importance(ctx, df)
+    try:
+        phase_09_feature_importance(ctx, df)
+    except Exception as e:
+        phase_errors[9] = str(e)
+        print(f"⚠️ [PHASE 9] Error: {e}")
     progress.update(1)
     
     # 10. Emergent laws detection
     progress.set_description("10/28: Emergent Laws Detection")
-    phase_10_emergent_laws(ctx, df)
+    try:
+        phase_10_emergent_laws(ctx, df)
+    except Exception as e:
+        phase_errors[10] = str(e)
+        print(f"⚠️ [PHASE 10] Error: {e}")
     progress.update(1)
     
     # 11. Statistical finetuning detector
     progress.set_description("11/28: Statistical Finetuning Detector")
-    phase_11_finetuning_detector(ctx, df)
+    try:
+        phase_11_finetuning_detector(ctx, df)
+    except Exception as e:
+        phase_errors[11] = str(e)
+        print(f"⚠️ [PHASE 11] Error: {e}")
     progress.update(1)
     
     # ===== GROUP 5: CMB GENERATION & VALIDATION =====
     # 12. Best universe plots & CMB map generation (generates simulated CMB FITS files)
     progress.set_description("12/28: Best Universe & CMB Generation")
-    phase_12_best_universe_plots(ctx, df)
+    try:
+        phase_12_best_universe_plots(ctx, df)
+    except Exception as e:
+        phase_errors[12] = str(e)
+        print(f"⚠️ [PHASE 12] Error: {e}")
     progress.update(1)
     
     # 13. Generate missing CMB maps (ensures all lock-in universes have CMB maps)
     progress.set_description("13/28: Complete CMB Map Coverage")
-    phase_13_generate_missing_cmb_maps(ctx, df)
+    try:
+        phase_13_generate_missing_cmb_maps(ctx, df)
+    except Exception as e:
+        phase_errors[13] = str(e)
+        print(f"⚠️ [PHASE 13] Error: {e}")
     progress.update(1)
     
     # 14. Entropy volatility analysis
     progress.set_description("14/28: Entropy Volatility Analysis")
-    phase_14_entropy_volatility(ctx, df)
+    try:
+        phase_14_entropy_volatility(ctx, df)
+    except Exception as e:
+        phase_errors[14] = str(e)
+        print(f"⚠️ [PHASE 14] Error: {e}")
     progress.update(1)
     
     # 15. Planck validation (ONLY phase that uses Planck observational data for chi-squared comparison)
     progress.set_description("15/28: Planck Observational Comparison")
-    df_planck, planck_chi2 = phase_15_planck_validation(ctx, df)
+    df_planck, planck_chi2 = None, None
+    try:
+        df_planck, planck_chi2 = phase_15_planck_validation(ctx, df)
+    except Exception as e:
+        phase_errors[15] = str(e)
+        print(f"⚠️ [PHASE 15] Error: {e}")
     progress.update(1)
     
     # 16. CMB anomaly detection (coldspots, Axis of Evil detection on simulated maps)
     progress.set_description("16/28: CMB Anomaly Detection")
-    phase_16_cmb_anomaly_detection(ctx, df)
+    try:
+        phase_16_cmb_anomaly_detection(ctx, df)
+    except Exception as e:
+        phase_errors[16] = str(e)
+        print(f"⚠️ [PHASE 16] Error: {e}")
     progress.update(1)
     
     # ===== GROUP 6: E+I INTERACTION ANALYSIS =====
     # 17. E+I importance comparison
     progress.set_description("17/28: E+I Importance Comparison")
-    phase_17_ei_importance_comparison(ctx, df)
+    try:
+        phase_17_ei_importance_comparison(ctx, df)
+    except Exception as e:
+        phase_errors[17] = str(e)
+        print(f"⚠️ [PHASE 17] Error: {e}")
     progress.update(1)
     
     # 18. I-Definitions Goldilocks comparison (Bayesian zones for each I-def)
     progress.set_description("18/28: I-Definitions Goldilocks Zones")
-    phase_18_multi_mode_goldilocks_comparison(ctx, df)
+    try:
+        phase_18_multi_mode_goldilocks_comparison(ctx, df)
+    except Exception as e:
+        phase_errors[18] = str(e)
+        print(f"⚠️ [PHASE 18] Error: {e}")
     progress.update(1)
     
     # ===== GROUP 7: ADVANCED CMB ANALYSIS =====
     # 19. CMB analysis plots (Gaussianity, Isotropy, Power Spectrum) - aggregates simulated CMB maps
     progress.set_description("19/28: CMB Statistical Analysis")
-    phase_19_cmb_analysis_plots(ctx, df)
+    try:
+        phase_19_cmb_analysis_plots(ctx, df)
+    except Exception as e:
+        phase_errors[19] = str(e)
+        print(f"⚠️ [PHASE 19] Error: {e}")
     progress.update(1)
     
     # 20. Comprehensive correlation analysis
     progress.set_description("20/28: Comprehensive Correlation Analysis")
-    phase_20_comprehensive_correlation_analysis(ctx, df)
+    try:
+        phase_20_comprehensive_correlation_analysis(ctx, df)
+    except Exception as e:
+        phase_errors[20] = str(e)
+        print(f"⚠️ [PHASE 20] Error: {e}")
     progress.update(1)
     
     # ===== GROUP 8: ADVANCED STATISTICAL ANALYSIS =====
     # 21. Advanced statistical analysis
     progress.set_description("21/28: Advanced Statistical Analysis")
-    phase_21_advanced_statistical_analysis(ctx, df)
+    try:
+        phase_21_advanced_statistical_analysis(ctx, df)
+    except Exception as e:
+        phase_errors[21] = str(e)
+        print(f"⚠️ [PHASE 21] Error: {e}")
     progress.update(1)
     
     # 22. CMB anomaly analysis plots (aggregate anomaly overlays from Phase 16 detections)
     progress.set_description("22/28: CMB Anomaly Visualization")
-    phase_22_cmb_anomaly_analysis_plots(ctx, df)
+    try:
+        phase_22_cmb_anomaly_analysis_plots(ctx, df)
+    except Exception as e:
+        phase_errors[22] = str(e)
+        print(f"⚠️ [PHASE 22] Error: {e}")
     progress.update(1)
     
     # ===== GROUP 9: ENHANCED PHYSICS ANALYSIS =====
     # 23. Enhanced physics analysis
     progress.set_description("23/28: Enhanced Physics Analysis")
-    phase_23_enhanced_physics_analysis(ctx, df)
+    try:
+        phase_23_enhanced_physics_analysis(ctx, df)
+    except Exception as e:
+        phase_errors[23] = str(e)
+        print(f"⚠️ [PHASE 23] Error: {e}")
     progress.update(1)
     
     # 24. Comprehensive data extraction from all universes
     progress.set_description("24/28: Comprehensive Data Extraction")
-    phase_24_comprehensive_data_extraction(ctx, df)
+    try:
+        phase_24_comprehensive_data_extraction(ctx, df)
+    except Exception as e:
+        phase_errors[24] = str(e)
+        print(f"⚠️ [PHASE 24] Error: {e}")
     progress.update(1)
     
     # ===== GROUP 10: ADVANCED ANOMALY & LAW DETECTION =====
     # 25. Advanced anomaly detection
     progress.set_description("25/28: Advanced Anomaly Detection")
-    phase_25_advanced_anomaly_detection(ctx, df)
+    try:
+        phase_25_advanced_anomaly_detection(ctx, df)
+    except Exception as e:
+        phase_errors[25] = str(e)
+        print(f"⚠️ [PHASE 25] Error: {e}")
     progress.update(1)
     
     # 26. Advanced law detection
     progress.set_description("26/28: Advanced Law Detection")
-    phase_26_advanced_law_detection(ctx, df)
+    try:
+        phase_26_advanced_law_detection(ctx, df)
+    except Exception as e:
+        phase_errors[26] = str(e)
+        print(f"⚠️ [PHASE 26] Error: {e}")
     progress.update(1)
     
     # ===== GROUP 11: COMPREHENSIVE VISUALIZATION =====
     # 27. Comprehensive visualization extraction
     progress.set_description("27/28: Comprehensive Visualization Extraction")
-    phase_27_comprehensive_visualization_extraction(ctx, df)
+    try:
+        phase_27_comprehensive_visualization_extraction(ctx, df)
+    except Exception as e:
+        phase_errors[27] = str(e)
+        print(f"⚠️ [PHASE 27] Error: {e}")
     progress.update(1)
     
     # ===== GROUP 12: FINAL SUMMARY & BAYESIAN =====
@@ -592,7 +710,15 @@ def run_pipeline(config_override: dict = None, run_id_override: str = None) -> d
     progress.set_description("28/28: Final Summary & Bayesian Integration")
     
     # Generate summary FIRST
-    summary = phase_28_final_summary(ctx, df, peak_x)
+    summary = {}
+    try:
+        summary = phase_28_final_summary(ctx, df, peak_x)
+        if summary is None:
+            summary = {}
+    except Exception as e:
+        phase_errors[28] = str(e)
+        print(f"⚠️ [PHASE 28] Error: {e}")
+        summary = {}
     
     # Bayesian Model Selection (BIC, AIC)
     bayesian_metrics = {}
@@ -653,6 +779,36 @@ def run_pipeline(config_override: dict = None, run_id_override: str = None) -> d
     summary.setdefault("diagnostics", {})
     summary["diagnostics"]["preflight"] = preflight_report
     summary["diagnostics"]["postrun"] = postrun_report
+    
+    # Add phase errors to summary
+    if phase_errors:
+        summary["phase_errors"] = phase_errors
+        summary["phases_with_errors"] = list(phase_errors.keys())
+        summary["total_phase_errors"] = len(phase_errors)
+        print(f"\n⚠️ Pipeline completed with {len(phase_errors)} phase error(s): {list(phase_errors.keys())}")
+    else:
+        summary["phase_errors"] = {}
+        summary["phases_with_errors"] = []
+        summary["total_phase_errors"] = 0
+        print("\n✅ All phases completed successfully")
+    
+    # Save pipeline summary JSON
+    if ctx.config.get("SAVE_JSON", True):
+        try:
+            pipeline_summary_path = os.path.join(ctx.paths["SAVE_DIR"], "pipeline_summary.json")
+            ctx.save_json(pipeline_summary_path, summary)
+            print(f"\n✅ Pipeline summary saved to: {pipeline_summary_path}")
+        except Exception as e:
+            print(f"⚠️ Failed to save pipeline_summary.json: {e}")
+            # Try to save to a backup location
+            try:
+                backup_path = os.path.join(ctx.paths["SAVE_DIR"], "pipeline_summary_backup.json")
+                import json
+                with open(backup_path, 'w') as f:
+                    json.dump(summary, f, indent=2, default=str)
+                print(f"✅ Backup summary saved to: {backup_path}")
+            except Exception as e2:
+                print(f"❌ Failed to save backup summary: {e2}")
     
     return summary
 

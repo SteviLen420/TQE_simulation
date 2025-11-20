@@ -6,12 +6,35 @@
 import json
 import os
 import shutil
+import sys
 from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from ..analysis.anomaly_detection import (
+    _create_anomaly_detection_plots,
+    _detect_cmb_statistical_anomalies,
+    _detect_energy_anomalies,
+    _detect_entropy_anomalies,
+    _detect_information_anomalies,
+    _detect_quantum_field_anomalies,
+    _detect_topological_anomalies,
+)
+from ..analysis.law_detection import (
+    _create_law_detection_plots,
+    _detect_conservation_laws,
+    _detect_emergent_laws,
+    _detect_field_laws,
+    _detect_geometric_laws,
+    _detect_information_laws,
+    _detect_quantum_laws,
+    _detect_scaling_laws,
+    _detect_statistical_laws,
+    _detect_symmetry_laws,
+    _detect_thermodynamic_laws,
+)
 from ..config.master_ctrl import MASTER_CTRL
 from ..core.pipeline_context import PipelineContext
 from ..core.physics_engine import PhysicsEngine
@@ -76,6 +99,11 @@ def phase_23_enhanced_physics_analysis(ctx: PipelineContext, df: pd.DataFrame):
         return
     
     try:
+        if len(df) == 0:
+            if ctx.config.get("VERBOSE", True):
+                print("\n[ENHANCED PHYSICS] No universes in dataframe - skipping enhanced physics analysis")
+            return
+        
         if ctx.config.get("VERBOSE", True):
             print("\n[ENHANCED PHYSICS] Analyzing Friedmann evolution, quantum fields, and physical anomalies...")
         
