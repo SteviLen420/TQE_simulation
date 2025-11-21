@@ -375,13 +375,21 @@ def run_postrun_diagnostics(ctx, summary: Dict) -> Dict:
             "coldspot_depth_histogram.png",
             "aggregate_aoe_density_map.png"
         ]
-        found_anomaly = sum(1 for png in anomaly_pngs if os.path.exists(os.path.join(png_dir, png)))
+        found_anomaly = 0
+        missing_pngs = []
+        for png in anomaly_pngs:
+            base_path = os.path.join(png_dir, png)
+            variant_path = ctx.with_variant(base_path) if hasattr(ctx, 'with_variant') else base_path
+            if os.path.exists(base_path) or os.path.exists(variant_path):
+                found_anomaly += 1
+            else:
+                missing_pngs.append(png)
         _add_check(
             report,
             "Phase 22: Anomaly visualization PNGs",
             found_anomaly >= len(anomaly_pngs) * 0.8,  # At least 80% should exist
             severity="warning",
-            details=f"{found_anomaly}/{len(anomaly_pngs)} anomaly PNG files found",
+            details=f"{found_anomaly}/{len(anomaly_pngs)} anomaly PNG files found. Missing: {', '.join(missing_pngs) if missing_pngs else 'none'}",
         )
 
     # Phase 23: Enhanced Physics files
@@ -394,20 +402,27 @@ def run_postrun_diagnostics(ctx, summary: Dict) -> Dict:
             "enhanced_physics_physical_anomalies.csv",
             "enhanced_physics_quantum_fields.csv"
         ]
-        # Check with variant tags
+        # Check with variant tags and glob patterns
         found_enhanced = 0
+        missing_enhanced = []
         for f in enhanced_files:
             base_name = f.split('.')[0]
             ext = f.split('.')[1]
+            # Check exact match first
+            exact_path = os.path.join(aggregate_dir, f)
+            variant_path = ctx.with_variant(exact_path) if hasattr(ctx, 'with_variant') else exact_path
+            # Also check glob pattern for variant-tagged files
             pattern = os.path.join(aggregate_dir, f"{base_name}*{ext}")
-            if glob.glob(pattern):
+            if os.path.exists(exact_path) or os.path.exists(variant_path) or glob.glob(pattern):
                 found_enhanced += 1
+            else:
+                missing_enhanced.append(f)
         _add_check(
             report,
             "Phase 23: Enhanced Physics files",
             found_enhanced >= len(enhanced_files) * 0.8,
             severity="warning",
-            details=f"{found_enhanced}/{len(enhanced_files)} enhanced physics files found",
+            details=f"{found_enhanced}/{len(enhanced_files)} enhanced physics files found. Missing: {', '.join(missing_enhanced) if missing_enhanced else 'none'}",
         )
 
     # Phase 21: Advanced Statistics files
@@ -418,13 +433,23 @@ def run_postrun_diagnostics(ctx, summary: Dict) -> Dict:
             "universe_classification.csv",
             "performance_metrics.csv"
         ]
-        found_phase21 = sum(1 for f in phase21_files if os.path.exists(os.path.join(aggregate_dir, f)))
+        # Check both aggregate_dir and with variant tags
+        found_phase21 = 0
+        missing_files = []
+        for f in phase21_files:
+            # Check in aggregate_dir
+            base_path = os.path.join(aggregate_dir, f)
+            variant_path = ctx.with_variant(base_path) if hasattr(ctx, 'with_variant') else base_path
+            if os.path.exists(base_path) or os.path.exists(variant_path):
+                found_phase21 += 1
+            else:
+                missing_files.append(f)
         _add_check(
             report,
             "Phase 21: Advanced Statistics files",
             found_phase21 >= len(phase21_files) * 0.75,
             severity="warning",
-            details=f"{found_phase21}/{len(phase21_files)} statistics files found",
+            details=f"{found_phase21}/{len(phase21_files)} statistics files found. Missing: {', '.join(missing_files) if missing_files else 'none'}",
         )
 
     # Phase 24: Comprehensive Data

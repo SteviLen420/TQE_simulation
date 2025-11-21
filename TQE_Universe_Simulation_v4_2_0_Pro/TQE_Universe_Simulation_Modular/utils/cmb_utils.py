@@ -139,7 +139,10 @@ def detect_cold_spots_healpix(cmb_map, uid, E_val, I_val, lock_ep, maps_dir, cat
                 lon2, lat2 = spots_sorted.loc[j, ['lon', 'lat']]
                 dlon = np.deg2rad(lon2 - lon1)
                 lat1_r, lat2_r = np.deg2rad(lat1), np.deg2rad(lat2)
-                sep_rad = np.arccos(np.sin(lat1_r) * np.sin(lat2_r) + np.cos(lat1_r) * np.cos(lat2_r) * np.cos(dlon))
+                # Clamp argument to [-1, 1] to avoid numerical precision issues with arccos
+                cos_arg = np.sin(lat1_r) * np.sin(lat2_r) + np.cos(lat1_r) * np.cos(lat2_r) * np.cos(dlon)
+                cos_arg = np.clip(cos_arg, -1.0, 1.0)
+                sep_rad = np.arccos(cos_arg)
                 sep_deg = np.degrees(sep_rad)
                 if sep_deg * 60 < min_sep_deg: keep_mask[j] = False
         return spots_sorted[keep_mask]

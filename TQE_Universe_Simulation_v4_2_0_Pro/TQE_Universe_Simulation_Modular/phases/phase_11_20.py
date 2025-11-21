@@ -2358,8 +2358,10 @@ def _create_statistical_summary_analysis(ctx: PipelineContext, df: pd.DataFrame)
         
         # Save comprehensive statistics
         stats_df = pd.DataFrame([stats_summary])
-        stats_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "comprehensive_statistics.csv")
-        ctx.save_csv(stats_df, stats_path, category="stats")
+        stats_path = "comprehensive_statistics.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_path = ctx.save_csv(stats_df, stats_path, category="stats")
+        if not saved_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [STATISTICAL SUMMARY] Failed to save comprehensive_statistics.csv")
         
         # Create visualization
         # PUBLICATION: Larger 2x2 with constrained_layout (was: 15,12)
@@ -2443,8 +2445,10 @@ def _create_parameter_sensitivity_analysis(ctx: PipelineContext, df: pd.DataFram
         }
         
         sensitivity_df = pd.DataFrame(sensitivity_data)
-        sensitivity_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "parameter_sensitivity_analysis.csv")
-        ctx.save_csv(sensitivity_df, sensitivity_path, category="stats")
+        sensitivity_path = "parameter_sensitivity_analysis.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_path = ctx.save_csv(sensitivity_df, sensitivity_path, category="stats")
+        if not saved_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [PARAMETER SENSITIVITY] Failed to save parameter_sensitivity_analysis.csv")
         
         # Create visualization
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
@@ -2516,8 +2520,10 @@ def _create_universe_classification_analysis(ctx: PipelineContext, df: pd.DataFr
             'count': type_counts.values,
             'percentage': (type_counts.values / len(df) * 100).round(2)
         })
-        classification_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "universe_classification.csv")
-        ctx.save_csv(classification_df, classification_path, category="stats")
+        classification_path = "universe_classification.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_path = ctx.save_csv(classification_df, classification_path, category="stats")
+        if not saved_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [UNIVERSE CLASSIFICATION] Failed to save universe_classification.csv")
         
         # Create visualization
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
@@ -2579,8 +2585,10 @@ def _create_performance_metrics_analysis(ctx: PipelineContext, df: pd.DataFrame)
         
         # Save performance metrics
         performance_df = pd.DataFrame([performance_metrics])
-        performance_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "performance_metrics.csv")
-        ctx.save_csv(performance_df, performance_path, category="stats")
+        performance_path = "performance_metrics.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_path = ctx.save_csv(performance_df, performance_path, category="stats")
+        if not saved_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [PERFORMANCE METRICS] Failed to save performance_metrics.csv")
         
         # Create visualization
         # PUBLICATION: Larger 2x2 with constrained_layout (was: 15,12)
@@ -2725,10 +2733,14 @@ def _create_coldspot_position_heatmap(ctx: PipelineContext, df: pd.DataFrame):
         # Tight layout
         plt.tight_layout()
         
-        output_png = os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "coldspot_position_heatmap.png")
-        output_csv = os.path.join(ctx.paths["AGGREGATE_DIR"], "coldspot_position_heatmap_data.csv")
-        ctx.save_fig(output_png)
-        ctx.save_csv(pd.DataFrame({"lon": lon, "lat": lat}), output_csv)
+        output_png = "coldspot_position_heatmap.png"  # Relative path, ctx.save_fig will handle full path
+        output_csv = "coldspot_position_heatmap_data.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_png = ctx.save_fig(output_png, category="cmb")
+        saved_csv = ctx.save_csv(pd.DataFrame({"lon": lon, "lat": lat}), output_csv, category="cmb")
+        if not saved_png and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [COLDSPOT HEATMAP] Failed to save PNG")
+        if not saved_csv and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [COLDSPOT HEATMAP] Failed to save CSV")
         
     except Exception as e:
         if ctx.config.get("VERBOSE", True):
@@ -2818,10 +2830,14 @@ def _create_coldspot_depth_histogram(ctx: PipelineContext, df: pd.DataFrame):
         # Tight layout
         plt.tight_layout()
         
-        output_png = os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "coldspot_depth_histogram.png")
-        output_csv = os.path.join(ctx.paths["AGGREGATE_DIR"], "coldspot_depth_histogram_data.csv")
-        ctx.save_fig(output_png)
-        ctx.save_csv(pd.DataFrame({"temp_uK": all_depths}), output_csv)
+        output_png = "coldspot_depth_histogram.png"  # Relative path, ctx.save_fig will handle full path
+        output_csv = "coldspot_depth_histogram_data.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_png = ctx.save_fig(output_png, category="cmb")
+        saved_csv = ctx.save_csv(pd.DataFrame({"temp_uK": all_depths}), output_csv, category="cmb")
+        if not saved_png and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [COLDSPOT DEPTH] Failed to save PNG")
+        if not saved_csv and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [COLDSPOT DEPTH] Failed to save CSV")
         
     except Exception as e:
         if ctx.config.get("VERBOSE", True):
@@ -3019,8 +3035,7 @@ def _create_aggregate_coldspot_density_map(ctx: PipelineContext, df: pd.DataFram
                 print("[AOE DENSITY MAP] Skipping combined anomaly overlay (no data)")
             return
 
-        combined_filename = "aggregate_cmb_anomaly_overlay.png"
-        combined_base = os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], combined_filename)
+        combined_filename = "aggregate_cmb_anomaly_overlay.png"  # Relative path, ctx.save_fig will handle full path
 
         healpy_available = _ensure_healpy_available_local(ctx.config.get("VERBOSE", True))
         overlay_saved = False
@@ -3098,7 +3113,7 @@ def _create_aggregate_coldspot_density_map(ctx: PipelineContext, df: pd.DataFram
                     plt.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.0, -0.15), ncol=min(len(handles), 4), fontsize=11)
 
                 saved_path = ctx.save_fig(
-                    combined_base,
+                    combined_filename,  # Relative path, ctx.save_fig will handle full path
                     category="cmb",
                     fig=plt.gcf()
                 )
@@ -3111,7 +3126,8 @@ def _create_aggregate_coldspot_density_map(ctx: PipelineContext, df: pd.DataFram
         if not overlay_saved:
             planar_path = _plot_combined_planar(coldspot_df, aoe_df, variant_name, combined_filename)
             if not planar_path or not os.path.exists(planar_path):
-                raise RuntimeError("Failed to generate combined anomaly overlay map.")
+                if ctx.config.get("VERBOSE", True):
+                    print(f"⚠️ [AOE DENSITY MAP] Failed to generate combined anomaly overlay map")
 
     def _normalize_healpy_density(density: np.ndarray) -> tuple[np.ndarray, float, float]:
         dense = np.asarray(density, dtype=float)
@@ -3172,7 +3188,7 @@ def _create_aggregate_coldspot_density_map(ctx: PipelineContext, df: pd.DataFram
                 'lat': rng.uniform(-80, 80, n_spots)
             })
 
-        base_output = os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "aggregate_coldspot_density_map.png")
+        base_output = "aggregate_coldspot_density_map.png"  # Relative path, ctx.save_fig will handle full path
 
         healpy_rendered = False
         healpy_available = _ensure_healpy_available_local(ctx.config.get("VERBOSE", True))
@@ -3316,7 +3332,7 @@ def _create_aggregate_aoe_density_map(ctx: PipelineContext, df: pd.DataFrame):
 
         plt.tight_layout()
         return ctx.save_fig(
-            os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], filename),
+            filename,  # Relative path, ctx.save_fig will handle full path
             category="cmb",
             fig=fig
         )
@@ -3362,7 +3378,7 @@ def _create_aggregate_aoe_density_map(ctx: PipelineContext, df: pd.DataFrame):
         ax.legend(loc='upper right')
         plt.tight_layout()
         return ctx.save_fig(
-            os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], filename),
+            filename,  # Relative path, ctx.save_fig will handle full path
             category="cmb",
             fig=fig
         )
@@ -3456,10 +3472,10 @@ def _create_aggregate_aoe_density_map(ctx: PipelineContext, df: pd.DataFrame):
                 )
             hp.graticule(dpar=30, dmer=30)
             _style_healpy_colorbar()
-            ell_filename = f"aggregate_aoe_density_map_ell{ell_val}.png"
+            ell_filename = f"aggregate_aoe_density_map_ell{ell_val}.png"  # Relative path, ctx.save_fig will handle full path
             try:
                 saved_path = ctx.save_fig(
-                    os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], ell_filename),
+                    ell_filename,
                     category="cmb",
                     fig=plt.gcf()
                 )
@@ -3578,7 +3594,10 @@ def _create_aoe_alignment_histogram(ctx: PipelineContext, df: pd.DataFrame):
         plt.tight_layout()
         
         # Save
-        ctx.save_fig(os.path.join(ctx.paths["AGGREGATE_FIG_DIR"], "aoe_alignment_histogram.png"))
+        output_png = "aoe_alignment_histogram.png"  # Relative path, ctx.save_fig will handle full path
+        saved_png = ctx.save_fig(output_png, category="cmb")
+        if not saved_png and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [AOE ALIGNMENT] Failed to save PNG")
         
     except Exception as e:
         if ctx.config.get("VERBOSE", True):
@@ -3767,8 +3786,10 @@ def _extract_enhanced_physics_data(friedmann_results: list, ctx: PipelineContext
                 })
         
         friedmann_df = pd.DataFrame(friedmann_data)
-        friedmann_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_friedmann_evolution.csv"))
-        ctx.save_csv(friedmann_df, friedmann_path, category="physics")
+        friedmann_path = "enhanced_physics_friedmann_evolution.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_path = ctx.save_csv(friedmann_df, friedmann_path, category="physics")
+        if not saved_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [ENHANCED PHYSICS] Failed to save friedmann_evolution.csv")
         
         # 2. Quantum Field Fluctuations Data
         quantum_data = []
@@ -3786,8 +3807,10 @@ def _extract_enhanced_physics_data(friedmann_results: list, ctx: PipelineContext
             })
         
         quantum_df = pd.DataFrame(quantum_data)
-        quantum_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_quantum_fields.csv"))
-        ctx.save_csv(quantum_df, quantum_path, category="physics")
+        quantum_path = "enhanced_physics_quantum_fields.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_path = ctx.save_csv(quantum_df, quantum_path, category="physics")
+        if not saved_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [ENHANCED PHYSICS] Failed to save quantum_fields.csv")
         
         # 3. Cosmic Entanglement Network Data
         entanglement_data = []
@@ -3805,8 +3828,10 @@ def _extract_enhanced_physics_data(friedmann_results: list, ctx: PipelineContext
             })
         
         entanglement_df = pd.DataFrame(entanglement_data)
-        entanglement_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_entanglement_network.csv"))
-        ctx.save_csv(entanglement_df, entanglement_path, category="physics")
+        entanglement_path = "enhanced_physics_entanglement_network.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_path = ctx.save_csv(entanglement_df, entanglement_path, category="physics")
+        if not saved_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [ENHANCED PHYSICS] Failed to save entanglement_network.csv")
         
         # 4. Physical Anomalies Data
         anomalies_data = []
@@ -3827,8 +3852,10 @@ def _extract_enhanced_physics_data(friedmann_results: list, ctx: PipelineContext
             })
         
         anomalies_df = pd.DataFrame(anomalies_data)
-        anomalies_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_physical_anomalies.csv"))
-        ctx.save_csv(anomalies_df, anomalies_path, category="physics")
+        anomalies_path = "enhanced_physics_physical_anomalies.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_path = ctx.save_csv(anomalies_df, anomalies_path, category="physics")
+        if not saved_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [ENHANCED PHYSICS] Failed to save physical_anomalies.csv")
         
         # 5. Comprehensive Enhanced Physics Summary
         summary_data = []
@@ -3849,8 +3876,10 @@ def _extract_enhanced_physics_data(friedmann_results: list, ctx: PipelineContext
             })
         
         summary_df = pd.DataFrame(summary_data)
-        summary_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_comprehensive_summary.csv"))
-        ctx.save_csv(summary_df, summary_path, category="physics")
+        summary_path = "enhanced_physics_comprehensive_summary.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_path = ctx.save_csv(summary_df, summary_path, category="physics")
+        if not saved_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [ENHANCED PHYSICS] Failed to save comprehensive_summary.csv")
         
         if ctx.config.get("VERBOSE", True):
             print(f"[ENHANCED PHYSICS DATA] Extracted comprehensive data:")

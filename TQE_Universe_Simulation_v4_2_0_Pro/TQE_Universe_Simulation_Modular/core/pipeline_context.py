@@ -405,26 +405,34 @@ class PipelineContext:
 
         figure = fig if fig is not None else plt.gcf()
 
-        full_path = self.get_full_path(path)
-        full_path_variant = self.with_variant(full_path)
+        # If path is already absolute, use it directly; otherwise get full path
+        if os.path.isabs(path):
+            full_path = path
+        else:
+            # For relative paths, determine base directory based on category
+            if category:
+                if category == "anomaly":
+                    base_dir = self.paths["ANOMALY_PNG_DIR"]
+                elif category == "physics":
+                    base_dir = self.paths["PHYSICS_PNG_DIR"]
+                elif category == "main":
+                    base_dir = self.paths["MAIN_PNG_DIR"]
+                elif category == "laws":
+                    base_dir = self.paths["LAWS_PNG_DIR"]
+                elif category == "stats":
+                    base_dir = self.paths["STATS_PNG_DIR"]
+                elif category == "cmb":
+                    base_dir = self.paths["CMB_PNG_DIR"]
+                elif category == "viz":
+                    base_dir = self.paths["VIZ_PNG_DIR"]
+                else:
+                    base_dir = self.paths["PNG_VISUALIZATIONS_DIR"]
+            else:
+                base_dir = self.paths["PNG_VISUALIZATIONS_DIR"]
+            full_path = os.path.join(base_dir, path)
         
-        # If category is specified, save to categorized directory
-        if category:
-            filename = os.path.basename(full_path_variant)
-            if category == "anomaly":
-                full_path_variant = os.path.join(self.paths["ANOMALY_PNG_DIR"], filename)
-            elif category == "physics":
-                full_path_variant = os.path.join(self.paths["PHYSICS_PNG_DIR"], filename)
-            elif category == "main":
-                full_path_variant = os.path.join(self.paths["MAIN_PNG_DIR"], filename)
-            elif category == "laws":
-                full_path_variant = os.path.join(self.paths["LAWS_PNG_DIR"], filename)
-            elif category == "stats":
-                full_path_variant = os.path.join(self.paths["STATS_PNG_DIR"], filename)
-            elif category == "cmb":
-                full_path_variant = os.path.join(self.paths["CMB_PNG_DIR"], filename)
-            elif category == "viz":
-                full_path_variant = os.path.join(self.paths["VIZ_PNG_DIR"], filename)
+        # Apply variant tag only in single mode (not batch)
+        full_path_variant = self.with_variant(full_path)
         
         os.makedirs(os.path.dirname(full_path_variant), exist_ok=True)
         try:
@@ -441,6 +449,8 @@ class PipelineContext:
             return full_path_variant
         except Exception as e:
             print(f"[CTX][FIG] ERROR saving {full_path_variant}: {e}")
+            import traceback
+            traceback.print_exc()
             return None
         finally:
             if close:
@@ -450,28 +460,36 @@ class PipelineContext:
         """Centralized CSV saving with variant tag, categorization, and error handling."""
         if df is None or df.empty:
             print(f"[CTX][CSV][WARN] Skipping empty DataFrame: {os.path.basename(path)}")
-            return
+            return None
         
-        full_path = self.get_full_path(path)
+        # If path is already absolute, use it directly; otherwise get full path
+        if os.path.isabs(path):
+            full_path = path
+        else:
+            # For relative paths, determine base directory based on category
+            if category:
+                if category == "anomaly":
+                    base_dir = self.paths["ANOMALY_CSV_DIR"]
+                elif category == "physics":
+                    base_dir = self.paths["PHYSICS_CSV_DIR"]
+                elif category == "main":
+                    base_dir = self.paths["MAIN_CSV_DIR"]
+                elif category == "laws":
+                    base_dir = self.paths["LAWS_CSV_DIR"]
+                elif category == "stats":
+                    base_dir = self.paths["STATS_CSV_DIR"]
+                elif category == "cmb":
+                    base_dir = self.paths["CMB_CSV_DIR"]
+                elif category == "viz":
+                    base_dir = self.paths["VIZ_CSV_DIR"]
+                else:
+                    base_dir = self.paths["AGGREGATE_DIR"]
+            else:
+                base_dir = self.paths["AGGREGATE_DIR"]
+            full_path = os.path.join(base_dir, path)
+        
+        # Apply variant tag only in single mode (not batch)
         full_path_variant = self.with_variant(full_path)
-        
-        # If category is specified, save to categorized directory
-        if category:
-            filename = os.path.basename(full_path_variant)
-            if category == "anomaly":
-                full_path_variant = os.path.join(self.paths["ANOMALY_CSV_DIR"], filename)
-            elif category == "physics":
-                full_path_variant = os.path.join(self.paths["PHYSICS_CSV_DIR"], filename)
-            elif category == "main":
-                full_path_variant = os.path.join(self.paths["MAIN_CSV_DIR"], filename)
-            elif category == "laws":
-                full_path_variant = os.path.join(self.paths["LAWS_CSV_DIR"], filename)
-            elif category == "stats":
-                full_path_variant = os.path.join(self.paths["STATS_CSV_DIR"], filename)
-            elif category == "cmb":
-                full_path_variant = os.path.join(self.paths["CMB_CSV_DIR"], filename)
-            elif category == "viz":
-                full_path_variant = os.path.join(self.paths["VIZ_CSV_DIR"], filename)
         
         os.makedirs(os.path.dirname(full_path_variant), exist_ok=True)
         try:
@@ -484,6 +502,8 @@ class PipelineContext:
             return full_path_variant
         except Exception as e:
             print(f"[CTX][CSV] ERROR writing {full_path_variant}: {e}")
+            import traceback
+            traceback.print_exc()
         return None
 
     def get_full_path(self, relative_path: str) -> str:

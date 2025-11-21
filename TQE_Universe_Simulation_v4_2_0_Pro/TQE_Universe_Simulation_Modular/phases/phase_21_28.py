@@ -182,9 +182,11 @@ def phase_23_enhanced_physics_analysis(ctx: PipelineContext, df: pd.DataFrame):
             'enhanced_physics_enabled': True
         }
         
-        enhanced_physics_path = ctx.with_variant("enhanced_physics_analysis.json")
-        with open(enhanced_physics_path, 'w') as f:
-            json.dump(enhanced_physics_data, f, indent=2, default=str)
+        # Use ctx.save_json for consistent path handling
+        enhanced_physics_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "enhanced_physics_analysis.json")
+        saved_json_path = ctx.save_json(enhanced_physics_path, enhanced_physics_data)
+        if not saved_json_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [ENHANCED PHYSICS] Failed to save enhanced_physics_analysis.json")
         
         if ctx.config.get("VERBOSE", True):
             print(f"[ENHANCED PHYSICS] Analysis complete. Results saved to {enhanced_physics_path}")
@@ -267,8 +269,10 @@ def phase_24_comprehensive_data_extraction(ctx: PipelineContext, df: pd.DataFram
         
         # Save comprehensive data
         comprehensive_df = pd.DataFrame(all_universe_data)
-        comprehensive_csv_path = ctx.with_variant(os.path.join(ctx.paths["AGGREGATE_DIR"], "comprehensive_universe_physics_data.csv"))
-        ctx.save_csv(comprehensive_df, comprehensive_csv_path, category="physics")
+        comprehensive_csv_path = "comprehensive_universe_physics_data.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_path = ctx.save_csv(comprehensive_df, comprehensive_csv_path, category="physics")
+        if not saved_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [COMPREHENSIVE DATA] Failed to save comprehensive_universe_physics_data.csv")
         
         # Create additional analysis plots
         _create_comprehensive_physics_analysis_plots(comprehensive_df, ctx)
@@ -325,8 +329,10 @@ def phase_25_advanced_anomaly_detection(ctx: PipelineContext, df: pd.DataFrame):
     # Save results
     if anomaly_results:
         anomaly_df = pd.DataFrame(anomaly_results)
-        anomaly_path = os.path.join(ctx.paths["AGGREGATE_DIR"], "advanced_anomaly_detection_results.csv")
-        ctx.save_csv(anomaly_df, anomaly_path, category="anomaly")
+        anomaly_path = "advanced_anomaly_detection_results.csv"  # Relative path, ctx.save_csv will handle full path
+        saved_path = ctx.save_csv(anomaly_df, anomaly_path, category="anomaly")
+        if not saved_path and ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [ANOMALY DETECTION] Failed to save advanced_anomaly_detection_results.csv")
         
         # Create visualization
         _create_anomaly_detection_plots(anomaly_df, ctx)
