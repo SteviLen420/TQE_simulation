@@ -34,6 +34,25 @@
 % Better spacing for equations
 \setlength{\jot}{10pt}
 
+% Abstract formatting - make it same width as body text (no indentation, normal width)
+\renewenvironment{abstract}{%
+  \small
+  \begin{center}%
+    {\bfseries \abstractname\vspace{-.5em}\vspace{0pt}}%
+  \end{center}%
+  \list{}{%
+    \setlength{\leftmargin}{0pt}%
+    \setlength{\rightmargin}{0pt}%
+    \setlength{\listparindent}{0pt}%
+    \setlength{\itemindent}{0pt}%
+    \setlength{\parsep}{0pt}%
+    \setlength{\topsep}{0pt}%
+  }%
+  \item\relax
+}{%
+  \endlist
+}
+
 % Metadata
 \title{Theory of the Question of Existence (TQE):\\ A Conceptual Framework for Law Emergence\\ via Energy-Information Coupling}
 \author{Stefan Len\footnote{ORCID: \href{https://orcid.org/0009-0007-0383-7315}{0009-0007-0383-7315} \\
