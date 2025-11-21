@@ -298,47 +298,95 @@ def phase_25_advanced_anomaly_detection(ctx: PipelineContext, df: pd.DataFrame):
     
     # Quantum Field Anomalies
     if ctx.config.get("ENABLE_QUANTUM_ANOMALY_DETECTION", True):
-        quantum_anomalies = _detect_quantum_field_anomalies(df, ctx)
-        anomaly_results.extend(quantum_anomalies)
+        try:
+            quantum_anomalies = _detect_quantum_field_anomalies(df, ctx)
+            if quantum_anomalies:
+                anomaly_results.extend(quantum_anomalies)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [ANOMALY DETECTION] Error in quantum field anomaly detection: {e}")
     
     # Entropy Anomalies
     if ctx.config.get("ENABLE_ENTROPY_ANOMALY_DETECTION", True):
-        entropy_anomalies = _detect_entropy_anomalies(df, ctx)
-        anomaly_results.extend(entropy_anomalies)
+        try:
+            entropy_anomalies = _detect_entropy_anomalies(df, ctx)
+            if entropy_anomalies:
+                anomaly_results.extend(entropy_anomalies)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [ANOMALY DETECTION] Error in entropy anomaly detection: {e}")
     
     # Topological Anomalies
     if ctx.config.get("ENABLE_TOPOLOGICAL_ANOMALY_DETECTION", True):
-        topological_anomalies = _detect_topological_anomalies(df, ctx)
-        anomaly_results.extend(topological_anomalies)
+        try:
+            topological_anomalies = _detect_topological_anomalies(df, ctx)
+            if topological_anomalies:
+                anomaly_results.extend(topological_anomalies)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [ANOMALY DETECTION] Error in topological anomaly detection: {e}")
     
     # Energy Conservation Anomalies
     if ctx.config.get("ENABLE_ENERGY_ANOMALY_DETECTION", True):
-        energy_anomalies = _detect_energy_anomalies(df, ctx)
-        anomaly_results.extend(energy_anomalies)
+        try:
+            energy_anomalies = _detect_energy_anomalies(df, ctx)
+            if energy_anomalies:
+                anomaly_results.extend(energy_anomalies)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [ANOMALY DETECTION] Error in energy anomaly detection: {e}")
     
     # Information Theory Anomalies
     if ctx.config.get("ENABLE_INFORMATION_ANOMALY_DETECTION", True):
-        info_anomalies = _detect_information_anomalies(df, ctx)
-        anomaly_results.extend(info_anomalies)
+        try:
+            info_anomalies = _detect_information_anomalies(df, ctx)
+            if info_anomalies:
+                anomaly_results.extend(info_anomalies)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [ANOMALY DETECTION] Error in information anomaly detection: {e}")
     
     # CMB Statistical Anomalies
     if ctx.config.get("ENABLE_CMB_ANOMALY_DETECTION", True):
-        cmb_anomalies = _detect_cmb_statistical_anomalies(df, ctx)
-        anomaly_results.extend(cmb_anomalies)
+        try:
+            cmb_anomalies = _detect_cmb_statistical_anomalies(df, ctx)
+            if cmb_anomalies:
+                anomaly_results.extend(cmb_anomalies)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [ANOMALY DETECTION] Error in CMB anomaly detection: {e}")
     
-    # Save results
+    # Save results (ALWAYS save, even if empty)
+    # Create DataFrame with expected columns even if no anomalies found
     if anomaly_results:
         anomaly_df = pd.DataFrame(anomaly_results)
-        anomaly_path = "advanced_anomaly_detection_results.csv"  # Relative path, ctx.save_csv will handle full path
-        saved_path = ctx.save_csv(anomaly_df, anomaly_path, category="anomaly")
-        if not saved_path and ctx.config.get("VERBOSE", True):
-            print(f"⚠️ [ANOMALY DETECTION] Failed to save advanced_anomaly_detection_results.csv")
-        
-        # Create visualization
-        _create_anomaly_detection_plots(anomaly_df, ctx)
-        
+    else:
+        # Create empty DataFrame with expected columns
+        anomaly_df = pd.DataFrame(columns=[
+            'universe_id', 'anomaly_type', 'anomaly_value', 'expected_value', 
+            'deviation_sigma', 'significance_level', 'domain', 'detection_method'
+        ])
+    
+    # Always save the CSV file (even if empty) - save directly to Aggregate directory
+    anomaly_filename = "advanced_anomaly_detection_results.csv"
+    anomaly_path = os.path.join(ctx.paths["AGGREGATE_DIR"], anomaly_filename)
+    try:
+        anomaly_df.to_csv(anomaly_path, index=False)
         if ctx.config.get("VERBOSE", True):
-            print(f"[ANOMALY] Detected {len(anomaly_results)} anomalies across all domains")
+            print(f"✅ [ANOMALY DETECTION] Saved {anomaly_filename} to Aggregate/ ({len(anomaly_results)} anomalies)")
+    except Exception as e:
+        if ctx.config.get("VERBOSE", True):
+            print(f"⚠️ [ANOMALY DETECTION] Error saving CSV: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    # Create visualization (only if there are anomalies)
+    if len(anomaly_results) > 0:
+        try:
+            _create_anomaly_detection_plots(anomaly_df, ctx)
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [ANOMALY DETECTION] Error creating plots: {e}")
 
 
 def phase_26_advanced_law_detection(ctx: PipelineContext, df: pd.DataFrame):

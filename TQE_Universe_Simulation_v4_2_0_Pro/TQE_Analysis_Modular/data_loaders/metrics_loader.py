@@ -224,3 +224,208 @@ def load_universe_seeds(run_dir: str) -> Optional[pd.DataFrame]:
             print(f"⚠️  WARNING: Could not parse {seeds_file}: {e}")
     return None
 
+
+def load_comprehensive_universe_physics(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load comprehensive_universe_physics_data.csv if present."""
+    physics_file = smart_find_file(
+        run_dir,
+        filename_patterns=["comprehensive_universe_physics_data*.csv", "*comprehensive_universe_physics*.csv"],
+        recursive=True
+    )
+    if physics_file:
+        try:
+            return pd.read_csv(physics_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {physics_file}: {e}")
+    return None
+
+
+def load_advanced_law_detection(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load advanced_law_detection_results.csv if present."""
+    law_file = smart_find_file(
+        run_dir,
+        filename_patterns=["advanced_law_detection_results*.csv", "*advanced_law_detection*.csv"],
+        recursive=True
+    )
+    if law_file:
+        try:
+            return pd.read_csv(law_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {law_file}: {e}")
+    return None
+
+
+def load_complexity_metrics(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load complexity_metrics_summary.csv if present."""
+    complexity_file = smart_find_file(
+        run_dir,
+        filename_patterns=["complexity_metrics_summary*.csv", "*complexity_metrics*.csv"],
+        recursive=True
+    )
+    if complexity_file:
+        try:
+            return pd.read_csv(complexity_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {complexity_file}: {e}")
+    return None
+
+
+def load_complexity_ranking(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load complexity_universe_ranking.csv if present."""
+    ranking_file = smart_find_file(
+        run_dir,
+        filename_patterns=["complexity_universe_ranking*.csv", "*complexity_universe_ranking*.csv"],
+        recursive=True
+    )
+    if ranking_file:
+        try:
+            return pd.read_csv(ranking_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {ranking_file}: {e}")
+    return None
+
+
+def load_ei_importance_comparison(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load ei_importance_comparison.csv if present."""
+    ei_file = smart_find_file(
+        run_dir,
+        filename_patterns=["ei_importance_comparison*.csv", "*ei_importance*.csv"],
+        recursive=True
+    )
+    if ei_file:
+        try:
+            return pd.read_csv(ei_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {ei_file}: {e}")
+    return None
+
+
+def load_feature_importance(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load feature_importance_summary.csv if present."""
+    feature_file = smart_find_file(
+        run_dir,
+        filename_patterns=["feature_importance_summary*.csv", "*feature_importance*.csv"],
+        recursive=True
+    )
+    if feature_file:
+        try:
+            return pd.read_csv(feature_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {feature_file}: {e}")
+    return None
+
+
+def load_statistical_finetuning(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load statistical_finetuning_summary.csv if present."""
+    finetuning_file = smart_find_file(
+        run_dir,
+        filename_patterns=["statistical_finetuning_summary*.csv", "*statistical_finetuning*.csv"],
+        recursive=True
+    )
+    if finetuning_file:
+        try:
+            return pd.read_csv(finetuning_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {finetuning_file}: {e}")
+    return None
+
+
+def load_parameter_correlation(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load parameter_correlation_matrix.csv if present."""
+    corr_file = smart_find_file(
+        run_dir,
+        filename_patterns=["parameter_correlation_matrix*.csv", "*parameter_correlation*.csv"],
+        recursive=True
+    )
+    if corr_file:
+        try:
+            return pd.read_csv(corr_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {corr_file}: {e}")
+    return None
+
+
+def load_cmb_power_spectrum(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load cmb_power_spectrum.csv if present."""
+    ps_file = smart_find_file(
+        run_dir,
+        filename_patterns=["cmb_power_spectrum*.csv", "*cmb_power_spectrum*.csv"],
+        recursive=True
+    )
+    if ps_file:
+        try:
+            return pd.read_csv(ps_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {ps_file}: {e}")
+    return None
+
+
+def load_lockin_statistics(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load lockin_time_statistics.csv if present."""
+    lockin_file = smart_find_file(
+        run_dir,
+        filename_patterns=["lockin_time_statistics*.csv", "*lockin_time_statistics*.csv"],
+        recursive=True
+    )
+    if lockin_file:
+        try:
+            return pd.read_csv(lockin_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {lockin_file}: {e}")
+    return None
+
+
+def load_avg_lockin_curve(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load avg_lockin_curve.csv if present."""
+    curve_file = smart_find_file(
+        run_dir,
+        filename_patterns=["avg_lockin_curve*.csv", "*avg_lockin_curve*.csv"],
+        recursive=True
+    )
+    if curve_file:
+        try:
+            return pd.read_csv(curve_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {curve_file}: {e}")
+    return None
+
+
+def load_stability_distribution(run_dir: str) -> Optional[pd.DataFrame]:
+    """Load stability_distribution_five.csv if present."""
+    dist_file = smart_find_file(
+        run_dir,
+        filename_patterns=["stability_distribution_five*.csv", "*stability_distribution*.csv"],
+        recursive=True
+    )
+    if dist_file:
+        try:
+            return pd.read_csv(dist_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {dist_file}: {e}")
+    return None
+
+
+def load_fl_timeseries(run_dir: str, variant: str) -> Optional[pd.DataFrame]:
+    """Load field-level timeseries CSVs (variant: collapse, expansion, fluctuation, superposition)."""
+    ts_file = smart_find_file(
+        run_dir,
+        filename_patterns=[f"fl_{variant}_timeseries*.csv", f"*fl_{variant}*.csv"],
+        recursive=True
+    )
+    if ts_file:
+        try:
+            return pd.read_csv(ts_file)
+        except Exception as e:
+            print(f"⚠️  WARNING: Could not parse {ts_file}: {e}")
+    return None
+
+
+def load_all_fl_timeseries(run_dir: str) -> Dict[str, Optional[pd.DataFrame]]:
+    """Load all field-level timeseries CSVs at once."""
+    variants = ["collapse", "expansion", "fluctuation", "superposition"]
+    results = {}
+    for variant in variants:
+        results[variant] = load_fl_timeseries(run_dir, variant)
+    # Return dict if any value is not None
+    return results if any(val is not None for val in results.values()) else None
+

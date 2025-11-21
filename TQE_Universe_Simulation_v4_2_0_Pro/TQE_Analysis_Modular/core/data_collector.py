@@ -28,7 +28,20 @@ from ..data_loaders import (
     load_advanced_anomaly_results,
     load_nested_sampling_samples,
     load_pre_fluctuation_pairs,
-    load_universe_seeds
+    load_universe_seeds,
+    load_comprehensive_universe_physics,
+    load_advanced_law_detection,
+    load_complexity_metrics,
+    load_complexity_ranking,
+    load_ei_importance_comparison,
+    load_feature_importance,
+    load_statistical_finetuning,
+    load_parameter_correlation,
+    load_cmb_power_spectrum,
+    load_lockin_statistics,
+    load_avg_lockin_curve,
+    load_stability_distribution,
+    load_all_fl_timeseries
 )
 from ..utils.helpers import extract_i_definition
 
@@ -126,6 +139,19 @@ def collect_simulation_data(target_mode: str, simulation_root: str, target_times
             nested_sampling = load_nested_sampling_samples(run_path)
             pre_fluctuation = load_pre_fluctuation_pairs(run_path)
             universe_seeds = load_universe_seeds(run_path)
+            comprehensive_physics = load_comprehensive_universe_physics(run_path)
+            advanced_laws = load_advanced_law_detection(run_path)
+            complexity_metrics = load_complexity_metrics(run_path)
+            complexity_ranking = load_complexity_ranking(run_path)
+            ei_importance = load_ei_importance_comparison(run_path)
+            feature_importance = load_feature_importance(run_path)
+            statistical_finetuning = load_statistical_finetuning(run_path)
+            parameter_correlation = load_parameter_correlation(run_path)
+            cmb_power_spectrum = load_cmb_power_spectrum(run_path)
+            lockin_statistics = load_lockin_statistics(run_path)
+            avg_lockin_curve = load_avg_lockin_curve(run_path)
+            stability_distribution = load_stability_distribution(run_path)
+            fl_timeseries = load_all_fl_timeseries(run_path)
             
             if summary:
                 collected_data["eonly"][dirname] = {
@@ -144,6 +170,19 @@ def collect_simulation_data(target_mode: str, simulation_root: str, target_times
                     "nested_sampling": nested_sampling,
                     "pre_fluctuation_pairs": pre_fluctuation,
                     "universe_seeds": universe_seeds,
+                    "comprehensive_physics": comprehensive_physics,
+                    "advanced_laws": advanced_laws,
+                    "complexity_metrics": complexity_metrics,
+                    "complexity_ranking": complexity_ranking,
+                    "ei_importance": ei_importance,
+                    "feature_importance": feature_importance,
+                    "statistical_finetuning": statistical_finetuning,
+                    "parameter_correlation": parameter_correlation,
+                    "cmb_power_spectrum": cmb_power_spectrum,
+                    "lockin_statistics": lockin_statistics,
+                    "avg_lockin_curve": avg_lockin_curve,
+                    "stability_distribution": stability_distribution,
+                    "fl_timeseries": fl_timeseries,
                     "run_path": run_path
                 }
                 print(f"  ✅ {dirname}")
@@ -174,6 +213,19 @@ def collect_simulation_data(target_mode: str, simulation_root: str, target_times
         nested_sampling = load_nested_sampling_samples(run_path)
         pre_fluctuation = load_pre_fluctuation_pairs(run_path)
         universe_seeds = load_universe_seeds(run_path)
+        comprehensive_physics = load_comprehensive_universe_physics(run_path)
+        advanced_laws = load_advanced_law_detection(run_path)
+        complexity_metrics = load_complexity_metrics(run_path)
+        complexity_ranking = load_complexity_ranking(run_path)
+        ei_importance = load_ei_importance_comparison(run_path)
+        feature_importance = load_feature_importance(run_path)
+        statistical_finetuning = load_statistical_finetuning(run_path)
+        parameter_correlation = load_parameter_correlation(run_path)
+        cmb_power_spectrum = load_cmb_power_spectrum(run_path)
+        lockin_statistics = load_lockin_statistics(run_path)
+        avg_lockin_curve = load_avg_lockin_curve(run_path)
+        stability_distribution = load_stability_distribution(run_path)
+        fl_timeseries = load_all_fl_timeseries(run_path)
         
         if summary:
             collected_data["ei"][i_def] = {
@@ -195,6 +247,19 @@ def collect_simulation_data(target_mode: str, simulation_root: str, target_times
                 "nested_sampling": nested_sampling,
                 "pre_fluctuation_pairs": pre_fluctuation,
                 "universe_seeds": universe_seeds,
+                "comprehensive_physics": comprehensive_physics,
+                "advanced_laws": advanced_laws,
+                "complexity_metrics": complexity_metrics,
+                "complexity_ranking": complexity_ranking,
+                "ei_importance": ei_importance,
+                "feature_importance": feature_importance,
+                "statistical_finetuning": statistical_finetuning,
+                "parameter_correlation": parameter_correlation,
+                "cmb_power_spectrum": cmb_power_spectrum,
+                "lockin_statistics": lockin_statistics,
+                "avg_lockin_curve": avg_lockin_curve,
+                "stability_distribution": stability_distribution,
+                "fl_timeseries": fl_timeseries,
                 "run_path": run_path
             }
             print(f"  ✅ {i_def}")
@@ -219,7 +284,20 @@ def collect_simulation_data(target_mode: str, simulation_root: str, target_times
         "stability_eps": 0,
         "stability_zero": 0,
         "advanced_anomalies": 0,
-        "nested_sampling": 0
+        "nested_sampling": 0,
+        "comprehensive_physics": 0,
+        "advanced_laws": 0,
+        "complexity_metrics": 0,
+        "complexity_ranking": 0,
+        "ei_importance": 0,
+        "feature_importance": 0,
+        "statistical_finetuning": 0,
+        "parameter_correlation": 0,
+        "cmb_power_spectrum": 0,
+        "lockin_statistics": 0,
+        "avg_lockin_curve": 0,
+        "stability_distribution": 0,
+        "fl_timeseries": 0
     }
     for data in list(collected_data['eonly'].values()) + list(collected_data['ei'].values()):
         if data.get("emergent_laws") is not None: ext_counts["emergent_laws"] += 1
@@ -234,18 +312,45 @@ def collect_simulation_data(target_mode: str, simulation_root: str, target_times
         if data.get("stability_sweep_zero") is not None: ext_counts["stability_zero"] += 1
         if data.get("advanced_anomalies") is not None: ext_counts["advanced_anomalies"] += 1
         if data.get("nested_sampling") is not None: ext_counts["nested_sampling"] += 1
+        if data.get("comprehensive_physics") is not None: ext_counts["comprehensive_physics"] += 1
+        if data.get("advanced_laws") is not None: ext_counts["advanced_laws"] += 1
+        if data.get("complexity_metrics") is not None: ext_counts["complexity_metrics"] += 1
+        if data.get("complexity_ranking") is not None: ext_counts["complexity_ranking"] += 1
+        if data.get("ei_importance") is not None: ext_counts["ei_importance"] += 1
+        if data.get("feature_importance") is not None: ext_counts["feature_importance"] += 1
+        if data.get("statistical_finetuning") is not None: ext_counts["statistical_finetuning"] += 1
+        if data.get("parameter_correlation") is not None: ext_counts["parameter_correlation"] += 1
+        if data.get("cmb_power_spectrum") is not None: ext_counts["cmb_power_spectrum"] += 1
+        if data.get("lockin_statistics") is not None: ext_counts["lockin_statistics"] += 1
+        if data.get("avg_lockin_curve") is not None: ext_counts["avg_lockin_curve"] += 1
+        if data.get("stability_distribution") is not None: ext_counts["stability_distribution"] += 1
+        if data.get("fl_timeseries") is not None: ext_counts["fl_timeseries"] += 1
     
-    print(f"   • Emergent laws: {ext_counts['emergent_laws']}/{len(collected_data['eonly'])+len(collected_data['ei'])}")
-    print(f"   • Parameter sensitivity: {ext_counts['param_sens']}/{len(collected_data['eonly'])+len(collected_data['ei'])}")
+    total_runs = len(collected_data['eonly']) + len(collected_data['ei'])
+    print(f"   • Emergent laws: {ext_counts['emergent_laws']}/{total_runs}")
+    print(f"   • Parameter sensitivity: {ext_counts['param_sens']}/{total_runs}")
     print(f"   • CMB cold spots: {ext_counts['cmb_coldspots']}/{len(collected_data['ei'])}")
     print(f"   • CMB Axis of Evil: {ext_counts['cmb_aoe']}/{len(collected_data['ei'])}")
-    print(f"   • I-definitions comp: {ext_counts['i_defs_comp']}/{len(collected_data['eonly'])+len(collected_data['ei'])}")
-    print(f"   • Life compatibility: {ext_counts['life_compat']}")
-    print(f"   • Planck validation: {ext_counts['planck']}")
-    print(f"   • Entropy volatility: {ext_counts['entropy']}")
+    print(f"   • I-definitions comp: {ext_counts['i_defs_comp']}/{total_runs}")
+    print(f"   • Life compatibility: {ext_counts['life_compat']}/{total_runs}")
+    print(f"   • Planck validation: {ext_counts['planck']}/{total_runs}")
+    print(f"   • Entropy volatility: {ext_counts['entropy']}/{total_runs}")
     print(f"   • Stability sweeps (eps/zero): {ext_counts['stability_eps']} / {ext_counts['stability_zero']}")
-    print(f"   • Advanced anomalies: {ext_counts['advanced_anomalies']}")
-    print(f"   • Nested sampling traces: {ext_counts['nested_sampling']}")
+    print(f"   • Advanced anomalies: {ext_counts['advanced_anomalies']}/{total_runs}")
+    print(f"   • Nested sampling traces: {ext_counts['nested_sampling']}/{total_runs}")
+    print(f"   • Comprehensive physics: {ext_counts['comprehensive_physics']}/{total_runs}")
+    print(f"   • Advanced law detection: {ext_counts['advanced_laws']}/{total_runs}")
+    print(f"   • Complexity metrics: {ext_counts['complexity_metrics']}/{total_runs}")
+    print(f"   • Complexity ranking: {ext_counts['complexity_ranking']}/{total_runs}")
+    print(f"   • E/I importance: {ext_counts['ei_importance']}/{total_runs}")
+    print(f"   • Feature importance: {ext_counts['feature_importance']}/{total_runs}")
+    print(f"   • Statistical finetuning: {ext_counts['statistical_finetuning']}/{total_runs}")
+    print(f"   • Parameter correlation: {ext_counts['parameter_correlation']}/{total_runs}")
+    print(f"   • CMB power spectrum: {ext_counts['cmb_power_spectrum']}/{total_runs}")
+    print(f"   • Lockin statistics: {ext_counts['lockin_statistics']}/{total_runs}")
+    print(f"   • Avg lockin curve: {ext_counts['avg_lockin_curve']}/{total_runs}")
+    print(f"   • Stability distribution: {ext_counts['stability_distribution']}/{total_runs}")
+    print(f"   • FL timeseries: {ext_counts['fl_timeseries']}/{total_runs}")
     
     return collected_data
 

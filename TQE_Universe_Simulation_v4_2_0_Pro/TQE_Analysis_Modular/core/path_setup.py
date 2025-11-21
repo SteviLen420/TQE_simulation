@@ -22,13 +22,9 @@ def setup_paths(config: dict) -> tuple:
     desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
     analysis_results_dir = os.path.join(desktop_path, "TQE_Analysis_Modular_Results")
     
-    # Get repo root (2 levels up from Analysis Modular)
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Go up: core -> TQE_Analysis_Modular -> TQE_Universe_Simulation_v4.2.0_Pro -> repo root
-    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
-    
-    # Simulation root: repo/SIMULATION_RUNS/universe
-    simulation_root = os.path.join(repo_root, "SIMULATION_RUNS", "universe")
+    # Simulation root: Desktop/TQE_Universe_Simulation_Modular_Results
+    # (simulation runs are saved to Desktop by the modular pipeline)
+    simulation_root = os.path.join(desktop_path, "TQE_Universe_Simulation_Modular_Results")
     
     # Analysis output: Desktop/TQE_Analysis_Modular_Results
     analysis_output_root = analysis_results_dir
@@ -157,8 +153,12 @@ def find_latest_mode_directory(simulation_root: str, mode: str, timestamp: str =
         print(f"   Available: {[os.path.basename(d) for d in matching_dirs]}")
         return None
     else:
-        # Return most recent (sorted alphabetically = chronologically)
-        latest = matching_dirs[-1]
+        # Return most recent (sort by modification time, newest first)
+        # This ensures we always get the truly latest directory
+        matching_dirs_with_mtime = [(d, os.path.getmtime(d)) for d in matching_dirs]
+        matching_dirs_with_mtime.sort(key=lambda x: x[1], reverse=True)  # Newest first
+        latest = matching_dirs_with_mtime[0][0]
         print(f"[AUTO-DETECT] Using latest directory: {os.path.basename(latest)}")
+        print(f"             (Found {len(matching_dirs)} total batch directories)")
         return latest
 

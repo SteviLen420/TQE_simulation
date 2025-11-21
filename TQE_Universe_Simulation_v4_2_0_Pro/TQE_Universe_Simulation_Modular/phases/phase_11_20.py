@@ -338,8 +338,16 @@ def phase_12_best_universe_plots(ctx: PipelineContext, df: pd.DataFrame):
                         print(f"[CMB][BEST][ERR] Failed to write flat map for UID {uid}: {e}")
         
         # Save category catalogue (top 3 per category)
-        catalogue_path = os.path.join(category_base_dir, f"{cat['name']}_catalogue.csv")
-        df_selected.to_csv(ctx.with_variant(catalogue_path), index=False)
+        # Save to Aggregate directory for consistency with other CSV files
+        catalogue_filename = f"{cat['name']}_catalogue.csv"
+        catalogue_path = os.path.join(ctx.paths["AGGREGATE_DIR"], catalogue_filename)
+        try:
+            df_selected.to_csv(catalogue_path, index=False)
+            if ctx.config.get("VERBOSE", True):
+                print(f"✅ [BEST-UNI] Saved {cat['name']}_catalogue.csv to Aggregate/ ({len(df_selected)} universes)")
+        except Exception as e:
+            if ctx.config.get("VERBOSE", True):
+                print(f"⚠️ [BEST-UNI] Failed to save {cat['name']}_catalogue.csv: {e}")
         print(f"[BEST-UNI] {cat['name']}: {len(df_selected)} universes")
     
     # Print CAMB error summary (if any)

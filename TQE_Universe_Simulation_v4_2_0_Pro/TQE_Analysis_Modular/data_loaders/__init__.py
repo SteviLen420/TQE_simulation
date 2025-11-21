@@ -15,7 +15,20 @@ from .metrics_loader import (
     load_advanced_anomaly_results,
     load_nested_sampling_samples,
     load_pre_fluctuation_pairs,
-    load_universe_seeds
+    load_universe_seeds,
+    load_comprehensive_universe_physics,
+    load_advanced_law_detection,
+    load_complexity_metrics,
+    load_complexity_ranking,
+    load_ei_importance_comparison,
+    load_feature_importance,
+    load_statistical_finetuning,
+    load_parameter_correlation,
+    load_cmb_power_spectrum,
+    load_lockin_statistics,
+    load_avg_lockin_curve,
+    load_stability_distribution,
+    load_all_fl_timeseries
 )
 
 __all__ = [
@@ -34,6 +47,19 @@ __all__ = [
     'load_advanced_anomaly_results',
     'load_nested_sampling_samples',
     'load_pre_fluctuation_pairs',
-    'load_universe_seeds'
+    'load_universe_seeds',
+    'load_comprehensive_universe_physics',
+    'load_advanced_law_detection',
+    'load_complexity_metrics',
+    'load_complexity_ranking',
+    'load_ei_importance_comparison',
+    'load_feature_importance',
+    'load_statistical_finetuning',
+    'load_parameter_correlation',
+    'load_cmb_power_spectrum',
+    'load_lockin_statistics',
+    'load_avg_lockin_curve',
+    'load_stability_distribution',
+    'load_all_fl_timeseries'
 ]
 

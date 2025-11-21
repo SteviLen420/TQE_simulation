@@ -145,9 +145,19 @@ def extract_extended_metrics(data: Dict, i_def: str) -> Dict:
     if data.get("parameter_sensitivity") is not None:
         sens_df = data["parameter_sensitivity"]
         if len(sens_df) > 0:
-            extended["E_sensitivity"] = sens_df[sens_df["parameter"] == "E"]["sensitivity"].values[0] if "E" in sens_df["parameter"].values else np.nan
-            extended["I_sensitivity"] = sens_df[sens_df["parameter"] == "I"]["sensitivity"].values[0] if "I" in sens_df["parameter"].values else np.nan
-            extended["X_sensitivity"] = sens_df[sens_df["parameter"] == "X"]["sensitivity"].values[0] if "X" in sens_df["parameter"].values else np.nan
+            # Try to find parameter column and sensitivity column
+            if "parameter" in sens_df.columns and "sensitivity" in sens_df.columns:
+                e_vals = sens_df[sens_df["parameter"] == "E"]["sensitivity"].values if len(sens_df[sens_df["parameter"] == "E"]) > 0 else []
+                i_vals = sens_df[sens_df["parameter"] == "I"]["sensitivity"].values if len(sens_df[sens_df["parameter"] == "I"]) > 0 else []
+                x_vals = sens_df[sens_df["parameter"] == "X"]["sensitivity"].values if len(sens_df[sens_df["parameter"] == "X"]) > 0 else []
+                extended["E_sensitivity"] = e_vals[0] if len(e_vals) > 0 else np.nan
+                extended["I_sensitivity"] = i_vals[0] if len(i_vals) > 0 else np.nan
+                extended["X_sensitivity"] = x_vals[0] if len(x_vals) > 0 else np.nan
+            elif "E" in sens_df.columns or "I" in sens_df.columns or "X" in sens_df.columns:
+                # Direct columns with E/I/X sensitivity values
+                extended["E_sensitivity"] = sens_df["E"].mean() if "E" in sens_df.columns else np.nan
+                extended["I_sensitivity"] = sens_df["I"].mean() if "I" in sens_df.columns else np.nan
+                extended["X_sensitivity"] = sens_df["X"].mean() if "X" in sens_df.columns else np.nan
         else:
             extended.update({"E_sensitivity": np.nan, "I_sensitivity": np.nan, "X_sensitivity": np.nan})
     else:
@@ -336,6 +346,82 @@ def extract_extended_metrics(data: Dict, i_def: str) -> Dict:
             "nested_logZ_span": np.nan
         })
 
+    # COMPREHENSIVE PHYSICS DATA (from comprehensive_universe_physics_data.csv)
+    # This contains: age_Gyr, vacuum_energy, quantum_correction, entanglement_entropy, etc.
+    comprehensive_physics = data.get("comprehensive_physics")
+    if isinstance(comprehensive_physics, pd.DataFrame) and len(comprehensive_physics) > 0:
+        # Friedmann cosmology (override tqe_runs if available)
+        if "age_Gyr" in comprehensive_physics.columns:
+            age_vals = pd.to_numeric(comprehensive_physics["age_Gyr"], errors="coerce")
+            age_vals = age_vals.dropna()
+            if len(age_vals) > 0:
+                extended["age_Gyr_mean"] = age_vals.mean()
+                extended["age_Gyr_std"] = age_vals.std()
+                extended["age_deviation_from_planck"] = abs(age_vals.mean() - 13.8)  # Planck: 13.8 Gyr
+        
+        # Quantum fields
+        if "vacuum_energy" in comprehensive_physics.columns:
+            vac_vals = pd.to_numeric(comprehensive_physics["vacuum_energy"], errors="coerce")
+            vac_vals = vac_vals.dropna()
+            if len(vac_vals) > 0:
+                extended["vacuum_energy_mean"] = vac_vals.mean()
+                extended["vacuum_energy_std"] = vac_vals.std()
+        
+        if "quantum_correction" in comprehensive_physics.columns:
+            qc_vals = pd.to_numeric(comprehensive_physics["quantum_correction"], errors="coerce")
+            qc_vals = qc_vals.dropna()
+            if len(qc_vals) > 0:
+                extended["zero_point_energy_mean"] = qc_vals.mean()
+                extended["quantum_fluctuation_mean"] = qc_vals.std()  # Use std as fluctuation measure
+        
+        # Entanglement
+        if "entanglement_entropy" in comprehensive_physics.columns:
+            ent_vals = pd.to_numeric(comprehensive_physics["entanglement_entropy"], errors="coerce")
+            ent_vals = ent_vals.dropna()
+            if len(ent_vals) > 0:
+                extended["entanglement_entropy_mean"] = ent_vals.mean()
+                extended["entanglement_entropy_std"] = ent_vals.std()
+        
+        if "holographic_entropy" in comprehensive_physics.columns:
+            holo_vals = pd.to_numeric(comprehensive_physics["holographic_entropy"], errors="coerce")
+            holo_vals = holo_vals.dropna()
+            if len(holo_vals) > 0:
+                extended["holographic_entropy_mean"] = holo_vals.mean()
+        
+        # Entanglement network
+        if "entanglement_density" in comprehensive_physics.columns:
+            ed_vals = pd.to_numeric(comprehensive_physics["entanglement_density"], errors="coerce")
+            ed_vals = ed_vals.dropna()
+            if len(ed_vals) > 0:
+                extended["entanglement_density_mean"] = ed_vals.mean()
+        
+        if "causal_scale" in comprehensive_physics.columns:
+            cs_vals = pd.to_numeric(comprehensive_physics["causal_scale"], errors="coerce")
+            cs_vals = cs_vals.dropna()
+            if len(cs_vals) > 0:
+                extended["causal_scale_mean"] = cs_vals.mean()
+        
+        # Topology
+        if "topological_defects" in comprehensive_physics.columns:
+            td_vals = pd.to_numeric(comprehensive_physics["topological_defects"], errors="coerce")
+            td_vals = td_vals.dropna()
+            if len(td_vals) > 0:
+                extended["topological_defect_rate"] = (td_vals > 0).sum() / len(td_vals) * 100
+    
+    # STATISTICAL FINETUNING (from statistical_finetuning_summary.csv)
+    statistical_finetuning = data.get("statistical_finetuning")
+    if isinstance(statistical_finetuning, pd.DataFrame) and len(statistical_finetuning) > 0:
+        if "lockin_rate" in statistical_finetuning.columns:
+            finetune_vals = pd.to_numeric(statistical_finetuning["lockin_rate"], errors="coerce")
+            finetune_vals = finetune_vals.dropna()
+            if len(finetune_vals) > 0:
+                extended["statistical_finetuning_rate_mean"] = finetune_vals.mean()
+                extended["statistical_finetuning_rate_max"] = finetune_vals.max()
+        if "group_name" in statistical_finetuning.columns:
+            # Count E≈I groups (finetuning indicator)
+            ei_groups = statistical_finetuning[statistical_finetuning["group_name"].str.contains("E≈I|E=I|E_eq_I", case=False, na=False)]
+            extended["statistical_finetuning_E_eq_I_count"] = len(ei_groups)
+    
     # PRE-FLUCTUATION / SEEDS
     pre_pairs = data.get("pre_fluctuation_pairs")
     extended["pre_fluctuation_pairs"] = len(pre_pairs) if isinstance(pre_pairs, pd.DataFrame) else 0
