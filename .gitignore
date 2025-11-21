@@ -214,3 +214,7 @@ __marimo__/
 
 # Local research notes (do not commit)
 /TQE_NOTES_LOCAL.md
+
+# Generated output files from pipeline runs
+**/comprehensive_universe_physics_data.csv
+**/comprehensive_universe_physics_data_*.csv
