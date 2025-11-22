@@ -325,7 +325,7 @@ D_{\mathrm{KL}}(P_t \parallel P_{t+1}) = \int_\Psi P_t(\psi) \ln\left[\frac{P_t(
 
 This definition ensures $0 \leq I \leq 1$ and measures the information-theoretic distance between consecutive distributions. Intuitively, larger KL divergence corresponds to greater change in the distribution, which may signal orientation toward complexity. However, this is an operational definition that depends on the temporal evolution of $P$ itself, creating a feedback loop that requires careful analysis.
 
-\textbf{2. Shannon Entropy Combination}
+\textbf{3. Shannon Entropy Combination}
 
 An alternative approach combines KL divergence with Shannon entropy:
 \begin{equation}
@@ -358,9 +358,9 @@ where $C > 0$ is a normalization constant, $E_0 > 0$ is a reference energy scale
 
 This model posits that information is directly encoded in the energy scale, growing with energy (logarithmically or power-law). While simple, this formulation does not capture the temporal evolution or self-referential aspects that may be crucial for law emergence.
 
-\textbf{5. Threshold Information Model}
+\textbf{6. Threshold Information Model}
 
-A third candidate formulation uses a threshold activation:
+A sixth candidate formulation uses a threshold activation:
 \begin{equation}\label{eq:I_threshold}
 I = \begin{cases}
 0 & \text{if } E < E_c, \\

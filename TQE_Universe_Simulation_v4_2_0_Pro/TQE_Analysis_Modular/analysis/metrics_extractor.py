@@ -30,13 +30,40 @@ def extract_extended_metrics(data: Dict, i_def: str) -> Dict:
         if len(law_df) > 0:
             extended["power_law_exponent"] = law_df.get("power_law_exponent", pd.Series([np.nan])).mean()
             extended["correlation_strength"] = law_df.get("correlation_strength", pd.Series([np.nan])).mean()
-            extended["phase_transition_detected"] = law_df.get("phase_transition_detected", pd.Series([0])).sum() > 0
-            extended["n_phase_transitions"] = law_df.get("phase_transition_detected", pd.Series([0])).sum()
+            # Phase transitions: check if phase_transition_detected column exists
+            if "phase_transition_detected" in law_df.columns:
+                extended["phase_transition_detected"] = law_df.get("phase_transition_detected", pd.Series([0])).sum() > 0
+                extended["n_phase_transitions"] = law_df.get("phase_transition_detected", pd.Series([0])).sum()
+            else:
+                # Fallback: check advanced_law_detection_results.csv for phase transition type laws
+                advanced_laws = data.get("advanced_laws")
+                if isinstance(advanced_laws, pd.DataFrame) and len(advanced_laws) > 0:
+                    if "law_type" in advanced_laws.columns:
+                        phase_transitions = advanced_laws[advanced_laws["law_type"].str.contains("phase|transition", case=False, na=False)]
+                        extended["n_phase_transitions"] = len(phase_transitions)
+                        extended["phase_transition_detected"] = len(phase_transitions) > 0
+                    else:
+                        extended["phase_transition_detected"] = False
+                        extended["n_phase_transitions"] = 0
+                else:
+                    extended["phase_transition_detected"] = False
+                    extended["n_phase_transitions"] = 0
         else:
             extended.update({"power_law_exponent": np.nan, "correlation_strength": np.nan, 
                            "phase_transition_detected": False, "n_phase_transitions": 0})
     else:
-        extended.update({"power_law_exponent": np.nan, "correlation_strength": np.nan, 
+        # Fallback: check advanced_law_detection_results.csv for phase transition type laws
+        advanced_laws = data.get("advanced_laws")
+        if isinstance(advanced_laws, pd.DataFrame) and len(advanced_laws) > 0:
+            if "law_type" in advanced_laws.columns:
+                phase_transitions = advanced_laws[advanced_laws["law_type"].str.contains("phase|transition", case=False, na=False)]
+                extended["n_phase_transitions"] = len(phase_transitions)
+                extended["phase_transition_detected"] = len(phase_transitions) > 0
+            else:
+                extended["phase_transition_detected"] = False
+                extended["n_phase_transitions"] = 0
+        else:
+            extended.update({"power_law_exponent": np.nan, "correlation_strength": np.nan, 
                        "phase_transition_detected": False, "n_phase_transitions": 0})
     
     # FRIEDMANN COSMOLOGY METRICS (from tqe_runs.csv)
@@ -167,8 +194,23 @@ def extract_extended_metrics(data: Dict, i_def: str) -> Dict:
     if data.get("cmb_coldspots") is not None:
         coldspots_df = data["cmb_coldspots"]
         if len(coldspots_df) > 0:
-            extended["n_coldspots_mean"] = coldspots_df.get("n_coldspots", pd.Series([0])).mean()
-            extended["coldspot_depth_mean"] = coldspots_df.get("coldspot_depth_avg", pd.Series([np.nan])).mean()
+            # Count cold spots: count unique universes with cold_flag == True, or count cold_flag == True rows
+            if "cold_flag" in coldspots_df.columns:
+                cold_spots = coldspots_df[coldspots_df["cold_flag"] == True]
+                extended["n_coldspots_mean"] = cold_spots["universe_id"].nunique() if len(cold_spots) > 0 else 0.0
+            else:
+                # Fallback: count total rows as cold spots
+                extended["n_coldspots_mean"] = len(coldspots_df)
+            
+            # Cold spot depth: use z_score if available, otherwise temp_uK
+            if "z_score" in coldspots_df.columns:
+                cold_spots = coldspots_df[coldspots_df.get("cold_flag", pd.Series([True])) == True] if "cold_flag" in coldspots_df.columns else coldspots_df
+                extended["coldspot_depth_mean"] = abs(cold_spots["z_score"]).mean() if len(cold_spots) > 0 else np.nan
+            elif "temp_uK" in coldspots_df.columns:
+                cold_spots = coldspots_df[coldspots_df.get("cold_flag", pd.Series([True])) == True] if "cold_flag" in coldspots_df.columns else coldspots_df
+                extended["coldspot_depth_mean"] = abs(cold_spots["temp_uK"]).mean() if len(cold_spots) > 0 else np.nan
+            else:
+                extended["coldspot_depth_mean"] = np.nan
         else:
             extended.update({"n_coldspots_mean": 0.0, "coldspot_depth_mean": np.nan})
     else:
@@ -177,8 +219,19 @@ def extract_extended_metrics(data: Dict, i_def: str) -> Dict:
     if data.get("cmb_aoe") is not None:
         aoe_df = data["cmb_aoe"]
         if len(aoe_df) > 0:
-            extended["alignment_angle_mean"] = aoe_df.get("alignment_angle", pd.Series([np.nan])).mean()
-            extended["alignment_angle_std"] = aoe_df.get("alignment_angle", pd.Series([np.nan])).std()
+            # Alignment angle: use alignment_angle_deg if available, otherwise alignment_angle
+            if "alignment_angle_deg" in aoe_df.columns:
+                alignment_angles = aoe_df["alignment_angle_deg"].dropna()
+            elif "alignment_angle" in aoe_df.columns:
+                alignment_angles = aoe_df["alignment_angle"].dropna()
+            else:
+                alignment_angles = pd.Series([np.nan])
+            
+            if len(alignment_angles) > 0:
+                extended["alignment_angle_mean"] = alignment_angles.mean()
+                extended["alignment_angle_std"] = alignment_angles.std()
+            else:
+                extended.update({"alignment_angle_mean": np.nan, "alignment_angle_std": np.nan})
         else:
             extended.update({"alignment_angle_mean": np.nan, "alignment_angle_std": np.nan})
     else:
@@ -225,24 +278,33 @@ def extract_extended_metrics(data: Dict, i_def: str) -> Dict:
     planck_data = data.get("planck_validation")
     if planck_data:
         planck_summary = planck_data.get("summary") or {}
-        extended["planck_E"] = planck_summary.get("E", np.nan)
-        extended["planck_I"] = planck_summary.get("I", np.nan)
-        extended["planck_alpha"] = planck_summary.get("alpha", np.nan)
-        extended["planck_chi2_total"] = planck_summary.get("chi2_total", np.nan)
-        extended["planck_chi2_reduced"] = planck_summary.get("chi2_reduced", np.nan)
-        extended["planck_score"] = planck_summary.get("planck_score", np.nan)
-        if planck_data.get("validation") is not None:
-            val_df = planck_data["validation"]
+        
+        # Try to get from summary first (JSON), then from CSV
+        val_df = planck_data.get("validation")
+        if val_df is not None and isinstance(val_df, pd.DataFrame) and len(val_df) > 0:
+            # Extract from CSV DataFrame
+            extended["planck_E"] = val_df["E"].mean() if "E" in val_df.columns else (planck_summary.get("E", np.nan))
+            extended["planck_I"] = val_df["I"].mean() if "I" in val_df.columns else (planck_summary.get("I", np.nan))
+            extended["planck_alpha"] = val_df["alpha"].mean() if "alpha" in val_df.columns else (planck_summary.get("alpha", np.nan))
+            extended["planck_chi2_total"] = val_df["chi2_total"].mean() if "chi2_total" in val_df.columns else (planck_summary.get("chi2_total", np.nan))
+            extended["planck_chi2_reduced"] = val_df["chi2_reduced"].mean() if "chi2_reduced" in val_df.columns else (planck_summary.get("chi2_reduced", np.nan))
+            extended["planck_score"] = val_df["planck_score"].mean() if "planck_score" in val_df.columns else (planck_summary.get("planck_score", np.nan))
             extended["planck_validation_chi2_mean"] = val_df["chi2"].mean() if "chi2" in val_df.columns else np.nan
-            if "ell" in val_df.columns:
-                extended["planck_validation_ell_span"] = val_df["ell"].max() - val_df["ell"].min()
-            else:
-                extended["planck_validation_ell_span"] = np.nan
         else:
-            extended.update({
-                "planck_validation_chi2_mean": np.nan,
-                "planck_validation_ell_span": np.nan
-            })
+            # Fallback to summary JSON if CSV not available
+            extended["planck_E"] = planck_summary.get("E", np.nan)
+            extended["planck_I"] = planck_summary.get("I", np.nan)
+            extended["planck_alpha"] = planck_summary.get("alpha", np.nan)
+            extended["planck_chi2_total"] = planck_summary.get("chi2_total", np.nan)
+            extended["planck_chi2_reduced"] = planck_summary.get("chi2_reduced", np.nan)
+            extended["planck_score"] = planck_summary.get("planck_score", np.nan)
+            extended["planck_validation_chi2_mean"] = np.nan
+        
+        # Ell span from power spectrum if available
+        if val_df is not None and isinstance(val_df, pd.DataFrame) and "ell" in val_df.columns:
+            extended["planck_validation_ell_span"] = val_df["ell"].max() - val_df["ell"].min()
+        else:
+            extended["planck_validation_ell_span"] = np.nan
     else:
         extended.update({
             "planck_E": np.nan,
@@ -314,17 +376,57 @@ def extract_extended_metrics(data: Dict, i_def: str) -> Dict:
         else:
             extended["advanced_anomaly_sigma_mean"] = np.nan
             extended["advanced_anomaly_sigma_max"] = np.nan
-        phys_df = adv_anomalies.get("physical_anomalies")
-        extended["physical_anomaly_count"] = len(phys_df) if isinstance(phys_df, pd.DataFrame) else 0
+        # Physical anomalies: extract from advanced_anomalies DataFrame (not from separate physical_anomalies file)
+        # The advanced_anomaly_detection_results.csv contains all anomalies including physical ones
+        adv_df = adv_anomalies.get("advanced_anomalies")
+        if isinstance(adv_df, pd.DataFrame) and len(adv_df) > 0:
+            # Count physical anomalies (non-CMB anomalies, or all anomalies if we want total count)
+            # For now, count all anomalies as "physical" (they're detected in the simulation)
+            extended["physical_anomaly_count"] = len(adv_df)
+            # Optionally filter by anomaly_type if we want only specific types:
+            # physical_anomalies = adv_df[adv_df["anomaly_type"].str.contains("physical|information|quantum", case=False, na=False)]
+            # extended["physical_anomaly_count"] = len(physical_anomalies) if len(physical_anomalies) > 0 else 0
+        else:
+            # Fallback: try separate physical_anomalies file if it exists
+            phys_df = adv_anomalies.get("physical_anomalies")
+            extended["physical_anomaly_count"] = len(phys_df) if isinstance(phys_df, pd.DataFrame) and len(phys_df) > 0 else 0
+        
+        # CMB Gaussianity: extract skewness and kurtosis (no p_value column exists)
         gaussian_df = adv_anomalies.get("cmb_gaussianity")
-        extended["cmb_gaussianity_p_mean"] = gaussian_df["p_value"].mean() if isinstance(gaussian_df, pd.DataFrame) and "p_value" in gaussian_df.columns else np.nan
+        if isinstance(gaussian_df, pd.DataFrame) and len(gaussian_df) > 0:
+            if "skewness" in gaussian_df.columns:
+                extended["cmb_gaussianity_skewness_mean"] = gaussian_df["skewness"].mean()
+            else:
+                extended["cmb_gaussianity_skewness_mean"] = np.nan
+            if "kurtosis" in gaussian_df.columns:
+                extended["cmb_gaussianity_kurtosis_mean"] = gaussian_df["kurtosis"].mean()
+            else:
+                extended["cmb_gaussianity_kurtosis_mean"] = np.nan
+            # For backward compatibility, use skewness as gaussianity measure
+            extended["cmb_gaussianity_p_mean"] = abs(gaussian_df["skewness"].mean()) if "skewness" in gaussian_df.columns else np.nan
+        else:
+            extended["cmb_gaussianity_skewness_mean"] = np.nan
+            extended["cmb_gaussianity_kurtosis_mean"] = np.nan
+            extended["cmb_gaussianity_p_mean"] = np.nan
+        
+        # CMB Isotropy: extract MSE (Mean Squared Error) as anisotropy index (no anisotropy_index column exists)
         isotropy_df = adv_anomalies.get("cmb_isotropy")
-        extended["cmb_anisotropy_index_mean"] = isotropy_df["anisotropy_index"].mean() if isinstance(isotropy_df, pd.DataFrame) and "anisotropy_index" in isotropy_df.columns else np.nan
+        if isinstance(isotropy_df, pd.DataFrame) and len(isotropy_df) > 0:
+            if "MSE" in isotropy_df.columns:
+                extended["cmb_anisotropy_index_mean"] = isotropy_df["MSE"].mean()
+            elif "MSE_north_south" in isotropy_df.columns:
+                extended["cmb_anisotropy_index_mean"] = isotropy_df["MSE_north_south"].mean()
+            else:
+                extended["cmb_anisotropy_index_mean"] = np.nan
+        else:
+            extended["cmb_anisotropy_index_mean"] = np.nan
     else:
         extended.update({
             "advanced_anomaly_sigma_mean": np.nan,
             "advanced_anomaly_sigma_max": np.nan,
             "physical_anomaly_count": 0,
+            "cmb_gaussianity_skewness_mean": np.nan,
+            "cmb_gaussianity_kurtosis_mean": np.nan,
             "cmb_gaussianity_p_mean": np.nan,
             "cmb_anisotropy_index_mean": np.nan
         })
@@ -421,6 +523,33 @@ def extract_extended_metrics(data: Dict, i_def: str) -> Dict:
             # Count E≈I groups (finetuning indicator)
             ei_groups = statistical_finetuning[statistical_finetuning["group_name"].str.contains("E≈I|E=I|E_eq_I", case=False, na=False)]
             extended["statistical_finetuning_E_eq_I_count"] = len(ei_groups)
+    
+    # CMB POWER SPECTRUM
+    cmb_power_spectrum = data.get("cmb_power_spectrum")
+    if isinstance(cmb_power_spectrum, pd.DataFrame) and len(cmb_power_spectrum) > 0:
+        if "C_ell_scaled" in cmb_power_spectrum.columns:
+            c_ell_vals = pd.to_numeric(cmb_power_spectrum["C_ell_scaled"], errors="coerce")
+            c_ell_vals = c_ell_vals.dropna()
+            if len(c_ell_vals) > 0:
+                extended["cmb_power_spectrum_mean"] = c_ell_vals.mean()
+                extended["cmb_power_spectrum_max"] = c_ell_vals.max()
+        if "fit_R_squared" in cmb_power_spectrum.columns:
+            r2_vals = pd.to_numeric(cmb_power_spectrum["fit_R_squared"], errors="coerce")
+            r2_vals = r2_vals.dropna()
+            if len(r2_vals) > 0:
+                extended["cmb_power_spectrum_fit_R2_mean"] = r2_vals.mean()
+        if "ell" in cmb_power_spectrum.columns:
+            ell_vals = pd.to_numeric(cmb_power_spectrum["ell"], errors="coerce")
+            ell_vals = ell_vals.dropna()
+            if len(ell_vals) > 0:
+                extended["cmb_power_spectrum_ell_span"] = ell_vals.max() - ell_vals.min()
+    else:
+        extended.update({
+            "cmb_power_spectrum_mean": np.nan,
+            "cmb_power_spectrum_max": np.nan,
+            "cmb_power_spectrum_fit_R2_mean": np.nan,
+            "cmb_power_spectrum_ell_span": np.nan
+        })
     
     # PRE-FLUCTUATION / SEEDS
     pre_pairs = data.get("pre_fluctuation_pairs")
