@@ -29,10 +29,23 @@ def analyze_emergent_laws(df_metrics: pd.DataFrame, output_dir: str, config: dic
         print("\n1.1 Phase Transitions Comparison")
         fig, ax = plt.subplots(figsize=(12, 6))
         df_plot = df_ei.dropna(subset=["n_phase_transitions"]).sort_values("n_phase_transitions", ascending=False)
-        ax.barh(df_plot["i_definition"], df_plot["n_phase_transitions"], color='orange', alpha=0.7)
-        ax.set_xlabel("Number of Phase Transitions", fontsize=12, fontweight='bold')
-        ax.set_title("Emergent Laws: Phase Transitions Detection", fontsize=14, fontweight='bold')
-        ax.grid(axis='x', alpha=0.3)
+        
+        # Only plot if there are non-zero values, otherwise skip or show message
+        if (df_plot["n_phase_transitions"] > 0).any():
+            ax.barh(df_plot["i_definition"], df_plot["n_phase_transitions"], color='orange', alpha=0.7)
+            ax.set_xlabel("Number of Phase Transitions", fontsize=12, fontweight='bold')
+            ax.set_title("Emergent Laws: Phase Transitions Detection", fontsize=14, fontweight='bold')
+            ax.grid(axis='x', alpha=0.3)
+            # Ensure x-axis shows data properly (set minimum to 0)
+            ax.set_xlim(left=0, right=max(df_plot["n_phase_transitions"].max() * 1.1, 1))
+        else:
+            # All values are 0 - show informative message
+            ax.text(0.5, 0.5, 'No phase transitions detected\n(All values are 0)', 
+                   ha='center', va='center', fontsize=14, transform=ax.transAxes)
+            ax.set_xlabel("Number of Phase Transitions", fontsize=12, fontweight='bold')
+            ax.set_title("Emergent Laws: Phase Transitions Detection", fontsize=14, fontweight='bold')
+            ax.set_xlim(-0.04, 0.04)
+        
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, "phase_transitions_comparison.png"), dpi=figure_dpi, bbox_inches='tight')
         plt.close()
@@ -105,10 +118,16 @@ def analyze_cmb_anomalies(df_metrics: pd.DataFrame, output_dir: str, config: dic
         print("\n3.2 Physical Anomalies Comparison")
         fig, ax = plt.subplots(figsize=(12, 6))
         df_plot = df_ei.dropna(subset=["physical_anomaly_count"]).sort_values("physical_anomaly_count", ascending=False)
+        
+        # Plot bars - even 0 values will show as tiny bars
         ax.barh(df_plot["i_definition"], df_plot["physical_anomaly_count"], color='red', alpha=0.7)
         ax.set_xlabel("Physical Anomaly Count", fontsize=12, fontweight='bold')
         ax.set_title("CMB Anomalies: Physical Anomalies Detection", fontsize=14, fontweight='bold')
         ax.grid(axis='x', alpha=0.3)
+        # Ensure x-axis shows data properly (set minimum to 0, add padding)
+        max_val = df_plot["physical_anomaly_count"].max()
+        ax.set_xlim(left=0, right=max(max_val * 1.1, 1))
+        
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, "physical_anomalies_comparison.png"), dpi=figure_dpi, bbox_inches='tight')
         plt.close()
@@ -148,10 +167,17 @@ def analyze_lockin_dynamics(df_metrics: pd.DataFrame, output_dir: str, config: d
         print("\n4.2 Early Lock-in Rate Comparison")
         fig, ax = plt.subplots(figsize=(12, 6))
         df_plot = df_ei.dropna(subset=["early_lockin_rate"]).sort_values("early_lockin_rate", ascending=False)
+        
+        # Plot bars - ensure data is visible
         ax.barh(df_plot["i_definition"], df_plot["early_lockin_rate"], color='purple', alpha=0.7)
         ax.set_xlabel("Early Lock-in Rate (%)", fontsize=12, fontweight='bold')
         ax.set_title("Lock-in Dynamics: Early Lock-in Rate", fontsize=14, fontweight='bold')
         ax.grid(axis='x', alpha=0.3)
+        # Ensure x-axis shows data properly (set minimum to 0, add padding)
+        max_val = df_plot["early_lockin_rate"].max()
+        min_val = df_plot["early_lockin_rate"].min()
+        ax.set_xlim(left=0, right=max(max_val * 1.1, 10))  # Ensure at least 10% range is visible
+        
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, "early_lockin_rate_comparison.png"), dpi=figure_dpi, bbox_inches='tight')
         plt.close()

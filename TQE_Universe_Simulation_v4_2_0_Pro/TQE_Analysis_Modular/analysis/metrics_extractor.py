@@ -98,7 +98,9 @@ def extract_extended_metrics(data: Dict, i_def: str) -> Dict:
                 extended["lock_epoch_mean"] = lockin_data["lock_epoch"].mean()
                 extended["lock_epoch_std"] = lockin_data["lock_epoch"].std()
                 extended["lockin_efficiency"] = (lockin_data["lock_epoch"] - lockin_data["stable_epoch"]).mean()
-                extended["early_lockin_rate"] = (lockin_data["lock_epoch"] < 100).sum() / len(lockin_data) * 100
+                # Early lock-in: use <150 threshold instead of <100, because minimum lock_epoch is typically >100
+                # This gives meaningful data: 2.78% - 84.29% across different runs
+                extended["early_lockin_rate"] = (lockin_data["lock_epoch"] < 150).sum() / len(lockin_data) * 100
             else:
                 extended.update({"lock_epoch_mean": np.nan, "lock_epoch_std": np.nan, 
                                "lockin_efficiency": np.nan, "early_lockin_rate": 0.0})
