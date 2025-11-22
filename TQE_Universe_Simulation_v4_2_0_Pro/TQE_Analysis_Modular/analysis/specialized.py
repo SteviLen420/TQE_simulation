@@ -27,24 +27,41 @@ def analyze_emergent_laws(df_metrics: pd.DataFrame, output_dir: str, config: dic
     # Phase transitions comparison
     if "n_phase_transitions" in df_ei.columns and df_ei["n_phase_transitions"].notna().any():
         print("\n1.1 Phase Transitions Comparison")
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, ax = plt.subplots(figsize=(12, 8))
         df_plot = df_ei.dropna(subset=["n_phase_transitions"]).sort_values("n_phase_transitions", ascending=False)
         
-        # Only plot if there are non-zero values, otherwise skip or show message
+        # Only plot if there are non-zero values, otherwise show informative message
         if (df_plot["n_phase_transitions"] > 0).any():
-            ax.barh(df_plot["i_definition"], df_plot["n_phase_transitions"], color='orange', alpha=0.7)
+            # Plot bars with visible styling
+            bars = ax.barh(df_plot["i_definition"], df_plot["n_phase_transitions"], color='orange', alpha=0.7, edgecolor='black', linewidth=1.5)
             ax.set_xlabel("Number of Phase Transitions", fontsize=12, fontweight='bold')
             ax.set_title("Emergent Laws: Phase Transitions Detection", fontsize=14, fontweight='bold')
-            ax.grid(axis='x', alpha=0.3)
-            # Ensure x-axis shows data properly (set minimum to 0)
-            ax.set_xlim(left=0, right=max(df_plot["n_phase_transitions"].max() * 1.1, 1))
+            ax.grid(axis='x', alpha=0.3, linestyle='--')
+            
+            # Ensure x-axis shows data properly
+            max_val = df_plot["n_phase_transitions"].max()
+            ax.set_xlim(left=-0.5, right=max(max_val * 1.2, 1))
+            
+            # Add value labels on bars
+            for i, (idx, val) in enumerate(zip(df_plot.index, df_plot["n_phase_transitions"])):
+                if val > 0:
+                    ax.text(val + 0.1, i, f'{int(val)}', va='center', fontsize=9, fontweight='bold')
+            
+            # Ensure y-axis labels are visible
+            ax.set_yticks(range(len(df_plot)))
+            ax.set_yticklabels(df_plot["i_definition"], fontsize=10)
         else:
-            # All values are 0 - show informative message
-            ax.text(0.5, 0.5, 'No phase transitions detected\n(All values are 0)', 
-                   ha='center', va='center', fontsize=14, transform=ax.transAxes)
+            # All values are 0 - show informative message and still show the y-axis labels
+            ax.text(0.5, 0.5, 'No phase transitions detected\n(All values are 0)\n\nThis indicates that no phase transition\ntype laws were found in the simulation.', 
+                   ha='center', va='center', fontsize=13, transform=ax.transAxes,
+                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
             ax.set_xlabel("Number of Phase Transitions", fontsize=12, fontweight='bold')
             ax.set_title("Emergent Laws: Phase Transitions Detection", fontsize=14, fontweight='bold')
-            ax.set_xlim(-0.04, 0.04)
+            ax.set_xlim(-0.5, 0.5)
+            
+            # Still show y-axis labels
+            ax.set_yticks(range(len(df_plot)))
+            ax.set_yticklabels(df_plot["i_definition"], fontsize=10)
         
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, "phase_transitions_comparison.png"), dpi=figure_dpi, bbox_inches='tight')
@@ -116,20 +133,42 @@ def analyze_cmb_anomalies(df_metrics: pd.DataFrame, output_dir: str, config: dic
     # Physical anomalies comparison
     if "physical_anomaly_count" in df_ei.columns and df_ei["physical_anomaly_count"].notna().any():
         print("\n3.2 Physical Anomalies Comparison")
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, ax = plt.subplots(figsize=(16, 12))
         df_plot = df_ei.dropna(subset=["physical_anomaly_count"]).sort_values("physical_anomaly_count", ascending=False)
         
-        # Plot bars - even 0 values will show as tiny bars
-        ax.barh(df_plot["i_definition"], df_plot["physical_anomaly_count"], color='red', alpha=0.7)
-        ax.set_xlabel("Physical Anomaly Count", fontsize=12, fontweight='bold')
-        ax.set_title("CMB Anomalies: Physical Anomalies Detection", fontsize=14, fontweight='bold')
-        ax.grid(axis='x', alpha=0.3)
-        # Ensure x-axis shows data properly (set minimum to 0, add padding)
+        # Use numpy array for y-positions to ensure bars are plotted correctly
+        y_pos = np.arange(len(df_plot))
+        # Make bars thicker and more visible with explicit height parameter
+        # Use bright red color and full opacity to ensure visibility
+        bars = ax.barh(y_pos, df_plot["physical_anomaly_count"], 
+                      height=0.8,  # Explicit bar height to ensure visibility
+                      color='#FF0000', alpha=1.0, edgecolor='#000000', linewidth=4)  # Bright red, full opacity, thick edge
+        
+        # Y-axis labels - use y_pos for correct positioning
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(df_plot["i_definition"], fontsize=12)
+        
+        ax.set_xlabel("Physical Anomaly Count", fontsize=14, fontweight='bold')
+        ax.set_title("CMB Anomalies: Physical Anomalies Detection", fontsize=16, fontweight='bold', pad=25)
+        ax.grid(axis='x', alpha=0.5, linestyle='-', linewidth=1)
+        
+        # Ensure x-axis shows data properly with padding (start from 0, not negative!)
         max_val = df_plot["physical_anomaly_count"].max()
-        ax.set_xlim(left=0, right=max(max_val * 1.1, 1))
+        ax.set_xlim(left=0, right=max(max_val * 1.3, 5))
+        
+        # Add value labels on bars with visible background - use y_pos for correct positioning
+        for i, (idx, val) in enumerate(zip(df_plot.index, df_plot["physical_anomaly_count"])):
+            if val > 0:
+                ax.text(val + max_val * 0.05, y_pos[i], f'{int(val)}', va='center', fontsize=11, fontweight='bold', 
+                       bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.7))
+        
+        # Make spines very visible
+        for spine in ax.spines.values():
+            spine.set_visible(True)
+            spine.set_linewidth(2)
         
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, "physical_anomalies_comparison.png"), dpi=figure_dpi, bbox_inches='tight')
+        plt.savefig(os.path.join(output_dir, "physical_anomalies_comparison.png"), dpi=figure_dpi, bbox_inches='tight', facecolor='white', edgecolor='none')
         plt.close()
         print("   ✅ physical_anomalies_comparison.png")
     
@@ -165,21 +204,41 @@ def analyze_lockin_dynamics(df_metrics: pd.DataFrame, output_dir: str, config: d
     # Early lock-in rate comparison
     if "early_lockin_rate" in df_ei.columns and df_ei["early_lockin_rate"].notna().any():
         print("\n4.2 Early Lock-in Rate Comparison")
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, ax = plt.subplots(figsize=(16, 12))
         df_plot = df_ei.dropna(subset=["early_lockin_rate"]).sort_values("early_lockin_rate", ascending=False)
         
-        # Plot bars - ensure data is visible
-        ax.barh(df_plot["i_definition"], df_plot["early_lockin_rate"], color='purple', alpha=0.7)
-        ax.set_xlabel("Early Lock-in Rate (%)", fontsize=12, fontweight='bold')
-        ax.set_title("Lock-in Dynamics: Early Lock-in Rate", fontsize=14, fontweight='bold')
-        ax.grid(axis='x', alpha=0.3)
-        # Ensure x-axis shows data properly (set minimum to 0, add padding)
+        # Use numpy array for y-positions to ensure bars are plotted correctly
+        y_pos = np.arange(len(df_plot))
+        # Make bars thicker and more visible with explicit height parameter
+        # Use bright purple color and full opacity to ensure visibility
+        bars = ax.barh(y_pos, df_plot["early_lockin_rate"], 
+                      height=0.8,  # Explicit bar height to ensure visibility
+                      color='#8B00FF', alpha=1.0, edgecolor='#000000', linewidth=4)  # Bright purple, full opacity, thick edge
+        
+        # Y-axis labels - use y_pos for correct positioning
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(df_plot["i_definition"], fontsize=12)
+        
+        ax.set_xlabel("Early Lock-in Rate (%)", fontsize=14, fontweight='bold')
+        ax.set_title("Lock-in Dynamics: Early Lock-in Rate", fontsize=16, fontweight='bold', pad=25)
+        ax.grid(axis='x', alpha=0.5, linestyle='-', linewidth=1)
+        
+        # Ensure x-axis shows data properly with padding (start from 0, not negative!)
         max_val = df_plot["early_lockin_rate"].max()
-        min_val = df_plot["early_lockin_rate"].min()
-        ax.set_xlim(left=0, right=max(max_val * 1.1, 10))  # Ensure at least 10% range is visible
+        ax.set_xlim(left=0, right=max(max_val * 1.3, 95))
+        
+        # Add value labels on bars with visible background - use y_pos for correct positioning
+        for i, (idx, val) in enumerate(zip(df_plot.index, df_plot["early_lockin_rate"])):
+            ax.text(val + max_val * 0.05, y_pos[i], f'{val:.1f}%', va='center', fontsize=11, fontweight='bold', 
+                   bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.7))
+        
+        # Make spines very visible
+        for spine in ax.spines.values():
+            spine.set_visible(True)
+            spine.set_linewidth(2)
         
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, "early_lockin_rate_comparison.png"), dpi=figure_dpi, bbox_inches='tight')
+        plt.savefig(os.path.join(output_dir, "early_lockin_rate_comparison.png"), dpi=figure_dpi, bbox_inches='tight', facecolor='white', edgecolor='none')
         plt.close()
         print("   ✅ early_lockin_rate_comparison.png")
     
